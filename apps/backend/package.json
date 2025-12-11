@@ -8,8 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "check-types": "tsc --noEmit",
-    "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
-    "db:studio": "drizzle-kit studio"
+    "drizzle-kit": "bun node_modules/drizzle-kit/bin.cjs"
   },
   "type": "module",
   "keywords": [],
@@ -26,9 +25,11 @@
   },
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/schemas": "workspace:*",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^22.15.3",
+    "bun": "^1.3.4",
     "drizzle-kit": "^0.31.8",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"

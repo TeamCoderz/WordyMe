@@ -4,8 +4,6 @@
    "compilerOptions": {
       "allowJs": false,
       "composite": false,
-      "declaration": true,
-      "declarationMap": true,
       "esModuleInterop": true,
       "forceConsistentCasingInFileNames": true,
       "module": "nodenext",
