@@ -8,38 +8,38 @@ export const revisionsTable = sqliteTable("revisions", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  created_at: integer("createdAt", { mode: "timestamp_ms" })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updated_at: integer("updatedAt", { mode: "timestamp_ms" })
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
-  document_id: text("documentId")
+  documentId: text("document_id")
     .notNull()
     .references(() => documentsTable.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
-  user_id: text("userId")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
-  revision_name: text("revisionName"),
-  content_path: text("contentPath").notNull(),
+  revisionName: text("revision_name"),
+  contentPath: text("content_path").notNull(),
   text: text("text").notNull(),
   checksum: text("checksum"),
 });
 
 export const revisionRelations = relations(revisionsTable, ({ one }) => ({
   document: one(documentsTable, {
-    fields: [revisionsTable.document_id],
+    fields: [revisionsTable.documentId],
     references: [documentsTable.id],
   }),
   user: one(users, {
-    fields: [revisionsTable.user_id],
+    fields: [revisionsTable.userId],
     references: [users.id],
   }),
 }));

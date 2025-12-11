@@ -8,7 +8,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "check-types": "tsc --noEmit",
-    "db:push": "drizzle-kit push",
+    "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
     "db:studio": "drizzle-kit studio"
   },
   "type": "module",

@@ -7,13 +7,13 @@ export const editorSettingsTable = sqliteTable("editor_settings", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  created_at: integer("createdAt", { mode: "timestamp_ms" })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
-  user_id: text("userId")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  keep_previous_revision: integer("keepPreviousRevision", { mode: "boolean" })
+  keepPreviousRevision: integer("keep_previous_revision", { mode: "boolean" })
     .notNull()
     .default(false),
   autosave: integer("autosave", { mode: "boolean" }).notNull().default(false),
@@ -23,7 +23,7 @@ export const editorSettingsRelations = relations(
   editorSettingsTable,
   ({ one }) => ({
     user: one(users, {
-      fields: [editorSettingsTable.user_id],
+      fields: [editorSettingsTable.userId],
       references: [users.id],
     }),
   })

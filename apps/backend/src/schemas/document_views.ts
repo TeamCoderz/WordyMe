@@ -8,16 +8,17 @@ export const documentViewsTable = sqliteTable("document_views", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  created_at: integer("createdAt", { mode: "timestamp_ms" })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
-  last_viewed_at: integer("lastViewedAt", { mode: "timestamp_ms" })
+  lastViewedAt: integer("last_viewed_at", { mode: "timestamp_ms" })
     .notNull()
-    .$defaultFn(() => new Date()),
-  user_id: text("userId")
+    .$defaultFn(() => new Date())
+    .$onUpdateFn(() => new Date()),
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
-  document_id: text("documentId")
+  documentId: text("document_id")
     .notNull()
     .references(() => documentsTable.id, {
       onDelete: "cascade",
@@ -29,11 +30,11 @@ export const documentViewsRelations = relations(
   documentViewsTable,
   ({ one }) => ({
     user: one(users, {
-      fields: [documentViewsTable.user_id],
+      fields: [documentViewsTable.userId],
       references: [users.id],
     }),
     document: one(documentsTable, {
-      fields: [documentViewsTable.document_id],
+      fields: [documentViewsTable.documentId],
       references: [documentsTable.id],
     }),
   })

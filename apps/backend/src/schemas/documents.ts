@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import {
-  AnySQLiteColumn,
+  SQLiteColumn,
   integer,
   sqliteTable,
   text,
@@ -14,10 +14,10 @@ export const documentsTable = sqliteTable("documents", {
   id: text("id")
     .primaryKey()
     .$defaultFn(() => crypto.randomUUID()),
-  created_at: integer("createdAt", { mode: "timestamp_ms" })
+  createdAt: integer("created_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date()),
-  updated_at: integer("updatedAt", { mode: "timestamp_ms" })
+  updatedAt: integer("updated_at", { mode: "timestamp_ms" })
     .notNull()
     .$defaultFn(() => new Date())
     .$onUpdateFn(() => new Date()),
@@ -25,41 +25,40 @@ export const documentsTable = sqliteTable("documents", {
   handle: text("handle").notNull(),
   icon: text("icon"),
   position: text("position"),
-  currentRevisionId: text("currentRevisionId").references(
-    (): AnySQLiteColumn => revisionsTable.id,
+  currentRevisionId: text("current_revision_id").references(
+    (): SQLiteColumn => revisionsTable.id,
     {
       onDelete: "cascade",
       onUpdate: "cascade",
     }
   ),
-  userId: text("userId")
+  userId: text("user_id")
     .notNull()
     .references(() => users.id, {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
-  parentId: text("parentId").references(
-    (): AnySQLiteColumn => documentsTable.id,
+  parentId: text("parent_id").references(
+    (): SQLiteColumn => documentsTable.id,
     {
       onDelete: "cascade",
       onUpdate: "cascade",
     }
   ),
-  document_type: enumType(["space", "folder", "note"] as const)
+  documentType: enumType(["space", "folder", "note"] as const, "document_type")
     .notNull()
     .default("note"),
-  spaceId: text("spaceId").references(
-    (): AnySQLiteColumn => documentsTable.id,
+  spaceId: text("space_id").references(
+    (): SQLiteColumn => documentsTable.id,
     {
       onDelete: "cascade",
       onUpdate: "cascade",
     }
   ),
-  deletedAt: integer("deletedAt", { mode: "timestamp_ms" }),
-  isContainer: integer("isContainer", { mode: "boolean" })
+  isContainer: integer("is_container", { mode: "boolean" })
     .notNull()
     .default(false),
-  clientId: text("clientId"),
+  clientId: text("client_id"),
 });
 
 export const documentRelations = relations(documentsTable, ({ one, many }) => ({
