@@ -22,7 +22,7 @@
     "node": ">=18"
   },
   "lint-staged": {
-    "*.{ts}": [
+    "apps/backend/src/**/*.{ts}": [
       "prettier --write"
     ]
   }

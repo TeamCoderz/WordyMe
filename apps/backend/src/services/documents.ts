@@ -108,7 +108,6 @@ export const updateDocument = async (
   return await db
     .update(documentsTable)
     .set({ ...payload, handle })
-
     .where(eq(documentsTable.id, documentId))
     .returning();
 };
