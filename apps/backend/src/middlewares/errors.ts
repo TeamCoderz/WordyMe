@@ -2,7 +2,7 @@ import { ErrorRequestHandler, RequestHandler } from "express";
 import { toHttpException } from "../utils/errors.js";
 import { HttpNotFound } from "@httpx/exception";
 
-export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     console.error(err);
 
     const httpException = toHttpException(err);
@@ -10,6 +10,6 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
     res.status(httpException.statusCode).json(httpException);
 };
 
-export const notFoundHandler: RequestHandler = (req, res, next) => {
+export const notFoundHandler: RequestHandler = () => {
     throw new HttpNotFound();
 };
