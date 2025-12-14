@@ -8,7 +8,7 @@ export const userHasDocument = async (userId: string, documentId: string) => {
     .select({ id: documentsTable.id })
     .from(documentsTable)
     .where(
-      and(eq(documentsTable.id, documentId), eq(documentsTable.userId, userId))
+      and(eq(documentsTable.id, documentId), eq(documentsTable.userId, userId)),
     );
   return document.length > 0;
 };
@@ -19,7 +19,7 @@ export const userHasRevision = async (userId: string, revisionId: string) => {
     .from(revisionsTable)
     .innerJoin(documentsTable, eq(documentsTable.id, revisionsTable.documentId))
     .where(
-      and(eq(revisionsTable.id, revisionId), eq(documentsTable.userId, userId))
+      and(eq(revisionsTable.id, revisionId), eq(documentsTable.userId, userId)),
     );
   return exists.length > 0;
 };

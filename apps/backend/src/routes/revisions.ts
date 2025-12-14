@@ -30,7 +30,7 @@ router.post(
     }
     const revision = await createRevision(req.body, req.user!.id);
     res.status(201).json(revision);
-  }
+  },
 );
 
 router.get(
@@ -46,7 +46,7 @@ router.get(
       throw new HttpNotFound("Revisions not found");
     }
     res.status(200).json(revisions);
-  }
+  },
 );
 
 router.get(
@@ -58,13 +58,13 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     const revision = await getCurrentRevisionByDocumentId(
-      req.params.documentId
+      req.params.documentId,
     );
     if (!revision) {
       throw new HttpNotFound("Revision not found");
     }
     res.status(200).json(revision);
-  }
+  },
 );
 
 router.get(
@@ -80,7 +80,7 @@ router.get(
       throw new HttpNotFound("Revision not found");
     }
     res.status(200).json(revision);
-  }
+  },
 );
 
 router.patch(
@@ -93,13 +93,13 @@ router.patch(
     }
     const updatedRevision = await updateRevisionName(
       req.params.revisionId,
-      req.body
+      req.body,
     );
     if (!updatedRevision) {
       throw new HttpNotFound("Revision not found");
     }
     res.status(200).json(updatedRevision);
-  }
+  },
 );
 
 router.delete(
@@ -113,7 +113,7 @@ router.delete(
     await deleteRevisionById(req.params.revisionId);
 
     res.status(204).send();
-  }
+  },
 );
 
 export { router as revisionsRouter };

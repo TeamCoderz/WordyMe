@@ -10,7 +10,7 @@ import { documentsTable } from "../models/documents.js";
 
 export const createRevision = async (
   payload: CreateRevisionInput,
-  userId: string
+  userId: string,
 ) => {
   const path = createRevisionContentPath(userId, payload.documentId);
   const revision = await db
@@ -68,7 +68,7 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
     .from(revisionsTable)
     .innerJoin(
       documentsTable,
-      and(eq(documentsTable.currentRevisionId, revisionsTable.id))
+      and(eq(documentsTable.currentRevisionId, revisionsTable.id)),
     )
     .where(eq(documentsTable.id, documentId))
     .limit(1);
@@ -78,7 +78,7 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
 
 export const updateRevisionName = async (
   revisionId: string,
-  payload: UpdateRevisionName
+  payload: UpdateRevisionName,
 ) => {
   const updatedRevision = await db
     .update(revisionsTable)
