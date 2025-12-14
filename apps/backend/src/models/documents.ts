@@ -30,7 +30,7 @@ export const documentsTable = sqliteTable("documents", {
     {
       onDelete: "cascade",
       onUpdate: "cascade",
-    }
+    },
   ),
   userId: text("user_id")
     .notNull()
@@ -43,18 +43,15 @@ export const documentsTable = sqliteTable("documents", {
     {
       onDelete: "cascade",
       onUpdate: "cascade",
-    }
+    },
   ),
   documentType: enumType(["space", "folder", "note"] as const, "document_type")
     .notNull()
     .default("note"),
-  spaceId: text("space_id").references(
-    (): SQLiteColumn => documentsTable.id,
-    {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-    }
-  ),
+  spaceId: text("space_id").references((): SQLiteColumn => documentsTable.id, {
+    onDelete: "cascade",
+    onUpdate: "cascade",
+  }),
   isContainer: integer("is_container", { mode: "boolean" })
     .notNull()
     .default(false),

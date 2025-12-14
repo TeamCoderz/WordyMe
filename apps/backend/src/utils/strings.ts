@@ -8,5 +8,5 @@ export const slugify = (text: string) => {
 };
 
 export const appendUniqueSuffix = (text: string) => {
-    return `${text}-${nanoid(10)}`;
+  return `${text}-${nanoid(10)}`;
 };

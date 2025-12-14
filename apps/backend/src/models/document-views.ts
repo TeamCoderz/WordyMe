@@ -37,5 +37,5 @@ export const documentViewsRelations = relations(
       fields: [documentViewsTable.documentId],
       references: [documentsTable.id],
     }),
-  })
+  }),
 );

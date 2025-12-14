@@ -26,5 +26,5 @@ export const editorSettingsRelations = relations(
       fields: [editorSettingsTable.userId],
       references: [users.id],
     }),
-  })
+  }),
 );
