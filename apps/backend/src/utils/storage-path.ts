@@ -1,6 +1,6 @@
 export const createRevisionContentPath = (
   userId: string,
-  documentId: string
+  documentId: string,
 ) => {
   return `${userId}/${documentId}/${Date.now()}.json`;
 };

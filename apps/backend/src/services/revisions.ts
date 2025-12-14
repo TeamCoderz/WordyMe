@@ -10,7 +10,7 @@ import { documentsTable } from "../models/documents.js";
 
 export const createRevision = async (
   payload: CreateRevisionInput,
-  userId: string
+  userId: string,
 ) => {
   const path = createRevisionContentPath(userId, payload.documentId);
   const revision = await db
@@ -41,7 +41,7 @@ export const createRevision = async (
 
 export const updateRevisionName = async (
   revisionId: string,
-  payload: UpdateRevisionName
+  payload: UpdateRevisionName,
 ) => {
   return await db
     .update(revisionsTable)
@@ -89,8 +89,8 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
       documentsTable,
       and(
         eq(revisionsTable.documentId, documentsTable.id),
-        eq(documentsTable.currentRevisionId, revisionsTable.id)
-      )
+        eq(documentsTable.currentRevisionId, revisionsTable.id),
+      ),
     )
     .where(eq(documentsTable.id, documentId))
     .limit(1);
