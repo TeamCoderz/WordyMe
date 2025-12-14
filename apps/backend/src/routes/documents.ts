@@ -19,14 +19,10 @@ import { HttpNotFound } from "@httpx/exception";
 
 const router: Router = Router();
 
-router.get(
-  '/',
-  requireAuth,
-  async (req, res) => {
-    const documents = await getUserDocuments(req.user!.id);
-    res.status(200).json(documents);
-  },
-)
+router.get("/", requireAuth, async (req, res) => {
+  const documents = await getUserDocuments(req.user!.id);
+  res.status(200).json(documents);
+});
 
 router.post(
   "/",

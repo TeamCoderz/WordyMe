@@ -25,8 +25,8 @@ export const getDocumentDetails = async (
   const document = await db.query.documentsTable.findFirst({
     where: and(
       documentId
-      ? eq(documentsTable.id, documentId)
-      : eq(documentsTable.handle, handle!),
+        ? eq(documentsTable.id, documentId)
+        : eq(documentsTable.handle, handle!),
       eq(documentsTable.userId, userId),
     ),
     with: {
@@ -57,8 +57,20 @@ export const getUserDocuments = async (userId: string) => {
       lastViewedAt: max(documentViewsTable.lastViewedAt),
     })
     .from(documentsTable)
-    .leftJoin(favoritesTable, and(eq(favoritesTable.documentId, documentsTable.id), eq(favoritesTable.userId, userId)))
-    .leftJoin(documentViewsTable, and(eq(documentViewsTable.documentId, documentsTable.id), eq(documentViewsTable.userId, userId)))
+    .leftJoin(
+      favoritesTable,
+      and(
+        eq(favoritesTable.documentId, documentsTable.id),
+        eq(favoritesTable.userId, userId),
+      ),
+    )
+    .leftJoin(
+      documentViewsTable,
+      and(
+        eq(documentViewsTable.documentId, documentsTable.id),
+        eq(documentViewsTable.userId, userId),
+      ),
+    )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id);
   return documents;
