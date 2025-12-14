@@ -11,12 +11,22 @@ import {
   createDocument,
   deleteDocument,
   getDocumentDetails,
+  getUserDocuments,
   updateDocument,
 } from "../services/documents.js";
 import { userHasDocument } from "../services/access.js";
 import { HttpNotFound } from "@httpx/exception";
 
 const router: Router = Router();
+
+router.get(
+  '/',
+  requireAuth,
+  async (req, res) => {
+    const documents = await getUserDocuments(req.user!.id);
+    res.status(200).json(documents);
+  },
+)
 
 router.post(
   "/",
@@ -29,7 +39,7 @@ router.post(
 );
 
 router.get(
-  "/:handle",
+  "/handle/:handle",
   requireAuth,
   validate({ params: documentHandleParamSchema }),
   async (req, res) => {
@@ -46,10 +56,10 @@ router.get(
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
-    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+    const document = await getDocumentDetails(req.params, req.user!.id);
+    if (!document) {
       throw new HttpNotFound("Document not found");
     }
-    const document = await getDocumentDetails(req.params, req.user!.id);
     res.status(200).json(document);
   },
 );

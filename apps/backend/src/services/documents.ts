@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
@@ -23,9 +23,12 @@ export const getDocumentDetails = async (
   userId: string,
 ) => {
   const document = await db.query.documentsTable.findFirst({
-    where: documentId
+    where: and(
+      documentId
       ? eq(documentsTable.id, documentId)
       : eq(documentsTable.handle, handle!),
+      eq(documentsTable.userId, userId),
+    ),
     with: {
       currentRevision: true,
       views: {
@@ -44,6 +47,21 @@ export const getDocumentDetails = async (
     lastViewedAt:
       document.views.length > 0 ? document.views[0].lastViewedAt : null,
   };
+};
+
+export const getUserDocuments = async (userId: string) => {
+  const documents = await db
+    .select({
+      ...getTableColumns(documentsTable),
+      isFavorite: gt(count(favoritesTable.id), 0),
+      lastViewedAt: max(documentViewsTable.lastViewedAt),
+    })
+    .from(documentsTable)
+    .leftJoin(favoritesTable, and(eq(favoritesTable.documentId, documentsTable.id), eq(favoritesTable.userId, userId)))
+    .leftJoin(documentViewsTable, and(eq(documentViewsTable.documentId, documentsTable.id), eq(documentViewsTable.userId, userId)))
+    .where(eq(documentsTable.userId, userId))
+    .groupBy(documentsTable.id);
+  return documents;
 };
 
 export const createDocument = async (
