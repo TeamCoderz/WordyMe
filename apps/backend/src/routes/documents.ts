@@ -31,7 +31,7 @@ router.post(
   async (req, res) => {
     const document = await createDocument(req.body, req.user!.id);
     res.status(201).json(document);
-  },
+  }
 );
 
 router.get(
@@ -44,7 +44,7 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     res.status(200).json(document);
-  },
+  }
 );
 
 router.get(
@@ -57,7 +57,7 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     res.status(200).json(document);
-  },
+  }
 );
 
 router.patch(
@@ -70,10 +70,10 @@ router.patch(
     }
     const updatedDocument = await updateDocument(
       req.params.documentId,
-      req.body,
+      req.body
     );
     res.status(200).json(updatedDocument);
-  },
+  }
 );
 
 router.delete(
@@ -86,7 +86,7 @@ router.delete(
     }
     await deleteDocument(req.params.documentId);
     res.status(204).send();
-  },
+  }
 );
 
 export { router as documentsRouter };
