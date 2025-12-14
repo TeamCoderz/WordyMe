@@ -9,6 +9,8 @@ import { enumType } from "../utils/drizzle.js";
 import { users } from "./auth.js";
 import { revisionsTable } from "./revisions.js";
 import { relations } from "drizzle-orm";
+import { documentViewsTable } from "./document-views.js";
+import { favoritesTable } from "./favorites.js";
 
 export const documentsTable = sqliteTable("documents", {
   id: text("id")
@@ -78,4 +80,6 @@ export const documentRelations = relations(documentsTable, ({ one, many }) => ({
     relationName: "space",
   }),
   revisions: many(revisionsTable),
+  views: many(documentViewsTable),
+  favorites: many(favoritesTable),
 }));

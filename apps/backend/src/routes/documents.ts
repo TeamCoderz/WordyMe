@@ -2,6 +2,7 @@ import { Router } from "express";
 import validate from "../middlewares/validate.js";
 import {
   createDocumentSchema,
+  documentHandleParamSchema,
   documentIdParamSchema,
   updateDocumentSchema,
 } from "../schemas/documents.js";
@@ -9,10 +10,11 @@ import { requireAuth } from "../middlewares/auth.js";
 import {
   createDocument,
   deleteDocument,
+  getDocumentDetails,
   updateDocument,
 } from "../services/documents.js";
-import { hasDocumentAccess } from "../services/access.js";
-import { HttpForbidden } from "@httpx/exception";
+import { userHasDocument } from "../services/access.js";
+import { HttpNotFound } from "@httpx/exception";
 
 const router: Router = Router();
 
@@ -26,13 +28,39 @@ router.post(
   },
 );
 
+router.get(
+  "/:handle",
+  requireAuth,
+  validate({ params: documentHandleParamSchema }),
+  async (req, res) => {
+    const document = await getDocumentDetails(req.params, req.user!.id);
+    if (!document) {
+      throw new HttpNotFound("Document not found");
+    }
+    res.status(200).json(document);
+  },
+);
+
+router.get(
+  "/:documentId",
+  requireAuth,
+  validate({ params: documentIdParamSchema }),
+  async (req, res) => {
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
+    }
+    const document = await getDocumentDetails(req.params, req.user!.id);
+    res.status(200).json(document);
+  },
+);
+
 router.patch(
   "/:documentId",
   requireAuth,
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
-    if (!(await hasDocumentAccess(req.user!.id, req.params.documentId))) {
-      throw new HttpForbidden();
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
     }
     const updatedDocument = await updateDocument(
       req.params.documentId,
@@ -47,8 +75,8 @@ router.delete(
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
-    if (!(await hasDocumentAccess(req.user!.id, req.params.documentId))) {
-      throw new HttpForbidden();
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
     }
     await deleteDocument(req.params.documentId);
     res.status(204).send();

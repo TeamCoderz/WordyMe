@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 
-export const hasDocumentAccess = async (userId: string, documentId: string) => {
+export const userHasDocument = async (userId: string, documentId: string) => {
   const document = await db
     .select({ id: documentsTable.id })
     .from(documentsTable)

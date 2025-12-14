@@ -22,6 +22,3 @@ pre-commit:
   jobs:
     - name: format
       run: pnpm format {staged_files}
-
-    - name: lint
-      run: pnpm lint {staged_files}

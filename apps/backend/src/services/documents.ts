@@ -3,9 +3,12 @@ import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
   CreateDocumentInput,
+  DocumentIdentifier,
   UpdateDocumentInput,
 } from "../schemas/documents.js";
 import { appendUniqueSuffix, slugify } from "../utils/strings.js";
+import { documentViewsTable } from "../models/document-views.js";
+import { favoritesTable } from "../models/favorites.js";
 
 export const checkExistingDocumentHandle = async (handle: string) => {
   const result = await db
@@ -13,6 +16,34 @@ export const checkExistingDocumentHandle = async (handle: string) => {
     .from(documentsTable)
     .where(eq(documentsTable.handle, handle));
   return result.length > 0;
+};
+
+export const getDocumentDetails = async (
+  { documentId, handle }: DocumentIdentifier,
+  userId: string,
+) => {
+  const document = await db.query.documentsTable.findFirst({
+    where: documentId
+      ? eq(documentsTable.id, documentId)
+      : eq(documentsTable.handle, handle!),
+    with: {
+      currentRevision: true,
+      views: {
+        where: eq(documentViewsTable.userId, userId),
+      },
+      favorites: {
+        where: eq(favoritesTable.userId, userId),
+      },
+    },
+  });
+
+  if (!document) return undefined;
+  return {
+    ...document,
+    isFavorite: document.favorites.length > 0,
+    lastViewedAt:
+      document.views.length > 0 ? document.views[0].lastViewedAt : null,
+  };
 };
 
 export const createDocument = async (

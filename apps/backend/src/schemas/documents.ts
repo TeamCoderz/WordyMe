@@ -4,6 +4,20 @@ export const documentIdParamSchema = z.object({
   documentId: z.uuid("Invalid document ID"),
 });
 
+export const documentHandleParamSchema = z.object({
+  handle: z.string().min(1, "Handle is required"),
+});
+
+export type DocumentIdentifier =
+  | {
+      documentId: string;
+      handle?: undefined;
+    }
+  | {
+      documentId?: undefined;
+      handle: string;
+    };
+
 export const createDocumentSchema = z.object({
   name: z.string().min(1, "Name is required"),
   icon: z.string().optional(),
