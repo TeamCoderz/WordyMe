@@ -1,12 +1,12 @@
 import { Router } from "express";
 import validate from "../middlewares/validate.js";
-import { documents } from "@repo/schemas";
+import { createDocumentSchema } from "../schemas/documents.js";
 
 const router: Router = Router();
 
 router.post(
     '/',
-    validate({ body: documents.createDocumentSchema }),
+    validate({ body: createDocumentSchema }),
     (req, res) => {
     }
 );
