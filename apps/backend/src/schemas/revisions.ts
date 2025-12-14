@@ -8,10 +8,13 @@ export const createRevisionSchema = z.object({
   makeCurrentRevision: z.boolean().optional(),
 });
 
-export type CreateRevisionInput = z.infer<typeof createRevisionSchema>;
-
 export const updateRevisionInput = createRevisionSchema.pick({
   revisionName: true,
 });
 
+export const revisionIdParamSchema = z.object({
+  revisionId: z.uuid("Invalid revision ID"),
+});
+
+export type CreateRevisionInput = z.infer<typeof createRevisionSchema>;
 export type UpdateRevisionName = z.infer<typeof updateRevisionInput>;

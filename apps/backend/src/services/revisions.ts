@@ -1,4 +1,4 @@
-import { desc, eq, getTableColumns, and } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { revisionsTable } from "../models/revisions.js";
 import {
@@ -10,7 +10,7 @@ import { documentsTable } from "../models/documents.js";
 
 export const createRevision = async (
   payload: CreateRevisionInput,
-  userId: string,
+  userId: string
 ) => {
   const path = createRevisionContentPath(userId, payload.documentId);
   const revision = await db
@@ -39,21 +39,6 @@ export const createRevision = async (
   return revision[0];
 };
 
-export const updateRevisionName = async (
-  revisionId: string,
-  payload: UpdateRevisionName,
-) => {
-  return await db
-    .update(revisionsTable)
-    .set(payload)
-    .where(eq(revisionsTable.id, revisionId))
-    .returning({
-      id: revisionsTable.id,
-      revisionName: revisionsTable.revisionName,
-      contentPath: revisionsTable.contentPath,
-    });
-};
-
 export const getRevisionById = async (revisionId: string) => {
   const revision = await db.query.revisionsTable.findFirst({
     where: eq(revisionsTable.id, revisionId),
@@ -67,10 +52,6 @@ export const getRevisionsByDocumentId = async (documentId: string) => {
     orderBy: [desc(revisionsTable.createdAt)],
   });
   return revisions;
-};
-
-export const deleteRevisionById = async (revisionId: string) => {
-  await db.delete(revisionsTable).where(eq(revisionsTable.id, revisionId));
 };
 
 export const getCurrentRevisionByDocumentId = async (documentId: string) => {
@@ -87,13 +68,34 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
     .from(revisionsTable)
     .innerJoin(
       documentsTable,
-      and(
-        eq(revisionsTable.documentId, documentsTable.id),
-        eq(documentsTable.currentRevisionId, revisionsTable.id),
-      ),
+      and(eq(documentsTable.currentRevisionId, revisionsTable.id))
     )
     .where(eq(documentsTable.id, documentId))
     .limit(1);
 
   return currentRevision[0] ?? null;
+};
+
+export const updateRevisionName = async (
+  revisionId: string,
+  payload: UpdateRevisionName
+) => {
+  const updatedRevision = await db
+    .update(revisionsTable)
+    .set(payload)
+    .where(eq(revisionsTable.id, revisionId))
+    .returning({
+      id: revisionsTable.id,
+      revisionName: revisionsTable.revisionName,
+    });
+  return updatedRevision[0];
+};
+
+export const deleteRevisionById = async (revisionId: string) => {
+  const deleted = await db
+    .delete(revisionsTable)
+    .where(eq(revisionsTable.id, revisionId))
+    .returning({ id: revisionsTable.id });
+
+  return deleted[0];
 };

@@ -5,6 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
 import { documentsRouter } from "./routes/documents.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errors.js";
+import { revisionsRouter } from "./routes/revisions.js";
 
 const app: Express = express();
 
@@ -16,6 +17,7 @@ app.use(morgan("dev"));
 app.use(express.json());
 
 app.use("/api/documents", documentsRouter);
+app.use("/api/revisions", revisionsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
