@@ -1,4 +1,4 @@
-import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
+import { and, count, eq, getTableColumns, gt, isNull, max } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
@@ -35,7 +35,10 @@ export const getDocumentDetails = async (
         where: eq(documentViewsTable.userId, userId),
       },
       favorites: {
-        where: eq(favoritesTable.userId, userId),
+        where: and(
+          eq(favoritesTable.userId, userId),
+          isNull(favoritesTable.deletedAt),
+        ),
       },
     },
   });
@@ -62,6 +65,7 @@ export const getUserDocuments = async (userId: string) => {
       and(
         eq(favoritesTable.documentId, documentsTable.id),
         eq(favoritesTable.userId, userId),
+        isNull(favoritesTable.deletedAt),
       ),
     )
     .leftJoin(

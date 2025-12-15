@@ -34,7 +34,7 @@ router.post(
 );
 
 router.get(
-  "/revisions/:documentId",
+  "/:documentId",
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
