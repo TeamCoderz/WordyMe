@@ -10,7 +10,7 @@ import { documentsTable } from "../models/documents.js";
 
 export const createRevision = async (
   payload: CreateRevisionInput,
-  userId: string
+  userId: string,
 ) => {
   const path = createRevisionContentPath(userId, payload.documentId);
   const revision = await db
@@ -55,7 +55,7 @@ export const getRevisionsByDocumentId = async (documentId: string) => {
 };
 
 export const getCurrentRevisionByDocumentId = async (documentId: string) => {
-  const currentRevision = await db
+  const [currentRevision] = await db
     .select({
       id: revisionsTable.id,
       text: revisionsTable.text,
@@ -70,20 +70,20 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
       documentsTable,
       and(
         eq(revisionsTable.documentId, documentsTable.id),
-        eq(documentsTable.currentRevisionId, revisionsTable.id)
-      )
+        eq(documentsTable.currentRevisionId, revisionsTable.id),
+      ),
     )
     .where(eq(documentsTable.id, documentId))
     .limit(1);
 
-  return currentRevision[0] ?? null;
+  return currentRevision ?? null;
 };
 
 export const updateRevisionName = async (
   revisionId: string,
-  payload: UpdateRevisionName
+  payload: UpdateRevisionName,
 ) => {
-  const updatedRevision = await db
+  const [updatedRevision] = await db
     .update(revisionsTable)
     .set(payload)
     .where(eq(revisionsTable.id, revisionId))
@@ -91,14 +91,14 @@ export const updateRevisionName = async (
       id: revisionsTable.id,
       revisionName: revisionsTable.revisionName,
     });
-  return updatedRevision[0];
+  return updatedRevision;
 };
 
 export const deleteRevisionById = async (revisionId: string) => {
-  const deleted = await db
+  const [deleted] = await db
     .delete(revisionsTable)
     .where(eq(revisionsTable.id, revisionId))
     .returning({ id: revisionsTable.id });
 
-  return deleted[0];
+  return deleted;
 };
