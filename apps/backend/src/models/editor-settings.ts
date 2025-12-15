@@ -12,6 +12,7 @@ export const editorSettingsTable = sqliteTable("editor_settings", {
     .$defaultFn(() => new Date()),
   userId: text("user_id")
     .notNull()
+    .unique()
     .references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),
   keepPreviousRevision: integer("keep_previous_revision", { mode: "boolean" })
     .notNull()

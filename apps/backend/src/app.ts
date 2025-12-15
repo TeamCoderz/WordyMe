@@ -6,6 +6,7 @@ import { auth } from "./lib/auth.js";
 import { documentsRouter } from "./routes/documents.js";
 import { errorHandler, notFoundHandler } from "./middlewares/errors.js";
 import { revisionsRouter } from "./routes/revisions.js";
+import { editorSettingsRouter } from "./routes/editor-settings.js";
 
 const app: Express = express();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 
 app.use("/api/documents", documentsRouter);
 app.use("/api/revisions", revisionsRouter);
+app.use("/api/editor-settings", editorSettingsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");
