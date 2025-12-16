@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { documentsTable } from "./documents.js";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import { users } from "./auth.js";
 
 export const revisionsTable = sqliteTable("revisions", {
@@ -28,7 +28,6 @@ export const revisionsTable = sqliteTable("revisions", {
       onUpdate: "cascade",
     }),
   revisionName: text("revision_name"),
-  contentPath: text("content_path").notNull(),
   text: text("text").notNull(),
   checksum: text("checksum"),
 });

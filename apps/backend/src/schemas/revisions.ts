@@ -3,6 +3,7 @@ import z from "zod";
 export const createRevisionSchema = z.object({
   documentId: z.uuid("Invalid document ID"),
   text: z.string().min(1, "Text is required"),
+  content: z.string().min(1, "Revision Content is required"),
   checksum: z.string().optional(),
   revisionName: z.string().optional(),
   makeCurrentRevision: z.boolean().optional(),

@@ -12,6 +12,7 @@ import { documentsRouter } from "./routes/documents.js";
 import { revisionsRouter } from "./routes/revisions.js";
 import { editorSettingsRouter } from "./routes/editor-settings.js";
 import { favoritesRouter } from "./routes/favorites.js";
+import { storageRouter } from "./routes/storage.js";
 
 const app: Express = express();
 
@@ -26,6 +27,8 @@ app.use("/api/documents", documentsRouter);
 app.use("/api/revisions", revisionsRouter);
 app.use("/api/editor-settings", editorSettingsRouter);
 app.use("/api/favorites", favoritesRouter);
+
+app.use("/storage", storageRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello, World!");

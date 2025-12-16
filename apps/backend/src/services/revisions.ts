@@ -5,45 +5,57 @@ import {
   CreateRevisionInput,
   UpdateRevisionName,
 } from "../schemas/revisions.js";
-import { createRevisionContentPath } from "../utils/storage-path.js";
 import { documentsTable } from "../models/documents.js";
+import {
+  getRevisionContentUrl,
+  readRevisionContent,
+  saveRevisionContent,
+} from "./revision-contents.js";
 
 export const createRevision = async (
   payload: CreateRevisionInput,
   userId: string,
 ) => {
-  const path = createRevisionContentPath(userId, payload.documentId);
-  const revision = await db
+  const [revision] = await db
     .insert(revisionsTable)
     .values({
       documentId: payload.documentId,
       text: payload.text,
       checksum: payload.checksum,
       revisionName: payload.revisionName,
-      contentPath: path,
       userId,
     })
-    .returning({ id: revisionsTable.id });
+    .returning();
 
-  if (!payload.makeCurrentRevision) {
-    return revision[0];
+  await saveRevisionContent(payload.content, revision.id);
+
+  if (payload.makeCurrentRevision) {
+    await db
+      .update(documentsTable)
+      .set({
+        currentRevisionId: revision.id,
+      })
+      .where(eq(documentsTable.id, payload.documentId));
   }
 
-  await db
-    .update(documentsTable)
-    .set({
-      currentRevisionId: revision[0].id,
-    })
-    .where(eq(documentsTable.id, payload.documentId));
-
-  return revision[0];
+  return {
+    ...revision,
+    content: payload.content,
+    url: getRevisionContentUrl(revision.id),
+  };
 };
 
 export const getRevisionById = async (revisionId: string) => {
   const revision = await db.query.revisionsTable.findFirst({
     where: eq(revisionsTable.id, revisionId),
   });
-  return revision;
+  return revision
+    ? {
+        ...revision,
+        content: await readRevisionContent(revision.id),
+        url: getRevisionContentUrl(revision.id),
+      }
+    : undefined;
 };
 
 export const getRevisionsByDocumentId = async (documentId: string) => {
@@ -51,7 +63,10 @@ export const getRevisionsByDocumentId = async (documentId: string) => {
     where: eq(revisionsTable.documentId, documentId),
     orderBy: [desc(revisionsTable.createdAt)],
   });
-  return revisions;
+  return revisions.map((revision) => ({
+    ...revision,
+    url: getRevisionContentUrl(revision.id),
+  }));
 };
 
 export const getCurrentRevisionByDocumentId = async (documentId: string) => {
@@ -76,7 +91,13 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
     .where(eq(documentsTable.id, documentId))
     .limit(1);
 
-  return currentRevision ?? null;
+  return currentRevision
+    ? {
+        ...currentRevision,
+        content: await readRevisionContent(currentRevision.id),
+        url: getRevisionContentUrl(currentRevision.id),
+      }
+    : undefined;
 };
 
 export const updateRevisionName = async (
@@ -87,11 +108,10 @@ export const updateRevisionName = async (
     .update(revisionsTable)
     .set(payload)
     .where(eq(revisionsTable.id, revisionId))
-    .returning({
-      id: revisionsTable.id,
-      revisionName: revisionsTable.revisionName,
-    });
-  return updatedRevision;
+    .returning();
+  return updatedRevision
+    ? { ...updatedRevision, url: getRevisionContentUrl(updatedRevision.id) }
+    : null;
 };
 
 export const deleteRevisionById = async (revisionId: string) => {
