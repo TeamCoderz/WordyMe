@@ -1,14 +1,12 @@
-import { eq } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { editorSettingsTable } from "../models/editor-settings.js";
 import {
-  CreateEditorSettingsInput,
-  UpdateEditorSettingsInput,
+  EditorSettingsInput,
 } from "../schemas/editor-settings.js";
 
-export const setEditorInitialSettings = async (
+export const setEditorSettings = async (
   userId: string,
-  payload: CreateEditorSettingsInput,
+  payload: EditorSettingsInput,
 ) => {
   const [created] = await db
     .insert(editorSettingsTable)
@@ -16,21 +14,9 @@ export const setEditorInitialSettings = async (
       ...payload,
       userId,
     })
-    .onConflictDoNothing({ target: editorSettingsTable.userId })
+    .onConflictDoUpdate({ target: editorSettingsTable.userId, set: payload })
     .returning();
 
-  return created ?? null;
+  return created;
 };
 
-export const updateEditorSettings = async (
-  userId: string,
-  payload: UpdateEditorSettingsInput,
-) => {
-  const [updated] = await db
-    .update(editorSettingsTable)
-    .set(payload)
-    .where(eq(editorSettingsTable.userId, userId))
-    .returning();
-
-  return updated ?? null;
-};

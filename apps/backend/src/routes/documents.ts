@@ -16,6 +16,7 @@ import {
 } from "../services/documents.js";
 import { userHasDocument } from "../services/access.js";
 import { HttpNotFound } from "@httpx/exception";
+import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from "../services/revisions.js";
 
 const router: Router = Router();
 
@@ -86,6 +87,37 @@ router.delete(
     }
     await deleteDocument(req.params.documentId);
     res.status(204).send();
+  },
+);
+
+router.get(
+  "/:documentId/revisions",
+  requireAuth,
+  validate({ params: documentIdParamSchema }),
+  async (req, res) => {
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
+    }
+    const revisions = await getRevisionsByDocumentId(req.params.documentId);
+    res.status(200).json(revisions);
+  },
+);
+
+router.get(
+  "/:documentId/revisions/current",
+  requireAuth,
+  validate({ params: documentIdParamSchema }),
+  async (req, res) => {
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
+    }
+    const revision = await getCurrentRevisionByDocumentId(
+      req.params.documentId,
+    );
+    if (!revision) {
+      throw new HttpNotFound("Revision not found");
+    }
+    res.status(200).json(revision);
   },
 );
 

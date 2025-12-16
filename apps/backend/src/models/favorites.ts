@@ -22,7 +22,6 @@ export const favoritesTable = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date())
       .$onUpdateFn(() => new Date()),
-    deletedAt: integer("deleted_at", { mode: "timestamp_ms" }),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade", onUpdate: "cascade" }),

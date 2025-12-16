@@ -1,18 +1,18 @@
-import { eq, and, isNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { favoritesTable } from "../models/favorites.js";
 import { DocumentIdParamInput } from "../schemas/favorites.js";
 
 export const addDocumentToFavorites = async (
   userId: string,
-  payload: DocumentIdParamInput,
+  documentId: string,
 ) => {
   const [favorite] = await db
     .insert(favoritesTable)
-    .values({ userId, documentId: payload.documentId })
+    .values({ userId, documentId })
     .onConflictDoUpdate({
       target: [favoritesTable.userId, favoritesTable.documentId],
-      set: { updatedAt: new Date(), deletedAt: null },
+      set: { updatedAt: new Date() },
     })
     .returning({
       id: favoritesTable.id,
@@ -25,25 +25,18 @@ export const addDocumentToFavorites = async (
 
 export const removeDocumentFromFavorites = async (
   userId: string,
-  payload: DocumentIdParamInput,
+  documentId: string,
 ) => {
-  const [deleted] = await db
-    .update(favoritesTable)
-    .set({ deletedAt: new Date() })
+  const result = await db
+    .delete(favoritesTable)
     .where(
       and(
         eq(favoritesTable.userId, userId),
-        eq(favoritesTable.documentId, payload.documentId),
-        isNull(favoritesTable.deletedAt),
+        eq(favoritesTable.documentId, documentId),
       ),
-    )
-    .returning({
-      id: favoritesTable.id,
-      documentId: favoritesTable.documentId,
-      userId: favoritesTable.userId,
-    });
+    );
 
-  return deleted ?? null;
+  return result;
 };
 
 /**

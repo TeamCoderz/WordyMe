@@ -3,8 +3,12 @@ import morgan from "morgan";
 import cors from "cors";
 import { toNodeHandler } from "better-auth/node";
 import { auth } from "./lib/auth.js";
-import { documentsRouter } from "./routes/documents.js";
+
+// Error Middlewares
 import { errorHandler, notFoundHandler } from "./middlewares/errors.js";
+
+// REST Routers
+import { documentsRouter } from "./routes/documents.js";
 import { revisionsRouter } from "./routes/revisions.js";
 import { editorSettingsRouter } from "./routes/editor-settings.js";
 import { favoritesRouter } from "./routes/favorites.js";

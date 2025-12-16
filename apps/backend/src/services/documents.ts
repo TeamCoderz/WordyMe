@@ -35,10 +35,7 @@ export const getDocumentDetails = async (
         where: eq(documentViewsTable.userId, userId),
       },
       favorites: {
-        where: and(
-          eq(favoritesTable.userId, userId),
-          isNull(favoritesTable.deletedAt),
-        ),
+        where: eq(favoritesTable.userId, userId)
       },
     },
   });
@@ -65,7 +62,6 @@ export const getUserDocuments = async (userId: string) => {
       and(
         eq(favoritesTable.documentId, documentsTable.id),
         eq(favoritesTable.userId, userId),
-        isNull(favoritesTable.deletedAt),
       ),
     )
     .leftJoin(

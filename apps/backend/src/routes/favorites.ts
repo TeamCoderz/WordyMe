@@ -19,9 +19,7 @@ router.post(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound("Document not found");
     }
-    const favorite = await addDocumentToFavorites(req.user!.id, {
-      documentId: req.params.documentId,
-    });
+    const favorite = await addDocumentToFavorites(req.user!.id, req.params.documentId);
     res.status(201).json(favorite);
   },
 );
@@ -34,12 +32,7 @@ router.delete(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound("Document not found");
     }
-    const deleted = await removeDocumentFromFavorites(req.user!.id, {
-      documentId: req.params.documentId,
-    });
-    if (!deleted) {
-      throw new HttpNotFound("Favorite not found");
-    }
+    await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();
   },
 );

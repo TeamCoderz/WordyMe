@@ -1,21 +1,17 @@
 import { Router } from "express";
 import validate from "../middlewares/validate.js";
 import { requireAuth } from "../middlewares/auth.js";
-import { HttpNotFound } from "@httpx/exception";
-import { updateEditorSettings } from "../services/editor-settings.js";
-import { updateEditorSettingsSchema } from "../schemas/editor-settings.js";
+import { editorSettingsSchema } from "../schemas/editor-settings.js";
+import { setEditorSettings } from "../services/editor-settings.js";
 
 const router: Router = Router();
 
 router.patch(
   "/",
   requireAuth,
-  validate({ body: updateEditorSettingsSchema }),
+  validate({ body: editorSettingsSchema }),
   async (req, res) => {
-    const updated = await updateEditorSettings(req.user!.id, req.body);
-    if (!updated) {
-      throw new HttpNotFound("Editor settings not found for this user");
-    }
+    const updated = await setEditorSettings(req.user!.id, req.body);
     res.status(200).json(updated);
   },
 );

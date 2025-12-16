@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { users } from "./auth.js";
 import { documentsTable } from "./documents.js";
 import { relations } from "drizzle-orm";
@@ -24,7 +24,9 @@ export const documentViewsTable = sqliteTable("document_views", {
       onDelete: "cascade",
       onUpdate: "cascade",
     }),
-});
+}, (table) => [
+  uniqueIndex('document_views_user_document_index').on(table.userId, table.documentId)
+]);
 
 export const documentViewsRelations = relations(
   documentViewsTable,
