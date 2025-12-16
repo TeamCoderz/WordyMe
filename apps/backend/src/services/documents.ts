@@ -84,14 +84,16 @@ export const createDocument = async (
   if (await checkExistingDocumentHandle(handle)) {
     handle = appendUniqueSuffix(handle);
   }
-  return await db
-    .insert(documentsTable)
-    .values({
-      ...payload,
-      handle,
-      userId,
-    })
-    .returning();
+  return (
+    await db
+      .insert(documentsTable)
+      .values({
+        ...payload,
+        handle,
+        userId,
+      })
+      .returning()
+  )[0];
 };
 
 export const updateDocument = async (

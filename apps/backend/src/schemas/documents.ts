@@ -34,3 +34,20 @@ export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
 export const updateDocumentSchema = createDocumentSchema.partial();
 
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
+
+export type PlainDocument = {
+  id: string;
+  name: string;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: string;
+  handle: string;
+  icon: string | null;
+  position: string | null;
+  currentRevisionId: string | null;
+  parentId: string | null;
+  documentType: "space" | "folder" | "note";
+  spaceId: string | null;
+  isContainer: boolean;
+  clientId: string | null;
+};

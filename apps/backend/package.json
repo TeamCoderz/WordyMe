@@ -12,7 +12,7 @@
     "drizzle-kit": "bun node_modules/drizzle-kit/bin.cjs"
   },
   "exports": {
-    "./schemas/*": "./src/schemas/*"
+    "./*": "./src/schemas/*"
   },
   "type": "module",
   "keywords": [],

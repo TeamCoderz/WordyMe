@@ -1,0 +1,28 @@
+{
+  "name": "sdk",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "exports": {
+    "./*": "./src/app/*",
+    "./auth": "./src/auth/index.ts"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/backend": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "^9.39.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "axios": "^1.13.2",
+    "better-auth": "^1.4.5"
+  }
+}
