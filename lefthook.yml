@@ -21,3 +21,4 @@ pre-commit:
   jobs:
     - name: format
       run: pnpm format {staged_files}
+      stage_fixed: true
