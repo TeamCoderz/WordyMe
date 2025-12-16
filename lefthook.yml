@@ -21,4 +21,5 @@ pre-commit:
   jobs:
     - name: format
       run: pnpm format {staged_files}
+      glob: "**/*.{ts,tsx,js,jsx,json,md,yml,yaml}"
       stage_fixed: true
