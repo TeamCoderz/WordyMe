@@ -1,8 +1,6 @@
 import { db } from "../lib/db.js";
 import { editorSettingsTable } from "../models/editor-settings.js";
-import {
-  EditorSettingsInput,
-} from "../schemas/editor-settings.js";
+import { EditorSettingsInput } from "../schemas/editor-settings.js";
 
 export const setEditorSettings = async (
   userId: string,
@@ -19,4 +17,3 @@ export const setEditorSettings = async (
 
   return created;
 };
-

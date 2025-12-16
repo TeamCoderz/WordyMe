@@ -35,7 +35,7 @@ export const getDocumentDetails = async (
         where: eq(documentViewsTable.userId, userId),
       },
       favorites: {
-        where: eq(favoritesTable.userId, userId)
+        where: eq(favoritesTable.userId, userId),
       },
     },
   });

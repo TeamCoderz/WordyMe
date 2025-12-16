@@ -16,7 +16,10 @@ import {
 } from "../services/documents.js";
 import { userHasDocument } from "../services/access.js";
 import { HttpNotFound } from "@httpx/exception";
-import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from "../services/revisions.js";
+import {
+  getCurrentRevisionByDocumentId,
+  getRevisionsByDocumentId,
+} from "../services/revisions.js";
 
 const router: Router = Router();
 
