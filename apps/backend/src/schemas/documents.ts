@@ -35,7 +35,7 @@ export const updateDocumentSchema = createDocumentSchema.partial();
 
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
 
-export type PlainDocument = {
+export type DocumentDetails = {
   id: string;
   name: string;
   createdAt: Date;
@@ -49,5 +49,28 @@ export type PlainDocument = {
   documentType: "space" | "folder" | "note";
   spaceId: string | null;
   isContainer: boolean;
-  clientId: string | null;
+  currentRevision: {
+    documentId: string;
+    revisionId: string;
+    revisionName: string | null;
+    text: string;
+    checksum: string | null;
+  } | null;
+  views: {
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    lastViewedAt: Date | null;
+  }[];
+  favorites: {
+    userId: string;
+    createdAt: Date;
+  }[];
+  isFavorite: boolean;
+  lastViewedAt: Date | null;
 };
+
+export type PlainDocument = Omit<
+  DocumentDetails,
+  "currentRevision" | "views" | "favorites" | "isFavorite" | "lastViewedAt"
+>;

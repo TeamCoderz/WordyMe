@@ -19,3 +19,18 @@ export const revisionIdParamSchema = z.object({
 
 export type CreateRevisionInput = z.infer<typeof createRevisionSchema>;
 export type UpdateRevisionName = z.infer<typeof updateRevisionInput>;
+
+export type RevisionDetails = {
+  id: string;
+  createdAt: Date;
+  updatedAt: Date;
+  documentId: string;
+  userId: string;
+  content: string;
+  url: string;
+  revisionName: string | null;
+  text: string;
+  checksum: string | null;
+};
+
+export type PlainRevision = Omit<RevisionDetails, "url">;

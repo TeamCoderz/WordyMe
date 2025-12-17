@@ -19,7 +19,7 @@ export const readRevisionContent = async (revisionId: string) => {
 
 export const saveRevisionContent = async (
   content: string,
-  revisionId: string,
+  revisionId: string
 ) => {
   const physicalPath = resolvePhysicalPath(getRevisionContentUrl(revisionId));
   await mkdir(dirname(physicalPath), { recursive: true });
