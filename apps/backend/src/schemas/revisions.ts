@@ -33,4 +33,4 @@ export type RevisionDetails = {
   checksum: string | null;
 };
 
-export type PlainRevision = Omit<RevisionDetails, "url">;
+export type PlainRevision = Omit<RevisionDetails, "content">;

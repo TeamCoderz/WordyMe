@@ -1,7 +1,6 @@
 import { eq, and } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { favoritesTable } from "../models/favorites.js";
-import { DocumentIdParamInput } from "../schemas/favorites.js";
 
 export const addDocumentToFavorites = async (
   userId: string,

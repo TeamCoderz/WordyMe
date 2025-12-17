@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { documentsTable } from "./documents.js";
-import { relations, sql } from "drizzle-orm";
+import { relations } from "drizzle-orm";
 import { users } from "./auth.js";
 
 export const revisionsTable = sqliteTable("revisions", {
