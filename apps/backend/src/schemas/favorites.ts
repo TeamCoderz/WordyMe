@@ -5,3 +5,9 @@ export const documentIdParamSchema = z.object({
 });
 
 export type DocumentIdParamInput = z.infer<typeof documentIdParamSchema>;
+
+export type Favorite = {
+  id: string;
+  documentId: string;
+  userId: string;
+};
