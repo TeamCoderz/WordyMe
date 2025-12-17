@@ -1,4 +1,4 @@
-import { and, count, eq, getTableColumns, gt, isNull, max } from "drizzle-orm";
+import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {

@@ -6,3 +6,11 @@ export const editorSettingsSchema = z.object({
 });
 
 export type EditorSettingsInput = z.infer<typeof editorSettingsSchema>;
+
+export type EditorSettings = {
+  id: string;
+  createdAt: Date;
+  userId: string;
+  keepPreviousRevision: boolean;
+  autosave: boolean;
+};
