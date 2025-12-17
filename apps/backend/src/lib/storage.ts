@@ -9,5 +9,12 @@ export const resolvePhysicalPath = (relativePath: string) => {
   ) {
     relativePath = relativePath.replace(/^\/?storage\/?/, "");
   }
-  return path.join(STORAGE_DIR, relativePath);
+
+  const resolvedPath = path.resolve(STORAGE_DIR, relativePath);
+
+  if (!resolvedPath.startsWith(path.resolve(STORAGE_DIR))) {
+    throw new Error(`Path traversal detected: ${relativePath}`);
+  }
+
+  return resolvedPath;
 };
