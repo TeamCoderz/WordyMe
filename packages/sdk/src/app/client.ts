@@ -5,6 +5,10 @@ export const client = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL + "/api",
 });
 
+const storageClient = axios.create({
+  baseURL: import.meta.env.VITE_BACKEND_URL,
+});
+
 // Graceful Axios Functions without throwing errors
 export const get = async <T>(url: string) => {
   try {
@@ -39,5 +43,17 @@ export const del = async (url: string) => {
     return { error: null };
   } catch (error) {
     return { error: error as AxiosError<HttpException> };
+  }
+};
+
+export const getFile = async (
+  url: string,
+  responseType: "text" | "blob" = "text"
+) => {
+  try {
+    const response = await storageClient.get(url, { responseType });
+    return { data: response.data, error: null };
+  } catch (error) {
+    return { data: null, error: error as AxiosError<HttpException> };
   }
 };
