@@ -1,4 +1,4 @@
-import { eq, ilike } from "drizzle-orm";
+import { asc, desc, eq, ilike } from "drizzle-orm";
 import { SQLiteColumn, SQLiteSelect } from "drizzle-orm/sqlite-core";
 import { PaginationQuery } from "../schemas/pagination.js";
 
@@ -20,6 +20,12 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     if (searchTerm !== undefined) {
       this.query = this.query.where(ilike(column, `%${searchTerm}%`));
     }
+    return this;
+  }
+
+  order(column: SQLiteColumn, direction: "asc" | "desc" = "asc") {
+    const dirFn = direction === "asc" ? asc : desc;
+    this.query = this.query.orderBy(dirFn(column));
     return this;
   }
 
