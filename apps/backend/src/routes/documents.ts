@@ -33,6 +33,14 @@ router.post(
   requireAuth,
   validate({ body: createDocumentSchema }),
   async (req, res) => {
+    const { parentId, spaceId } = req.body;
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound("Parent document not found");
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound("Space document not found");
+    }
+
     const document = await createDocument(req.body, req.user!.id);
     res.status(201).json(document);
   },
@@ -72,6 +80,15 @@ router.patch(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound("Document not found");
     }
+
+    const { parentId, spaceId } = req.body;
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound("Parent document not found");
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound("Space document not found");
+    }
+
     const updatedDocument = await updateDocument(
       req.params.documentId,
       req.body,
