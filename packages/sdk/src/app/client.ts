@@ -6,7 +6,7 @@ export const client = axios.create({
 });
 
 const storageClient = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL,
+  baseURL: import.meta.env.VITE_BACKEND_URL + "/storage",
 });
 
 // Graceful Axios Functions without throwing errors
@@ -48,7 +48,7 @@ export const del = async (url: string) => {
 
 export const getFile = async (
   url: string,
-  responseType: "text" | "blob" = "text"
+  responseType: "text" | "blob" = "text",
 ) => {
   try {
     const response = await storageClient.get(url, { responseType });
