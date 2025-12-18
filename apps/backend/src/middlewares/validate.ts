@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { z, ZodType } from "zod";
 
-export default function validate<
+export function validate<
   B extends ZodType,
   Q extends ZodType,
   P extends ZodType,

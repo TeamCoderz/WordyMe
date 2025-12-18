@@ -1,5 +1,4 @@
 import { Router } from "express";
-import validate from "../middlewares/validate.js";
 import {
   createDocumentSchema,
   documentHandleParamSchema,
@@ -7,6 +6,7 @@ import {
   updateDocumentSchema,
 } from "../schemas/documents.js";
 import { requireAuth } from "../middlewares/auth.js";
+import { validate } from "../middlewares/validate.js";
 import {
   createDocument,
   deleteDocument,

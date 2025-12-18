@@ -1,7 +1,7 @@
 import { Router } from "express";
 import formidable from "formidable";
 import { requireAuth } from "../middlewares/auth.js";
-import validate from "../middlewares/validate.js";
+import { validate } from "../middlewares/validate.js";
 import { revisionIdParamSchema } from "../schemas/revisions.js";
 import { userHasDocument, userHasRevision } from "../services/access.js";
 import { HttpNotFound, HttpUnprocessableEntity } from "@httpx/exception";

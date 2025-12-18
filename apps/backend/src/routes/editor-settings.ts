@@ -1,5 +1,5 @@
 import { Router } from "express";
-import validate from "../middlewares/validate.js";
+import { validate } from "../middlewares/validate.js";
 import { requireAuth } from "../middlewares/auth.js";
 import { editorSettingsSchema } from "../schemas/editor-settings.js";
 import { setEditorSettings } from "../services/editor-settings.js";
