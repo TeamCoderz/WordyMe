@@ -9,16 +9,31 @@ export const createRevisionSchema = z.object({
   makeCurrentRevision: z.boolean().optional(),
 });
 
-export const updateRevisionInput = createRevisionSchema.pick({
-  revisionName: true,
+export const updateRevisionNameSchema = z.object({
+  revisionName: z.string().min(1, "New name is required"),
+  content: z.undefined().optional(),
 });
+
+export const updateRevisionContentSchema = z.object({
+  text: z.string().min(1, "Text is required"),
+  content: z.string().min(1, "Revision Content is required"),
+  checksum: z.string().optional(),
+});
+
+export const updateRevisionSchema = updateRevisionNameSchema.or(
+  updateRevisionContentSchema,
+);
 
 export const revisionIdParamSchema = z.object({
   revisionId: z.uuid("Invalid revision ID"),
 });
 
 export type CreateRevisionInput = z.infer<typeof createRevisionSchema>;
-export type UpdateRevisionName = z.infer<typeof updateRevisionInput>;
+export type UpdateRevisionNameInput = z.infer<typeof updateRevisionNameSchema>;
+export type UpdateRevisionContentInput = z.infer<
+  typeof updateRevisionContentSchema
+>;
+export type UpdateRevisionInput = z.infer<typeof updateRevisionSchema>;
 
 export type RevisionDetails = {
   id: string;

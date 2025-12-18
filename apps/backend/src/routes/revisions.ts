@@ -3,7 +3,7 @@ import validate from "../middlewares/validate.js";
 import { requireAuth } from "../middlewares/auth.js";
 import {
   createRevisionSchema,
-  updateRevisionInput,
+  updateRevisionSchema,
   revisionIdParamSchema,
 } from "../schemas/revisions.js";
 import {
@@ -46,7 +46,7 @@ router.get(
 router.patch(
   "/:revisionId",
   requireAuth,
-  validate({ body: updateRevisionInput, params: revisionIdParamSchema }),
+  validate({ body: updateRevisionSchema, params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
       throw new HttpNotFound("Revision not found");

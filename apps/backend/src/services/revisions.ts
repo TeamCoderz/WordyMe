@@ -3,7 +3,7 @@ import { db } from "../lib/db.js";
 import { revisionsTable } from "../models/revisions.js";
 import {
   CreateRevisionInput,
-  UpdateRevisionName,
+  UpdateRevisionInput,
 } from "../schemas/revisions.js";
 import { documentsTable } from "../models/documents.js";
 import {
@@ -102,13 +102,16 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
 
 export const updateRevisionName = async (
   revisionId: string,
-  payload: UpdateRevisionName,
+  payload: UpdateRevisionInput,
 ) => {
   const [updatedRevision] = await db
     .update(revisionsTable)
     .set(payload)
     .where(eq(revisionsTable.id, revisionId))
     .returning();
+  if (payload.content) {
+    await saveRevisionContent(payload.content, revisionId);
+  }
   return updatedRevision
     ? { ...updatedRevision, url: getRevisionContentUrl(updatedRevision.id) }
     : null;
