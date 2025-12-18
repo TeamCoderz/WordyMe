@@ -12,7 +12,7 @@ export const createDocument = async (data: CreateDocumentInput) => {
 };
 
 export const getUserDocuments = async () => {
-  return await get<PlainDocument[]>("/documents");  
+  return await get<PlainDocument[]>("/documents");
 };
 
 export const getDocumentById = async (documentId: string) => {
@@ -25,7 +25,7 @@ export const getDocumentByHandle = async (handle: string) => {
 
 export const updateDocument = async (
   documentId: string,
-  data: UpdateDocumentInput
+  data: UpdateDocumentInput,
 ) => {
   return await patch<PlainDocument>(`/documents/${documentId}`, data);
 };
@@ -36,7 +36,7 @@ export const deleteDocument = async (documentId: string) => {
 
 export const getCurrentRevisionByDocumentId = async (documentId: string) => {
   return await get<RevisionDetails>(
-    `/documents/${documentId}/revisions/current`
+    `/documents/${documentId}/revisions/current`,
   );
 };
 

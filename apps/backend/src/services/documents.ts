@@ -20,14 +20,14 @@ export const checkExistingDocumentHandle = async (handle: string) => {
 
 export const getDocumentDetails = async (
   { documentId, handle }: DocumentIdentifier,
-  userId: string
+  userId: string,
 ) => {
   const document = await db.query.documentsTable.findFirst({
     where: and(
       documentId
         ? eq(documentsTable.id, documentId)
         : eq(documentsTable.handle, handle!),
-      eq(documentsTable.userId, userId)
+      eq(documentsTable.userId, userId),
     ),
     with: {
       currentRevision: true,
@@ -61,15 +61,15 @@ export const getUserDocuments = async (userId: string) => {
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId)
-      )
+        eq(favoritesTable.userId, userId),
+      ),
     )
     .leftJoin(
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId)
-      )
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id);
@@ -78,7 +78,7 @@ export const getUserDocuments = async (userId: string) => {
 
 export const createDocument = async (
   payload: CreateDocumentInput,
-  userId: string
+  userId: string,
 ) => {
   let handle = slugify(payload.name);
   if (await checkExistingDocumentHandle(handle)) {
@@ -98,7 +98,7 @@ export const createDocument = async (
 
 export const updateDocument = async (
   documentId: string,
-  payload: UpdateDocumentInput
+  payload: UpdateDocumentInput,
 ) => {
   let handle;
   if (payload.name) {

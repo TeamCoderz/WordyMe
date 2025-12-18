@@ -16,7 +16,7 @@ export const getRevisionById = async (revisionId: string) => {
 
 export const updateRevision = async (
   revisionId: string,
-  data: UpdateRevisionName
+  data: UpdateRevisionName,
 ) => {
   return await patch<PlainRevision>(`/revisions/${revisionId}`, data);
 };

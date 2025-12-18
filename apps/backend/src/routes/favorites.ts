@@ -21,10 +21,10 @@ router.post(
     }
     const favorite = await addDocumentToFavorites(
       req.user!.id,
-      req.params.documentId
+      req.params.documentId,
     );
     res.status(201).json(favorite);
-  }
+  },
 );
 
 router.delete(
@@ -37,7 +37,7 @@ router.delete(
     }
     await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();
-  }
+  },
 );
 
 export { router as favoritesRouter };

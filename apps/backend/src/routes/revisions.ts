@@ -27,7 +27,7 @@ router.post(
     }
     const revision = await createRevision(req.body, req.user!.id);
     res.status(201).json(revision);
-  }
+  },
 );
 
 router.get(
@@ -40,7 +40,7 @@ router.get(
     }
     const revision = await getRevisionById(req.params.revisionId);
     res.status(200).json(revision);
-  }
+  },
 );
 
 router.patch(
@@ -53,10 +53,10 @@ router.patch(
     }
     const updatedRevision = await updateRevisionName(
       req.params.revisionId,
-      req.body
+      req.body,
     );
     res.status(200).json(updatedRevision);
-  }
+  },
 );
 
 router.delete(
@@ -69,7 +69,7 @@ router.delete(
     }
     await deleteRevisionById(req.params.revisionId);
     res.status(204).send();
-  }
+  },
 );
 
 export { router as revisionsRouter };
