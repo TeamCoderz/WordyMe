@@ -29,11 +29,11 @@ export const createDocumentSchema = z.object({
   isContainer: z.boolean().optional(),
 });
 
-export type CreateDocumentInput = z.infer<typeof createDocumentSchema>;
+export type CreateDocumentInput = z.output<typeof createDocumentSchema>;
 
 export const updateDocumentSchema = createDocumentSchema.partial();
 
-export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>;
+export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 
 export type DocumentDetails = {
   id: string;

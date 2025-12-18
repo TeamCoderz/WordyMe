@@ -5,7 +5,7 @@ export const editorSettingsSchema = z.object({
   autosave: z.boolean().optional(),
 });
 
-export type EditorSettingsInput = z.infer<typeof editorSettingsSchema>;
+export type EditorSettingsInput = z.output<typeof editorSettingsSchema>;
 
 export type EditorSettings = {
   id: string;

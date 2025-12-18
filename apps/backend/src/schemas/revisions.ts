@@ -28,12 +28,12 @@ export const revisionIdParamSchema = z.object({
   revisionId: z.uuid("Invalid revision ID"),
 });
 
-export type CreateRevisionInput = z.infer<typeof createRevisionSchema>;
-export type UpdateRevisionNameInput = z.infer<typeof updateRevisionNameSchema>;
-export type UpdateRevisionContentInput = z.infer<
+export type CreateRevisionInput = z.output<typeof createRevisionSchema>;
+export type UpdateRevisionNameInput = z.output<typeof updateRevisionNameSchema>;
+export type UpdateRevisionContentInput = z.output<
   typeof updateRevisionContentSchema
 >;
-export type UpdateRevisionInput = z.infer<typeof updateRevisionSchema>;
+export type UpdateRevisionInput = z.output<typeof updateRevisionSchema>;
 
 export type RevisionDetails = {
   id: string;
