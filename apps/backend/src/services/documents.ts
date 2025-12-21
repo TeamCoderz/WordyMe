@@ -1,4 +1,12 @@
-import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
+import {
+  and,
+  count,
+  countDistinct,
+  eq,
+  getTableColumns,
+  gt,
+  max,
+} from "drizzle-orm";
 import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
@@ -116,7 +124,7 @@ export const getLastViewedDocuments = async (
     .$dynamic();
 
   const countQuery = db
-    .select({ count: count(documentsTable.id).as("count") })
+    .select({ count: countDistinct(documentsTable.id).as("count") })
     .from(documentsTable)
     .innerJoin(
       documentViewsTable,

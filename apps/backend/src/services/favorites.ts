@@ -1,4 +1,12 @@
-import { eq, and, count, getTableColumns, gt, max } from "drizzle-orm";
+import {
+  eq,
+  and,
+  count,
+  countDistinct,
+  getTableColumns,
+  gt,
+  max,
+} from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { favoritesTable } from "../models/favorites.js";
 import { documentsTable } from "../models/documents.js";
@@ -74,9 +82,16 @@ export const listFavorites = async (
     .$dynamic();
 
   const countQuery = db
-    .select({ count: count(favoritesTable.id).as("count") })
-    .from(favoritesTable)
-    .where(eq(favoritesTable.userId, userId))
+    .select({ count: countDistinct(documentsTable.id).as("count") })
+    .from(documentsTable)
+    .innerJoin(
+      favoritesTable,
+      and(
+        eq(favoritesTable.documentId, documentsTable.id),
+        eq(favoritesTable.userId, userId)
+      )
+    )
+    .where(eq(documentsTable.userId, userId))
     .$dynamic();
 
   const orderByColumn = orderByColumns[filters.orderBy ?? "createdAt"];
