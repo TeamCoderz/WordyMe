@@ -1,4 +1,13 @@
-import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
+import {
+  and,
+  count,
+  desc,
+  eq,
+  getTableColumns,
+  gt,
+  isNotNull,
+  max,
+} from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
@@ -9,6 +18,8 @@ import {
 import { appendUniqueSuffix, slugify } from "../utils/strings.js";
 import { documentViewsTable } from "../models/document-views.js";
 import { favoritesTable } from "../models/favorites.js";
+import { PaginationQuery } from "../schemas/pagination.js";
+import { PaginatedCollectionQuery } from "../utils/collections.js";
 
 export const checkExistingDocumentHandle = async (handle: string) => {
   const result = await db
@@ -20,14 +31,14 @@ export const checkExistingDocumentHandle = async (handle: string) => {
 
 export const getDocumentDetails = async (
   { documentId, handle }: DocumentIdentifier,
-  userId: string,
+  userId: string
 ) => {
   const document = await db.query.documentsTable.findFirst({
     where: and(
       documentId
         ? eq(documentsTable.id, documentId)
         : eq(documentsTable.handle, handle!),
-      eq(documentsTable.userId, userId),
+      eq(documentsTable.userId, userId)
     ),
     with: {
       currentRevision: true,
@@ -61,24 +72,84 @@ export const getUserDocuments = async (userId: string) => {
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId),
-      ),
+        eq(favoritesTable.userId, userId)
+      )
     )
     .leftJoin(
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId),
-      ),
+        eq(documentViewsTable.userId, userId)
+      )
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id);
   return documents;
 };
 
+export const getLastViewedDocuments = async (
+  userId: string,
+  pagination: PaginationQuery
+) => {
+  const baseQuery = db
+    .select({
+      ...getTableColumns(documentsTable),
+      isFavorite: gt(count(favoritesTable.id), 0),
+      lastViewedAt: max(documentViewsTable.lastViewedAt),
+    })
+    .from(documentsTable)
+    .innerJoin(
+      documentViewsTable,
+      and(
+        eq(documentViewsTable.documentId, documentsTable.id),
+        eq(documentViewsTable.userId, userId)
+      )
+    )
+    .leftJoin(
+      favoritesTable,
+      and(
+        eq(favoritesTable.documentId, documentsTable.id),
+        eq(favoritesTable.userId, userId)
+      )
+    )
+    .where(
+      and(
+        eq(documentsTable.userId, userId),
+        isNotNull(documentViewsTable.lastViewedAt)
+      )
+    )
+    .groupBy(documentsTable.id)
+    .orderBy(desc(documentViewsTable.lastViewedAt))
+    .$dynamic();
+
+  const countQuery = db
+    .select({ count: count() })
+    .from(documentsTable)
+    .innerJoin(
+      documentViewsTable,
+      and(
+        eq(documentViewsTable.documentId, documentsTable.id),
+        eq(documentViewsTable.userId, userId)
+      )
+    )
+    .where(
+      and(
+        eq(documentsTable.userId, userId),
+        isNotNull(documentViewsTable.lastViewedAt)
+      )
+    )
+    .$dynamic();
+
+  return new PaginatedCollectionQuery(
+    baseQuery,
+    countQuery,
+    pagination
+  ).getPaginatedResult();
+};
+
 export const createDocument = async (
   payload: CreateDocumentInput,
-  userId: string,
+  userId: string
 ) => {
   let handle = slugify(payload.name);
   if (await checkExistingDocumentHandle(handle)) {
@@ -98,7 +169,7 @@ export const createDocument = async (
 
 export const updateDocument = async (
   documentId: string,
-  payload: UpdateDocumentInput,
+  payload: UpdateDocumentInput
 ) => {
   let handle;
   if (payload.name) {

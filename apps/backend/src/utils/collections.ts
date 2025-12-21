@@ -59,14 +59,15 @@ export class PaginatedCollectionQuery<
   search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
       this.countQuery = this.countQuery?.where(
-        ilike(column, `%${searchTerm}%`),
+        ilike(column, `%${searchTerm}%`)
       );
     }
     return super.search(column, searchTerm);
   }
 
   async getPaginatedResult() {
-    const items = await this.query;
+    const offset = (this.page - 1) * this.limit;
+    const items = await this.query.limit(this.limit).offset(offset);
 
     const [{ count: total }] = (await this.countQuery) as { count: number }[];
 
