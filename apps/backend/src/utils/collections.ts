@@ -39,7 +39,7 @@ export class CollectionQuery<Q extends SQLiteSelect> {
 
   order(
     column: SQLiteColumn | undefined,
-    direction: "asc" | "desc" | undefined
+    direction: "asc" | "desc" | undefined,
   ): this {
     if (column) {
       const dirFn = direction === "desc" ? desc : asc;
@@ -78,7 +78,7 @@ export class PaginatedCollectionQuery<
   search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
       this.countQuery = this.countQuery?.where(
-        ilike(column, `%${searchTerm}%`)
+        ilike(column, `%${searchTerm}%`),
       );
     }
     return super.search(column, searchTerm);
@@ -115,4 +115,3 @@ export class PaginatedCollectionQuery<
     };
   }
 }
-

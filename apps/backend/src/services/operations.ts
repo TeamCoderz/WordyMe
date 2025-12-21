@@ -20,7 +20,7 @@ export const copyDocument = async (
   if (!originalDocument) {
     return false;
   }
-  
+
   const newDocument = await createDocument(
     {
       name: payload.name,
