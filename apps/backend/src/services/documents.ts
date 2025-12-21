@@ -20,7 +20,7 @@ import { documentViewsTable } from "../models/document-views.js";
 import { favoritesTable } from "../models/favorites.js";
 import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
 import { PaginatedCollectionQuery } from "../utils/collections.js";
-import { PlainDocument } from "../schemas/documents.js";
+import { DocumentListItem } from "../schemas/documents.js";
 
 export const orderByColumns: Record<string, SQLiteColumn> = {
   name: documentsTable.name,
@@ -67,7 +67,9 @@ export const getDocumentDetails = async (
   };
 };
 
-export const getUserDocuments = async (userId: string) => {
+export const getUserDocuments = async (
+  userId: string
+): Promise<DocumentListItem[]> => {
   const documents = await db
     .select({
       ...getTableColumns(documentsTable),
@@ -91,13 +93,13 @@ export const getUserDocuments = async (userId: string) => {
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id);
-  return documents;
+  return documents as DocumentListItem[];
 };
 
 export const getLastViewedDocuments = async (
   userId: string,
   filters: DocumentFilters
-) => {
+): Promise<PaginatedResult<DocumentListItem>> => {
   const baseQuery = db
     .select({
       ...getTableColumns(documentsTable),
@@ -152,9 +154,7 @@ export const getLastViewedDocuments = async (
     .order(orderByColumn, filters.order ?? "desc")
     .getPaginatedResult();
 
-  return result as PaginatedResult<
-    PlainDocument & { isFavorite: boolean; lastViewedAt: Date | null }
-  >;
+  return result as PaginatedResult<DocumentListItem>;
 };
 
 export const createDocument = async (

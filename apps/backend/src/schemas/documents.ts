@@ -49,20 +49,28 @@ export type DocumentDetails = {
   documentType: "space" | "folder" | "note";
   spaceId: string | null;
   isContainer: boolean;
+  clientId: string | null;
   currentRevision: {
+    id: string;
+    createdAt: Date;
     documentId: string;
-    revisionId: string;
+    userId: string;
     revisionName: string | null;
     text: string;
     checksum: string | null;
+    url?: string;
+    content?: string;
   } | null;
   views?: {
+    id: string;
+    documentId: string;
     userId: string;
     createdAt: Date;
-    updatedAt: Date;
-    lastViewedAt: Date | null;
+    lastViewedAt: Date;
   }[];
   favorites?: {
+    id: string;
+    documentId: string;
     userId: string;
     createdAt: Date;
   }[];
@@ -74,3 +82,8 @@ export type PlainDocument = Omit<
   DocumentDetails,
   "currentRevision" | "views" | "favorites" | "isFavorite" | "lastViewedAt"
 >;
+
+export type DocumentListItem = PlainDocument & {
+  isFavorite: boolean;
+  lastViewedAt: Date | null;
+};

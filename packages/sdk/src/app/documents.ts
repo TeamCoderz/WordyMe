@@ -1,11 +1,15 @@
 import {
   CreateDocumentInput,
   DocumentDetails,
+  DocumentListItem,
   PlainDocument,
   UpdateDocumentInput,
 } from "@repo/backend/documents.js";
 import { PlainRevision, RevisionDetails } from "@repo/backend/revisions.js";
-import { PaginatedResult, DocumentFilters } from "@repo/backend/pagination.js";
+import {
+  PaginatedResult,
+  DocumentFiltersInput,
+} from "@repo/backend/pagination.js";
 import { del, get, patch, post } from "./client.js";
 
 export const createDocument = async (data: CreateDocumentInput) => {
@@ -13,11 +17,13 @@ export const createDocument = async (data: CreateDocumentInput) => {
 };
 
 export const getUserDocuments = async () => {
-  return await get<PlainDocument[]>("/documents");
+  return await get<DocumentListItem[]>("/documents");
 };
 
-export const getLastViewedDocuments = async (filters?: DocumentFilters) => {
-  return await get<PaginatedResult<PlainDocument>>(
+export const getLastViewedDocuments = async (
+  filters?: DocumentFiltersInput
+) => {
+  return await get<PaginatedResult<DocumentListItem>>(
     "/documents/last-viewed",
     filters
   );

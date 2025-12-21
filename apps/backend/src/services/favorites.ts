@@ -14,7 +14,7 @@ import { documentViewsTable } from "../models/document-views.js";
 import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
 import { PaginatedCollectionQuery } from "../utils/collections.js";
 import { orderByColumns } from "./documents.js";
-import { PlainDocument } from "../schemas/documents.js";
+import { DocumentListItem } from "../schemas/documents.js";
 
 export const addDocumentToFavorites = async (
   userId: string,
@@ -55,7 +55,7 @@ export const removeDocumentFromFavorites = async (
 export const listFavorites = async (
   userId: string,
   filters: DocumentFilters
-) => {
+): Promise<PaginatedResult<DocumentListItem>> => {
   const baseQuery = db
     .select({
       ...getTableColumns(documentsTable),
@@ -108,7 +108,5 @@ export const listFavorites = async (
     .order(orderByColumn, filters.order ?? "desc")
     .getPaginatedResult();
 
-  return result as PaginatedResult<
-    PlainDocument & { isFavorite: boolean; lastViewedAt: Date | null }
-  >;
+  return result as PaginatedResult<DocumentListItem>;
 };

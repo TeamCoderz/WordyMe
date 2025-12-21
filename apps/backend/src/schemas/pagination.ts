@@ -19,6 +19,8 @@ export const documentFiltersSchema = paginationQuerySchema.extend({
 
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
 
+export type DocumentFiltersInput = Partial<DocumentFilters>;
+
 export type PaginatedResult<T> = {
   items: T[];
   meta: {
