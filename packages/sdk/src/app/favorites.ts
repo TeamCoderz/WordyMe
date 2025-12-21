@@ -1,9 +1,9 @@
 import { Favorite } from '@repo/backend/favorites.js';
-import { PaginatedResult, DocumentFiltersInput } from '@repo/backend/pagination.js';
+import { PaginatedResult } from '@repo/backend/pagination.js';
 import { post, del, get } from './client.js';
-import { DocumentListItem } from '@repo/backend/documents.js';
+import { DocumentFilters, DocumentListItem } from '@repo/backend/documents.js';
 
-export const getFavorites = async (filters?: DocumentFiltersInput) => {
+export const getFavorites = async (filters?: DocumentFilters) => {
   return await get<PaginatedResult<DocumentListItem>>('/favorites', filters);
 };
 

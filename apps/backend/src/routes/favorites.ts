@@ -6,16 +6,16 @@ import {
   addDocumentToFavorites,
   listFavorites,
   removeDocumentFromFavorites,
-} from "../services/favorites.js";
-import { userHasDocument } from "../services/access.js";
-import { HttpNotFound } from "@httpx/exception";
-import { documentFiltersSchema } from "../schemas/documents.js";
-import { paginationQuerySchema } from "../schemas/pagination.js";
+} from '../services/favorites.js';
+import { userHasDocument } from '../services/access.js';
+import { HttpNotFound } from '@httpx/exception';
+import { documentFiltersSchema } from '../schemas/documents.js';
+import { paginationQuerySchema } from '../schemas/pagination.js';
 
 const router = Router();
 
 router.get(
-  "/",
+  '/',
   validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
   requireAuth,
   async (req, res) => {
@@ -32,12 +32,8 @@ router.post(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound('Document not found');
     }
-    const favorite = await addDocumentToFavorites(
-      req.user!.id,
-      req.params.documentId,
-    );
+    const favorite = await addDocumentToFavorites(req.user!.id, req.params.documentId);
     res.status(201).json(favorite);
-  },
   },
 );
 
@@ -51,7 +47,6 @@ router.delete(
     }
     await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();
-  },
   },
 );
 

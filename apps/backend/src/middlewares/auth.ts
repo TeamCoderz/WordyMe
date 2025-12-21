@@ -1,8 +1,8 @@
-import { NextFunction, Request, RequestHandler, Response } from "express";
-import { auth } from "../lib/auth.js";
-import { fromNodeHeaders } from "better-auth/node";
-import { HttpUnauthorized } from "@httpx/exception";
-import { InferSession, InferUser } from "better-auth";
+import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { auth } from '../lib/auth.js';
+import { fromNodeHeaders } from 'better-auth/node';
+import { HttpUnauthorized } from '@httpx/exception';
+import { InferSession, InferUser } from 'better-auth';
 
 declare global {
   namespace Express {

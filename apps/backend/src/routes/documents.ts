@@ -16,32 +16,24 @@ import {
   getUserDocumentCount,
   getUserDocuments,
   updateDocument,
-} from "../services/documents.js";
-import { userHasDocument } from "../services/access.js";
-import { HttpInternalServerError, HttpNotFound } from "@httpx/exception";
-import {
-  getCurrentRevisionByDocumentId,
-  getRevisionsByDocumentId,
-} from "../services/revisions.js";
-import { copyDocumentSchema } from "../schemas/operations.js";
-import { copyDocument } from "../services/operations.js";
-import { dbWritesQueue } from "../queues/db-writes.js";
-import { paginationQuerySchema } from "../schemas/pagination.js";
+} from '../services/documents.js';
+import { userHasDocument } from '../services/access.js';
+import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
+import { copyDocumentSchema } from '../schemas/operations.js';
+import { copyDocument } from '../services/operations.js';
+import { dbWritesQueue } from '../queues/db-writes.js';
+import { paginationQuerySchema } from '../schemas/pagination.js';
 
 const router: Router = Router();
 
-router.get(
-  "/",
-  validate({ query: documentFiltersSchema }),
-  requireAuth,
-  async (req, res) => {
-    const documents = await getUserDocuments(req.user!.id, req.query);
-    res.status(200).json(documents);
-  },
-);
+router.get('/', validate({ query: documentFiltersSchema }), requireAuth, async (req, res) => {
+  const documents = await getUserDocuments(req.user!.id, req.query);
+  res.status(200).json(documents);
+});
 
 router.get(
-  "/last-viewed",
+  '/last-viewed',
   validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
   requireAuth,
   async (req, res) => {
@@ -59,10 +51,9 @@ router.post('/', requireAuth, validate({ body: createDocumentSchema }), async (r
     throw new HttpNotFound('Space document not found');
   }
 
-    const document = await createDocument(req.body, req.user!.id);
-    res.status(201).json(document);
-  },
-);
+  const document = await createDocument(req.body, req.user!.id);
+  res.status(201).json(document);
+});
 
 router.get(
   '/handle/:handle',
@@ -74,7 +65,6 @@ router.get(
       throw new HttpNotFound('Document not found');
     }
     res.status(200).json(document);
-  },
   },
 );
 
@@ -88,7 +78,6 @@ router.get(
       throw new HttpNotFound('Document not found');
     }
     res.status(200).json(document);
-  },
   },
 );
 
@@ -109,12 +98,8 @@ router.patch(
       throw new HttpNotFound('Space document not found');
     }
 
-    const updatedDocument = await updateDocument(
-      req.params.documentId,
-      req.body,
-    );
+    const updatedDocument = await updateDocument(req.params.documentId, req.body);
     res.status(200).json(updatedDocument);
-  },
   },
 );
 
@@ -138,7 +123,6 @@ router.delete(
     await deleteDocument(req.params.documentId);
     res.status(204).send();
   },
-  },
 );
 
 router.get(
@@ -152,7 +136,6 @@ router.get(
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
   },
-  },
 );
 
 router.get(
@@ -163,14 +146,11 @@ router.get(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound('Document not found');
     }
-    const revision = await getCurrentRevisionByDocumentId(
-      req.params.documentId,
-    );
+    const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
     if (!revision) {
       throw new HttpNotFound('Revision not found');
     }
     res.status(200).json(revision);
-  },
   },
 );
 
@@ -184,13 +164,11 @@ router.post(
     }
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
-      copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
       throw new HttpInternalServerError('Document copy failed');
     }
     res.status(201).json(copiedDocument);
-  },
   },
 );
 
