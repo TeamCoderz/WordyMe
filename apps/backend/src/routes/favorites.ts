@@ -30,7 +30,7 @@ router.post(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     const favorite = await addDocumentToFavorites(req.user!.id, req.params.documentId);
     res.status(201).json(favorite);
@@ -43,7 +43,7 @@ router.delete(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();

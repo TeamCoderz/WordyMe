@@ -20,7 +20,7 @@ router.get(
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpNotFound('Revision not found');
+      throw new HttpNotFound('Revision not found or not accessible');
     }
 
     res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)));
@@ -35,7 +35,7 @@ router.post(
     const { documentId } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
 
     const uploadDir = resolvePhysicalPath(`attachments/${documentId}`);
@@ -52,7 +52,7 @@ router.post(
 
     form.on('fileBegin', (name) => {
       if (name !== 'attachments') {
-        throw new HttpUnprocessableEntity('Unexpected file field');
+        throw new HttpUnprocessableEntity('Invalid upload field; expected "attachments"');
       }
     });
 
@@ -61,7 +61,7 @@ router.post(
     const attachments = files.attachments;
 
     if (!attachments || attachments.length === 0) {
-      throw new HttpUnprocessableEntity('No attachments provided');
+      throw new HttpUnprocessableEntity('No attachment uploaded (expected field: "attachments")');
     }
 
     return res.status(201).json({
@@ -78,7 +78,7 @@ router.get(
     const { documentId, filename } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
 
     res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)));

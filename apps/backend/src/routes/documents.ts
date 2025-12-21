@@ -45,10 +45,10 @@ router.get(
 router.post('/', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-    throw new HttpNotFound('Parent document not found');
+    throw new HttpNotFound('Parent document not found or not accessible');
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-    throw new HttpNotFound('Space document not found');
+    throw new HttpNotFound('Space document not found or not accessible');
   }
 
   const document = await createDocument(req.body, req.user!.id);
@@ -62,7 +62,7 @@ router.get(
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found for the provided handle');
     }
     res.status(200).json(document);
   },
@@ -75,7 +75,7 @@ router.get(
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     res.status(200).json(document);
   },
@@ -87,15 +87,15 @@ router.patch(
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
 
     const { parentId, spaceId } = req.body;
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-      throw new HttpNotFound('Parent document not found');
+      throw new HttpNotFound('Parent document not found or not accessible');
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-      throw new HttpNotFound('Space document not found');
+      throw new HttpNotFound('Space container not found or not accessible');
     }
 
     const updatedDocument = await updateDocument(req.params.documentId, req.body);
@@ -109,7 +109,7 @@ router.delete(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
 
     const documentCount = await getUserDocumentCount(req.user!.id);
@@ -131,7 +131,7 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
@@ -144,11 +144,11 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
     if (!revision) {
-      throw new HttpNotFound('Revision not found');
+      throw new HttpNotFound('No current revision available for this document');
     }
     res.status(200).json(revision);
   },
@@ -160,13 +160,13 @@ router.post(
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
-      throw new HttpInternalServerError('Document copy failed');
+      throw new HttpInternalServerError('Unable to copy document at this time');
     }
     res.status(201).json(copiedDocument);
   },

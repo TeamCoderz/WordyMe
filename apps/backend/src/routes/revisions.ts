@@ -19,7 +19,7 @@ const router: Router = Router();
 
 router.post('/', requireAuth, validate({ body: createRevisionSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.body.documentId))) {
-    throw new HttpNotFound('Document not found');
+    throw new HttpNotFound('Document not found or not accessible');
   }
   const revision = await createRevision(req.body, req.user!.id);
   res.status(201).json(revision);
@@ -31,7 +31,7 @@ router.get(
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpNotFound('Revision not found');
+      throw new HttpNotFound('Revision not found or not accessible');
     }
     const revision = await getRevisionById(req.params.revisionId);
     res.status(200).json(revision);
@@ -44,7 +44,7 @@ router.patch(
   validate({ body: updateRevisionSchema, params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpNotFound('Revision not found');
+      throw new HttpNotFound('Revision not found or not accessible');
     }
     const updatedRevision = await updateRevisionName(req.params.revisionId, req.body);
     res.status(200).json(updatedRevision);
@@ -57,7 +57,7 @@ router.delete(
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpNotFound('Revision not found');
+      throw new HttpNotFound('Revision not found or not accessible');
     }
     await deleteRevisionById(req.params.revisionId);
     res.status(204).send();

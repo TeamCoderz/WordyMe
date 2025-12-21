@@ -1,5 +1,4 @@
 import z from 'zod';
-import { paginationQuerySchema } from './pagination.js';
 
 export const documentIdParamSchema = z.object({
   documentId: z.uuid('Invalid document ID'),
