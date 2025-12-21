@@ -9,15 +9,20 @@ import {
 } from "../services/favorites.js";
 import { userHasDocument } from "../services/access.js";
 import { HttpNotFound } from "@httpx/exception";
-import { documentFiltersSchema } from "../schemas/pagination.js";
+import { documentFiltersSchema } from "../schemas/documents.js";
+import { paginationQuerySchema } from "../schemas/pagination.js";
 
 const router = Router();
 
-router.get("/", requireAuth, async (req, res) => {
-  const filters = documentFiltersSchema.parse(req.query);
-  const result = await listFavorites(req.user!.id, filters);
-  res.status(200).json(result);
-});
+router.get(
+  "/",
+  validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
+  requireAuth,
+  async (req, res) => {
+    const result = await listFavorites(req.user!.id, req.query);
+    res.status(200).json(result);
+  },
+);
 
 router.post(
   "/:documentId",
@@ -29,10 +34,10 @@ router.post(
     }
     const favorite = await addDocumentToFavorites(
       req.user!.id,
-      req.params.documentId
+      req.params.documentId,
     );
     res.status(201).json(favorite);
-  }
+  },
 );
 
 router.delete(
@@ -45,7 +50,7 @@ router.delete(
     }
     await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();
-  }
+  },
 );
 
 export { router as favoritesRouter };

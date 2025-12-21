@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createDocumentSchema,
+  documentFiltersSchema,
   documentHandleParamSchema,
   documentIdParamSchema,
   updateDocumentSchema,
@@ -24,20 +25,29 @@ import {
 import { copyDocumentSchema } from "../schemas/operations.js";
 import { copyDocument } from "../services/operations.js";
 import { dbWritesQueue } from "../queues/db-writes.js";
-import { documentFiltersSchema } from "../schemas/pagination.js";
+import { paginationQuerySchema } from "../schemas/pagination.js";
 
 const router: Router = Router();
 
-router.get("/", requireAuth, async (req, res) => {
-  const documents = await getUserDocuments(req.user!.id);
-  res.status(200).json(documents);
-});
+router.get(
+  "/",
+  validate({ query: documentFiltersSchema }),
+  requireAuth,
+  async (req, res) => {
+    const documents = await getUserDocuments(req.user!.id, req.query);
+    res.status(200).json(documents);
+  },
+);
 
-router.get("/last-viewed", requireAuth, async (req, res) => {
-  const filters = documentFiltersSchema.parse(req.query);
-  const result = await getLastViewedDocuments(req.user!.id, filters);
-  res.status(200).json(result);
-});
+router.get(
+  "/last-viewed",
+  validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
+  requireAuth,
+  async (req, res) => {
+    const result = await getLastViewedDocuments(req.user!.id, req.query);
+    res.status(200).json(result);
+  },
+);
 
 router.post(
   "/",
@@ -54,7 +64,7 @@ router.post(
 
     const document = await createDocument(req.body, req.user!.id);
     res.status(201).json(document);
-  }
+  },
 );
 
 router.get(
@@ -67,7 +77,7 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     res.status(200).json(document);
-  }
+  },
 );
 
 router.get(
@@ -80,7 +90,7 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     res.status(200).json(document);
-  }
+  },
 );
 
 router.patch(
@@ -102,10 +112,10 @@ router.patch(
 
     const updatedDocument = await updateDocument(
       req.params.documentId,
-      req.body
+      req.body,
     );
     res.status(200).json(updatedDocument);
-  }
+  },
 );
 
 router.delete(
@@ -118,7 +128,7 @@ router.delete(
     }
     await deleteDocument(req.params.documentId);
     res.status(204).send();
-  }
+  },
 );
 
 router.get(
@@ -131,7 +141,7 @@ router.get(
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
-  }
+  },
 );
 
 router.get(
@@ -143,13 +153,13 @@ router.get(
       throw new HttpNotFound("Document not found");
     }
     const revision = await getCurrentRevisionByDocumentId(
-      req.params.documentId
+      req.params.documentId,
     );
     if (!revision) {
       throw new HttpNotFound("Revision not found");
     }
     res.status(200).json(revision);
-  }
+  },
 );
 
 router.post(
@@ -161,13 +171,13 @@ router.post(
       throw new HttpNotFound("Document not found");
     }
     const copiedDocument = await dbWritesQueue.add(() =>
-      copyDocument(req.params.documentId, req.body, req.user!.id)
+      copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
       throw new HttpInternalServerError("Document copy failed");
     }
     res.status(201).json(copiedDocument);
-  }
+  },
 );
 
 export { router as documentsRouter };

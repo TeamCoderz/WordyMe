@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import { auth } from "../lib/auth.js";
 import { fromNodeHeaders } from "better-auth/node";
 import { HttpUnauthorized } from "@httpx/exception";
@@ -13,7 +13,11 @@ declare global {
   }
 }
 
-export const requireAuth: RequestHandler = async (req, res, next) => {
+export const requireAuth = async <P, R, B, Q>(
+  req: Request<P, R, B, Q>,
+  res: Response<R>,
+  next: NextFunction,
+) => {
   const headers = fromNodeHeaders(req.headers);
   const session = await auth.api.getSession({ headers });
 

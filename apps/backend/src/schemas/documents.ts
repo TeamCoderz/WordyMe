@@ -1,8 +1,21 @@
 import z from "zod";
+import { paginationQuerySchema } from "./pagination.js";
 
 export const documentIdParamSchema = z.object({
   documentId: z.uuid("Invalid document ID"),
 });
+
+export const documentFiltersSchema = z.object({
+  search: z.string().optional(),
+  documentType: z.enum(["space", "folder", "note"]).optional(),
+  spaceId: z.uuid().optional(),
+  parentId: z.uuid().optional(),
+  orderBy: z.enum(["name", "createdAt", "lastViewedAt"]).optional(),
+  order: z.enum(["asc", "desc"]).optional(),
+  days: z.coerce.number().min(1).optional(),
+});
+
+export type DocumentFilters = z.output<typeof documentFiltersSchema>;
 
 export const documentHandleParamSchema = z.object({
   handle: z.string().min(1, "Handle is required"),

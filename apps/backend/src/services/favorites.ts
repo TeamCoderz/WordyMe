@@ -11,14 +11,14 @@ import { db } from "../lib/db.js";
 import { favoritesTable } from "../models/favorites.js";
 import { documentsTable } from "../models/documents.js";
 import { documentViewsTable } from "../models/document-views.js";
-import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
+import { PaginationQuery } from "../schemas/pagination.js";
 import { PaginatedCollectionQuery } from "../utils/collections.js";
 import { orderByColumns } from "./documents.js";
-import { DocumentListItem } from "../schemas/documents.js";
+import { DocumentFilters, DocumentListItem } from "../schemas/documents.js";
 
 export const addDocumentToFavorites = async (
   userId: string,
-  documentId: string
+  documentId: string,
 ) => {
   const [favorite] = await db
     .insert(favoritesTable)
@@ -38,15 +38,15 @@ export const addDocumentToFavorites = async (
 
 export const removeDocumentFromFavorites = async (
   userId: string,
-  documentId: string
+  documentId: string,
 ) => {
   const result = await db
     .delete(favoritesTable)
     .where(
       and(
         eq(favoritesTable.userId, userId),
-        eq(favoritesTable.documentId, documentId)
-      )
+        eq(favoritesTable.documentId, documentId),
+      ),
     );
 
   return result;
@@ -54,8 +54,8 @@ export const removeDocumentFromFavorites = async (
 
 export const listFavorites = async (
   userId: string,
-  filters: DocumentFilters
-): Promise<PaginatedResult<DocumentListItem>> => {
+  filters: DocumentFilters & PaginationQuery,
+) => {
   const baseQuery = db
     .select({
       ...getTableColumns(documentsTable),
@@ -67,15 +67,15 @@ export const listFavorites = async (
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId)
-      )
+        eq(favoritesTable.userId, userId),
+      ),
     )
     .leftJoin(
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId)
-      )
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
@@ -88,8 +88,8 @@ export const listFavorites = async (
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId)
-      )
+        eq(favoritesTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .$dynamic();
@@ -99,7 +99,7 @@ export const listFavorites = async (
   const result = await new PaginatedCollectionQuery(
     baseQuery,
     countQuery,
-    filters
+    filters,
   )
     .search(documentsTable.name, filters.search)
     .filter(documentsTable.documentType, filters.documentType)
@@ -108,5 +108,5 @@ export const listFavorites = async (
     .order(orderByColumn, filters.order ?? "desc")
     .getPaginatedResult();
 
-  return result as PaginatedResult<DocumentListItem>;
+  return result;
 };

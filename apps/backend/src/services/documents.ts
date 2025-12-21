@@ -12,17 +12,21 @@ import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
   CreateDocumentInput,
+  DocumentFilters,
   DocumentIdentifier,
   UpdateDocumentInput,
 } from "../schemas/documents.js";
 import { appendUniqueSuffix, slugify } from "../utils/strings.js";
 import { documentViewsTable } from "../models/document-views.js";
 import { favoritesTable } from "../models/favorites.js";
-import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
-import { PaginatedCollectionQuery } from "../utils/collections.js";
+import { PaginatedResult, PaginationQuery } from "../schemas/pagination.js";
+import {
+  CollectionQuery,
+  PaginatedCollectionQuery,
+} from "../utils/collections.js";
 import { DocumentListItem } from "../schemas/documents.js";
 
-export const orderByColumns: Record<string, SQLiteColumn> = {
+export const orderByColumns = {
   name: documentsTable.name,
   createdAt: documentsTable.createdAt,
   lastViewedAt: documentViewsTable.lastViewedAt,
@@ -38,14 +42,14 @@ export const checkExistingDocumentHandle = async (handle: string) => {
 
 export const getDocumentDetails = async (
   { documentId, handle }: DocumentIdentifier,
-  userId: string
+  userId: string,
 ) => {
   const document = await db.query.documentsTable.findFirst({
     where: and(
       documentId
         ? eq(documentsTable.id, documentId)
         : eq(documentsTable.handle, handle!),
-      eq(documentsTable.userId, userId)
+      eq(documentsTable.userId, userId),
     ),
     with: {
       currentRevision: true,
@@ -68,9 +72,10 @@ export const getDocumentDetails = async (
 };
 
 export const getUserDocuments = async (
-  userId: string
-): Promise<DocumentListItem[]> => {
-  const documents = await db
+  userId: string,
+  filters: DocumentFilters,
+) => {
+  const query = db
     .select({
       ...getTableColumns(documentsTable),
       isFavorite: gt(count(favoritesTable.id), 0),
@@ -81,25 +86,37 @@ export const getUserDocuments = async (
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId)
-      )
+        eq(favoritesTable.userId, userId),
+      ),
     )
     .leftJoin(
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId)
-      )
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
-    .groupBy(documentsTable.id);
-  return documents as DocumentListItem[];
+    .groupBy(documentsTable.id)
+    .$dynamic();
+
+  return new CollectionQuery(query)
+    .filter(documentsTable.documentType, filters.documentType)
+    .filter(documentsTable.parentId, filters.parentId)
+    .filter(documentsTable.spaceId, filters.spaceId)
+    .search(documentsTable.name, filters.search)
+    .lastNDays(documentsTable.createdAt, filters.days)
+    .order(
+      orderByColumns[filters.orderBy ?? "createdAt"],
+      filters.order ?? "desc",
+    )
+    .getResult();
 };
 
 export const getLastViewedDocuments = async (
   userId: string,
-  filters: DocumentFilters
-): Promise<PaginatedResult<DocumentListItem>> => {
+  filters: DocumentFilters & PaginationQuery,
+) => {
   const baseQuery = db
     .select({
       ...getTableColumns(documentsTable),
@@ -111,15 +128,15 @@ export const getLastViewedDocuments = async (
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId)
-      )
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .leftJoin(
       favoritesTable,
       and(
         eq(favoritesTable.documentId, documentsTable.id),
-        eq(favoritesTable.userId, userId)
-      )
+        eq(favoritesTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
@@ -132,8 +149,8 @@ export const getLastViewedDocuments = async (
       documentViewsTable,
       and(
         eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId)
-      )
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .$dynamic();
@@ -143,7 +160,7 @@ export const getLastViewedDocuments = async (
   const result = await new PaginatedCollectionQuery(
     baseQuery,
     countQuery,
-    filters
+    filters,
   )
     .notNull(documentViewsTable.lastViewedAt)
     .lastNDays(documentViewsTable.lastViewedAt, filters.days)
@@ -159,7 +176,7 @@ export const getLastViewedDocuments = async (
 
 export const createDocument = async (
   payload: CreateDocumentInput,
-  userId: string
+  userId: string,
 ) => {
   let handle = slugify(payload.name);
   if (await checkExistingDocumentHandle(handle)) {
@@ -179,7 +196,7 @@ export const createDocument = async (
 
 export const updateDocument = async (
   documentId: string,
-  payload: UpdateDocumentInput
+  payload: UpdateDocumentInput,
 ) => {
   let handle;
   if (payload.name) {

@@ -7,20 +7,6 @@ export const paginationQuerySchema = z.object({
 
 export type PaginationQuery = z.output<typeof paginationQuerySchema>;
 
-export const documentFiltersSchema = paginationQuerySchema.extend({
-  search: z.string().optional(),
-  documentType: z.enum(["space", "folder", "note"]).optional(),
-  spaceId: z.uuid().optional(),
-  parentId: z.uuid().optional(),
-  orderBy: z.enum(["name", "createdAt", "lastViewedAt"]).optional(),
-  order: z.enum(["asc", "desc"]).optional(),
-  days: z.coerce.number().min(1).optional(),
-});
-
-export type DocumentFilters = z.output<typeof documentFiltersSchema>;
-
-export type DocumentFiltersInput = Partial<DocumentFilters>;
-
 export type PaginatedResult<T> = {
   items: T[];
   meta: {
