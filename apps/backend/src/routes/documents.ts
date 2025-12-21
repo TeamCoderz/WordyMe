@@ -22,6 +22,7 @@ import {
 } from "../services/revisions.js";
 import { copyDocumentSchema } from "../schemas/operations.js";
 import { copyDocument } from "../services/operations.js";
+import { dbWritesQueue } from "../queues/db-writes.js";
 
 const router: Router = Router();
 
@@ -151,10 +152,8 @@ router.post(
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound("Document not found");
     }
-    const copiedDocument = await copyDocument(
-      req.params.documentId,
-      req.body,
-      req.user!.id,
+    const copiedDocument = await dbWritesQueue.add(() =>
+      copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
       throw new HttpInternalServerError("Document copy failed");

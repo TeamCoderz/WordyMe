@@ -6,6 +6,7 @@ import { createDocument } from "./documents.js";
 import { createRevision, getRevisionById } from "./revisions.js";
 import { copyDocumentAttachments } from "./attachments.js";
 import { RevisionDetails } from "../schemas/revisions.js";
+import { dbWritesQueue } from "../queues/db-writes.js";
 
 export const copyDocument = async (
   documentId: string,
@@ -63,8 +64,8 @@ export const copyDocument = async (
     ),
   });
 
-  await Promise.all(
-    children.map((child) =>
+  children.map((child) =>
+    dbWritesQueue.add(() =>
       copyDocument(
         child.id,
         {
