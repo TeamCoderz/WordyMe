@@ -9,13 +9,13 @@ import {
 } from "../services/favorites.js";
 import { userHasDocument } from "../services/access.js";
 import { HttpNotFound } from "@httpx/exception";
-import { paginationQuerySchema } from "../schemas/pagination.js";
+import { documentFiltersSchema } from "../schemas/pagination.js";
 
 const router = Router();
 
 router.get("/", requireAuth, async (req, res) => {
-  const pagination = paginationQuerySchema.parse(req.query);
-  const result = await listFavorites(req.user!.id, pagination);
+  const filters = documentFiltersSchema.parse(req.query);
+  const result = await listFavorites(req.user!.id, filters);
   res.status(200).json(result);
 });
 

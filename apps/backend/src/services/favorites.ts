@@ -1,10 +1,12 @@
-import { eq, and, count, desc, getTableColumns, gt, max } from "drizzle-orm";
+import { eq, and, count, getTableColumns, gt, max } from "drizzle-orm";
 import { db } from "../lib/db.js";
 import { favoritesTable } from "../models/favorites.js";
 import { documentsTable } from "../models/documents.js";
 import { documentViewsTable } from "../models/document-views.js";
-import { PaginationQuery } from "../schemas/pagination.js";
+import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
 import { PaginatedCollectionQuery } from "../utils/collections.js";
+import { orderByColumns } from "./documents.js";
+import { PlainDocument } from "../schemas/documents.js";
 
 export const addDocumentToFavorites = async (
   userId: string,
@@ -44,7 +46,7 @@ export const removeDocumentFromFavorites = async (
 
 export const listFavorites = async (
   userId: string,
-  pagination: PaginationQuery
+  filters: DocumentFilters
 ) => {
   const baseQuery = db
     .select({
@@ -69,18 +71,29 @@ export const listFavorites = async (
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
-    .orderBy(desc(favoritesTable.createdAt))
     .$dynamic();
 
   const countQuery = db
-    .select({ count: count() })
+    .select({ count: count(favoritesTable.id).as("count") })
     .from(favoritesTable)
     .where(eq(favoritesTable.userId, userId))
     .$dynamic();
 
-  return new PaginatedCollectionQuery(
+  const orderByColumn = orderByColumns[filters.orderBy ?? "createdAt"];
+
+  const result = await new PaginatedCollectionQuery(
     baseQuery,
     countQuery,
-    pagination
-  ).getPaginatedResult();
+    filters
+  )
+    .search(documentsTable.name, filters.search)
+    .filter(documentsTable.documentType, filters.documentType)
+    .filter(documentsTable.spaceId, filters.spaceId)
+    .filter(documentsTable.parentId, filters.parentId)
+    .order(orderByColumn, filters.order ?? "desc")
+    .getPaginatedResult();
+
+  return result as PaginatedResult<
+    PlainDocument & { isFavorite: boolean; lastViewedAt: Date | null }
+  >;
 };

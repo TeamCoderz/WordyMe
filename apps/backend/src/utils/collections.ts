@@ -1,4 +1,4 @@
-import { asc, desc, eq, ilike } from "drizzle-orm";
+import { asc, desc, eq, gte, ilike, isNotNull } from "drizzle-orm";
 import { SQLiteColumn, SQLiteSelect } from "drizzle-orm/sqlite-core";
 import { PaginationQuery } from "../schemas/pagination.js";
 
@@ -9,23 +9,42 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     this.query = query;
   }
 
-  filter(column: SQLiteColumn, value: string | undefined) {
+  filter(column: SQLiteColumn, value: string | undefined): this {
     if (value !== undefined) {
       this.query = this.query.where(eq(column, value));
     }
     return this;
   }
 
-  search(column: SQLiteColumn, searchTerm: string | undefined) {
+  search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
       this.query = this.query.where(ilike(column, `%${searchTerm}%`));
     }
     return this;
   }
 
-  order(column: SQLiteColumn, direction: "asc" | "desc" = "asc") {
-    const dirFn = direction === "asc" ? asc : desc;
-    this.query = this.query.orderBy(dirFn(column));
+  notNull(column: SQLiteColumn): this {
+    this.query = this.query.where(isNotNull(column));
+    return this;
+  }
+
+  lastNDays(column: SQLiteColumn, days: number | undefined): this {
+    if (days !== undefined && days > 0) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - days);
+      this.query = this.query.where(gte(column, daysAgo));
+    }
+    return this;
+  }
+
+  order(
+    column: SQLiteColumn | undefined,
+    direction: "asc" | "desc" | undefined
+  ): this {
+    if (column) {
+      const dirFn = direction === "desc" ? desc : asc;
+      this.query = this.query.orderBy(dirFn(column));
+    }
     return this;
   }
 
@@ -65,6 +84,20 @@ export class PaginatedCollectionQuery<
     return super.search(column, searchTerm);
   }
 
+  notNull(column: SQLiteColumn): this {
+    this.countQuery = this.countQuery?.where(isNotNull(column));
+    return super.notNull(column);
+  }
+
+  lastNDays(column: SQLiteColumn, days: number | undefined): this {
+    if (days !== undefined && days > 0) {
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - days);
+      this.countQuery = this.countQuery?.where(gte(column, daysAgo));
+    }
+    return super.lastNDays(column, days);
+  }
+
   async getPaginatedResult() {
     const offset = (this.page - 1) * this.limit;
     const items = await this.query.limit(this.limit).offset(offset);
@@ -83,20 +116,3 @@ export class PaginatedCollectionQuery<
   }
 }
 
-// Usage example:
-
-// const query = new CollectionQuery(db.select().from(documentsTable).$dynamic())
-//     .filter(documentsTable.userId, "user-123")
-//     .filter(documentsTable.handle, "my-handle");
-
-// const results = await query.getResult(); // Row[]
-
-// const paginatedCollectionQuery = new PaginatedCollectionQuery(
-//     db.select().from(documentsTable).$dynamic(),
-//     db.select({ count: count() }).from(documentsTable).$dynamic(),
-//     { page: 2, limit: 10 },
-// )
-//     .filter(documentsTable.userId, "user-123")
-//     .search(documentsTable.name, "report");
-
-// const paginatedResults = await paginatedCollectionQuery.getPaginatedResult(); // PaginatedResult<Row>

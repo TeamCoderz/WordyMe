@@ -16,9 +16,11 @@ export const copyDocument = async (
   const originalDocument = await db.query.documentsTable.findFirst({
     where: eq(documentsTable.id, documentId),
   });
+
   if (!originalDocument) {
     return false;
   }
+  
   const newDocument = await createDocument(
     {
       name: payload.name,

@@ -24,7 +24,8 @@ import {
 import { copyDocumentSchema } from "../schemas/operations.js";
 import { copyDocument } from "../services/operations.js";
 import { dbWritesQueue } from "../queues/db-writes.js";
-import { paginationQuerySchema } from "../schemas/pagination.js";
+import { documentFiltersSchema } from "../schemas/pagination.js";
+
 const router: Router = Router();
 
 router.get("/", requireAuth, async (req, res) => {
@@ -33,8 +34,8 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 router.get("/last-viewed", requireAuth, async (req, res) => {
-  const pagination = paginationQuerySchema.parse(req.query);
-  const result = await getLastViewedDocuments(req.user!.id, pagination);
+  const filters = documentFiltersSchema.parse(req.query);
+  const result = await getLastViewedDocuments(req.user!.id, filters);
   res.status(200).json(result);
 });
 

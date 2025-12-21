@@ -1,13 +1,5 @@
-import {
-  and,
-  count,
-  desc,
-  eq,
-  getTableColumns,
-  gt,
-  isNotNull,
-  max,
-} from "drizzle-orm";
+import { and, count, eq, getTableColumns, gt, max } from "drizzle-orm";
+import { SQLiteColumn } from "drizzle-orm/sqlite-core";
 import { db } from "../lib/db.js";
 import { documentsTable } from "../models/documents.js";
 import {
@@ -18,8 +10,15 @@ import {
 import { appendUniqueSuffix, slugify } from "../utils/strings.js";
 import { documentViewsTable } from "../models/document-views.js";
 import { favoritesTable } from "../models/favorites.js";
-import { PaginationQuery } from "../schemas/pagination.js";
+import { DocumentFilters, PaginatedResult } from "../schemas/pagination.js";
 import { PaginatedCollectionQuery } from "../utils/collections.js";
+import { PlainDocument } from "../schemas/documents.js";
+
+export const orderByColumns: Record<string, SQLiteColumn> = {
+  name: documentsTable.name,
+  createdAt: documentsTable.createdAt,
+  lastViewedAt: documentViewsTable.lastViewedAt,
+} satisfies Record<string, SQLiteColumn>;
 
 export const checkExistingDocumentHandle = async (handle: string) => {
   const result = await db
@@ -89,7 +88,7 @@ export const getUserDocuments = async (userId: string) => {
 
 export const getLastViewedDocuments = async (
   userId: string,
-  pagination: PaginationQuery
+  filters: DocumentFilters
 ) => {
   const baseQuery = db
     .select({
@@ -112,18 +111,12 @@ export const getLastViewedDocuments = async (
         eq(favoritesTable.userId, userId)
       )
     )
-    .where(
-      and(
-        eq(documentsTable.userId, userId),
-        isNotNull(documentViewsTable.lastViewedAt)
-      )
-    )
+    .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
-    .orderBy(desc(documentViewsTable.lastViewedAt))
     .$dynamic();
 
   const countQuery = db
-    .select({ count: count() })
+    .select({ count: count(documentsTable.id).as("count") })
     .from(documentsTable)
     .innerJoin(
       documentViewsTable,
@@ -132,19 +125,28 @@ export const getLastViewedDocuments = async (
         eq(documentViewsTable.userId, userId)
       )
     )
-    .where(
-      and(
-        eq(documentsTable.userId, userId),
-        isNotNull(documentViewsTable.lastViewedAt)
-      )
-    )
+    .where(eq(documentsTable.userId, userId))
     .$dynamic();
 
-  return new PaginatedCollectionQuery(
+  const orderByColumn = orderByColumns[filters.orderBy ?? "lastViewedAt"];
+
+  const result = await new PaginatedCollectionQuery(
     baseQuery,
     countQuery,
-    pagination
-  ).getPaginatedResult();
+    filters
+  )
+    .notNull(documentViewsTable.lastViewedAt)
+    .lastNDays(documentViewsTable.lastViewedAt, filters.days)
+    .search(documentsTable.name, filters.search)
+    .filter(documentsTable.documentType, filters.documentType)
+    .filter(documentsTable.spaceId, filters.spaceId)
+    .filter(documentsTable.parentId, filters.parentId)
+    .order(orderByColumn, filters.order ?? "desc")
+    .getPaginatedResult();
+
+  return result as PaginatedResult<
+    PlainDocument & { isFavorite: boolean; lastViewedAt: Date | null }
+  >;
 };
 
 export const createDocument = async (
