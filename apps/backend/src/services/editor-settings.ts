@@ -1,11 +1,8 @@
-import { db } from "../lib/db.js";
-import { editorSettingsTable } from "../models/editor-settings.js";
-import { EditorSettingsInput } from "../schemas/editor-settings.js";
+import { db } from '../lib/db.js';
+import { editorSettingsTable } from '../models/editor-settings.js';
+import { EditorSettingsInput } from '../schemas/editor-settings.js';
 
-export const setEditorSettings = async (
-  userId: string,
-  payload: EditorSettingsInput,
-) => {
+export const setEditorSettings = async (userId: string, payload: EditorSettingsInput) => {
   const [created] = await db
     .insert(editorSettingsTable)
     .values({

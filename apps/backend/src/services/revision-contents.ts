@@ -1,6 +1,6 @@
-import { mkdir, readFile, writeFile, unlink } from "fs/promises";
-import { resolvePhysicalPath } from "../lib/storage.js";
-import { dirname } from "path";
+import { mkdir, readFile, writeFile, unlink } from 'fs/promises';
+import { resolvePhysicalPath } from '../lib/storage.js';
+import { dirname } from 'path';
 
 export const getRevisionContentUrl = (revisionId: string) => {
   return `storage/revisions/${revisionId}.json`;
@@ -17,10 +17,7 @@ export const readRevisionContent = async (revisionId: string) => {
   return content;
 };
 
-export const saveRevisionContent = async (
-  content: string,
-  revisionId: string,
-) => {
+export const saveRevisionContent = async (content: string, revisionId: string) => {
   const physicalPath = resolvePhysicalPath(getRevisionContentUrl(revisionId));
   await mkdir(dirname(physicalPath), { recursive: true });
   await writeFile(physicalPath, content);

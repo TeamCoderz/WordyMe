@@ -1,1 +1,1 @@
-export { HttpException } from "@httpx/exception";
+export { HttpException } from '@httpx/exception';

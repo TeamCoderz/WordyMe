@@ -11,11 +11,11 @@ import { PaginatedResult } from "@repo/backend/pagination.js";
 import { del, get, patch, post } from "./client.js";
 
 export const createDocument = async (data: CreateDocumentInput) => {
-  return await post<PlainDocument>("/documents", data);
+  return await post<PlainDocument>('/documents', data);
 };
 
 export const getUserDocuments = async () => {
-  return await get<DocumentListItem[]>("/documents");
+  return await get<PlainDocument[]>('/documents');
 };
 
 export const getLastViewedDocuments = async (filters?: DocumentFilters) => {

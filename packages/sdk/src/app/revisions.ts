@@ -4,21 +4,18 @@ import {
   RevisionDetails,
   UpdateRevisionNameInput,
   UpdateRevisionContentInput,
-} from "@repo/backend/revisions.js";
-import { get, post, patch, del } from "./client.js";
+} from '@repo/backend/revisions.js';
+import { get, post, patch, del } from './client.js';
 
 export const createRevision = async (data: CreateRevisionInput) => {
-  return await post<RevisionDetails>("/revisions", data);
+  return await post<RevisionDetails>('/revisions', data);
 };
 
 export const getRevisionById = async (revisionId: string) => {
   return await get<RevisionDetails>(`/revisions/${revisionId}`);
 };
 
-export const updateRevisionName = async (
-  revisionId: string,
-  data: UpdateRevisionNameInput,
-) => {
+export const updateRevisionName = async (revisionId: string, data: UpdateRevisionNameInput) => {
   return await patch<PlainRevision>(`/revisions/${revisionId}`, data);
 };
 

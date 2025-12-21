@@ -1,38 +1,34 @@
-import z from "zod";
+import z from 'zod';
 
 export const createRevisionSchema = z.object({
-  documentId: z.uuid("Invalid document ID"),
-  text: z.string().min(1, "Text is required"),
-  content: z.string().min(1, "Revision Content is required"),
+  documentId: z.uuid('Invalid document ID'),
+  text: z.string().min(1, 'Text is required'),
+  content: z.string().min(1, 'Revision Content is required'),
   checksum: z.string().nullish(),
   revisionName: z.string().nullish(),
   makeCurrentRevision: z.boolean().optional(),
 });
 
 export const updateRevisionNameSchema = z.object({
-  revisionName: z.string().min(1, "New name is required"),
+  revisionName: z.string().min(1, 'New name is required'),
   content: z.undefined().optional(),
 });
 
 export const updateRevisionContentSchema = z.object({
-  text: z.string().min(1, "Text is required"),
-  content: z.string().min(1, "Revision Content is required"),
+  text: z.string().min(1, 'Text is required'),
+  content: z.string().min(1, 'Revision Content is required'),
   checksum: z.string().nullish(),
 });
 
-export const updateRevisionSchema = updateRevisionNameSchema.or(
-  updateRevisionContentSchema,
-);
+export const updateRevisionSchema = updateRevisionNameSchema.or(updateRevisionContentSchema);
 
 export const revisionIdParamSchema = z.object({
-  revisionId: z.uuid("Invalid revision ID"),
+  revisionId: z.uuid('Invalid revision ID'),
 });
 
 export type CreateRevisionInput = z.output<typeof createRevisionSchema>;
 export type UpdateRevisionNameInput = z.output<typeof updateRevisionNameSchema>;
-export type UpdateRevisionContentInput = z.output<
-  typeof updateRevisionContentSchema
->;
+export type UpdateRevisionContentInput = z.output<typeof updateRevisionContentSchema>;
 export type UpdateRevisionInput = z.output<typeof updateRevisionSchema>;
 
 export type RevisionDetails = {
@@ -48,4 +44,4 @@ export type RevisionDetails = {
   checksum: string | null;
 };
 
-export type PlainRevision = Omit<RevisionDetails, "content">;
+export type PlainRevision = Omit<RevisionDetails, 'content'>;

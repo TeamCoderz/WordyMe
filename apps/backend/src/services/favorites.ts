@@ -76,13 +76,15 @@ export const listFavorites = async (
         eq(documentViewsTable.documentId, documentsTable.id),
         eq(documentViewsTable.userId, userId),
       ),
+        eq(documentViewsTable.userId, userId),
+      ),
     )
     .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
     .$dynamic();
 
   const countQuery = db
-    .select({ count: countDistinct(documentsTable.id).as("count") })
+    .select({ count: countDistinct(documentsTable.id).as('count') })
     .from(documentsTable)
     .innerJoin(
       favoritesTable,
@@ -94,7 +96,7 @@ export const listFavorites = async (
     .where(eq(documentsTable.userId, userId))
     .$dynamic();
 
-  const orderByColumn = orderByColumns[filters.orderBy ?? "createdAt"];
+  const orderByColumn = orderByColumns[filters.orderBy ?? 'createdAt'];
 
   const result = await new PaginatedCollectionQuery(
     baseQuery,
@@ -105,7 +107,7 @@ export const listFavorites = async (
     .filter(documentsTable.documentType, filters.documentType)
     .filter(documentsTable.spaceId, filters.spaceId)
     .filter(documentsTable.parentId, filters.parentId)
-    .order(orderByColumn, filters.order ?? "desc")
+    .order(orderByColumn, filters.order ?? 'desc')
     .getPaginatedResult();
 
   return result;

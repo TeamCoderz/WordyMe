@@ -1,21 +1,16 @@
-import { customType } from "drizzle-orm/sqlite-core";
+import { customType } from 'drizzle-orm/sqlite-core';
 
-export const enumType = <T extends readonly string[]>(
-  values: T,
-  name?: string,
-) => {
+export const enumType = <T extends readonly string[]>(values: T, name?: string) => {
   const custom = customType<{
     data: string;
     driverData: string;
   }>({
     dataType() {
-      return "text";
+      return 'text';
     },
     toDriver(value) {
       if (!values.includes(value as any)) {
-        throw new Error(
-          `Invalid enum value: ${value}. Allowed values are: ${values.join(", ")}`,
-        );
+        throw new Error(`Invalid enum value: ${value}. Allowed values are: ${values.join(', ')}`);
       }
       return value;
     },

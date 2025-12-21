@@ -1,14 +1,10 @@
-import { createAuthClient } from "better-auth/react";
+import { createAuthClient } from 'better-auth/react';
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_BACKEND_URL,
 });
 
-export const register = async (
-  name: string,
-  email: string,
-  password: string,
-) => {
+export const register = async (name: string, email: string, password: string) => {
   return await authClient.signUp.email({ name, email, password });
 };
 

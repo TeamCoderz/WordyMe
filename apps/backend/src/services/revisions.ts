@@ -1,21 +1,15 @@
-import { desc, eq, and } from "drizzle-orm";
-import { db } from "../lib/db.js";
-import { revisionsTable } from "../models/revisions.js";
-import {
-  CreateRevisionInput,
-  UpdateRevisionInput,
-} from "../schemas/revisions.js";
-import { documentsTable } from "../models/documents.js";
+import { desc, eq, and } from 'drizzle-orm';
+import { db } from '../lib/db.js';
+import { revisionsTable } from '../models/revisions.js';
+import { CreateRevisionInput, UpdateRevisionInput } from '../schemas/revisions.js';
+import { documentsTable } from '../models/documents.js';
 import {
   getRevisionContentUrl,
   readRevisionContent,
   saveRevisionContent,
-} from "./revision-contents.js";
+} from './revision-contents.js';
 
-export const createRevision = async (
-  payload: CreateRevisionInput,
-  userId: string,
-) => {
+export const createRevision = async (payload: CreateRevisionInput, userId: string) => {
   const [revision] = await db
     .insert(revisionsTable)
     .values({
@@ -100,10 +94,7 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
     : undefined;
 };
 
-export const updateRevisionName = async (
-  revisionId: string,
-  payload: UpdateRevisionInput,
-) => {
+export const updateRevisionName = async (revisionId: string, payload: UpdateRevisionInput) => {
   const [updatedRevision] = await db
     .update(revisionsTable)
     .set(payload)

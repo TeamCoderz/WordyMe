@@ -1,6 +1,6 @@
-import { asc, desc, eq, gte, ilike, isNotNull } from "drizzle-orm";
-import { SQLiteColumn, SQLiteSelect } from "drizzle-orm/sqlite-core";
-import { PaginationQuery } from "../schemas/pagination.js";
+import { asc, desc, eq, gte, ilike, isNotNull } from 'drizzle-orm';
+import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
+import { PaginationQuery } from '../schemas/pagination.js';
 
 export class CollectionQuery<Q extends SQLiteSelect> {
   query: Q;
@@ -42,7 +42,7 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     direction: "asc" | "desc" | undefined,
   ): this {
     if (column) {
-      const dirFn = direction === "desc" ? desc : asc;
+      const dirFn = direction === 'desc' ? desc : asc;
       this.query = this.query.orderBy(dirFn(column));
     }
     return this;

@@ -1,9 +1,5 @@
-import {
-  HttpException,
-  HttpUnprocessableEntity,
-  HttpValidationIssue,
-} from "@httpx/exception";
-import { ZodError } from "zod";
+import { HttpException, HttpUnprocessableEntity, HttpValidationIssue } from '@httpx/exception';
+import { ZodError } from 'zod';
 
 export const toHttpException = (error: unknown): HttpException => {
   if (error instanceof HttpException) {
@@ -22,5 +18,5 @@ export const toHttpException = (error: unknown): HttpException => {
     return new HttpException(500, error.message);
   }
 
-  return new HttpException(500, "Internal Server Error");
+  return new HttpException(500, 'Internal Server Error');
 };

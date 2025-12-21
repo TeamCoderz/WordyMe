@@ -1,5 +1,5 @@
-import { RequestHandler } from "express";
-import { z, ZodType } from "zod";
+import { RequestHandler } from 'express';
+import { z, ZodType } from 'zod';
 
 export function validate<
   B extends ZodType,
@@ -14,19 +14,19 @@ export function validate<
 }): RequestHandler<z.output<P>, z.output<R>, z.output<B>, z.output<Q>> {
   return (req, res, next) => {
     if (schema.body) {
-      Object.defineProperty(req, "body", {
+      Object.defineProperty(req, 'body', {
         value: schema.body.parse(req.body),
       });
     }
 
     if (schema.query) {
-      Object.defineProperty(req, "query", {
+      Object.defineProperty(req, 'query', {
         value: schema.query.parse(req.query),
       });
     }
 
     if (schema.params) {
-      Object.defineProperty(req, "params", {
+      Object.defineProperty(req, 'params', {
         value: schema.params.parse(req.params),
       });
     }

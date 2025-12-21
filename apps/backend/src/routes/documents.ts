@@ -1,18 +1,19 @@
-import { Router } from "express";
+import { Router } from 'express';
 import {
   createDocumentSchema,
   documentFiltersSchema,
   documentHandleParamSchema,
   documentIdParamSchema,
   updateDocumentSchema,
-} from "../schemas/documents.js";
-import { requireAuth } from "../middlewares/auth.js";
-import { validate } from "../middlewares/validate.js";
+} from '../schemas/documents.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { validate } from '../middlewares/validate.js';
 import {
   createDocument,
   deleteDocument,
   getDocumentDetails,
   getLastViewedDocuments,
+  getUserDocumentCount,
   getUserDocuments,
   updateDocument,
 } from "../services/documents.js";
@@ -49,18 +50,14 @@ router.get(
   },
 );
 
-router.post(
-  "/",
-  requireAuth,
-  validate({ body: createDocumentSchema }),
-  async (req, res) => {
-    const { parentId, spaceId } = req.body;
-    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-      throw new HttpNotFound("Parent document not found");
-    }
-    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-      throw new HttpNotFound("Space document not found");
-    }
+router.post('/', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
+  const { parentId, spaceId } = req.body;
+  if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+    throw new HttpNotFound('Parent document not found');
+  }
+  if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+    throw new HttpNotFound('Space document not found');
+  }
 
     const document = await createDocument(req.body, req.user!.id);
     res.status(201).json(document);
@@ -68,46 +65,48 @@ router.post(
 );
 
 router.get(
-  "/handle/:handle",
+  '/handle/:handle',
   requireAuth,
   validate({ params: documentHandleParamSchema }),
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     res.status(200).json(document);
+  },
   },
 );
 
 router.get(
-  "/:documentId",
+  '/:documentId',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     res.status(200).json(document);
+  },
   },
 );
 
 router.patch(
-  "/:documentId",
+  '/:documentId',
   requireAuth,
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
 
     const { parentId, spaceId } = req.body;
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-      throw new HttpNotFound("Parent document not found");
+      throw new HttpNotFound('Parent document not found');
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-      throw new HttpNotFound("Space document not found");
+      throw new HttpNotFound('Space document not found');
     }
 
     const updatedDocument = await updateDocument(
@@ -116,67 +115,82 @@ router.patch(
     );
     res.status(200).json(updatedDocument);
   },
+  },
 );
 
 router.delete(
-  "/:documentId",
+  '/:documentId',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
+
+    const documentCount = await getUserDocumentCount(req.user!.id);
+
+    if (documentCount <= 1) {
+      throw new HttpUnprocessableEntity(
+        'Cannot delete the last remaining document. You must have at least one document.',
+      );
+    }
+
     await deleteDocument(req.params.documentId);
     res.status(204).send();
+  },
   },
 );
 
 router.get(
-  "/:documentId/revisions",
+  '/:documentId/revisions',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
   },
+  },
 );
 
 router.get(
-  "/:documentId/revisions/current",
+  '/:documentId/revisions/current',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     const revision = await getCurrentRevisionByDocumentId(
       req.params.documentId,
     );
     if (!revision) {
-      throw new HttpNotFound("Revision not found");
+      throw new HttpNotFound('Revision not found');
     }
     res.status(200).json(revision);
+  },
   },
 );
 
 router.post(
-  "/:documentId/copy",
+  '/:documentId/copy',
   requireAuth,
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
+      copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
-      throw new HttpInternalServerError("Document copy failed");
+      throw new HttpInternalServerError('Document copy failed');
     }
     res.status(201).json(copiedDocument);
+  },
   },
 );
 

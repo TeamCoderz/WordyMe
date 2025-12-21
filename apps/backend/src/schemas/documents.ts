@@ -18,7 +18,7 @@ export const documentFiltersSchema = z.object({
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
 
 export const documentHandleParamSchema = z.object({
-  handle: z.string().min(1, "Handle is required"),
+  handle: z.string().min(1, 'Handle is required'),
 });
 
 export type DocumentIdentifier =
@@ -32,12 +32,12 @@ export type DocumentIdentifier =
     };
 
 export const createDocumentSchema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(1, 'Name is required'),
   icon: z.string().nullish(),
   position: z.string().nullish(),
   parentId: z.uuid().nullish(),
   spaceId: z.uuid().nullish(),
-  documentType: z.enum(["space", "folder", "note"]),
+  documentType: z.enum(['space', 'folder', 'note']),
   clientId: z.string().optional(),
   isContainer: z.boolean().optional(),
 });
@@ -59,7 +59,7 @@ export type DocumentDetails = {
   position: string | null;
   currentRevisionId: string | null;
   parentId: string | null;
-  documentType: "space" | "folder" | "note";
+  documentType: 'space' | 'folder' | 'note';
   spaceId: string | null;
   isContainer: boolean;
   clientId: string | null;
@@ -93,7 +93,7 @@ export type DocumentDetails = {
 
 export type PlainDocument = Omit<
   DocumentDetails,
-  "currentRevision" | "views" | "favorites" | "isFavorite" | "lastViewedAt"
+  'currentRevision' | 'views' | 'favorites' | 'isFavorite' | 'lastViewedAt'
 >;
 
 export type DocumentListItem = PlainDocument & {

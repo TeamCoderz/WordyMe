@@ -1,8 +1,8 @@
-import { HttpException } from "@repo/backend/errors.js";
-import axios, { AxiosError } from "axios";
+import { HttpException } from '@repo/backend/errors.js';
+import axios, { AxiosError } from 'axios';
 
 export const client = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL + "/api",
+  baseURL: import.meta.env.VITE_BACKEND_URL + '/api',
 });
 
 // Graceful Axios Functions without throwing errors

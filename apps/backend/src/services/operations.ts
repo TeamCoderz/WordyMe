@@ -1,12 +1,12 @@
-import { and, eq, isNull, or } from "drizzle-orm";
-import { db } from "../lib/db.js";
-import { CopyDocumentInput } from "../schemas/operations.js";
-import { documentsTable } from "../models/documents.js";
-import { createDocument } from "./documents.js";
-import { createRevision, getRevisionById } from "./revisions.js";
-import { copyDocumentAttachments } from "./attachments.js";
-import { RevisionDetails } from "../schemas/revisions.js";
-import { dbWritesQueue } from "../queues/db-writes.js";
+import { and, eq, isNull, or } from 'drizzle-orm';
+import { db } from '../lib/db.js';
+import { CopyDocumentInput } from '../schemas/operations.js';
+import { documentsTable } from '../models/documents.js';
+import { createDocument } from './documents.js';
+import { createRevision, getRevisionById } from './revisions.js';
+import { copyDocumentAttachments } from './attachments.js';
+import { RevisionDetails } from '../schemas/revisions.js';
+import { dbWritesQueue } from '../queues/db-writes.js';
 
 export const copyDocument = async (
   documentId: string,
@@ -36,9 +36,7 @@ export const copyDocument = async (
 
   let newRevision: RevisionDetails | null = null;
   if (originalDocument.currentRevisionId) {
-    const originalRevision = await getRevisionById(
-      originalDocument.currentRevisionId,
-    );
+    const originalRevision = await getRevisionById(originalDocument.currentRevisionId);
     if (originalRevision) {
       newRevision = await createRevision(
         {
@@ -59,10 +57,7 @@ export const copyDocument = async (
   const children = await db.query.documentsTable.findMany({
     where: or(
       eq(documentsTable.parentId, documentId),
-      and(
-        eq(documentsTable.spaceId, documentId),
-        isNull(documentsTable.parentId),
-      ),
+      and(eq(documentsTable.spaceId, documentId), isNull(documentsTable.parentId)),
     ),
   });
 
@@ -74,8 +69,7 @@ export const copyDocument = async (
           name: child.name,
           position: child.position,
           parentId: child.parentId === documentId ? newDocument.id : null,
-          spaceId:
-            child.spaceId === documentId ? newDocument.id : newDocument.spaceId,
+          spaceId: child.spaceId === documentId ? newDocument.id : newDocument.spaceId,
         },
         userId,
       ),

@@ -1,7 +1,7 @@
-import { Router } from "express";
-import { validate } from "../middlewares/validate.js";
-import { requireAuth } from "../middlewares/auth.js";
-import { documentIdParamSchema } from "../schemas/favorites.js";
+import { Router } from 'express';
+import { validate } from '../middlewares/validate.js';
+import { requireAuth } from '../middlewares/auth.js';
+import { documentIdParamSchema } from '../schemas/favorites.js';
 import {
   addDocumentToFavorites,
   listFavorites,
@@ -25,12 +25,12 @@ router.get(
 );
 
 router.post(
-  "/:documentId",
+  '/:documentId',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     const favorite = await addDocumentToFavorites(
       req.user!.id,
@@ -38,18 +38,20 @@ router.post(
     );
     res.status(201).json(favorite);
   },
+  },
 );
 
 router.delete(
-  "/:documentId",
+  '/:documentId',
   requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound("Document not found");
+      throw new HttpNotFound('Document not found');
     }
     await removeDocumentFromFavorites(req.user!.id, req.params.documentId);
     res.status(204).send();
+  },
   },
 );
 
