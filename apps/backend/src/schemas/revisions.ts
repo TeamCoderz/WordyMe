@@ -4,8 +4,8 @@ export const createRevisionSchema = z.object({
   documentId: z.uuid("Invalid document ID"),
   text: z.string().min(1, "Text is required"),
   content: z.string().min(1, "Revision Content is required"),
-  checksum: z.string().optional(),
-  revisionName: z.string().optional(),
+  checksum: z.string().nullish(),
+  revisionName: z.string().nullish(),
   makeCurrentRevision: z.boolean().optional(),
 });
 
@@ -17,7 +17,7 @@ export const updateRevisionNameSchema = z.object({
 export const updateRevisionContentSchema = z.object({
   text: z.string().min(1, "Text is required"),
   content: z.string().min(1, "Revision Content is required"),
-  checksum: z.string().optional(),
+  checksum: z.string().nullish(),
 });
 
 export const updateRevisionSchema = updateRevisionNameSchema.or(

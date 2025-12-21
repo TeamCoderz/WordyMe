@@ -15,11 +15,13 @@ import {
   updateDocument,
 } from "../services/documents.js";
 import { userHasDocument } from "../services/access.js";
-import { HttpNotFound } from "@httpx/exception";
+import { HttpInternalServerError, HttpNotFound } from "@httpx/exception";
 import {
   getCurrentRevisionByDocumentId,
   getRevisionsByDocumentId,
 } from "../services/revisions.js";
+import { copyDocumentSchema } from "../schemas/operations.js";
+import { copyDocument } from "../services/operations.js";
 
 const router: Router = Router();
 
@@ -138,6 +140,26 @@ router.get(
       throw new HttpNotFound("Revision not found");
     }
     res.status(200).json(revision);
+  },
+);
+
+router.post(
+  "/:documentId/copy",
+  requireAuth,
+  validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
+  async (req, res) => {
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound("Document not found");
+    }
+    const copiedDocument = await copyDocument(
+      req.params.documentId,
+      req.body,
+      req.user!.id,
+    );
+    if (!copiedDocument) {
+      throw new HttpInternalServerError("Document copy failed");
+    }
+    res.status(201).json(copiedDocument);
   },
 );
 

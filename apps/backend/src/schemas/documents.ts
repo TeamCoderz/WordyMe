@@ -20,10 +20,10 @@ export type DocumentIdentifier =
 
 export const createDocumentSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  icon: z.string().optional(),
-  position: z.string().optional(),
-  parentId: z.uuid().optional(),
-  spaceId: z.uuid().optional(),
+  icon: z.string().nullish(),
+  position: z.string().nullish(),
+  parentId: z.uuid().nullish(),
+  spaceId: z.uuid().nullish(),
   documentType: z.enum(["space", "folder", "note"]),
   clientId: z.string().optional(),
   isContainer: z.boolean().optional(),
@@ -56,13 +56,13 @@ export type DocumentDetails = {
     text: string;
     checksum: string | null;
   } | null;
-  views: {
+  views?: {
     userId: string;
     createdAt: Date;
     updatedAt: Date;
     lastViewedAt: Date | null;
   }[];
-  favorites: {
+  favorites?: {
     userId: string;
     createdAt: Date;
   }[];
