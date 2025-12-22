@@ -23,7 +23,7 @@ import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
 import { copyDocumentSchema } from '../schemas/operations.js';
-import { copyDocument } from '../services/operations.js';
+import { copyDocument, exportDocument } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
@@ -174,6 +174,20 @@ router.post(
       throw new HttpInternalServerError('Unable to copy document at this time');
     }
     res.status(201).json(copiedDocument);
+  },
+);
+
+router.get(
+  '/:documentId/export',
+  requireAuth,
+  validate({ params: documentIdParamSchema }),
+  async (req, res) => {
+    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+      throw new HttpNotFound('Document not found or not accessible');
+    }
+    const exportService = exportDocument();
+    const exportedDocument = await exportService.exportDocumentTree(req.params.documentId);
+    res.status(200).json(exportedDocument);
   },
 );
 
