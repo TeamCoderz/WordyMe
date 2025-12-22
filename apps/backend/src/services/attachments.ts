@@ -1,4 +1,4 @@
-import { cp, readdir, readFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
 
@@ -14,6 +14,11 @@ export type Attachment = {
 const bufferToDataURL = (buffer: Buffer): string => {
   const base64 = buffer.toString('base64');
   return `data:${'application/octet-stream'};base64,${base64}`;
+};
+
+const dataURLToBuffer = (dataURL: string): Buffer => {
+  const base64Data = dataURL.split(',')[1] || dataURL;
+  return Buffer.from(base64Data, 'base64');
 };
 
 export const copyDocumentAttachments = async (
@@ -51,4 +56,16 @@ export const exportDocumentAttachments = async (documentId: string): Promise<Att
 
   const attachments = await Promise.all(filePromises);
   return attachments;
+};
+
+export const importDocumentAttachment = async (
+  attachment: Attachment,
+  documentId: string,
+): Promise<void> => {
+  const directory = resolvePhysicalPath(`attachments/${documentId}`);
+  await mkdir(directory, { recursive: true });
+
+  const buffer = dataURLToBuffer(attachment.url);
+  const filePath = join(directory, attachment.filename);
+  await writeFile(filePath, buffer);
 };

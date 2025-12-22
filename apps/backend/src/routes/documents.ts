@@ -22,8 +22,8 @@ import {
 import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
-import { copyDocumentSchema } from '../schemas/operations.js';
-import { copyDocument, exportDocumentTree } from '../services/operations.js';
+import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
+import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
@@ -189,5 +189,24 @@ router.get(
     res.status(200).json(exportedDocument);
   },
 );
+
+router.post('/import', requireAuth, validate({ body: importDocumentSchema }), async (req, res) => {
+  const { spaceId, parentId, position, document } = req.body;
+
+  if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+    throw new HttpNotFound('Parent document not found or not accessible');
+  }
+  if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+    throw new HttpNotFound('Space document not found or not accessible');
+  }
+
+  const importedDocument = await importDocumentTree(
+    document,
+    { spaceId, parentId, position },
+    req.user!.id,
+  );
+
+  res.status(201).json(importedDocument);
+});
 
 export { router as documentsRouter };

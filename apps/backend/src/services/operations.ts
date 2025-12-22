@@ -1,14 +1,16 @@
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { CopyDocumentInput } from '../schemas/operations.js';
+import { CopyDocumentInput, ExportedDocument, ImportInheritedData } from '../schemas/operations.js';
 import { documentsTable } from '../models/documents.js';
 import { createDocument } from './documents.js';
 import { createRevision, getRevisionById } from './revisions.js';
-import { copyDocumentAttachments } from './attachments.js';
+import {
+  copyDocumentAttachments,
+  exportDocumentAttachments,
+  importDocumentAttachment,
+} from './attachments.js';
 import { RevisionDetails } from '../schemas/revisions.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
-import { ExportedDocument } from '../schemas/operations.js';
-import { exportDocumentAttachments } from './attachments.js';
 import { readRevisionContent } from './revision-contents.js';
 
 export const copyDocument = async (
@@ -87,7 +89,6 @@ export const exportDocumentTree = async (
   visitedDocuments: Set<string> = new Set(),
   currentDepth: number = 0,
 ): Promise<ExportedDocument> => {
-  
   if (visitedDocuments.has(documentId)) {
     throw new Error(`Circular reference detected: document ${documentId} was already processed`);
   }
@@ -147,4 +148,73 @@ export const exportDocumentTree = async (
   }
 
   return exportedDocument;
+};
+
+export const importDocumentTree = async (
+  document: ExportedDocument,
+  inherited: ImportInheritedData,
+  userId: string,
+  currentDepth: number = 0,
+): Promise<{ id: string; name: string }> => {
+  if (currentDepth >= 100) {
+    throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
+  }
+
+  const newDocument = await createDocument(
+    {
+      name: document.name,
+      icon: document.icon,
+      documentType: document.type as 'space' | 'folder' | 'note',
+      isContainer: document.is_container,
+      position: inherited.position ?? document.position,
+      spaceId: inherited.spaceId,
+      parentId: inherited.parentId,
+    },
+    userId,
+  );
+
+  if (document.revision) {
+    await createRevision(
+      {
+        documentId: newDocument.id,
+        text: document.revision.text,
+        checksum: document.revision.checksum,
+        content: document.revision.content,
+        makeCurrentRevision: true,
+      },
+      userId,
+    );
+  }
+
+  for (const attachment of document.attachments) {
+    await importDocumentAttachment(attachment, newDocument.id);
+  }
+
+  for (const child of document.children) {
+    await importDocumentTree(
+      child,
+      {
+        spaceId: inherited.spaceId,
+        parentId: newDocument.id,
+        position: child.position,
+      },
+      userId,
+      currentDepth + 1,
+    );
+  }
+
+  for (const spaceChild of document.spaceRootChildren) {
+    await importDocumentTree(
+      spaceChild,
+      {
+        spaceId: newDocument.id,
+        parentId: null,
+        position: spaceChild.position,
+      },
+      userId,
+      currentDepth + 1,
+    );
+  }
+
+  return newDocument;
 };
