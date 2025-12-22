@@ -23,11 +23,11 @@ export const getLastViewedDocuments = async (filters?: DocumentFilters) => {
   return await get<PaginatedResult<DocumentListItem>>('/documents/last-viewed', filters);
 };
 
-export const getDocumentById = async (documentId: string, options: GetSingleDocumentOptions) => {
+export const getDocumentById = async (documentId: string, options?: GetSingleDocumentOptions) => {
   return await get<DocumentDetails>(`/documents/${documentId}`, options);
 };
 
-export const getDocumentByHandle = async (handle: string, options: GetSingleDocumentOptions) => {
+export const getDocumentByHandle = async (handle: string, options?: GetSingleDocumentOptions) => {
   return await get<DocumentDetails>(`/documents/handle/${handle}`, options);
 };
 
