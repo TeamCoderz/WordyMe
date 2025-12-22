@@ -14,6 +14,7 @@ import { favoritesTable } from '../models/favorites.js';
 import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery, PaginatedCollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
+import { dbWritesQueue } from '../queues/db-writes.js';
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -171,12 +172,26 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
       handle = appendUniqueSuffix(handle);
     }
   }
+  if (payload.spaceId) {
+    const spaceId = payload.spaceId;
+    dbWritesQueue.add(() => updateDocumentSpaceId(documentId, spaceId));
+  }
   const [document] = await db
     .update(documentsTable)
     .set({ ...payload, handle })
     .where(eq(documentsTable.id, documentId))
     .returning();
   return document;
+};
+
+export const updateDocumentSpaceId = async (documentId: string, spaceId: string) => {
+  await db.update(documentsTable).set({ spaceId }).where(eq(documentsTable.id, documentId));
+
+  const children = await db.query.documentsTable.findMany({
+    where: eq(documentsTable.parentId, documentId),
+  });
+
+  children.forEach((child) => dbWritesQueue.add(() => updateDocumentSpaceId(child.id, spaceId)));
 };
 
 export const getUserDocumentCount = async (userId: string): Promise<number> => {
