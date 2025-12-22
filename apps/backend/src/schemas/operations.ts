@@ -22,7 +22,6 @@ export type ExportedDocument = {
     checksum: string | null;
     content: string;
   } | null;
-  images: Attachment[];
   attachments: Attachment[];
   children: ExportedDocument[];
   spaceRootChildren: ExportedDocument[];

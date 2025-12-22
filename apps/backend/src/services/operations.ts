@@ -82,86 +82,69 @@ export const copyDocument = async (
   return { ...newDocument, currentRevision: newRevision };
 };
 
-export const exportDocument = () => {
-  async function exportDocumentTreeRecursive(
-    documentId: string,
-    visitedDocuments: Set<string>,
-    currentDepth: number,
-  ) {
-    if (visitedDocuments.has(documentId)) {
-      return new Error(`Circular reference detected: document ${documentId} was already processed`);
-    }
-
-    if (currentDepth >= 100) {
-      return new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
-    }
-
-    visitedDocuments.add(documentId);
-    const newDepth = currentDepth + 1;
-
-    const document = await db.query.documentsTable.findFirst({
-      where: eq(documentsTable.id, documentId),
-      with: {
-        currentRevision: true,
-      },
-    });
-
-    if (!document) {
-      return new Error(`Document ${documentId} not found`);
-    }
-    const currentRevision = document.currentRevision;
-
-    const exportedDocument: ExportedDocument = {
-      name: document.name,
-      handle: document.handle,
-      icon: document.icon,
-      type: document.documentType,
-      position: document.position,
-      is_container: document.isContainer,
-      revision: currentRevision
-        ? {
-            text: currentRevision.text,
-            checksum: currentRevision.checksum,
-            content: await readRevisionContent(currentRevision.id),
-          }
-        : null,
-      attachments: await exportDocumentAttachments(documentId),
-      children: [],
-      images: [],
-      spaceRootChildren: [],
-    };
-
-    const children = await db.query.documentsTable.findMany({
-      where: or(
-        eq(documentsTable.parentId, documentId),
-        and(eq(documentsTable.spaceId, documentId), isNull(documentsTable.parentId)),
-      ),
-    });
-
-    const childrenList = children;
-    for (const child of childrenList) {
-      const childResult = await exportDocumentTreeRecursive(child.id, visitedDocuments, newDepth);
-      if (childResult instanceof Error) {
-        continue;
-      }
-      if (child.parentId === documentId) {
-        exportedDocument.children.push(childResult);
-      } else {
-        exportedDocument.spaceRootChildren.push(childResult);
-      }
-    }
-    return exportedDocument;
+export const exportDocumentTree = async (
+  documentId: string,
+  visitedDocuments: Set<string> = new Set(),
+  currentDepth: number = 0,
+): Promise<ExportedDocument> => {
+  
+  if (visitedDocuments.has(documentId)) {
+    throw new Error(`Circular reference detected: document ${documentId} was already processed`);
   }
 
-  async function exportDocumentTree(documentId: string): Promise<ExportedDocument> {
-    const visitedDocuments = new Set<string>();
-    const currentDepth = 0;
-    const result = await exportDocumentTreeRecursive(documentId, visitedDocuments, currentDepth);
-    if (result instanceof Error) {
-      throw result;
-    }
-    return result;
+  if (currentDepth >= 100) {
+    throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
   }
 
-  return { exportDocumentTree };
+  visitedDocuments.add(documentId);
+
+  const document = await db.query.documentsTable.findFirst({
+    where: eq(documentsTable.id, documentId),
+    with: {
+      currentRevision: true,
+    },
+  });
+
+  if (!document) {
+    throw new Error(`Document ${documentId} not found`);
+  }
+
+  const currentRevision = document.currentRevision;
+
+  const exportedDocument: ExportedDocument = {
+    name: document.name,
+    handle: document.handle,
+    icon: document.icon,
+    type: document.documentType,
+    position: document.position,
+    is_container: document.isContainer,
+    revision: currentRevision
+      ? {
+          text: currentRevision.text,
+          checksum: currentRevision.checksum,
+          content: await readRevisionContent(currentRevision.id),
+        }
+      : null,
+    attachments: await exportDocumentAttachments(documentId),
+    children: [],
+    spaceRootChildren: [],
+  };
+
+  const children = await db.query.documentsTable.findMany({
+    where: or(
+      eq(documentsTable.parentId, documentId),
+      and(eq(documentsTable.spaceId, documentId), isNull(documentsTable.parentId)),
+    ),
+  });
+
+  for (const child of children) {
+    const childResult = await exportDocumentTree(child.id, visitedDocuments, currentDepth + 1);
+    if (child.parentId === documentId) {
+      exportedDocument.children.push(childResult);
+    } else {
+      exportedDocument.spaceRootChildren.push(childResult);
+    }
+  }
+
+  return exportedDocument;
 };
