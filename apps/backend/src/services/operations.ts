@@ -186,33 +186,37 @@ export const importDocumentTree = async (
     );
   }
 
-  for (const attachment of document.attachments) {
-    await importDocumentAttachment(attachment, newDocument.id);
-  }
+  await Promise.all(
+    document.attachments.map((attachment) => importDocumentAttachment(attachment, newDocument.id)),
+  );
 
   for (const child of document.children) {
-    await importDocumentTree(
-      child,
-      {
-        spaceId: inherited.spaceId,
-        parentId: newDocument.id,
-        position: child.position,
-      },
-      userId,
-      currentDepth + 1,
+    dbWritesQueue.add(() =>
+      importDocumentTree(
+        child,
+        {
+          spaceId: inherited.spaceId,
+          parentId: newDocument.id,
+          position: child.position,
+        },
+        userId,
+        currentDepth + 1,
+      ),
     );
   }
 
   for (const spaceChild of document.spaceRootChildren) {
-    await importDocumentTree(
-      spaceChild,
-      {
-        spaceId: newDocument.id,
-        parentId: null,
-        position: spaceChild.position,
-      },
-      userId,
-      currentDepth + 1,
+    dbWritesQueue.add(() =>
+      importDocumentTree(
+        spaceChild,
+        {
+          spaceId: newDocument.id,
+          parentId: null,
+          position: spaceChild.position,
+        },
+        userId,
+        currentDepth + 1,
+      ),
     );
   }
 
