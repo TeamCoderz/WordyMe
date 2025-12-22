@@ -1,12 +1,12 @@
-import { eq, and, count, countDistinct, getTableColumns, gt, max } from 'drizzle-orm';
+import { eq, and, count, getTableColumns, gt, max } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { favoritesTable } from '../models/favorites.js';
 import { documentsTable } from '../models/documents.js';
 import { documentViewsTable } from '../models/document-views.js';
-import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
-import { PaginatedCollectionQuery } from '../utils/collections.js';
+import { PaginationQuery } from '../schemas/pagination.js';
 import { orderByColumns } from './documents.js';
-import { DocumentFilters, DocumentListItem } from '../schemas/documents.js';
+import { DocumentFilters } from '../schemas/documents.js';
+import { CollectionQuery } from '../utils/collections.js';
 
 export const addDocumentToFavorites = async (userId: string, documentId: string) => {
   const [favorite] = await db
@@ -33,11 +33,8 @@ export const removeDocumentFromFavorites = async (userId: string, documentId: st
   return result;
 };
 
-export const listFavorites = async (
-  userId: string,
-  filters: DocumentFilters & PaginationQuery,
-): Promise<PaginatedResult<DocumentListItem>> => {
-  const baseQuery = db
+export const listFavorites = async (userId: string, filters: DocumentFilters & PaginationQuery) => {
+  const query = db
     .select({
       ...getTableColumns(documentsTable),
       isFavorite: gt(count(favoritesTable.id), 0),
@@ -59,25 +56,15 @@ export const listFavorites = async (
     .groupBy(documentsTable.id)
     .$dynamic();
 
-  const countQuery = db
-    .select({ count: countDistinct(documentsTable.id).as('count') })
-    .from(documentsTable)
-    .innerJoin(
-      favoritesTable,
-      and(eq(favoritesTable.documentId, documentsTable.id), eq(favoritesTable.userId, userId)),
-    )
-    .where(eq(documentsTable.userId, userId))
-    .$dynamic();
-
   const orderByColumn = orderByColumns[filters.orderBy ?? 'createdAt'];
 
-  const result = await new PaginatedCollectionQuery(baseQuery, countQuery, filters)
+  const result = await new CollectionQuery(query)
     .search(documentsTable.name, filters.search)
     .filter(documentsTable.documentType, filters.documentType)
     .filter(documentsTable.spaceId, filters.spaceId)
     .filter(documentsTable.parentId, filters.parentId)
     .order(orderByColumn, filters.order ?? 'desc')
-    .getPaginatedResult();
+    .getPaginatedResult(filters);
 
-  return result as PaginatedResult<DocumentListItem>;
+  return result;
 };

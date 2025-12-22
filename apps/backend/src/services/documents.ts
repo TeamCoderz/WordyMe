@@ -12,7 +12,7 @@ import { appendUniqueSuffix, slugify } from '../utils/strings.js';
 import { documentViewsTable } from '../models/document-views.js';
 import { favoritesTable } from '../models/favorites.js';
 import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
-import { CollectionQuery, PaginatedCollectionQuery } from '../utils/collections.js';
+import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 
@@ -97,7 +97,7 @@ export const getLastViewedDocuments = async (
   userId: string,
   filters: DocumentFilters & PaginationQuery,
 ) => {
-  const baseQuery = db
+  const query = db
     .select({
       ...getTableColumns(documentsTable),
       isFavorite: gt(count(favoritesTable.id), 0),
@@ -119,22 +119,9 @@ export const getLastViewedDocuments = async (
     .groupBy(documentsTable.id)
     .$dynamic();
 
-  const countQuery = db
-    .select({ count: countDistinct(documentsTable.id).as('count') })
-    .from(documentsTable)
-    .innerJoin(
-      documentViewsTable,
-      and(
-        eq(documentViewsTable.documentId, documentsTable.id),
-        eq(documentViewsTable.userId, userId),
-      ),
-    )
-    .where(eq(documentsTable.userId, userId))
-    .$dynamic();
-
   const orderByColumn = orderByColumns[filters.orderBy ?? 'lastViewedAt'];
 
-  const result = await new PaginatedCollectionQuery(baseQuery, countQuery, filters)
+  const result = await new CollectionQuery(query)
     .notNull(documentViewsTable.lastViewedAt)
     .lastNDays(documentViewsTable.lastViewedAt, filters.days)
     .search(documentsTable.name, filters.search)
@@ -142,7 +129,7 @@ export const getLastViewedDocuments = async (
     .filter(documentsTable.spaceId, filters.spaceId)
     .filter(documentsTable.parentId, filters.parentId)
     .order(orderByColumn, filters.order ?? 'desc')
-    .getPaginatedResult();
+    .getPaginatedResult(filters);
 
   return result as PaginatedResult<DocumentListItem>;
 };

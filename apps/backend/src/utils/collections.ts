@@ -1,6 +1,7 @@
-import { asc, desc, eq, gte, ilike, isNotNull } from 'drizzle-orm';
+import { asc, desc, eq, gte, isNotNull, like, SQL } from 'drizzle-orm';
 import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
 import { PaginationQuery } from '../schemas/pagination.js';
+import { db } from '../lib/db.js';
 
 export class CollectionQuery<Q extends SQLiteSelect> {
   query: Q;
@@ -18,7 +19,7 @@ export class CollectionQuery<Q extends SQLiteSelect> {
 
   search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
-      this.query = this.query.where(ilike(column, `%${searchTerm}%`));
+      this.query = this.query.where(like(column, `%${searchTerm}%`));
     }
     return this;
   }
@@ -48,64 +49,22 @@ export class CollectionQuery<Q extends SQLiteSelect> {
   async getResult() {
     return await this.query;
   }
-}
 
-export class PaginatedCollectionQuery<
-  Q extends SQLiteSelect,
-  CQ extends SQLiteSelect,
-> extends CollectionQuery<Q> {
-  countQuery: CQ;
-  page: number;
-  limit: number;
+  async getPaginatedResult({ page, limit }: PaginationQuery) {
+    console.log(this.query.toSQL());
+    const offset = (page - 1) * limit;
 
-  constructor(query: Q, countQuery: CQ, pagination: PaginationQuery) {
-    super(query);
-    this.countQuery = countQuery;
-    this.page = pagination.page;
-    this.limit = pagination.limit;
-  }
+    const total = await db.$count(this.query);
 
-  filter(column: SQLiteColumn, value: string | undefined): this {
-    if (value !== undefined) {
-      this.countQuery = this.countQuery?.where(eq(column, value));
-    }
-    return super.filter(column, value);
-  }
-
-  search(column: SQLiteColumn, searchTerm: string | undefined): this {
-    if (searchTerm !== undefined) {
-      this.countQuery = this.countQuery?.where(ilike(column, `%${searchTerm}%`));
-    }
-    return super.search(column, searchTerm);
-  }
-
-  notNull(column: SQLiteColumn): this {
-    this.countQuery = this.countQuery?.where(isNotNull(column));
-    return super.notNull(column);
-  }
-
-  lastNDays(column: SQLiteColumn, days: number | undefined): this {
-    if (days !== undefined && days > 0) {
-      const daysAgo = new Date();
-      daysAgo.setDate(daysAgo.getDate() - days);
-      this.countQuery = this.countQuery?.where(gte(column, daysAgo));
-    }
-    return super.lastNDays(column, days);
-  }
-
-  async getPaginatedResult() {
-    const offset = (this.page - 1) * this.limit;
-    const items = await this.query.limit(this.limit).offset(offset);
-
-    const [{ count: total }] = (await this.countQuery) as { count: number }[];
+    const items = await this.query.limit(limit).offset(offset);
 
     return {
       items,
       meta: {
         total,
-        page: this.page,
-        limit: this.limit,
-        totalPages: Math.ceil(total / this.limit),
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
     };
   }
