@@ -44,6 +44,9 @@ importers:
       drizzle-orm:
         specifier: ^0.45.1
         version: 0.45.1(@libsql/client@0.15.15)(kysely@0.28.8)
+      drizzle-zod:
+        specifier: ^0.8.3
+        version: 0.8.3(drizzle-orm@0.45.1(@libsql/client@0.15.15)(kysely@0.28.8))(zod@4.2.1)
       express:
         specifier: ^5.2.1
         version: 5.2.1
@@ -1423,6 +1426,12 @@ packages:
         optional: true
       sqlite3:
         optional: true
+
+  drizzle-zod@0.8.3:
+    resolution: {integrity: sha512-66yVOuvGhKJnTdiqj1/Xaaz9/qzOdRJADpDa68enqS6g3t0kpNkwNYjUuaeXgZfO/UWuIM9HIhSlJ6C5ZraMww==}
+    peerDependencies:
+      drizzle-orm: '>=0.36.0'
+      zod: ^3.25.0 || ^4.0.0
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -3519,6 +3528,11 @@ snapshots:
     optionalDependencies:
       '@libsql/client': 0.15.15
       kysely: 0.28.8
+
+  drizzle-zod@0.8.3(drizzle-orm@0.45.1(@libsql/client@0.15.15)(kysely@0.28.8))(zod@4.2.1):
+    dependencies:
+      drizzle-orm: 0.45.1(@libsql/client@0.15.15)(kysely@0.28.8)
+      zod: 4.2.1
 
   dunder-proto@1.0.1:
     dependencies:

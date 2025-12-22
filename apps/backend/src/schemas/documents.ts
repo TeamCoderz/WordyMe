@@ -1,4 +1,9 @@
+import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
+import { documentsTable } from '../models/documents.js';
+import { revisionsTable } from '../models/revisions.js';
+import { documentViewsTable } from '../models/document-views.js';
+import { favoritesTable } from '../models/favorites.js';
 
 export const documentIdParamSchema = z.object({
   documentId: z.uuid('Invalid document ID'),
@@ -53,48 +58,15 @@ export const updateDocumentSchema = createDocumentSchema.partial();
 
 export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 
-export type DocumentDetails = {
-  id: string;
-  name: string;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-  handle: string;
-  icon: string | null;
-  position: string | null;
-  currentRevisionId: string | null;
-  parentId: string | null;
-  documentType: 'space' | 'folder' | 'note';
-  spaceId: string | null;
-  isContainer: boolean;
-  clientId: string | null;
-  currentRevision: {
-    id: string;
-    createdAt: Date;
-    documentId: string;
-    userId: string;
-    revisionName: string | null;
-    text: string;
-    checksum: string | null;
-    url?: string;
-    content?: string;
-  } | null;
-  views?: {
-    id: string;
-    documentId: string;
-    userId: string;
-    createdAt: Date;
-    lastViewedAt: Date;
-  }[];
-  favorites?: {
-    id: string;
-    documentId: string;
-    userId: string;
-    createdAt: Date;
-  }[];
-  isFavorite: boolean;
-  lastViewedAt: Date | null;
-};
+export const documentDetailsSchema = createSelectSchema(documentsTable).extend({
+  currentRevision: createSelectSchema(revisionsTable).nullable(),
+  views: z.array(createSelectSchema(documentViewsTable)).optional(),
+  favorites: z.array(createSelectSchema(favoritesTable)).optional(),
+  isFavorite: z.boolean(),
+  lastViewedAt: z.date().nullable(),
+});
+
+export type DocumentDetails = z.output<typeof documentDetailsSchema>;
 
 export type PlainDocument = Omit<
   DocumentDetails,
