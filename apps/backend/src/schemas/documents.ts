@@ -4,6 +4,12 @@ export const documentIdParamSchema = z.object({
   documentId: z.uuid('Invalid document ID'),
 });
 
+export const getSingleDocumentOptionsSchema = z.object({
+  updateLastViewed: z.stringbool().optional(),
+});
+
+export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
+
 export const documentFiltersSchema = z.object({
   search: z.string().optional(),
   documentType: z.enum(['space', 'folder', 'note']).optional(),

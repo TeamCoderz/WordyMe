@@ -4,6 +4,7 @@ import {
   documentFiltersSchema,
   documentHandleParamSchema,
   documentIdParamSchema,
+  getSingleDocumentOptionsSchema,
   updateDocumentSchema,
 } from '../schemas/documents.js';
 import { requireAuth } from '../middlewares/auth.js';
@@ -16,6 +17,7 @@ import {
   getUserDocumentCount,
   getUserDocuments,
   updateDocument,
+  viewDocument,
 } from '../services/documents.js';
 import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
@@ -57,12 +59,15 @@ router.post('/', requireAuth, validate({ body: createDocumentSchema }), async (r
 
 router.get(
   '/handle/:handle',
+  validate({ params: documentHandleParamSchema, query: getSingleDocumentOptionsSchema }),
   requireAuth,
-  validate({ params: documentHandleParamSchema }),
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
       throw new HttpNotFound('Document not found for the provided handle');
+    }
+    if (req.query.updateLastViewed) {
+      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },

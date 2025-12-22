@@ -151,6 +151,16 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
   )[0];
 };
 
+export const viewDocument = async (documentId: string, userId: string) => {
+  return await db
+    .insert(documentViewsTable)
+    .values({ documentId, userId })
+    .onConflictDoUpdate({
+      target: [documentViewsTable.userId, documentViewsTable.documentId],
+      set: { lastViewedAt: new Date() },
+    });
+};
+
 export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
   let handle;
   if (payload.name) {

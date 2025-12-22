@@ -3,6 +3,7 @@ import {
   DocumentDetails,
   DocumentFilters,
   DocumentListItem,
+  GetSingleDocumentOptions,
   PlainDocument,
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
@@ -22,12 +23,12 @@ export const getLastViewedDocuments = async (filters?: DocumentFilters) => {
   return await get<PaginatedResult<DocumentListItem>>('/documents/last-viewed', filters);
 };
 
-export const getDocumentById = async (documentId: string) => {
-  return await get<DocumentDetails>(`/documents/${documentId}`);
+export const getDocumentById = async (documentId: string, options: GetSingleDocumentOptions) => {
+  return await get<DocumentDetails>(`/documents/${documentId}`, options);
 };
 
-export const getDocumentByHandle = async (handle: string) => {
-  return await get<DocumentDetails>(`/documents/handle/${handle}`);
+export const getDocumentByHandle = async (handle: string, options: GetSingleDocumentOptions) => {
+  return await get<DocumentDetails>(`/documents/handle/${handle}`, options);
 };
 
 export const updateDocument = async (documentId: string, data: UpdateDocumentInput) => {
