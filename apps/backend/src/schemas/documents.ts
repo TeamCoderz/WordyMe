@@ -1,4 +1,4 @@
-import { createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
@@ -26,7 +26,7 @@ export const documentFiltersSchema = z.object({
   days: z.coerce.number().min(1).optional(),
 });
 
-export const createDocumentSchema = createSelectSchema(documentsTable, {
+export const createDocumentSchema = createInsertSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).omit({
   id: true,
@@ -37,7 +37,7 @@ export const createDocumentSchema = createSelectSchema(documentsTable, {
   handle: true,
 });
 
-export const updateDocumentSchema = createSelectSchema(documentsTable, {
+export const updateDocumentSchema = createUpdateSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).partial();
 
