@@ -2,11 +2,9 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import z from 'zod';
 import { revisionsTable } from '../models/revisions.js';
 
-export const revisionIdParamSchema = createSelectSchema(revisionsTable)
-  .pick({
-    id: true,
-  })
-  .transform(({ id }) => ({ revisionId: id }));
+export const revisionIdParamSchema = z.object({
+  revisionId: z.uuid('Invalid revision ID'),
+});
 
 export const createRevisionSchema = createInsertSchema(revisionsTable)
   .omit({
