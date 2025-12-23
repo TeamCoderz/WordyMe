@@ -4,7 +4,7 @@ import { requireAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { revisionIdParamSchema } from '../schemas/revisions.js';
 import { userHasDocument, userHasRevision } from '../services/access.js';
-import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import { HttpUnauthorized, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../lib/storage.js';
 import { getRevisionContentUrl } from '../services/revision-contents.js';
 import { documentIdParamSchema } from '../schemas/documents.js';
@@ -20,7 +20,9 @@ router.get(
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpNotFound('Revision not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)));
@@ -35,7 +37,9 @@ router.post(
     const { documentId } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     const uploadDir = resolvePhysicalPath(`attachments/${documentId}`);
@@ -52,7 +56,9 @@ router.post(
 
     form.on('fileBegin', (name) => {
       if (name !== 'attachments') {
-        throw new HttpUnprocessableEntity('Invalid upload field; expected "attachments"');
+        throw new HttpUnprocessableEntity(
+          'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
+        );
       }
     });
 
@@ -61,7 +67,9 @@ router.post(
     const attachments = files.attachments;
 
     if (!attachments || attachments.length === 0) {
-      throw new HttpUnprocessableEntity('No attachment uploaded (expected field: "attachments")');
+      throw new HttpUnprocessableEntity(
+        'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
+      );
     }
 
     return res.status(201).json({
@@ -78,7 +86,9 @@ router.get(
     const { documentId, filename } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)));

@@ -12,7 +12,12 @@ import {
   documentListItemSchema,
   getSingleDocumentOptionsSchema,
 } from '../schemas/documents.js';
-import { plainRevisionSchema } from '../schemas/revisions.js';
+import {
+  createRevisionSchema,
+  plainRevisionSchema,
+  revisionIdParamSchema,
+  updateRevisionSchema,
+} from '../schemas/revisions.js';
 import {
   copyDocumentSchema,
   exportedDocumentSchema,
@@ -82,26 +87,6 @@ export const openApiDocument = createDocument({
           },
           404: {
             description: 'Document with the specified handle not found or not accessible.',
-          },
-        },
-      },
-    },
-    '/api/documents/{documentId}': {
-      get: {
-        summary: 'Get document by ID',
-        tags: ['Documents'],
-        description:
-          'Retrieves the full details of a specific document by its unique ID. Returns the document with its current revision, view history, and favorite status.',
-        requestParams: { path: documentIdParamSchema },
-        responses: {
-          200: {
-            description: 'Document details including current revision and metadata.',
-            content: {
-              'application/json': { schema: documentDetailsSchema },
-            },
-          },
-          404: {
-            description: 'Document not found or the user does not have access to it.',
           },
         },
       },
@@ -288,7 +273,25 @@ export const openApiDocument = createDocument({
       },
     },
 
-    '/api/documents/{documentId}/delete': {
+    '/api/documents/{documentId}': {
+      get: {
+        summary: 'Get document by ID',
+        tags: ['Documents'],
+        description:
+          'Retrieves the full details of a specific document by its unique ID. Returns the document with its current revision, view history, and favorite status.',
+        requestParams: { path: documentIdParamSchema },
+        responses: {
+          200: {
+            description: 'Document details including current revision and metadata.',
+            content: {
+              'application/json': { schema: documentDetailsSchema },
+            },
+          },
+          404: {
+            description: 'Document not found or the user does not have access to it.',
+          },
+        },
+      },
       delete: {
         summary: 'Delete document',
         tags: ['Documents'],
@@ -312,9 +315,10 @@ export const openApiDocument = createDocument({
     },
     '/api/editor-settings': {
       patch: {
-        summary: 'Update editor settings',
+        summary: 'Update user editor preferences',
         tags: ['Editor Settings'],
-        description: 'Updates the editor settings for the authenticated user.',
+        description:
+          "Updates the authenticated user's editor preferences and configuration. Includes settings for theme, font size, line height, tab size, word wrap, spell check, auto-save, and other editor behavior customizations. All fields are optional - only provided fields will be updated.",
         requestBody: {
           required: true,
           content: {
@@ -323,26 +327,31 @@ export const openApiDocument = createDocument({
         },
         responses: {
           200: {
-            description: 'Editor settings updated successfully.',
+            description:
+              'Editor settings updated successfully. Returns the complete updated settings object.',
             content: {
               'application/json': { schema: editorSettingsSchema },
             },
           },
           404: {
-            description: 'Editor settings not found.',
+            description:
+              'Editor settings not found. This may occur if the user account was not properly initialized.',
           },
         },
       },
     },
+
     '/api/favorites': {
       get: {
-        summary: 'List favorites',
+        summary: 'List user favorite documents',
         tags: ['Favorites'],
-        description: 'Lists the favorites for the authenticated user.',
+        description:
+          "Retrieves a paginated list of the authenticated user's favorite documents. Favorites allow users to bookmark frequently accessed documents for quick navigation. Supports filtering by document type, space, parent, and search term. Results include full document metadata and last viewed timestamps.",
         requestParams: { query: documentFiltersSchema.extend(paginationQuerySchema.shape) },
         responses: {
           200: {
-            description: 'List of favorites.',
+            description:
+              'Paginated list of favorite documents with metadata including total count and page information.',
             content: {
               'application/json': { schema: paginatedResultSchema(documentListItemSchema) },
             },
@@ -354,11 +363,13 @@ export const openApiDocument = createDocument({
       post: {
         summary: 'Add document to favorites',
         tags: ['Favorites'],
-        description: "Adds a document to the authenticated user's favorites.",
+        description:
+          "Adds a document to the authenticated user's favorites collection. If the document is already favorited, the operation is idempotent and updates the favorite timestamp. Favoriting a document makes it easily accessible from the favorites list.",
         requestParams: { path: documentIdParamSchema },
         responses: {
           201: {
-            description: 'Document added to favorites successfully.',
+            description:
+              'Document added to favorites successfully. Returns the favorite record with document and user IDs.',
             content: {
               'application/json': { schema: favoriteSchema },
             },
@@ -367,16 +378,199 @@ export const openApiDocument = createDocument({
             description:
               'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
           },
+          404: {
+            description: 'Failed to add document to favorites.',
+          },
         },
       },
       delete: {
         summary: 'Remove document from favorites',
         tags: ['Favorites'],
-        description: "Removes a document from the authenticated user's favorites.",
+        description:
+          "Removes a document from the authenticated user's favorites collection. The document itself is not affected - only the favorite bookmark is removed. This operation is idempotent.",
         requestParams: { path: documentIdParamSchema },
         responses: {
           204: {
-            description: 'Document removed from favorites successfully.',
+            description: 'Document removed from favorites successfully. No content returned.',
+          },
+          401: {
+            description:
+              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+
+    '/api/revisions/{revisionId}': {
+      get: {
+        summary: 'Get revision details',
+        tags: ['Revisions'],
+        description:
+          'Retrieves the full details of a specific revision by its unique ID. Returns revision metadata, content checksum, and a URL to fetch the actual revision content. Useful for viewing historical versions or comparing revisions.',
+        requestParams: { path: revisionIdParamSchema },
+        responses: {
+          200: {
+            description:
+              'Revision found. Returns revision metadata including ID, document reference, timestamp, and content URL.',
+            content: {
+              'application/json': { schema: plainRevisionSchema },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+      patch: {
+        summary: 'Update revision metadata or content',
+        tags: ['Revisions'],
+        description:
+          "Updates a revision's metadata (such as revision name) or content. Can be used to rename a revision for better organization, or to update the revision content and checksum. Supports partial updates - only provided fields will be modified.",
+        requestParams: { path: revisionIdParamSchema },
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: updateRevisionSchema },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Revision updated successfully. Returns the updated revision metadata.',
+            content: {
+              'application/json': { schema: plainRevisionSchema },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+      delete: {
+        summary: 'Delete a revision',
+        tags: ['Revisions'],
+        description:
+          "Permanently deletes a revision from the document's version history. This action cannot be undone. The revision content file is also removed from storage. Cannot delete the current active revision of a document.",
+        requestParams: { path: revisionIdParamSchema },
+        responses: {
+          204: {
+            description: 'Revision deleted successfully. No content returned.',
+          },
+          401: {
+            description:
+              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/api/revisions': {
+      post: {
+        summary: 'Create a new document revision',
+        tags: ['Revisions'],
+        description:
+          'Creates a new revision (version snapshot) for a document. Each revision captures the complete state of the document content at a point in time. Revisions enable version history, undo/redo, and content recovery. Optionally set the new revision as the current active revision for the document.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: createRevisionSchema },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'Revision created successfully. Returns the revision metadata including ID, timestamp, and content URL.',
+            content: {
+              'application/json': { schema: plainRevisionSchema },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/revisions/{revisionId}': {
+      get: {
+        summary: 'Download revision content file',
+        tags: ['Storage'],
+        description:
+          'Downloads the raw content file for a specific revision. Returns the actual revision content as a file download. This endpoint is used to retrieve the full document content for a specific version, typically for rendering or comparison purposes.',
+        requestParams: { path: revisionIdParamSchema },
+        responses: {
+          200: {
+            description:
+              'Revision content file returned successfully. The response body contains the raw file content.',
+            content: {
+              'application/octet-stream': {
+                schema: z.string(),
+              },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/attachments/{documentId}/{filename}': {
+      get: {
+        summary: 'Download document attachment',
+        tags: ['Storage'],
+        description:
+          'Downloads an attachment file from a document. Returns the raw file content for the specified attachment. Used to serve images, PDFs, and other embedded files referenced in document content.',
+        requestParams: {
+          path: documentIdParamSchema.extend({
+            filename: z.string().describe('The filename of the attachment to download'),
+          }),
+        },
+        responses: {
+          200: {
+            description:
+              'Attachment file returned successfully. The response body contains the raw file content with appropriate content-type header.',
+            content: {
+              'application/octet-stream': {
+                schema: z.string(),
+              },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/attachments/{documentId}': {
+      post: {
+        summary: 'Upload document attachment',
+        tags: ['Storage'],
+        description:
+          "Uploads a file attachment to a document. Attachments can be images, PDFs, or other files embedded or referenced within the document content. Maximum file size is 10MB. The uploaded file is stored in the document's attachment directory and a URL is returned for referencing the file.",
+        requestParams: { path: documentIdParamSchema },
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: z.object({
+                attachments: z.string().describe('The file to upload (single file)'),
+              }),
+            },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'Attachment uploaded successfully. Returns the URL to access the uploaded file.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  url: z.string().describe('URL path to access the uploaded attachment'),
+                }),
+              },
+            },
           },
           401: {
             description:
