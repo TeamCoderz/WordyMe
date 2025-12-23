@@ -20,7 +20,12 @@ import {
   viewDocument,
 } from '../services/documents.js';
 import { userHasDocument } from '../services/access.js';
-import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import {
+  HttpInternalServerError,
+  HttpNotFound,
+  HttpUnprocessableEntity,
+  HttpUnauthorized,
+} from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
@@ -44,13 +49,13 @@ router.get(
   },
 );
 
-router.post('/', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
+router.post('/create', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-    throw new HttpNotFound('Parent document not found or not accessible');
+    throw new HttpUnauthorized('Parent document not found or not accessible');
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-    throw new HttpNotFound('Space document not found or not accessible');
+    throw new HttpUnauthorized('Space document not found or not accessible');
   }
 
   const document = await createDocument(req.body, req.user!.id);
@@ -62,9 +67,9 @@ router.get(
   validate({ params: documentHandleParamSchema, query: getSingleDocumentOptionsSchema }),
   requireAuth,
   async (req, res) => {
-    const document = await getDocumentDetails(req.params, req.user!.id);
+    const document = await getDocumentDetails({ handle: req.params.handle }, req.user!.id);
     if (!document) {
-      throw new HttpNotFound('Document not found for the provided handle');
+      throw new HttpNotFound('Document not found or not accessible');
     }
     if (req.query.updateLastViewed) {
       dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
@@ -87,20 +92,21 @@ router.get(
 );
 
 router.patch(
-  '/:documentId',
+  '/:documentId/update',
   requireAuth,
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
 
     const { parentId, spaceId } = req.body;
+
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-      throw new HttpNotFound('Parent document not found or not accessible');
+      throw new HttpUnauthorized('Parent document not found or not accessible');
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-      throw new HttpNotFound('Space container not found or not accessible');
+      throw new HttpUnauthorized('Space container not found or not accessible');
     }
 
     const updatedDocument = await updateDocument(req.params.documentId, req.body);
@@ -114,7 +120,7 @@ router.delete(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
 
     const documentCount = await getUserDocumentCount(req.user!.id);
@@ -136,7 +142,7 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
@@ -149,7 +155,7 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
     const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
     if (!revision) {
@@ -165,7 +171,7 @@ router.post(
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
@@ -183,7 +189,7 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpUnauthorized('Document not found or not accessible');
     }
     const exportedDocument = await exportDocumentTree(req.params.documentId);
     res.status(200).json(exportedDocument);
@@ -194,10 +200,10 @@ router.post('/import', requireAuth, validate({ body: importDocumentSchema }), as
   const { spaceId, parentId, position, document } = req.body;
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-    throw new HttpNotFound('Parent document not found or not accessible');
+    throw new HttpUnauthorized('Parent document not found or not accessible');
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-    throw new HttpNotFound('Space document not found or not accessible');
+    throw new HttpUnauthorized('Space document not found or not accessible');
   }
 
   const importedDocument = await importDocumentTree(

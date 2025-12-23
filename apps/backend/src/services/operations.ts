@@ -35,6 +35,7 @@ export const copyDocument = async (
       spaceId: payload.spaceId,
       documentType: originalDocument.documentType,
       isContainer: originalDocument.isContainer,
+      clientId: null,
     },
     userId,
   );
@@ -167,8 +168,9 @@ export const importDocumentTree = async (
       documentType: document.type as 'space' | 'folder' | 'note',
       isContainer: document.is_container,
       position: inherited.position ?? document.position,
-      spaceId: inherited.spaceId,
-      parentId: inherited.parentId,
+      spaceId: inherited.spaceId ?? null,
+      parentId: inherited.parentId ?? null,
+      clientId: null,
     },
     userId,
   );

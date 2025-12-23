@@ -1,4 +1,6 @@
+import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
+import { revisionsTable } from '../models/revisions.js';
 
 export const createRevisionSchema = z.object({
   documentId: z.uuid('Invalid document ID'),
@@ -21,27 +23,22 @@ export const updateRevisionContentSchema = z.object({
 });
 
 export const updateRevisionSchema = updateRevisionNameSchema.or(updateRevisionContentSchema);
-
 export const revisionIdParamSchema = z.object({
   revisionId: z.uuid('Invalid revision ID'),
+});
+
+export const revisionDetailsSchema = createSelectSchema(revisionsTable).extend({
+  url: z.string().min(1, 'Revision URL is required'),
+  content: z.string().min(1, 'Revision Content is required'),
+});
+
+export const plainRevisionSchema = createSelectSchema(revisionsTable).extend({
+  url: z.string().min(1, 'Revision URL is required'),
 });
 
 export type CreateRevisionInput = z.output<typeof createRevisionSchema>;
 export type UpdateRevisionNameInput = z.output<typeof updateRevisionNameSchema>;
 export type UpdateRevisionContentInput = z.output<typeof updateRevisionContentSchema>;
 export type UpdateRevisionInput = z.output<typeof updateRevisionSchema>;
-
-export type RevisionDetails = {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  documentId: string;
-  userId: string;
-  content: string;
-  url: string;
-  revisionName: string | null;
-  text: string;
-  checksum: string | null;
-};
-
-export type PlainRevision = Omit<RevisionDetails, 'content'>;
+export type RevisionDetails = z.output<typeof revisionDetailsSchema>;
+export type PlainRevision = z.output<typeof plainRevisionSchema>;

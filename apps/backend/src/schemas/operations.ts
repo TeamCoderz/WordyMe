@@ -1,21 +1,12 @@
 import z from 'zod';
 import { Attachment } from '../services/attachments.js';
+import { createSelectSchema } from 'drizzle-zod';
+import { documentsTable } from '../models/documents.js';
+import { revisionsTable } from '../models/revisions.js';
 
-export const copyDocumentSchema = z.object({
-  name: z.string(),
-  spaceId: z.uuid().optional().nullable(),
-  parentId: z.uuid().optional().nullable(),
-  position: z.string().optional().nullable(),
-});
-
+export type ImportDocumentInput = z.output<typeof importDocumentSchema>;
 export type CopyDocumentInput = z.output<typeof copyDocumentSchema>;
-
-export type ExportedRevision = {
-  text: string;
-  checksum: string | null;
-  content: string;
-};
-
+export type ExportedRevision = z.output<typeof exportedRevisionSchema>;
 export type ExportedDocument = {
   name: string;
   handle: string;
@@ -28,7 +19,6 @@ export type ExportedDocument = {
   children: ExportedDocument[];
   spaceRootChildren: ExportedDocument[];
 };
-
 export type ImportInheritedData = {
   spaceId?: string | null;
   parentId?: string | null;
@@ -40,20 +30,29 @@ export const attachmentSchema = z.object({
   url: z.string(),
 });
 
-export const exportedRevisionSchema = z.object({
+export const exportedRevisionSchema = createSelectSchema(revisionsTable, {
   text: z.string(),
   checksum: z.string().nullable(),
-  content: z.string(),
-});
+})
+  .extend({
+    content: z.string(),
+  })
+  .pick({
+    text: true,
+    checksum: true,
+    content: true,
+  });
+
+const baseDocumentSchema = createSelectSchema(documentsTable);
 
 export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
   z.object({
-    name: z.string(),
-    handle: z.string(),
-    icon: z.string().nullable(),
-    type: z.enum(['space', 'folder', 'note']),
-    position: z.string().nullable(),
-    is_container: z.boolean(),
+    name: baseDocumentSchema.shape.name,
+    handle: baseDocumentSchema.shape.handle,
+    icon: baseDocumentSchema.shape.icon,
+    type: baseDocumentSchema.shape.documentType,
+    position: baseDocumentSchema.shape.position,
+    is_container: baseDocumentSchema.shape.isContainer,
     revision: exportedRevisionSchema.nullable(),
     attachments: z.array(attachmentSchema),
     children: z.array(exportedDocumentSchema),
@@ -68,4 +67,15 @@ export const importDocumentSchema = z.object({
   document: exportedDocumentSchema,
 });
 
-export type ImportDocumentInput = z.output<typeof importDocumentSchema>;
+export const copyDocumentSchema = createSelectSchema(documentsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  userId: true,
+  currentRevisionId: true,
+  clientId: true,
+  handle: true,
+  isContainer: true,
+  documentType: true,
+  icon: true,
+});

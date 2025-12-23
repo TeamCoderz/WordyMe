@@ -5,8 +5,18 @@ export const paginationQuerySchema = z.object({
   limit: z.coerce.number().min(1).default(10),
 });
 
-export type PaginationQuery = z.output<typeof paginationQuerySchema>;
+export const paginatedResultSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+  z.object({
+    items: z.array(itemSchema),
+    meta: z.object({
+      total: z.number(),
+      page: z.number(),
+      limit: z.number(),
+      totalPages: z.number(),
+    }),
+  });
 
+export type PaginationQuery = z.output<typeof paginationQuerySchema>;
 export type PaginatedResult<T> = {
   items: T[];
   meta: {
