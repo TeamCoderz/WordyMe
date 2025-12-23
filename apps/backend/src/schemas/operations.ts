@@ -1,5 +1,5 @@
 import z from 'zod';
-import { createSelectSchema } from 'drizzle-zod';
+import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
@@ -46,7 +46,7 @@ export const importDocumentSchema = z.object({
   document: exportedDocumentSchema,
 });
 
-export const copyDocumentSchema = createSelectSchema(documentsTable).omit({
+export const copyDocumentSchema = createInsertSchema(documentsTable).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
