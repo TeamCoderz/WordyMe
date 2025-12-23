@@ -52,10 +52,14 @@ router.get(
 router.post('/create', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-    throw new HttpUnauthorized('Parent document not found or not accessible');
+    throw new HttpUnauthorized(
+      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+    );
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-    throw new HttpUnauthorized('Space document not found or not accessible');
+    throw new HttpUnauthorized(
+      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+    );
   }
 
   const document = await createDocument(req.body, req.user!.id);
@@ -69,7 +73,7 @@ router.get(
   async (req, res) => {
     const document = await getDocumentDetails({ handle: req.params.handle }, req.user!.id);
     if (!document) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpNotFound('Document with the specified handle not found or not accessible.');
     }
     if (req.query.updateLastViewed) {
       dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
@@ -85,7 +89,7 @@ router.get(
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
     if (!document) {
-      throw new HttpNotFound('Document not found or not accessible');
+      throw new HttpNotFound('Document not found or the user does not have access to it.');
     }
     res.status(200).json(document);
   },
@@ -97,16 +101,22 @@ router.patch(
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     const { parentId, spaceId } = req.body;
 
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-      throw new HttpUnauthorized('Parent document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+      );
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-      throw new HttpUnauthorized('Space container not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     const updatedDocument = await updateDocument(req.params.documentId, req.body);
@@ -120,14 +130,16 @@ router.delete(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
 
     const documentCount = await getUserDocumentCount(req.user!.id);
 
     if (documentCount <= 1) {
       throw new HttpUnprocessableEntity(
-        'Cannot delete the last remaining document. You must have at least one document.',
+        'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
       );
     }
 
@@ -142,7 +154,9 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
     res.status(200).json(revisions);
@@ -155,11 +169,15 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
     const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
     if (!revision) {
-      throw new HttpNotFound('No current revision available for this document');
+      throw new HttpNotFound(
+        'No current revision exists for this document (document may be empty or newly created).',
+      );
     }
     res.status(200).json(revision);
   },
@@ -171,13 +189,17 @@ router.post(
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
     );
     if (!copiedDocument) {
-      throw new HttpInternalServerError('Unable to copy document at this time');
+      throw new HttpInternalServerError(
+        'Internal server error. The copy operation failed unexpectedly.',
+      );
     }
     res.status(201).json(copiedDocument);
   },
@@ -189,7 +211,9 @@ router.get(
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized('Document not found or not accessible');
+      throw new HttpUnauthorized(
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      );
     }
     const exportedDocument = await exportDocumentTree(req.params.documentId);
     res.status(200).json(exportedDocument);
@@ -200,10 +224,14 @@ router.post('/import', requireAuth, validate({ body: importDocumentSchema }), as
   const { spaceId, parentId, position, document } = req.body;
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
-    throw new HttpUnauthorized('Parent document not found or not accessible');
+    throw new HttpUnauthorized(
+      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+    );
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
-    throw new HttpUnauthorized('Space document not found or not accessible');
+    throw new HttpUnauthorized(
+      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+    );
   }
 
   const importedDocument = await importDocumentTree(

@@ -20,7 +20,7 @@ import {
 } from '../schemas/operations.js';
 import { paginationQuerySchema, paginatedResultSchema } from '../schemas/pagination.js';
 import { editorSettingsSchema } from '../schemas/editor-settings.js';
-
+import { favoriteSchema } from '../schemas/favorites.js';
 export const openApiDocument = createDocument({
   openapi: '3.0.0',
   info: {
@@ -334,11 +334,57 @@ export const openApiDocument = createDocument({
         },
       },
     },
-  },
-  security: [
-    {
-      apiKeyCookie: [],
-      bearerAuth: [],
+    '/api/favorites': {
+      get: {
+        summary: 'List favorites',
+        tags: ['Favorites'],
+        description: 'Lists the favorites for the authenticated user.',
+        requestParams: { query: documentFiltersSchema.extend(paginationQuerySchema.shape) },
+        responses: {
+          200: {
+            description: 'List of favorites.',
+            content: {
+              'application/json': { schema: paginatedResultSchema(documentListItemSchema) },
+            },
+          },
+        },
+      },
     },
-  ],
+    '/api/favorites/{documentId}': {
+      post: {
+        summary: 'Add document to favorites',
+        tags: ['Favorites'],
+        description: "Adds a document to the authenticated user's favorites.",
+        requestParams: { path: documentIdParamSchema },
+        responses: {
+          201: {
+            description: 'Document added to favorites successfully.',
+            content: {
+              'application/json': { schema: favoriteSchema },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+      delete: {
+        summary: 'Remove document from favorites',
+        tags: ['Favorites'],
+        description: "Removes a document from the authenticated user's favorites.",
+        requestParams: { path: documentIdParamSchema },
+        responses: {
+          204: {
+            description: 'Document removed from favorites successfully.',
+          },
+          401: {
+            description:
+              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+  },
+  security: [{ apiKeyCookie: [], bearerAuth: [] }],
 });

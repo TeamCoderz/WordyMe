@@ -1,13 +1,11 @@
+import { createSelectSchema } from 'drizzle-zod';
+import { favoritesTable } from '../models/favorites.js';
 import z from 'zod';
 
-export const documentIdParamSchema = z.object({
-  documentId: z.uuid('Invalid document ID'),
+export const favoriteSchema = createSelectSchema(favoritesTable).pick({
+  id: true,
+  documentId: true,
+  userId: true,
 });
 
-export type DocumentIdParamInput = z.output<typeof documentIdParamSchema>;
-
-export type Favorite = {
-  id: string;
-  documentId: string;
-  userId: string;
-};
+export type Favorite = z.output<typeof favoriteSchema>;

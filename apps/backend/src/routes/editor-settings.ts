@@ -10,7 +10,7 @@ const router: Router = Router();
 router.patch('/', requireAuth, validate({ body: editorSettingsSchema }), async (req, res) => {
   const updated = await setEditorSettings(req.user!.id, req.body);
   if (!updated) {
-    throw new HttpNotFound('Editor settings not found');
+    throw new HttpNotFound('Editor settings not found.');
   }
   res.status(200).json(updated);
 });
