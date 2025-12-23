@@ -7,9 +7,11 @@ import { favoritesTable } from '../models/favorites.js';
 import { revisionDetailsSchema } from './revisions.js';
 
 export const documentHandleParamSchema = createSelectSchema(documentsTable).pick({ handle: true });
+
 export const documentIdParamSchema = z.object({
   documentId: z.uuid('Invalid document ID'),
 });
+
 export const getSingleDocumentOptionsSchema = z.object({
   updateLastViewed: z.boolean().optional(),
 });
@@ -39,6 +41,15 @@ export const updateDocumentSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).partial();
 
+export const plainDocumentSchema = createSelectSchema(documentsTable, {
+  documentType: z.enum(['space', 'folder', 'note']),
+});
+
+export const documentListItemSchema = plainDocumentSchema.extend({
+  isFavorite: z.boolean(),
+  lastViewedAt: z.date().nullable(),
+});
+
 export const documentDetailsSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).extend({
@@ -55,18 +66,9 @@ export const copiedDocumentSchema = createSelectSchema(documentsTable, {
   currentRevision: revisionDetailsSchema.nullable(),
 });
 
-export const plainDocumentSchema = createSelectSchema(documentsTable, {
-  documentType: z.enum(['space', 'folder', 'note']),
-});
-
-export const documentListItemSchema = plainDocumentSchema.extend({
-  isFavorite: z.boolean(),
-  lastViewedAt: z.date().nullable(),
-});
-
-export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
 export type CreateDocumentInput = z.output<typeof createDocumentSchema>;
+export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
 export type DocumentListItem = z.output<typeof documentListItemSchema>;
 export type DocumentDetails = z.output<typeof documentDetailsSchema>;

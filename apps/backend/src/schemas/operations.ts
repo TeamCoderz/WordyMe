@@ -1,29 +1,8 @@
 import z from 'zod';
-import { Attachment } from '../services/attachments.js';
 import { createSelectSchema } from 'drizzle-zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
-
-export type ImportDocumentInput = z.output<typeof importDocumentSchema>;
-export type CopyDocumentInput = z.output<typeof copyDocumentSchema>;
-export type ExportedRevision = z.output<typeof exportedRevisionSchema>;
-export type ExportedDocument = {
-  name: string;
-  handle: string;
-  icon: string | null;
-  type: string;
-  position: string | null;
-  is_container: boolean;
-  revision: ExportedRevision | null;
-  attachments: Attachment[];
-  children: ExportedDocument[];
-  spaceRootChildren: ExportedDocument[];
-};
-export type ImportInheritedData = {
-  spaceId?: string | null;
-  parentId?: string | null;
-  position?: string | null;
-};
+import { Attachment } from '../services/attachments.js';
 
 export const attachmentSchema = z.object({
   filename: z.string(),
@@ -79,3 +58,24 @@ export const copyDocumentSchema = createSelectSchema(documentsTable).omit({
   documentType: true,
   icon: true,
 });
+
+export type ExportedRevision = z.output<typeof exportedRevisionSchema>;
+export type ExportedDocument = {
+  name: string;
+  handle: string;
+  icon: string | null;
+  type: string;
+  position: string | null;
+  is_container: boolean;
+  revision: ExportedRevision | null;
+  attachments: Attachment[];
+  children: ExportedDocument[];
+  spaceRootChildren: ExportedDocument[];
+};
+export type ImportDocumentInput = z.output<typeof importDocumentSchema>;
+export type ImportInheritedData = {
+  spaceId?: string | null;
+  parentId?: string | null;
+  position?: string | null;
+};
+export type CopyDocumentInput = z.output<typeof copyDocumentSchema>;
