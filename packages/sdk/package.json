@@ -15,14 +15,15 @@
   },
   "type": "module",
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
     "@repo/backend": "workspace:*",
+    "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3"
   },
   "dependencies": {
     "axios": "^1.13.2",
-    "better-auth": "^1.4.7"
+    "better-auth": "^1.4.7",
+    "socket.io-client": "^4.8.2"
   }
 }

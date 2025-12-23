@@ -3,6 +3,7 @@ import { auth } from '../lib/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { HttpUnauthorized } from '@httpx/exception';
 import { InferSession, InferUser } from 'better-auth';
+import { ExtendedError, Socket } from 'socket.io';
 
 declare global {
   namespace Express {
@@ -10,6 +11,13 @@ declare global {
       user?: InferUser<typeof auth>;
       session?: InferSession<typeof auth>;
     }
+  }
+}
+
+declare module 'socket.io' {
+  interface Socket {
+    user: InferUser<typeof auth>;
+    session: InferSession<typeof auth>;
   }
 }
 
@@ -29,4 +37,22 @@ export const requireAuth = async <P, R, B, Q>(
   req.session = session.session;
 
   next();
+};
+
+export const ioRequireAuth = async (socket: Socket, next: (err?: ExtendedError) => void) => {
+  try {
+    const headers = fromNodeHeaders(socket.handshake.headers);
+    const session = await auth.api.getSession({ headers });
+
+    if (!session) {
+      throw new HttpUnauthorized();
+    }
+
+    socket.user = session.user;
+    socket.session = session.session;
+
+    next();
+  } catch (err) {
+    next(err as ExtendedError);
+  }
 };

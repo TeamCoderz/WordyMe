@@ -1,9 +1,12 @@
 import express, { type Express } from 'express';
+import { createServer } from 'node:http';
 import morgan from 'morgan';
 import cors from 'cors';
 import { apiReference } from '@scalar/express-api-reference';
 import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
+import { openApiDocument } from './lib/docs.js';
+import { initializeSocket } from './lib/socket.js';
 
 // Error Middlewares
 import { errorHandler, notFoundHandler } from './middlewares/errors.js';
@@ -14,9 +17,11 @@ import { revisionsRouter } from './routes/revisions.js';
 import { editorSettingsRouter } from './routes/editor-settings.js';
 import { favoritesRouter } from './routes/favorites.js';
 import { storageRouter } from './routes/storage.js';
-import { openApiDocument } from './lib/docs.js';
 
 const app: Express = express();
+const server = createServer(app);
+
+initializeSocket(server);
 
 app.use(cors());
 
@@ -54,4 +59,4 @@ app.get('/', (req, res) => {
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-export default app;
+export default server;
