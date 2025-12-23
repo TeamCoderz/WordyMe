@@ -1,12 +1,13 @@
+import { createSelectSchema } from 'drizzle-zod';
 import z from 'zod';
+import { editorSettingsTable } from '../models/editor-settings.js';
 
-export const editorSettingsSchema = z.object({
-  keepPreviousRevision: z.boolean().optional(),
-  autosave: z.boolean().optional(),
+export const editorSettingsSchema = createSelectSchema(editorSettingsTable).pick({
+  keepPreviousRevision: true,
+  autosave: true,
 });
 
 export type EditorSettingsInput = z.output<typeof editorSettingsSchema>;
-
 export type EditorSettings = {
   id: string;
   createdAt: Date;

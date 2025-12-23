@@ -19,6 +19,7 @@ import {
   importDocumentSchema,
 } from '../schemas/operations.js';
 import { paginationQuerySchema, paginatedResultSchema } from '../schemas/pagination.js';
+import { editorSettingsSchema } from '../schemas/editor-settings.js';
 
 export const openApiDocument = createDocument({
   openapi: '3.0.0',
@@ -305,6 +306,30 @@ export const openApiDocument = createDocument({
           422: {
             description:
               'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
+          },
+        },
+      },
+    },
+    '/api/editor-settings': {
+      patch: {
+        summary: 'Update editor settings',
+        tags: ['Editor Settings'],
+        description: 'Updates the editor settings for the authenticated user.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: editorSettingsSchema },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Editor settings updated successfully.',
+            content: {
+              'application/json': { schema: editorSettingsSchema },
+            },
+          },
+          404: {
+            description: 'Editor settings not found.',
           },
         },
       },
