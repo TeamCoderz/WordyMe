@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { type Server as HttpServer } from 'node:http';
 import { ioRequireAuth } from '../middlewares/auth.js';
 import { userHasDocument } from '../services/access.js';
+import { SocketEventKey, SocketEventsMap } from '../schemas/realtime.js';
 
 let io: Server | null = null;
 
@@ -38,4 +39,22 @@ export const getSocket = () => {
     throw new Error('Socket.io not initialized');
   }
   return io;
+};
+
+export const emitToUser = <K extends SocketEventKey>(
+  userId: string,
+  event: K,
+  data: SocketEventsMap[K],
+) => {
+  const io = getSocket();
+  io.to(`user:${userId}`).emit(event, data);
+};
+
+export const emitToSpace = <K extends SocketEventKey>(
+  spaceId: string,
+  event: K,
+  data: SocketEventsMap[K],
+) => {
+  const io = getSocket();
+  io.to(`space:${spaceId}`).emit(event, data);
 };

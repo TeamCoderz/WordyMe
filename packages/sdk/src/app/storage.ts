@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 
 const storageClient = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL + '/storage',
+  withCredentials: true,
 });
 
 export const getFile = async (url: string, responseType: 'text' | 'blob' = 'text') => {
