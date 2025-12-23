@@ -20,7 +20,19 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          await createDocument({ name: 'Default Space', documentType: 'space' }, user.id);
+          await createDocument(
+            {
+              name: 'Default Space',
+              documentType: 'space',
+              icon: null,
+              position: null,
+              parentId: null,
+              spaceId: null,
+              isContainer: true,
+              clientId: null,
+            },
+            user.id,
+          );
           await setEditorSettings(user.id, {});
         },
       },
