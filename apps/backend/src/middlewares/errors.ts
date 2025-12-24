@@ -7,7 +7,30 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
 
   const httpException = toHttpException(err);
 
-  res.status(httpException.statusCode).json(httpException);
+  const response: {
+    statusCode: number;
+    name: string;
+    message?: string;
+    issues?: unknown[];
+    cause?: unknown;
+  } = {
+    statusCode: httpException.statusCode,
+    name: httpException.name || httpException.constructor.name,
+  };
+
+  if (httpException.message) {
+    response.message = httpException.message;
+  }
+
+  if ('issues' in httpException && httpException.issues) {
+    response.issues = httpException.issues as unknown[];
+  }
+
+  if ('cause' in httpException && httpException.cause) {
+    response.cause = httpException.cause;
+  }
+
+  res.status(httpException.statusCode).json(response);
 };
 
 export const notFoundHandler: RequestHandler = () => {
