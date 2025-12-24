@@ -7,6 +7,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
 import { openApiDocument } from './lib/docs.js';
 import { initializeSocket } from './lib/socket.js';
+import { env } from './env.js';
 
 // Error Middlewares
 import { errorHandler, notFoundHandler } from './middlewares/errors.js';
@@ -23,7 +24,12 @@ const server = createServer(app);
 
 initializeSocket(server);
 
-app.use(cors());
+app.use(
+  cors({
+    origin: [env.CLIENT_URL],
+    credentials: true,
+  }),
+);
 
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
