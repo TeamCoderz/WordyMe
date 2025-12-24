@@ -1,33 +1,22 @@
 import { ErrorRequestHandler, RequestHandler } from 'express';
 import { toHttpException } from '../utils/errors.js';
-import { HttpNotFound } from '@httpx/exception';
-import { env } from '../env.js';
-import { errorSchema, type ErrorSchema } from '../schemas/errors.js';
+import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
 
   const httpException = toHttpException(err);
 
-  const response: ErrorSchema = {
+  res.status(httpException.statusCode).json({
+    name: httpException.name,
+    message: httpException.message,
+    code: httpException.code,
+    errorId: httpException.errorId,
+    method: httpException.method,
     statusCode: httpException.statusCode,
-    name: httpException.name || httpException.constructor.name,
-  };
-
-  if (httpException.message) {
-    response.message = httpException.message;
-  }
-
-  if ('issues' in httpException && httpException.issues) {
-    response.issues = httpException.issues as unknown[];
-  }
-
-  if (env.NODE_ENV === 'development' && 'cause' in httpException && httpException.cause) {
-    response.cause = httpException.cause;
-  }
-
-  const validatedResponse = errorSchema.parse(response);
-  res.status(httpException.statusCode).json(validatedResponse);
+    url: httpException.url,
+    issues: (httpException as HttpUnprocessableEntity).issues,
+  } satisfies HttpUnprocessableEntity);
 };
 
 export const notFoundHandler: RequestHandler = () => {
