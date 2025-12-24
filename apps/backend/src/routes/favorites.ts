@@ -8,7 +8,7 @@ import {
   removeDocumentFromFavorites,
 } from '../services/favorites.js';
 import { userHasDocument } from '../services/access.js';
-import { HttpNotFound, HttpUnauthorized } from '@httpx/exception';
+import { HttpUnauthorized } from '@httpx/exception';
 import { documentFiltersSchema } from '../schemas/documents.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
@@ -35,9 +35,6 @@ router.post(
       );
     }
     const favorite = await addDocumentToFavorites(req.user!.id, req.params.documentId);
-    if (!favorite) {
-      throw new HttpNotFound('Failed to add document to favorites');
-    }
     res.status(201).json(favorite);
   },
 );
