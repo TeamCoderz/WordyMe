@@ -7,6 +7,7 @@ import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { orderByColumns } from './documents.js';
 import { DocumentFilters, DocumentListItem } from '../schemas/documents.js';
 import { CollectionQuery } from '../utils/collections.js';
+import { emitToSpace, emitToUser } from '../lib/socket.js';
 
 export const addDocumentToFavorites = async (userId: string, documentId: string) => {
   const [favorite] = await db
@@ -22,15 +23,38 @@ export const addDocumentToFavorites = async (userId: string, documentId: string)
       userId: favoritesTable.userId,
     });
 
-  return favorite ?? null;
+  const document = await db.query.documentsTable.findFirst({
+    columns: { spaceId: true, documentType: true },
+    where: eq(documentsTable.id, documentId),
+  });
+
+  if (document?.documentType === 'space') {
+    emitToUser(userId, 'space:favorited', favorite);
+  } else if (document?.spaceId) {
+    emitToSpace(document.spaceId, 'document:favorited', favorite);
+  }
+
+  return favorite;
 };
 
 export const removeDocumentFromFavorites = async (userId: string, documentId: string) => {
-  const result = await db
+  const [favorite] = await db
     .delete(favoritesTable)
-    .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.documentId, documentId)));
+    .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.documentId, documentId)))
+    .returning();
 
-  return result;
+  const document = await db.query.documentsTable.findFirst({
+    columns: { spaceId: true, documentType: true },
+    where: eq(documentsTable.id, documentId),
+  });
+
+  if (document?.documentType === 'space') {
+    emitToUser(userId, 'space:unfavorited', favorite);
+  } else if (document?.spaceId) {
+    emitToSpace(document.spaceId, 'document:unfavorited', favorite);
+  }
+
+  return favorite;
 };
 
 export const listFavorites = async (userId: string, filters: DocumentFilters & PaginationQuery) => {
