@@ -45,7 +45,7 @@ app.get(
   '/docs',
   apiReference({
     sources: [
-      { title: 'Wordy API', url: '/docs/openapi.json' },
+      { title: 'WordyMe API', url: '/docs/openapi.json' },
       { title: 'Better-Auth API', url: '/api/auth/open-api/generate-schema' },
     ],
     pageTitle: 'Wordy API Documentation',

@@ -56,9 +56,10 @@ router.post(
 
     form.on('fileBegin', (name) => {
       if (name !== 'attachments') {
-        throw new HttpUnprocessableEntity(
-          'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
-        );
+        throw new HttpUnprocessableEntity({
+          message:
+            'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
+        });
       }
     });
 
@@ -67,9 +68,10 @@ router.post(
     const attachments = files.attachments;
 
     if (!attachments || attachments.length === 0) {
-      throw new HttpUnprocessableEntity(
-        'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
-      );
+      throw new HttpUnprocessableEntity({
+        message:
+          'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
+      });
     }
 
     return res.status(201).json({

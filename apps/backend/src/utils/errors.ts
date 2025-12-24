@@ -8,7 +8,7 @@ export const toHttpException = (error: unknown): HttpException => {
 
   if (error instanceof ZodError) {
     return new HttpUnprocessableEntity({
-      // 422
+      message: 'Validation failed. Please check your input and try again.',
       issues: error.issues as HttpValidationIssue[],
       cause: error,
     });
