@@ -15,6 +15,7 @@ import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
+import { emitToSpace, emitToUser } from '../lib/socket.js';
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -139,16 +140,22 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
   if (await checkExistingDocumentHandle(handle)) {
     handle = appendUniqueSuffix(handle);
   }
-  return (
-    await db
-      .insert(documentsTable)
-      .values({
-        ...payload,
-        handle,
-        userId,
-      })
-      .returning()
-  )[0];
+  const [document] = await db
+    .insert(documentsTable)
+    .values({
+      ...payload,
+      handle,
+      userId,
+    })
+    .returning();
+
+  if (payload.documentType === 'space') {
+    emitToUser(userId, 'space:created', document);
+  } else if (payload.spaceId) {
+    emitToSpace(payload.spaceId, 'document:created', document);
+  }
+
+  return document;
 };
 
 export const viewDocument = async (documentId: string, userId: string) => {
@@ -163,32 +170,39 @@ export const viewDocument = async (documentId: string, userId: string) => {
 
 export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
   let handle;
+
   if (payload.name) {
     handle = slugify(payload.name);
     if (await checkExistingDocumentHandle(handle)) {
       handle = appendUniqueSuffix(handle);
     }
   }
+
   if (payload.spaceId) {
     const spaceId = payload.spaceId;
-    dbWritesQueue.add(() => updateDocumentSpaceId(documentId, spaceId));
+
+    const children = await db.query.documentsTable.findMany({
+      where: eq(documentsTable.parentId, documentId),
+    });
+
+    for (const child of children) {
+      dbWritesQueue.add(() => updateDocument(child.id, { spaceId }));
+    }
   }
+
   const [document] = await db
     .update(documentsTable)
     .set({ ...payload, handle })
     .where(eq(documentsTable.id, documentId))
     .returning();
+
+  if (document.documentType === 'space') {
+    emitToUser(document.userId, 'space:updated', document);
+  } else if (document.spaceId) {
+    emitToSpace(document.spaceId, 'document:updated', document);
+  }
+
   return document;
-};
-
-export const updateDocumentSpaceId = async (documentId: string, spaceId: string) => {
-  await db.update(documentsTable).set({ spaceId }).where(eq(documentsTable.id, documentId));
-
-  const children = await db.query.documentsTable.findMany({
-    where: eq(documentsTable.parentId, documentId),
-  });
-
-  children.forEach((child) => dbWritesQueue.add(() => updateDocumentSpaceId(child.id, spaceId)));
 };
 
 export const getUserDocumentCount = async (userId: string): Promise<number> => {
