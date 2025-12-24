@@ -1,6 +1,7 @@
 import { ErrorRequestHandler, RequestHandler } from 'express';
 import { toHttpException } from '../utils/errors.js';
 import { HttpNotFound } from '@httpx/exception';
+import { env } from '../env.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
@@ -26,7 +27,7 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     response.issues = httpException.issues as unknown[];
   }
 
-  if ('cause' in httpException && httpException.cause) {
+  if (env.NODE_ENV === 'development' && 'cause' in httpException && httpException.cause) {
     response.cause = httpException.cause;
   }
 
