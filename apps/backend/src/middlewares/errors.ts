@@ -2,19 +2,14 @@ import { ErrorRequestHandler, RequestHandler } from 'express';
 import { toHttpException } from '../utils/errors.js';
 import { HttpNotFound } from '@httpx/exception';
 import { env } from '../env.js';
+import { errorSchema, type ErrorSchema } from '../schemas/errors.js';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
 
   const httpException = toHttpException(err);
 
-  const response: {
-    statusCode: number;
-    name: string;
-    message?: string;
-    issues?: unknown[];
-    cause?: unknown;
-  } = {
+  const response: ErrorSchema = {
     statusCode: httpException.statusCode,
     name: httpException.name || httpException.constructor.name,
   };
@@ -31,7 +26,8 @@ export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
     response.cause = httpException.cause;
   }
 
-  res.status(httpException.statusCode).json(response);
+  const validatedResponse = errorSchema.parse(response);
+  res.status(httpException.statusCode).json(validatedResponse);
 };
 
 export const notFoundHandler: RequestHandler = () => {
