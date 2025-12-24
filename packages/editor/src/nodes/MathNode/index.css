@@ -1,0 +1,76 @@
+math-field {
+  display: inline-block;
+  white-space: initial;
+  word-break: initial;
+  outline: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  width: 100%;
+  padding: 0;
+  pointer-events: auto;
+  --selection-color: nope;
+}
+
+math-field::part(container) {
+  padding-inline: 0;
+  pointer-events: inherit;
+  --_text-font-family: inherit;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  math-field:not(:focus)::part(container) {
+    pointer-events: none;
+  }
+}
+
+math-field::part(content) {
+  padding: 2px 3px 2px 1px;
+}
+
+math-field::part(virtual-keyboard-toggle),
+math-field::part(menu-toggle) {
+  display: none;
+}
+
+.ML__keyboard {
+  --keycap-height: 48px;
+  --keycap-gap: 6px;
+  --_keyboard-height: 295px !important;
+  --keyboard-zindex: 10000;
+  position: sticky !important;
+  bottom: 0 !important;
+  height: 100vh !important;
+}
+
+.MLK__plate,
+.MLK__layer {
+  height: 100%;
+  padding: 0 !important;
+}
+
+.MLK__rows {
+  margin: auto 0 !important;
+  gap: calc(2 * var(--keycap-gap)) !important;
+}
+
+.MLK__rows>.MLK__row :is(.MLK__keycap, .action, .separator) {
+  border-radius: 8px;
+}
+
+.MLK__variant-panel {
+  user-select: none;
+}
+
+@media print {
+  .ML__keyboard {
+    display: none !important;
+  }
+}
+
+@media screen {
+  .dark math-field {
+    --contains-highlight-background-color: rgba(255, 255, 255, 0.1);
+    --selection-background-color: rgb(95 183 255 / 50%);
+  }
+}

@@ -1,0 +1,3 @@
+.selected[type='page-break']::before {
+  opacity: 1;
+}

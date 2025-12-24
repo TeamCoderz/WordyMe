@@ -1,0 +1,410 @@
+import { useActions, useSelector } from '@/store';
+import {
+  uploadUserImage,
+  deleteUserImage,
+  getUserImageSignedUrl,
+  updateImageMetaData,
+} from '@repo/backend/sdk/storage/user-images.js';
+import { useMutation } from '@tanstack/react-query';
+import { updateProfile } from '@repo/backend/sdk/profiles.js';
+import { updateEditorSettings } from '@repo/backend/sdk/editor-settings.js';
+import { toast } from 'sonner';
+import { deleteProfile } from '@repo/backend/sdk/profiles.js';
+import { logout } from '@repo/backend/sdk/auth.js';
+
+export function useChangeAvatarMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['changeAvatar'],
+    mutationFn: async ({
+      image,
+      x,
+      y,
+      width,
+      height,
+      zoom,
+    }: {
+      image: File;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      zoom: number;
+    }) => {
+      const { data, error } = await uploadUserImage(image, {
+        type: 'avatar',
+        x,
+        y,
+        width,
+        height,
+        zoom,
+      });
+      if (error) throw error;
+      const signedUrl = (await getUserImageSignedUrl(data?.path ?? '')).data?.signedUrl;
+      return {
+        url: signedUrl ?? null,
+        x: data?.x ?? null,
+        y: data?.y ?? null,
+        width: data?.width ?? null,
+        height: data?.height ?? null,
+        zoom: data?.zoom ?? null,
+        type: data?.type ?? null,
+      };
+    },
+    onMutate() {
+      return toast.loading('Uploading avatar...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Avatar uploaded successfully', {
+        id: toastId ?? undefined,
+      });
+      if (user) {
+        setUser({
+          ...user,
+          avatar_image: data
+            ? {
+                ...data,
+                calculatedImage: user.avatar_image?.calculatedImage ?? null,
+                isLoading: user.avatar_image?.isLoading ?? false,
+                provider: 'supabase',
+              }
+            : undefined,
+        });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to upload avatar', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+export function useChangeCoverMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['changeCover'],
+    mutationFn: async ({
+      image,
+      x,
+      y,
+      width,
+      height,
+      zoom,
+    }: {
+      image: File;
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      zoom: number;
+    }) => {
+      const { data, error } = await uploadUserImage(image, {
+        type: 'cover',
+        x,
+        y,
+        width,
+        height,
+        zoom,
+      });
+      if (error) throw error;
+      const signedUrl = (await getUserImageSignedUrl(data?.path ?? '')).data?.signedUrl;
+      return {
+        url: signedUrl ?? null,
+        x: data?.x ?? null,
+        y: data?.y ?? null,
+        width: data?.width ?? null,
+        height: data?.height ?? null,
+        zoom: data?.zoom ?? null,
+        type: data?.type ?? null,
+      };
+    },
+    onMutate() {
+      return toast.loading('Uploading cover...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Cover uploaded successfully', {
+        id: toastId ?? undefined,
+      });
+      if (user) {
+        setUser({
+          ...user,
+          cover_image: data
+            ? {
+                ...data,
+                calculatedImage: user.cover_image?.calculatedImage ?? null,
+                isLoading: user.cover_image?.isLoading ?? false,
+              }
+            : undefined,
+        });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to upload cover', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+export function useUpdateCoverMetadataMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['updateCoverMetadata'],
+    mutationFn: async (metadata: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      zoom: number;
+      type: 'cover';
+    }) => {
+      const { data, error } = await updateImageMetaData(metadata);
+      if (error) throw error;
+      return {
+        x: data?.x ?? null,
+        y: data?.y ?? null,
+        width: data?.width ?? null,
+        height: data?.height ?? null,
+        zoom: data?.zoom ?? null,
+        type: data?.type ?? null,
+      };
+    },
+    onMutate() {
+      return toast.loading('Updating cover metadata...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Cover metadata updated successfully', {
+        id: toastId ?? undefined,
+      });
+      if (user) {
+        setUser({
+          ...user,
+          cover_image: {
+            ...data,
+            url: user.cover_image?.url ?? null,
+            calculatedImage: user.cover_image?.calculatedImage ?? null,
+            isLoading: user.cover_image?.isLoading ?? false,
+          },
+        });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to update cover metadata', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useUpdateAvatarMetadataMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['updateAvatarMetadata'],
+    mutationFn: async (metadata: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      zoom: number;
+      type: 'avatar';
+    }) => {
+      const { data, error } = await updateImageMetaData(metadata);
+      if (error) throw error;
+      return {
+        x: data?.x ?? null,
+        y: data?.y ?? null,
+        width: data?.width ?? null,
+        height: data?.height ?? null,
+        zoom: data?.zoom ?? null,
+        type: data?.type ?? null,
+      };
+    },
+    onMutate() {
+      return toast.loading('Updating avatar metadata...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Avatar metadata updated successfully', {
+        id: toastId ?? undefined,
+      });
+      if (user) {
+        setUser({
+          ...user,
+          avatar_image: {
+            ...data,
+            url: user.avatar_image?.url ?? null,
+            calculatedImage: user.avatar_image?.calculatedImage ?? null,
+            isLoading: user.avatar_image?.isLoading ?? false,
+            provider: 'supabase',
+          },
+        });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to update avatar metadata', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useDeleteAvatarMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['deleteAvatar'],
+    mutationFn: async () => {
+      const req = await deleteUserImage('avatar');
+      if (req?.error) throw req.error;
+      return req?.data;
+    },
+    onMutate() {
+      return toast.loading('Deleting avatar...');
+    },
+    onSuccess: (_, __, toastId) => {
+      toast.success('Avatar deleted successfully', {
+        id: toastId ?? undefined,
+      });
+      if (user) {
+        setUser({ ...user, avatar_image: undefined });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to delete avatar', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useDeleteProfileMutation() {
+  return useMutation({
+    mutationKey: ['deleteProfile'],
+    mutationFn: async () => {
+      const { data, error } = await deleteProfile();
+
+      if (error) throw error;
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Deleting account...');
+    },
+    onSuccess: async (_, __, toastId) => {
+      toast.success('Account deleted successfully', {
+        id: toastId ?? undefined,
+      });
+      await logout();
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to delete account', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useUpdateProfileMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['updateProfile'],
+    mutationFn: async (
+      payload: Partial<{
+        name: string;
+        bio?: string;
+        avatar_url?: string;
+        job_title?: string;
+      }>,
+    ) => {
+      const { data, error } = await updateProfile(user?.id ?? '', payload);
+      if (error) throw error;
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Updating profile...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Profile updated successfully', {
+        id: toastId ?? undefined,
+      });
+      if (data && user) {
+        setUser({ ...user, ...data, bio: data.bio ?? null });
+      }
+    },
+    onError: (_, __, toastId) => {
+      toast.error('Failed to update profile', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useToggleKeepPreviousRevisionMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['toggleKeepPreviousRevision'],
+    mutationFn: async (value: boolean) => {
+      const { data, error } = await updateEditorSettings({
+        keep_previous_revision: value,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Updating editor preferences...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Editor preferences updated successfully', {
+        id: toastId ?? undefined,
+      });
+      if (data && user) {
+        setUser({
+          ...user,
+          editor_settings: data,
+        });
+      }
+    },
+    onError: (_err, __, toastId) => {
+      toast.error('Failed to update editor preferences', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}
+
+export function useToggleAutosaveMutation() {
+  const user = useSelector((state) => state.user);
+  const { setUser } = useActions();
+  return useMutation({
+    mutationKey: ['toggleAutosave'],
+    mutationFn: async (value: boolean) => {
+      const { data, error } = await updateEditorSettings({
+        autosave: value,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Updating editor preferences...');
+    },
+    onSuccess: (data, __, toastId) => {
+      toast.success('Editor preferences updated successfully', {
+        id: toastId ?? undefined,
+      });
+      if (data && user) {
+        setUser({
+          ...user,
+          editor_settings: data,
+        });
+      }
+    },
+    onError: (_err, __, toastId) => {
+      toast.error('Failed to update editor preferences', {
+        id: toastId ?? undefined,
+      });
+    },
+  });
+}

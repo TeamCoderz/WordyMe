@@ -19,3 +19,5 @@ export const logout = async () => {
 export const getSession = async () => {
   return await authClient.getSession();
 };
+export type SessionData = Awaited<ReturnType<typeof getSession>>['data'];
+export const useSession = authClient.useSession;

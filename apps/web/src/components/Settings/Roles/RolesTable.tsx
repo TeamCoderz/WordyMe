@@ -1,0 +1,26 @@
+import { roleColumns } from './columns';
+import DataTable from '@/components/DataTable';
+// import { getRoles } from "@/actions/roles.actions";
+function RolesTable() {
+  // const roles = await getRoles({
+  //   search: searchParams.get("search") ?? "",
+  //   sort: searchParams.get("sort") ?? "name",
+  //   order: searchParams.get("order") ?? "asc",
+  // });
+  return (
+    <DataTable
+      columns={roleColumns}
+      data={[
+        {
+          assigned_users: 0,
+          id: '1',
+          name: 'Admin',
+          permissions: [],
+          description: 'Admin',
+        },
+      ]}
+    />
+  );
+}
+
+export default RolesTable;

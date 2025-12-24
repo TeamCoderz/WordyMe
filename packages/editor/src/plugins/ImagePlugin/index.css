@@ -1,0 +1,106 @@
+.image-control-wrapper {
+  position: absolute;
+  top: anchor(top);
+  right: anchor(right);
+  bottom: anchor(bottom);
+  left: anchor(left);
+  user-select: none;
+  z-index: 1;
+  cursor: pointer;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.image-control-wrapper--resizing {
+  touch-action: none;
+}
+
+.image-control-wrapper--active {
+  outline: 2px solid rgb(95 183 255 / 75%);
+}
+
+.image-control-wrapper--active .draggable {
+  cursor: grab;
+}
+
+.image-control-wrapper--active .draggable:active {
+  cursor: grabbing;
+}
+
+.image-resizer {
+  position: absolute;
+  touch-action: none;
+  pointer-events: all;
+  padding: 0;
+  background-color: rgb(95 183 255 / 75%);
+  width: 10px;
+  height: 10px;
+  min-width: initial;
+  filter: none;
+}
+
+.image-resizer.image-resizer-n {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  cursor: n-resize;
+}
+
+.image-resizer.image-resizer-ne {
+  top: 0;
+  right: 0;
+  transform: translate(50%, -50%);
+  cursor: ne-resize;
+}
+
+.image-resizer.image-resizer-e {
+  bottom: 50%;
+  right: 0;
+  transform: translate(50%, 50%);
+  cursor: e-resize;
+}
+
+.image-resizer.image-resizer-se {
+  bottom: 0;
+  right: 0;
+  transform: translate(50%, 50%);
+  cursor: nwse-resize;
+}
+
+.image-resizer.image-resizer-s {
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  cursor: s-resize;
+}
+
+.image-resizer.image-resizer-sw {
+  bottom: 0;
+  left: 0;
+  transform: translate(-50%, 50%);
+  cursor: sw-resize;
+}
+
+.image-resizer.image-resizer-w {
+  bottom: 50%;
+  left: 0;
+  transform: translate(-50%, 50%);
+  cursor: w-resize;
+}
+
+.image-resizer.image-resizer-nw {
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  cursor: nw-resize;
+}
+
+@media print {
+  .image-control-wrapper--active {
+    outline: none !important;
+  }
+
+  .image-control-wrapper .image-resizer {
+    display: none !important;
+  }
+}
