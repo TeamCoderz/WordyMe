@@ -12,7 +12,8 @@
     "drizzle-kit": "bun node_modules/drizzle-kit/bin.cjs"
   },
   "exports": {
-    "./*": "./src/schemas/*"
+    "./*": "./src/schemas/*",
+    "./auth": "./src/lib/auth.ts"
   },
   "type": "module",
   "keywords": [],

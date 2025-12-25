@@ -46,6 +46,13 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     return this;
   }
 
+  limit(count: number | undefined): this {
+    if (count !== undefined && count > 0) {
+      this.query = this.query.limit(count);
+    }
+    return this;
+  }
+
   async getResult() {
     return await this.query;
   }

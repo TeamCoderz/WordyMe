@@ -8,7 +8,7 @@ import {
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
 import { PlainRevision, RevisionDetails } from '@repo/backend/revisions.js';
-import { PaginatedResult } from '@repo/backend/pagination.js';
+import { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
 import { del, get, patch, post } from './client.js';
 
 export const createDocument = async (data: CreateDocumentInput) => {
@@ -19,7 +19,7 @@ export const getUserDocuments = async (filters?: DocumentFilters) => {
   return await get<DocumentListItem[]>('/documents', filters);
 };
 
-export const getLastViewedDocuments = async (filters?: DocumentFilters) => {
+export const getLastViewedDocuments = async (filters?: DocumentFilters & PaginationQuery) => {
   return await get<PaginatedResult<DocumentListItem>>('/documents/last-viewed', filters);
 };
 

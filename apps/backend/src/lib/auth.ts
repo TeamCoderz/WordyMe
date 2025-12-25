@@ -1,6 +1,6 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth, BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { bearer, openAPI } from 'better-auth/plugins';
+import { bearer, openAPI, username } from 'better-auth/plugins';
 import { db } from './db.js';
 import { env } from '../env.js';
 import { setEditorSettings } from '../services/editor-settings.js';
@@ -12,12 +12,38 @@ export const adapter = drizzleAdapter(db, {
   usePlural: true,
 });
 
-export const auth = betterAuth({
+export const options = {
   database: adapter,
   emailAndPassword: {
     enabled: true,
   },
   trustedOrigins: [env.CLIENT_URL],
+  user: {
+    additionalFields: {
+      cover: {
+        type: 'string',
+        required: false,
+      },
+      bio: {
+        type: 'string',
+        required: false,
+      },
+      jobTitle: {
+        type: 'string',
+        required: false,
+      },
+      imageMeta: {
+        type: 'json',
+        defaultValue: '{}',
+        required: false,
+      },
+      coverMeta: {
+        type: 'json',
+        defaultValue: '{}',
+        required: false,
+      },
+    },
+  },
   databaseHooks: {
     user: {
       create: {
@@ -36,5 +62,7 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [bearer(), openAPI()],
-});
+  plugins: [bearer(), openAPI(), username()],
+} as const satisfies BetterAuthOptions;
+
+export const auth = betterAuth(options);

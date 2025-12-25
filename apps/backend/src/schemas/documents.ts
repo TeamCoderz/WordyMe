@@ -24,6 +24,7 @@ export const documentFiltersSchema = z.object({
   orderBy: z.enum(['name', 'createdAt', 'lastViewedAt']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
   days: z.coerce.number().min(1).optional(),
+  limit: z.coerce.number().min(1).optional(),
 });
 
 export const createDocumentSchema = createInsertSchema(documentsTable, {
@@ -46,7 +47,6 @@ export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
   handle: true,
   isContainer: true,
   documentType: true,
-  currentRevisionId: true,
 });
 
 export const plainDocumentSchema = createSelectSchema(documentsTable, {

@@ -57,7 +57,7 @@ export const openApiDocument = createDocument({
         tags: ['Documents'],
         description:
           'Retrieves a paginated list of documents that the authenticated user has recently viewed. Results are ordered by last viewed timestamp by default. Useful for building "recent documents" or "continue where you left off" features.',
-        requestParams: { query: documentFiltersSchema.extend(paginationQuerySchema.shape) },
+        requestParams: { query: documentFiltersSchema.extend(paginationQuerySchema) },
         responses: {
           200: {
             description: 'Paginated list of recently viewed documents with metadata.',

@@ -29,7 +29,7 @@ export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
     name: baseDocumentSchema.shape.name,
     handle: baseDocumentSchema.shape.handle,
     icon: baseDocumentSchema.shape.icon,
-    type: baseDocumentSchema.shape.documentType,
+    type: z.enum(['space', 'folder', 'note']),
     position: baseDocumentSchema.shape.position,
     is_container: baseDocumentSchema.shape.isContainer,
     revision: exportedRevisionSchema.nullable(),
@@ -43,6 +43,7 @@ export const importDocumentSchema = z.object({
   spaceId: z.uuid().optional().nullable(),
   parentId: z.uuid().optional().nullable(),
   position: z.string().optional().nullable(),
+  type: z.enum(['space', 'folder', 'note']),
   document: exportedDocumentSchema,
 });
 
@@ -64,7 +65,7 @@ export type ExportedDocument = {
   name: string;
   handle: string;
   icon: string | null;
-  type: string;
+  type: 'space' | 'folder' | 'note';
   position: string | null;
   is_container: boolean;
   revision: ExportedRevision | null;
@@ -73,9 +74,5 @@ export type ExportedDocument = {
   spaceRootChildren: ExportedDocument[];
 };
 export type ImportDocumentInput = z.output<typeof importDocumentSchema>;
-export type ImportInheritedData = {
-  spaceId?: string | null;
-  parentId?: string | null;
-  position?: string | null;
-};
+
 export type CopyDocumentInput = z.output<typeof copyDocumentSchema>;

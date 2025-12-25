@@ -14,6 +14,13 @@ export const users = sqliteTable('users', {
     .default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  username: text('username').unique(),
+  displayUsername: text('display_username'),
+  cover: text('cover'),
+  bio: text('bio'),
+  jobTitle: text('job_title'),
+  imageMeta: text('image_meta', { mode: 'json' }).default('{}'),
+  coverMeta: text('cover_meta', { mode: 'json' }).default('{}'),
 });
 
 export const sessions = sqliteTable(
@@ -85,19 +92,19 @@ export const verifications = sqliteTable(
   (table) => [index('verifications_identifier_idx').on(table.identifier)],
 );
 
-export const userRelations = relations(users, ({ many }) => ({
+export const usersRelations = relations(users, ({ many }) => ({
   sessions: many(sessions),
   accounts: many(accounts),
 }));
 
-export const sessionRelations = relations(sessions, ({ one }) => ({
+export const sessionsRelations = relations(sessions, ({ one }) => ({
   users: one(users, {
     fields: [sessions.userId],
     references: [users.id],
   }),
 }));
 
-export const accountRelations = relations(accounts, ({ one }) => ({
+export const accountsRelations = relations(accounts, ({ one }) => ({
   users: one(users, {
     fields: [accounts.userId],
     references: [users.id],
