@@ -2,8 +2,6 @@ import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'driz
 import z from 'zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
-import { documentViewsTable } from '../models/document-views.js';
-import { favoritesTable } from '../models/favorites.js';
 import { createRevisionSchema, revisionDetailsSchema } from './revisions.js';
 
 export const documentHandleParamSchema = createSelectSchema(documentsTable).pick({ handle: true });
