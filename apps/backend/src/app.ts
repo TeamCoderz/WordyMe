@@ -7,6 +7,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
 import { openApiDocument } from './lib/docs.js';
 import { initializeSocket } from './lib/socket.js';
+import { env } from './env.js';
 
 // Error Middlewares
 import { errorHandler, notFoundHandler } from './middlewares/errors.js';
@@ -25,7 +26,7 @@ initializeSocket(server);
 
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: [env.CLIENT_URL],
     credentials: true,
   }),
 );
@@ -50,7 +51,7 @@ app.get(
   '/docs',
   apiReference({
     sources: [
-      { title: 'Wordy API', url: '/docs/openapi.json' },
+      { title: 'WordyMe API', url: '/docs/openapi.json' },
       { title: 'Better-Auth API', url: '/api/auth/open-api/generate-schema' },
     ],
     pageTitle: 'Wordy API Documentation',

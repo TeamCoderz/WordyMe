@@ -1,13 +1,22 @@
 import { ErrorRequestHandler, RequestHandler } from 'express';
 import { toHttpException } from '../utils/errors.js';
-import { HttpNotFound } from '@httpx/exception';
+import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 
 export const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
   console.error(err);
 
   const httpException = toHttpException(err);
 
-  res.status(httpException.statusCode).json(httpException);
+  res.status(httpException.statusCode).json({
+    name: httpException.name,
+    message: httpException.message,
+    code: httpException.code,
+    errorId: httpException.errorId,
+    method: httpException.method,
+    statusCode: httpException.statusCode,
+    url: httpException.url,
+    issues: (httpException as HttpUnprocessableEntity).issues,
+  } satisfies HttpUnprocessableEntity);
 };
 
 export const notFoundHandler: RequestHandler = () => {

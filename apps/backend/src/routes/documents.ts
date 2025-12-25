@@ -102,7 +102,7 @@ router.patch(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpUnauthorized(
-        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -110,12 +110,12 @@ router.patch(
 
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
       throw new HttpUnauthorized(
-        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+        'Unauthorized. The document, specified parentId does not exist or is not accessible by the authenticated user.',
       );
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
       throw new HttpUnauthorized(
-        'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+        'Unauthorized. The document, specified spaceId does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -136,11 +136,11 @@ router.delete(
     }
 
     const documentCount = await getUserDocumentCount(req.user!.id);
-
     if (documentCount <= 1) {
-      throw new HttpUnprocessableEntity(
-        'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
-      );
+      throw new HttpUnprocessableEntity({
+        message:
+          'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
+      });
     }
 
     await deleteDocument(req.params.documentId);
@@ -159,6 +159,9 @@ router.get(
       );
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
+    if (revisions.length === 0) {
+      throw new HttpNotFound('No revisions found for this document.');
+    }
     res.status(200).json(revisions);
   },
 );
@@ -216,6 +219,11 @@ router.get(
       );
     }
     const exportedDocument = await exportDocumentTree(req.params.documentId);
+    if (!exportedDocument) {
+      throw new HttpInternalServerError(
+        'Internal server error. The export operation failed unexpectedly.',
+      );
+    }
     res.status(200).json(exportedDocument);
   },
 );
@@ -225,12 +233,12 @@ router.post('/import', requireAuth, validate({ body: importDocumentSchema }), as
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpUnauthorized(
-      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      'Unauthorized. The specified parentId does not exist or is not accessible by the authenticated user.',
     );
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
     throw new HttpUnauthorized(
-      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      'Unauthorized. The specified spaceId does not exist or is not accessible by the authenticated user.',
     );
   }
 
