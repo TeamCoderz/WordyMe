@@ -1,5 +1,6 @@
 import {
   CreateDocumentInput,
+  CreateDocumentWithRevisionInput,
   DocumentDetails,
   DocumentFilters,
   DocumentListItem,
@@ -12,6 +13,10 @@ import { del, get, patch, post } from './client.js';
 
 export const createDocument = async (data: CreateDocumentInput) => {
   return await post<PlainDocument>('/documents', data);
+};
+
+export const createDocumentWithRevision = async (data: CreateDocumentWithRevisionInput) => {
+  return await post<DocumentDetails>('/documents/with-revision', data);
 };
 
 export const getUserDocuments = async (filters?: DocumentFilters) => {

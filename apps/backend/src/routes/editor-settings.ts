@@ -6,7 +6,9 @@ import { setEditorSettings } from '../services/editor-settings.js';
 
 const router: Router = Router();
 
-router.patch('/', requireAuth, validate({ body: editorSettingsSchema }), async (req, res) => {
+router.use(requireAuth);
+
+router.patch('/', validate({ body: editorSettingsSchema }), async (req, res) => {
   const updated = await setEditorSettings(req.user!.id, req.body);
   res.status(200).json(updated);
 });

@@ -10,7 +10,7 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     this.query = query;
   }
 
-  filter(column: SQLiteColumn, value: string | undefined): this {
+  filter(column: SQLiteColumn, value: string | number | boolean | undefined): this {
     if (value !== undefined) {
       this.query = this.query.where(eq(column, value));
     }

@@ -14,9 +14,10 @@ import { getAttachmentUrl } from '../services/attachments.js';
 
 const router = Router();
 
+router.use(requireAuth);
+
 router.get(
   '/revisions/:revisionId',
-  requireAuth,
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
@@ -31,7 +32,6 @@ router.get(
 
 router.post(
   '/attachments/:documentId',
-  requireAuth,
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     const { documentId } = req.params;
@@ -82,7 +82,6 @@ router.post(
 
 router.get(
   '/attachments/:documentId/:filename',
-  requireAuth,
   validate({ params: documentIdParamSchema.extend({ filename: z.string() }) }),
   async (req, res) => {
     const { documentId, filename } = req.params;

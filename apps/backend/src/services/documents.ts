@@ -86,6 +86,7 @@ export const getUserDocuments = async (
     .filter(documentsTable.documentType, filters.documentType)
     .filter(documentsTable.parentId, filters.parentId)
     .filter(documentsTable.spaceId, filters.spaceId)
+    .filter(documentsTable.isContainer, filters.isContainer)
     .search(documentsTable.name, filters.search)
     .lastNDays(documentViewsTable.lastViewedAt, filters.days)
     .order(orderByColumns[filters.orderBy ?? 'createdAt'], filters.order ?? 'desc')
