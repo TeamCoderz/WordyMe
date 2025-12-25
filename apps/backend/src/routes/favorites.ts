@@ -8,7 +8,7 @@ import {
   removeDocumentFromFavorites,
 } from '../services/favorites.js';
 import { userHasDocument } from '../services/access.js';
-import { HttpUnauthorized } from '@httpx/exception';
+import { HttpNotFound } from '@httpx/exception';
 import { documentFiltersSchema } from '../schemas/documents.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
@@ -27,7 +27,7 @@ router.get(
 
 router.post('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-    throw new HttpUnauthorized(
+    throw new HttpNotFound(
       'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
     );
   }
@@ -37,7 +37,7 @@ router.post('/:documentId', validate({ params: documentIdParamSchema }), async (
 
 router.delete('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-    throw new HttpUnauthorized(
+    throw new HttpNotFound(
       'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
     );
   }
