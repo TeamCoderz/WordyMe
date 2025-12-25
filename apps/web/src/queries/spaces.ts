@@ -1,12 +1,14 @@
-import {} from // listSpaces,
-// updateSpace,
-// addSpaceToFavorites,
-// removeSpaceFromFavorites,
-// createSpace,
-// listFavoriteSpaces,
-// deleteSpace,
-
-'@repo/sdk/documents.ts';
+import {
+  createDocument,
+  deleteDocument,
+  updateDocument, // listSpaces,
+  // updateSpace,
+  // addSpaceToFavorites,
+  // removeSpaceFromFavorites,
+  // createSpace,
+  // listFavoriteSpaces,
+  // deleteSpace,
+} from '@repo/sdk/documents.ts';
 import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -25,10 +27,19 @@ import {
   copyDocument,
   exportDocument,
   importDocument,
+  moveDocument,
   // moveDocument,
 } from '@repo/sdk/operations.ts';
 import { addSpaceToCache, removeSpaceFromCache } from './caches/spaces';
-
+import { getUserDocuments } from '@repo/sdk/documents.ts';
+import {
+  addDocumentToFavorites,
+  getFavorites,
+  removeDocumentFromFavorites,
+} from '@repo/sdk/favorites.ts';
+const listSpaces = async () => {
+  return getUserDocuments({ documentType: 'space' });
+};
 export type ListSpaceResultItem = NonNullable<
   Awaited<ReturnType<typeof listSpaces>>['data']
 >[number] & {
@@ -47,7 +58,11 @@ export const getAllSpacesQueryOptions: UseSuspenseQueryOptions<ListSpaceResult> 
     return filteredData;
   },
 };
-
+async function listFavoriteSpaces(
+  filters: Omit<Parameters<typeof getFavorites>[0], 'documentType'>,
+) {
+  return getFavorites({ documentType: 'space', ...filters });
+}
 export function getFavoriteSpacesQueryOptions(searchParams: {
   search?: string;
   sort?: 'a-z' | 'z-a' | 'newest' | 'lastViewed';
@@ -96,7 +111,7 @@ export const useRenameSpaceMutation = () => {
   const mutation = useMutation({
     mutationKey: ['renameSpace'],
     mutationFn: async ({ spaceId, name }: { spaceId: string; name: string }) => {
-      const { data, error } = await updateSpace(spaceId, { name });
+      const { data, error } = await updateDocument(spaceId, { name });
       if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
@@ -163,7 +178,7 @@ export const useUpdateSpaceIconMutation = () => {
   const mutation = useMutation({
     mutationKey: ['updateSpaceIcon'],
     mutationFn: async ({ spaceId, icon }: { spaceId: string; icon: string }) => {
-      const { data, error } = await updateSpace(spaceId, { icon });
+      const { data, error } = await updateDocument(spaceId, { icon });
       if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
@@ -229,7 +244,7 @@ export const useSpaceFavoritesMutation = () => {
   const addMutation = useMutation({
     mutationKey: ['addSpaceToFavorites'],
     mutationFn: async (spaceId: string) => {
-      const { data, error } = await addSpaceToFavorites(spaceId);
+      const { data, error } = await addDocumentToFavorites(spaceId);
       if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
@@ -252,10 +267,10 @@ export const useSpaceFavoritesMutation = () => {
   const removeMutation = useMutation({
     mutationKey: ['removeSpaceFromFavorites'],
     mutationFn: async (spaceId: string) => {
-      const { data, error } = await removeSpaceFromFavorites(spaceId);
+      const { error } = await removeDocumentFromFavorites(spaceId);
       if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-      return data;
+      return;
     },
     onMutate() {
       return toast.loading('Removing from favorites...');
@@ -386,7 +401,7 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
       } else {
         // Get the last sibling's position and generate a position after it
         const lastSibling = sortedSiblings[sortedSiblings.length - 1];
-        const lastPosition = lastSibling.position || 'a0';
+        const lastPosition = lastSibling?.position || 'a0';
 
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
@@ -402,16 +417,14 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
         spaceId: spaceId ?? null,
         isFavorite: false,
         isContainer: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         handle: crypto.randomUUID(),
-        head: null,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
+        currentRevisionId: null,
+        userId: '',
         clientId: clientId as any,
         lastViewedAt: null,
-        type: 'space',
+        documentType: 'space',
         from: from,
       };
       queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
@@ -429,14 +442,15 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
         return newSpaces;
       });
       // Create space with default values and calculated position
-      const { data, error } = await createSpace({
+      const { data, error } = await createDocument({
         name: name?.trim() || 'New Space',
         icon: 'briefcase',
-        parent_id: parentId ?? null,
+        parentId: parentId ?? null,
         position: newPosition,
-        space_id: spaceId ?? null,
-        is_container: false,
-        client_id: clientId,
+        spaceId: spaceId ?? null,
+        isContainer: false,
+        clientId: clientId,
+        documentType: 'space',
       });
 
       if (error) throw error;
@@ -515,7 +529,7 @@ export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'm
       } else {
         // Get the last sibling's position and generate a position after it
         const lastSibling = sortedSiblings[sortedSiblings.length - 1];
-        const lastPosition = lastSibling.position || 'a0';
+        const lastPosition = lastSibling?.position || 'a0';
 
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
@@ -532,16 +546,14 @@ export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'm
         spaceId: spaceId ?? null,
         isFavorite: false,
         isContainer: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
         handle: crypto.randomUUID(),
-        head: null,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
+        currentRevisionId: null,
+        userId: '',
         clientId: clientId as any,
         lastViewedAt: null,
-        type: 'space',
+        documentType: 'space',
         from: from,
       };
       queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
@@ -558,14 +570,15 @@ export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'm
         }
         return newSpaces;
       });
-      const { data, error } = await createSpace({
+      const { data, error } = await createDocument({
         name: name?.trim() || 'New Container',
         icon: 'folder-closed',
-        parent_id: parentId ?? null,
+        parentId: parentId ?? null,
         position: newPosition,
-        space_id: spaceId ?? null,
-        is_container: true,
-        client_id: clientId,
+        spaceId: spaceId ?? null,
+        isContainer: true,
+        clientId: clientId,
+        documentType: 'space',
       });
 
       if (error) throw error;
@@ -621,8 +634,8 @@ export const useUpdateSpacePositionMutation = () => {
       position: string;
       space: ListSpaceResult[number];
     }) => {
-      const { data, error } = await updateSpace(space.id, {
-        parent_id: parentId,
+      const { data, error } = await updateDocument(space.id, {
+        parentId: parentId,
         position,
       });
       if (error) throw error;
@@ -704,11 +717,11 @@ export const useDeleteSpaceMutation = ({ space }: { space: ListSpaceResult[numbe
       removeFromCache(getAllSpacesQueryOptions.queryKey, space.id);
 
       // Create space with default values and calculated position
-      const { data, error } = await deleteSpace(spaceId);
+      const { error } = await deleteDocument(spaceId);
 
       if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-      return data;
+      return;
     },
     onMutate() {
       // Get current spaces from cache to calculate position
@@ -790,11 +803,12 @@ export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | n
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
       const { data, error } = await copyDocument(clipboardSpace.space.id, {
-        parent_id: parentId,
-        space_id: null,
+        parentId,
+        spaceId: null,
         position: newPosition,
+        name: clipboardSpace.space.name,
       });
-      if (error || !data?.success) throw error || new Error('Failed to copy space');
+      if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
     },
@@ -855,8 +869,8 @@ export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | n
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
       const { data, error } = await moveDocument(clipboardSpace.space.id, {
-        parent_id: parentId,
-        space_id: null,
+        parentId: parentId,
+        spaceId: null,
         position: newPosition,
       });
       if (error) throw error || new Error('Failed to move space');
@@ -907,11 +921,12 @@ export function useDuplicateSpaceMutation({ space }: { space: ListSpaceResult[nu
       }
 
       const { data, error } = await copyDocument(space.id, {
-        parent_id: space.parentId ?? null,
-        space_id: null,
+        parentId: space.parentId ?? null,
+        spaceId: null,
+        name: space.name,
         position: newPosition,
       });
-      if (error || !data?.success) throw error || new Error('Failed to duplicate space');
+      if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
     },
@@ -936,7 +951,7 @@ export function useExportSpaceMutation(itemId: string, spaceName?: string) {
   return useMutation({
     mutationKey: ['export-tree', itemId],
     mutationFn: async () => {
-      const { data, error } = await exportDocumentTree(itemId);
+      const { data, error } = await exportDocument(itemId);
       if (error) {
         throw error;
       }
@@ -989,10 +1004,14 @@ export function useImportSpaceMutation(parentId?: string | null, spaceId?: strin
   return useMutation({
     mutationKey: ['import-space', parentId, spaceId],
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
-      const { data, error } = await importDocumentTree(file, {
-        parent_id: parentId ?? null,
-        space_id: spaceId ?? null,
+      const fileText = await file.text();
+      const document = JSON.parse(fileText);
+
+      const { data, error } = await importDocument({
+        parentId: parentId ?? null,
+        spaceId: spaceId ?? null,
         position: position ?? null,
+        document: document,
         type: 'space',
       });
       if (error) {

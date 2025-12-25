@@ -1,16 +1,14 @@
 import { useActions, useSelector } from '@/store';
-import {
-  uploadUserImage,
-  deleteUserImage,
-  getUserImageSignedUrl,
-  updateImageMetaData,
-} from '@repo/backend/sdk/storage/user-images.js';
+// import {
+//   uploadUserImage,
+//   deleteUserImage,
+//   getUserImageSignedUrl,
+//   updateImageMetaData,
+// } from '@repo/backend/sdk/storage/user-images.js';
 import { useMutation } from '@tanstack/react-query';
-import { updateProfile } from '@repo/backend/sdk/profiles.js';
-import { updateEditorSettings } from '@repo/backend/sdk/editor-settings.js';
+import { updateEditorSettings } from '@repo/sdk/editor-settings.ts';
 import { toast } from 'sonner';
-import { deleteProfile } from '@repo/backend/sdk/profiles.js';
-import { logout } from '@repo/backend/sdk/auth.js';
+import { authClient, logout } from '@repo/sdk/auth';
 
 export function useChangeAvatarMutation() {
   const user = useSelector((state) => state.user);
@@ -283,7 +281,7 @@ export function useDeleteProfileMutation() {
   return useMutation({
     mutationKey: ['deleteProfile'],
     mutationFn: async () => {
-      const { data, error } = await deleteProfile();
+      const { data, error } = await authClient.deleteUser();
 
       if (error) throw error;
       return data;
@@ -318,20 +316,22 @@ export function useUpdateProfileMutation() {
         job_title?: string;
       }>,
     ) => {
-      const { data, error } = await updateProfile(user?.id ?? '', payload);
+      const updatePayload: Record<string, string> = {};
+      if (payload.name) updatePayload.name = payload.name;
+      if (payload.bio) updatePayload.bio = payload.bio;
+      if (payload.job_title) updatePayload.jobTitle = payload.job_title;
+      if (payload.avatar_url) updatePayload.image = payload.avatar_url;
+      const { data, error } = await authClient.updateUser(updatePayload);
       if (error) throw error;
       return data;
     },
     onMutate() {
       return toast.loading('Updating profile...');
     },
-    onSuccess: (data, __, toastId) => {
+    onSuccess: (_, __, toastId) => {
       toast.success('Profile updated successfully', {
         id: toastId ?? undefined,
       });
-      if (data && user) {
-        setUser({ ...user, ...data, bio: data.bio ?? null });
-      }
     },
     onError: (_, __, toastId) => {
       toast.error('Failed to update profile', {

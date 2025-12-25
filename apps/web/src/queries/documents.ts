@@ -5,11 +5,12 @@ import {
   getDocumentByHandle,
   createDocument,
   getUserDocuments,
+  getLastViewedDocuments,
 } from '@repo/sdk/documents.ts';
 import {
   addDocumentToFavorites,
-  removeDocumentFromFavorites,
   getFavorites,
+  removeDocumentFromFavorites as deleteDocumentFromFavorites,
 } from '@repo/sdk/favorites.ts';
 import { toast } from 'sonner';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
@@ -25,6 +26,9 @@ import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import { format } from 'date-fns';
 import {
   copyDocument,
+  exportDocument,
+  importDocument,
+  moveDocument,
   // duplicateDocument,
   // exportDocumentTree,
   // importDocumentTree,
@@ -307,7 +311,7 @@ export const useDocumentFavoritesMutation = ({
   const removeMutation = useMutation({
     mutationKey: ['removeDocumentFromFavorites'],
     mutationFn: async (documentId: string) => {
-      await removeDocumentFromFavorites(documentId);
+      await deleteDocumentFromFavorites(documentId);
     },
     onMutate() {
       return toast.loading('Removing from favorites...');
@@ -597,7 +601,7 @@ export const useCreateContainerDocumentMutation = ({
       } else {
         // Get the last sibling's position and generate a position after it
         const lastSibling = sortedSiblings[sortedSiblings.length - 1];
-        const lastPosition = lastSibling.position || 'a0';
+        const lastPosition = lastSibling?.position || 'a0';
 
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
@@ -611,18 +615,16 @@ export const useCreateContainerDocumentMutation = ({
         position: newPosition,
         parentId: parentId ?? null,
         spaceId: spaceId ?? null,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         isFavorite: false,
         isContainer: true,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
         clientId: clientId as any,
-        head: null,
         lastViewedAt: null,
-        type: 'folder',
+        documentType: 'folder',
         from: from,
+        currentRevisionId: null,
+        userId: '',
       };
       queryClient.setQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
@@ -641,14 +643,15 @@ export const useCreateContainerDocumentMutation = ({
           return newDocuments;
         },
       );
-      const { data, error } = await createNote({
+      const { data, error } = await createDocument({
         name: name?.trim() || 'New Folder',
         icon: 'folder',
-        parent_id: parentId ?? null,
+        parentId: parentId ?? null,
         position: newPosition,
-        space_id: spaceId!,
-        is_container: true,
-        client_id: clientId,
+        spaceId: spaceId!,
+        isContainer: true,
+        clientId: clientId,
+        documentType: 'note',
       });
 
       if (error) throw error;
@@ -721,7 +724,7 @@ export const useDeleteDocumentMutation = ({
     mutationKey: ['deleteDocument'],
     mutationFn: async ({ documentId }: { documentId: string }) => {
       // Create space with default values and calculated position
-      const { data, error } = await deleteDocument(documentId);
+      const { error } = await deleteDocument(documentId);
       if (error) throw error;
       await deleteLocalDocument(documentId);
       invalidate([
@@ -729,7 +732,7 @@ export const useDeleteDocumentMutation = ({
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
       ]);
-      return data;
+      return;
     },
     onMutate() {
       // Get current spaces from cache to calculate position
@@ -780,8 +783,7 @@ export const getHomeAllDocumentsQueryOptions = (orderBy: SortOptions) => {
   return {
     queryKey: [...DOCUMENTS_QUERY_KEYS.HOME.ALL_DOCUMENTS],
     queryFn: async () => {
-      const { data, error } = await listDocuments({
-        limit: 4,
+      const { data, error } = await getUserDocuments({
         orderBy:
           orderBy === 'a-z' || orderBy === 'z-a'
             ? 'name'
@@ -789,8 +791,9 @@ export const getHomeAllDocumentsQueryOptions = (orderBy: SortOptions) => {
               ? 'createdAt'
               : 'lastViewedAt',
         order: orderBy === 'a-z' ? 'asc' : 'desc',
-        type: 'note',
+        documentType: 'note',
         isContainer: false,
+        limit: 4,
       });
       if (error) throw error;
       return data ?? [];
@@ -802,9 +805,8 @@ export const getHomeRecentViewsDocumentsQueryOptions = (orderBy: SortOptions) =>
   return {
     queryKey: [...DOCUMENTS_QUERY_KEYS.HOME.RECENT_VIEWS, { orderBy: orderBy ?? 'a-z' }],
     queryFn: async () => {
-      const { data, error } = await listLastViewedDocuments({
+      const { data, error } = await getLastViewedDocuments({
         days: 14,
-        limit: 5,
         orderBy:
           orderBy === 'a-z' || orderBy === 'z-a'
             ? 'name'
@@ -812,7 +814,9 @@ export const getHomeRecentViewsDocumentsQueryOptions = (orderBy: SortOptions) =>
               ? 'createdAt'
               : 'lastViewedAt',
         order: orderBy === 'a-z' ? 'asc' : 'desc',
-        type: 'note',
+        documentType: 'note',
+        limit: 5,
+        page: 1,
       });
       if (error) throw error;
       return data?.items ?? [];
@@ -838,7 +842,7 @@ export const getRecentViewedDocumentsQueryOptions = (searchParams: {
       },
     ],
     queryFn: async () => {
-      const { data, error } = await listLastViewedDocuments({
+      const { data, error } = await getLastViewedDocuments({
         days: searchParams.days ?? 14,
         limit: 10,
         orderBy:
@@ -850,9 +854,8 @@ export const getRecentViewedDocumentsQueryOptions = (searchParams: {
               ? 'lastViewedAt'
               : 'createdAt',
         order: searchParams.sort === 'a-z' || searchParams.sort === undefined ? 'asc' : 'desc',
-        name: searchParams.search ?? '',
-        // backend API for last viewed does not support name filter
-        type: 'note',
+        search: searchParams.search ?? '',
+        documentType: 'note',
         page: searchParams.page ?? 1,
       });
       if (error) throw error;
@@ -901,7 +904,10 @@ export function useDuplicateDocumentMutation({
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(document.position, nextPosition);
       }
-      const { data, error } = await duplicateDocument(document.id, {
+      const { data, error } = await copyDocument(document.id, {
+        parentId: document.parentId ?? null,
+        spaceId: document.spaceId ?? null,
+        name: document.name,
         position: newPosition,
       });
       if (error) throw error;
@@ -933,7 +939,9 @@ export const getDocumentByHandleQueryOptions = (handle: string) => {
   return {
     queryKey: ['document', handle],
     queryFn: async () => {
-      const { data: document, error: documentError } = await getDocumentByHandle(handle, true);
+      const { data: document, error: documentError } = await getDocumentByHandle(handle, {
+        updateLastViewed: true,
+      });
       if (documentError) {
         toast.error('Document not found');
         throw notFound();
@@ -954,7 +962,7 @@ export function useUpdateDocumentHeadMutation({
     mutationKey: ['updateDocumentHead', doc?.id],
     mutationFn: async (document: { id: string; head: string }) => {
       const { data, error } = await updateDocument(document.id, {
-        current_revision_id: document.head,
+        currentRevisionId: document.head,
       });
       if (error) throw error;
       return data;
@@ -1012,11 +1020,12 @@ export function useCopyDocumentMutation(
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
       const { data, error } = await copyDocument(clipboardDocument.document.id, {
-        parent_id: parentId,
-        space_id: newParentDocument.spaceId,
+        parentId: parentId,
+        spaceId: newParentDocument.spaceId,
         position: newPosition,
+        name: clipboardDocument.document.name,
       });
-      if (error || !data?.success) throw error || new Error('Failed to copy document');
+      if (error) throw error;
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
@@ -1085,8 +1094,8 @@ export const useMoveDocumentMutation = (
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
       const { data, error } = await moveDocument(clipboardDocument.document.id, {
-        parent_id: parentId,
-        space_id: newParentDocument.spaceId,
+        parentId: parentId,
+        spaceId: newParentDocument.spaceId,
         position: newPosition,
       });
       if (error) throw error || new Error('Failed to move document');
@@ -1179,7 +1188,7 @@ export function useExportDocumentMutation(itemId: string, documentName?: string)
   return useMutation({
     mutationKey: ['export-tree', itemId],
     mutationFn: async () => {
-      const { data, error } = await exportDocumentTree(itemId);
+      const { data, error } = await exportDocument(itemId);
       if (error) {
         throw error;
       }
@@ -1232,10 +1241,14 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
   return useMutation({
     mutationKey: ['import-document', parentId, spaceId],
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
-      const { data, error } = await importDocumentTree(file, {
-        parent_id: parentId ?? null,
-        space_id: spaceId ?? null,
-        position: position ?? null,
+      const fileText = await file.text();
+      const document = JSON.parse(fileText);
+
+      const { data, error } = await importDocument({
+        document: document,
+        parentId,
+        spaceId,
+        position,
         type: 'note',
       });
       if (error) {

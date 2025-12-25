@@ -12,7 +12,7 @@ import {
 import { Button } from '@repo/ui/components/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/avatar';
 import { Link } from '@tanstack/react-router';
-import { ChevronsUpDown, LogOut, Settings, MessageSquare } from '@repo/ui/components/icons';
+import { ChevronsUpDown, LogOut, Settings } from '@repo/ui/components/icons';
 import {
   SidebarMenu,
   SidebarMenuItem,
@@ -20,9 +20,7 @@ import {
   useSidebar,
 } from '@repo/ui/components/sidebar';
 import { useSelector } from '@/store';
-import { auth } from '@repo/backend/sdk';
-import { useState } from 'react';
-import { FeedbackDialog } from '@/components/Layout/FeedbackDialog';
+import { logout } from '@repo/sdk/auth';
 type NavUserProps = {
   variant?: 'sidebar' | 'avatar';
   dropdownMenuSide?: 'top' | 'bottom' | 'left' | 'right';
@@ -61,7 +59,7 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
               <MenuContent
                 dropdownMenuSide={dropdownMenuSide}
                 isMobile={isMobile}
-                handleLogout={auth.logout}
+                handleLogout={logout}
               />
             </DropdownMenu>
           ) : null}
@@ -77,7 +75,7 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
           <Button
             variant="ghost"
             size="icon"
-            className="hover:!bg-accent-foreground/10"
+            className="hover:bg-accent-foreground/10!"
             aria-label="User menu"
           >
             <Avatar className="size-8 rounded-lg">
@@ -92,7 +90,7 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
         <MenuContent
           dropdownMenuSide={dropdownMenuSide}
           isMobile={isMobile}
-          handleLogout={auth.logout}
+          handleLogout={logout}
         />
       </DropdownMenu>
     ) : null;
@@ -111,7 +109,6 @@ function MenuContent({
 }) {
   const user = useSelector((state) => state.user);
   const version = useSelector((state) => state.version);
-  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
   return (
     <>
       <DropdownMenuContent
@@ -147,16 +144,6 @@ function MenuContent({
               Settings
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem
-            className="group"
-            onSelect={(e) => {
-              e.preventDefault();
-              setIsFeedbackOpen(true);
-            }}
-          >
-            <MessageSquare className="mr-2 group-hover:text-accent-foreground" />
-            Feedback
-          </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -172,8 +159,6 @@ function MenuContent({
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
-
-      <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
     </>
   );
 }

@@ -1,11 +1,15 @@
 import {
-  getRevisionsByDocumentId,
-  createNewRevision,
-  deleteRevisionById,
-  getRevisionWithContent,
+  // getRevisionsByDocumentId,
+  // createNewRevision,
+  // deleteRevisionById,
+  // getRevisionWithContent,
   updateRevisionName,
-} from '@repo/backend/sdk/revisions.js';
-import { updateDocument } from '@repo/backend/sdk/documents.js';
+  createRevision,
+  deleteRevision,
+  getRevisionById,
+  getRevisionsByDocumentId,
+} from '@repo/sdk/revisions.ts';
+import { updateDocument } from '@repo/sdk/documents.ts';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAllQueriesInvalidate } from './utils';
@@ -46,11 +50,11 @@ export function useCreateRevisionMutation({
       revision_name?: string;
       makeCurrentRevision?: boolean;
     }) => {
-      const { data, error } = await createNewRevision({
+      const { data, error } = await createRevision({
         content: revision.content,
         documentId: revision.documentId,
         text: revision.text,
-        revision_name: revision.revision_name,
+        revisionName: revision.revision_name,
         checksum: revision.checksum,
         makeCurrentRevision: revision.makeCurrentRevision ?? true,
       });
@@ -88,9 +92,9 @@ export function useDeleteRevisionMutation({
   return useMutation({
     mutationKey: ['deleteRevision'],
     mutationFn: async (revisionId: string) => {
-      const { data, error } = await deleteRevisionById(revisionId);
+      const { error } = await deleteRevision(revisionId);
       if (error) throw error;
-      return data;
+      return;
     },
     onMutate() {
       return toast.loading('Deleting revision...');
@@ -124,7 +128,7 @@ export function useUpdateRevisionNameMutation({
     mutationKey: ['updateRevisionName', document?.id, revisionId],
     mutationFn: async ({ name }: { name: string }) => {
       const { data, error } = await updateRevisionName(revisionId, {
-        revision_name: name,
+        revisionName: name,
       });
       if (error) throw error;
       return data;
@@ -186,24 +190,24 @@ export function useSaveDocumentMutation({
         (module) => module.generateText,
       );
       const text = generateText(serializedEditorState);
-      const { data: newRevision, error: revisionError } = await createNewRevision({
+      const { data: newRevision, error: revisionError } = await createRevision({
         documentId: document.id,
         content: JSON.stringify(serializedEditorState),
         text,
-        revision_name: revisionName,
+        revisionName: revisionName,
         checksum: checksum,
       });
       if (revisionError || !newRevision) {
         throw new Error(revisionError?.message || 'Failed to create revision');
       }
       const { error: updateError } = await updateDocument(document.id, {
-        current_revision_id: newRevision.id,
+        currentRevisionId: newRevision.id,
       });
       if (updateError) {
         throw new Error(updateError.message || 'Failed to update document head');
       }
       if (!keepPreviousRevision) {
-        const { error: deleteError } = await deleteRevisionById(document.head ?? '');
+        const { error: deleteError } = await deleteRevision(document.head ?? '');
         if (deleteError) {
           throw new Error(deleteError.message || 'Failed to delete previous revision');
         }
@@ -240,10 +244,8 @@ export function getRevisionByIdQueryOptions(revisionId: string, enabled: boolean
   return {
     queryKey: ['revision', revisionId],
     queryFn: async () => {
-      const { data: revision, error: revisionError } = await getRevisionWithContent(revisionId);
-      if (!revision || !('data' in revision) || revisionError) {
-        throw new Error('No revision found');
-      }
+      const { data: revision, error: revisionError } = await getRevisionById(revisionId);
+      if (revisionError) throw revisionError;
       return revision;
     },
     enabled,
@@ -268,7 +270,7 @@ export function getLocalRevisionByDocumentIdQueryOptions(
       } catch (error) {
         const revision = await getRevisionByIdQueryOptions(head, true).queryFn();
 
-        await saveLocalDocument(documentId, revision.data);
+        await saveLocalDocument(documentId, JSON.parse(revision.content));
         return revision;
       }
     },

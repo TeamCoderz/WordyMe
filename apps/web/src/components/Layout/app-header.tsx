@@ -6,10 +6,8 @@ import { NavUser } from './nav-user';
 import { cn } from '@repo/ui/lib/utils';
 import { useSelector } from '@/store';
 import { Link } from '@tanstack/react-router';
-import { usePostHog } from 'posthog-js/react';
 
 export const AppHeader = () => {
-  const posthog = usePostHog();
   const user = useSelector((state) => state.user);
   const handleResize = () => {
     const keyboardInsetHeight =
@@ -56,16 +54,7 @@ export const AppHeader = () => {
               id="app-toolbar"
               className="flex flex-1 w-0 justify-between items-center gap-2 overflow-auto scrollbar-hide"
             />
-            <ThemeCustomizer
-              beforeScaleChange={({ percent, scale }) => {
-                posthog.capture('theme_scale_changed', {
-                  scale_percentage: percent,
-                  scale_value: scale,
-                  user_id: user?.id,
-                  username: user?.name,
-                });
-              }}
-            />
+            <ThemeCustomizer />
             <NavUser variant="avatar" dropdownMenuSide="bottom" className="w-auto size-8" />
           </div>
         </div>
