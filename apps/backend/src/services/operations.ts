@@ -1,6 +1,6 @@
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { CopyDocumentInput, ExportedDocument, ImportInheritedData } from '../schemas/operations.js';
+import { CopyDocumentInput, ExportedDocument, ImportDocumentInput } from '../schemas/operations.js';
 import { documentsTable } from '../models/documents.js';
 import { createDocument } from './documents.js';
 import { createRevision, getRevisionById } from './revisions.js';
@@ -152,8 +152,7 @@ export const exportDocumentTree = async (
 };
 
 export const importDocumentTree = async (
-  document: ExportedDocument,
-  inherited: ImportInheritedData,
+  payload: ImportDocumentInput,
   userId: string,
   currentDepth: number = 0,
 ): Promise<{ id: string; name: string }> => {
@@ -163,25 +162,25 @@ export const importDocumentTree = async (
 
   const newDocument = await createDocument(
     {
-      name: document.name,
-      icon: document.icon,
-      documentType: document.type as 'space' | 'folder' | 'note',
-      isContainer: document.is_container,
-      position: inherited.position ?? document.position,
-      spaceId: inherited.spaceId ?? null,
-      parentId: inherited.parentId ?? null,
+      name: payload.document.name,
+      icon: payload.document.icon,
+      documentType: payload.document.type as 'space' | 'folder' | 'note',
+      isContainer: payload.document.is_container,
+      position: payload.position ?? payload.document.position,
+      spaceId: payload.spaceId ?? null,
+      parentId: payload.parentId ?? null,
       clientId: null,
     },
     userId,
   );
 
-  if (document.revision) {
+  if (payload.document.revision) {
     await createRevision(
       {
         documentId: newDocument.id,
-        text: document.revision.text,
-        checksum: document.revision.checksum,
-        content: document.revision.content,
+        text: payload.document.revision.text,
+        checksum: payload.document.revision.checksum,
+        content: payload.document.revision.content,
         makeCurrentRevision: true,
       },
       userId,
@@ -189,15 +188,18 @@ export const importDocumentTree = async (
   }
 
   await Promise.all(
-    document.attachments.map((attachment) => importDocumentAttachment(attachment, newDocument.id)),
+    payload.document.attachments.map((attachment) =>
+      importDocumentAttachment(attachment, newDocument.id),
+    ),
   );
 
-  for (const child of document.children) {
+  for (const child of payload.document.children) {
     dbWritesQueue.add(() =>
       importDocumentTree(
-        child,
         {
-          spaceId: inherited.spaceId,
+          document: child,
+          type: child.type,
+          spaceId: payload.spaceId,
           parentId: newDocument.id,
           position: child.position,
         },
@@ -207,11 +209,12 @@ export const importDocumentTree = async (
     );
   }
 
-  for (const spaceChild of document.spaceRootChildren) {
+  for (const spaceChild of payload.document.spaceRootChildren) {
     dbWritesQueue.add(() =>
       importDocumentTree(
-        spaceChild,
         {
+          document: spaceChild,
+          type: spaceChild.type,
           spaceId: newDocument.id,
           parentId: null,
           position: spaceChild.position,

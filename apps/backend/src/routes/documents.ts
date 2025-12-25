@@ -34,7 +34,9 @@ import { paginationQuerySchema } from '../schemas/pagination.js';
 
 const router: Router = Router();
 
-router.get('/', validate({ query: documentFiltersSchema }), requireAuth, async (req, res) => {
+router.use(requireAuth);
+
+router.get('/', validate({ query: documentFiltersSchema }), async (req, res) => {
   const documents = await getUserDocuments(req.user!.id, req.query);
   res.status(200).json(documents);
 });
@@ -42,14 +44,14 @@ router.get('/', validate({ query: documentFiltersSchema }), requireAuth, async (
 router.get(
   '/last-viewed',
   validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
-  requireAuth,
+
   async (req, res) => {
     const result = await getLastViewedDocuments(req.user!.id, req.query);
     res.status(200).json(result);
   },
 );
 
-router.post('/create', requireAuth, validate({ body: createDocumentSchema }), async (req, res) => {
+router.post('/create', validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpUnauthorized(
@@ -69,7 +71,7 @@ router.post('/create', requireAuth, validate({ body: createDocumentSchema }), as
 router.get(
   '/handle/:handle',
   validate({ params: documentHandleParamSchema, query: getSingleDocumentOptionsSchema }),
-  requireAuth,
+
   async (req, res) => {
     const document = await getDocumentDetails({ handle: req.params.handle }, req.user!.id);
     if (!document) {
@@ -84,7 +86,7 @@ router.get(
 
 router.get(
   '/:documentId',
-  requireAuth,
+
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     const document = await getDocumentDetails(req.params, req.user!.id);
@@ -97,7 +99,7 @@ router.get(
 
 router.patch(
   '/:documentId/update',
-  requireAuth,
+
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -126,7 +128,7 @@ router.patch(
 
 router.delete(
   '/:documentId',
-  requireAuth,
+
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -150,7 +152,7 @@ router.delete(
 
 router.get(
   '/:documentId/revisions',
-  requireAuth,
+
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -168,7 +170,7 @@ router.get(
 
 router.get(
   '/:documentId/revisions/current',
-  requireAuth,
+
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -188,8 +190,8 @@ router.get(
 
 router.post(
   '/:documentId/copy',
-  requireAuth,
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
+
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpUnauthorized(
@@ -210,7 +212,7 @@ router.post(
 
 router.get(
   '/:documentId/export',
-  requireAuth,
+
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -228,8 +230,8 @@ router.get(
   },
 );
 
-router.post('/import', requireAuth, validate({ body: importDocumentSchema }), async (req, res) => {
-  const { spaceId, parentId, position, document } = req.body;
+router.post('/import', validate({ body: importDocumentSchema }), async (req, res) => {
+  const { spaceId, parentId } = req.body;
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpUnauthorized(
@@ -242,11 +244,13 @@ router.post('/import', requireAuth, validate({ body: importDocumentSchema }), as
     );
   }
 
-  const importedDocument = await importDocumentTree(
-    document,
-    { spaceId, parentId, position },
-    req.user!.id,
-  );
+  if (req.body.type !== req.body.document.type) {
+    throw new HttpUnprocessableEntity(
+      `Document type mismatch: expected ${req.body.type}, got ${req.body.document.type}`,
+    );
+  }
+
+  const importedDocument = await importDocumentTree(req.body, req.user!.id);
 
   res.status(201).json(importedDocument);
 });
