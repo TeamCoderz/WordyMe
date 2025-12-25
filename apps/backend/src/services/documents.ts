@@ -89,6 +89,7 @@ export const getUserDocuments = async (
     .search(documentsTable.name, filters.search)
     .lastNDays(documentViewsTable.lastViewedAt, filters.days)
     .order(orderByColumns[filters.orderBy ?? 'createdAt'], filters.order ?? 'desc')
+    .limit(filters.limit)
     .getResult();
 
   return result as DocumentListItem[];
