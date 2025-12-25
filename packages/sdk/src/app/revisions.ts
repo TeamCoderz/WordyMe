@@ -7,6 +7,14 @@ import {
 } from '@repo/backend/revisions.js';
 import { get, post, patch, del } from './client.js';
 
+export const getCurrentRevisionByDocumentId = async (documentId: string) => {
+  return await get<RevisionDetails>(`/documents/${documentId}/revisions/current`);
+};
+
+export const getRevisionsByDocumentId = async (documentId: string) => {
+  return await get<PlainRevision[]>(`/documents/${documentId}/revisions`);
+};
+
 export const createRevision = async (data: CreateRevisionInput) => {
   return await post<RevisionDetails>('/revisions', data);
 };

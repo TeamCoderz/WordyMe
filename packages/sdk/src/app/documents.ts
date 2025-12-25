@@ -7,7 +7,6 @@ import {
   PlainDocument,
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
-import { PlainRevision, RevisionDetails } from '@repo/backend/revisions.js';
 import { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
 import { del, get, patch, post } from './client.js';
 
@@ -37,12 +36,4 @@ export const updateDocument = async (documentId: string, data: UpdateDocumentInp
 
 export const deleteDocument = async (documentId: string) => {
   return await del(`/documents/${documentId}`);
-};
-
-export const getCurrentRevisionByDocumentId = async (documentId: string) => {
-  return await get<RevisionDetails>(`/documents/${documentId}/revisions/current`);
-};
-
-export const getRevisionsByDocumentId = async (documentId: string) => {
-  return await get<PlainRevision[]>(`/documents/${documentId}/revisions`);
 };
