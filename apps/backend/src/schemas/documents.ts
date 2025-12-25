@@ -46,7 +46,6 @@ export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
   handle: true,
   isContainer: true,
   documentType: true,
-  currentRevisionId: true,
 });
 
 export const plainDocumentSchema = createSelectSchema(documentsTable, {
