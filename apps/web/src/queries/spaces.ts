@@ -28,7 +28,6 @@ import {
   exportDocument,
   importDocument,
   moveDocument,
-  // moveDocument,
 } from '@repo/sdk/operations.ts';
 import { addSpaceToCache, removeSpaceFromCache } from './caches/spaces';
 import { getUserDocuments } from '@repo/sdk/documents.ts';
@@ -37,6 +36,7 @@ import {
   getFavorites,
   removeDocumentFromFavorites,
 } from '@repo/sdk/favorites.ts';
+import { importDocumentSchema } from '@repo/backend/operations.ts';
 const listSpaces = async () => {
   return getUserDocuments({ documentType: 'space' });
 };
@@ -1006,12 +1006,18 @@ export function useImportSpaceMutation(parentId?: string | null, spaceId?: strin
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
       const fileText = await file.text();
       const document = JSON.parse(fileText);
-
+      const parsedDocument = await importDocumentSchema.safeParseAsync(document);
+      if (!parsedDocument.success) {
+        throw new Error('Invalid document');
+      }
+      if (parsedDocument.data.type !== 'space') {
+        throw new Error('Invalid document type');
+      }
       const { data, error } = await importDocument({
         parentId: parentId ?? null,
         spaceId: spaceId ?? null,
         position: position ?? null,
-        document: document,
+        document: parsedDocument.data.document,
         type: 'space',
       });
       if (error) {

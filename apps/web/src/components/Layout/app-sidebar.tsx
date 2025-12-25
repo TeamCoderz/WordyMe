@@ -11,7 +11,6 @@ import {
 } from '@repo/ui/components/sidebar';
 import { useSelector } from '@/store';
 import { SpaceSwitcher } from './space-switcher';
-import { FeedbackCard } from './document-tree/FeedbackCard';
 import { NavDocumentsContextMenu } from './document-tree/NavDocumentsContextMenu';
 import { GuestUserCard } from './GuestUserCard';
 
@@ -31,11 +30,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <NavDocumentsContextMenu>
         <SidebarContent className="overflow-hidden">
           <NavDocuments className="flex-1" />
-          {user && (
-            <div className="shrink-0 mt-auto">
-              {user.isGuest ? <GuestUserCard /> : <FeedbackCard />}
-            </div>
-          )}
+
           {/* <NavMain items={navigation.main} />
         <NavSecondary items={navigation.secondary} /> */}
         </SidebarContent>

@@ -4,13 +4,20 @@ import { calculateSpacePath } from '@/utils/calculateSpacePath';
 import { Space } from '@repo/types';
 import { Button } from '@repo/ui/components/button';
 import { useQuery } from '@tanstack/react-query';
-import { createFileRoute, ErrorRouteComponent, Link, Outlet } from '@tanstack/react-router';
+import {
+  createFileRoute,
+  ErrorRouteComponent,
+  Link,
+  Outlet,
+  redirect,
+} from '@tanstack/react-router';
 import { useEffect, useMemo } from 'react';
 
 import AppSidebarProvider from '@/providers/AppSidebarProvider';
 import { AppHeader } from '@/components/Layout/app-header';
 import { AppSidebar } from '@/components/Layout/app-sidebar';
 import { SidebarInset } from '@repo/ui/components/sidebar';
+import { getSession, useSession } from '@repo/sdk/auth';
 
 const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
   useEffect(() => {
@@ -34,22 +41,15 @@ const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
 };
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: ({ context: { store } }) => {
-    const { user } = store.getState();
-    if (!user) {
-      // const redirect = () => {
-      //   const pathname = window.location.pathname;
-      //   const search = pathname !== '/' ? `?redirect_to=${pathname}` : '';
-      //   window.location.href = '/sign-in' + search;
-      // };
-      // Promise.all([
-      //   cookieStore.delete('sb-access-token'),
-      //   cookieStore.delete('sb-access-token.0'),
-      //   cookieStore.delete('sb-access-token.1'),
-      //   cookieStore.delete('sb-access-token-code-verifier'),
-      // ]).then(() => {
-      //   throw redirect();
-      // });
+  beforeLoad: async ({ context: { session } }) => {
+    if (session.isLoading) {
+      const { data, error } = await getSession();
+      if (error || data == null) {
+        throw redirect({ to: '/login' });
+      }
+    }
+    if (session.data == null) {
+      throw redirect({ to: '/login' });
     }
   },
   component: RouteComponent,
@@ -81,119 +81,67 @@ function RouteComponent() {
       <ActiveSpaceLoader />
       {/* <RealTimeChangeListener /> */}
       {/* <UserImagesLoader /> */}
-      {/* <UserSync /> */}
+      <UserSync />
       {/* <VersionChangeListener /> */}
     </>
   );
 }
-// function UserSync() {
-//   const { setUser } = useActions();
-//   const queryClient = useQueryClient();
-//   const cookieChangeHandler = useCallback(async () => {
-//     const cookies = await cookieStore.getAll();
-//     const hasAccessToken = cookies.some((cookie) => cookie.name?.startsWith('sb-access-token'));
-//     if (!hasAccessToken) {
-//       window.location.href = location.origin + '/home';
-//     }
-//   }, []);
+function UserSync() {
+  const { setUser } = useActions();
+  const { data: session } = useSession();
 
-//   useEffect(() => {
-//     cookieStore.addEventListener('change', cookieChangeHandler);
-//     return () => {
-//       cookieStore.removeEventListener('change', cookieChangeHandler);
-//     };
-//   }, [cookieChangeHandler]);
+  useEffect(() => {
+    if (!session?.user) {
+      setUser(null);
+      return;
+    }
 
-//   useEffect(() => {
-//     const { data: authListener } = supabase.auth.onAuthStateChange(async (event) => {
-//       if (event === 'USER_UPDATED') {
-//         const { data, error } = await getValidatedUser(true);
-//         if (error) return;
-//         const response = await data;
-//         if (response === null || response.error || response.data === null) return;
-//         const { data: userSession } = await supabase.auth.getSession();
-//         await supabase.realtime.setAuth(userSession.session?.access_token);
-//         const avatar = response.data.profile.user_images.find((image) => image.type === 'avatar');
-//         const isAvatarURL = z.url().safeParse(avatar?.path ?? '');
-//         const cover_image = response.data.profile.user_images.find(
-//           (image) => image.type === 'cover',
-//         );
-//         const cover_image_url =
-//           cover_image?.path != null
-//             ? (await getUserImageSignedUrl(cover_image?.path ?? '')).data?.signedUrl
-//             : null;
-//         const avatar_image_url =
-//           avatar?.path != null && !isAvatarURL.success
-//             ? (await getUserImageSignedUrl(avatar?.path ?? '')).data?.signedUrl
-//             : (avatar?.path ?? null);
-//         setUser(
-//           response.data.profile
-//             ? {
-//                 ...response.data.profile,
-//                 editor_settings: response.data.profile.editor_settings,
-//                 email: response.data.user.email,
-//                 last_signed_in: response.data.user.last_sign_in_at,
-//                 avatar_image: avatar
-//                   ? {
-//                       url: avatar_image_url ?? null,
-//                       x: avatar?.x ?? null,
-//                       y: avatar?.y ?? null,
-//                       width: avatar?.width ?? null,
-//                       height: avatar?.height ?? null,
-//                       zoom: avatar?.zoom ?? null,
-//                       type: avatar?.type ?? null,
-//                       calculatedImage: null,
-//                       isLoading: true,
-//                       provider: isAvatarURL.success ? 'auth_provider' : 'supabase',
-//                     }
-//                   : undefined,
-//                 cover_image: cover_image
-//                   ? {
-//                       url: cover_image_url ?? null,
-//                       x: cover_image?.x ?? null,
-//                       y: cover_image?.y ?? null,
-//                       width: cover_image?.width ?? null,
-//                       height: cover_image?.height ?? null,
-//                       zoom: cover_image?.zoom ?? null,
-//                       type: cover_image?.type ?? null,
-//                       calculatedImage: null,
-//                       isLoading: true,
-//                     }
-//                   : undefined,
-//                 isGuest: response.data.user.is_anonymous ?? false,
-//               }
-//             : null,
-//         );
-//       }
-//     });
-//     const handleVisibilityChange = async () => {
-//       if (document.visibilityState === 'visible') {
-//         const { data, error } = await getValidatedUser();
-//         if (error || data === null) {
-//           window.location.pathname = '/sign-in';
-//           return;
-//         }
-//       }
-//     };
-//     const handleOnlineChange = async () => {
-//       const { data, error } = await getValidatedUser();
-//       if (error || data === null) {
-//         window.location.pathname = '/sign-in';
-//         return;
-//       }
-//       queryClient.invalidateQueries();
-//     };
-//     window.addEventListener('online', handleOnlineChange);
+    const cover_image = session.user.coverMeta;
+    const avatar_image = session.user.imageMeta;
+    const cover_image_url = session.user.cover;
+    const avatar_image_url = session.user.image;
 
-//     document.addEventListener('visibilitychange', handleVisibilityChange);
-//     return () => {
-//       authListener.subscription.unsubscribe();
-//       document.removeEventListener('visibilitychange', handleVisibilityChange);
-//       window.removeEventListener('online', handleOnlineChange);
-//     };
-//   }, [setUser]);
-//   return null;
-// }
+    setUser({
+      ...session.user,
+      cover_image: cover_image
+        ? {
+            url: cover_image_url ?? null,
+            x: cover_image?.x ?? null,
+            y: cover_image?.y ?? null,
+            width: cover_image?.width ?? null,
+            height: cover_image?.height ?? null,
+            zoom: cover_image?.zoom ?? null,
+            type: cover_image?.type ?? null,
+            calculatedImage: null,
+            isLoading: true,
+          }
+        : undefined,
+      avatar_image: avatar_image
+        ? {
+            url: avatar_image_url ?? null,
+            x: avatar_image?.x ?? null,
+            y: avatar_image?.y ?? null,
+            width: avatar_image?.width ?? null,
+            height: avatar_image?.height ?? null,
+            zoom: avatar_image?.zoom ?? null,
+            type: avatar_image?.type ?? null,
+            calculatedImage: null,
+            isLoading: true,
+            provider: 'supabase',
+          }
+        : undefined,
+      editor_settings: {
+        id: '',
+        createdAt: new Date(),
+        userId: session.user.id,
+        keepPreviousRevision: false,
+        autosave: false,
+      },
+      isGuest: false,
+    });
+  }, [setUser, session]);
+  return null;
+}
 
 function ActiveSpaceLoader() {
   const { data: spaces, isLoading } = useQuery(getAllSpacesQueryOptions);

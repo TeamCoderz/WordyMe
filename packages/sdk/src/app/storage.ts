@@ -1,4 +1,4 @@
-import { HttpException } from '@repo/backend/errors.js';
+import type { HttpException } from '@repo/backend/errors.js';
 import axios, { AxiosError } from 'axios';
 
 const storageClient = axios.create({

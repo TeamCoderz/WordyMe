@@ -304,8 +304,6 @@ export function useDeleteProfileMutation() {
 }
 
 export function useUpdateProfileMutation() {
-  const user = useSelector((state) => state.user);
-  const { setUser } = useActions();
   return useMutation({
     mutationKey: ['updateProfile'],
     mutationFn: async (
@@ -348,7 +346,7 @@ export function useToggleKeepPreviousRevisionMutation() {
     mutationKey: ['toggleKeepPreviousRevision'],
     mutationFn: async (value: boolean) => {
       const { data, error } = await updateEditorSettings({
-        keep_previous_revision: value,
+        keepPreviousRevision: value,
       });
       if (error) throw error;
       return data;

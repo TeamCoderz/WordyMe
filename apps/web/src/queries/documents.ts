@@ -6,6 +6,7 @@ import {
   createDocument,
   getUserDocuments,
   getLastViewedDocuments,
+  createDocumentWithRevision,
 } from '@repo/sdk/documents.ts';
 import {
   addDocumentToFavorites,
@@ -29,10 +30,6 @@ import {
   exportDocument,
   importDocument,
   moveDocument,
-  // duplicateDocument,
-  // exportDocumentTree,
-  // importDocumentTree,
-  // moveDocument,
 } from '@repo/sdk/operations.ts';
 import { notFound, useMatch, useNavigate } from '@tanstack/react-router';
 // import { revisions } from "@repo/backend/sdk";
@@ -42,6 +39,7 @@ import { useActions, useSelector } from '@/store';
 import { getRevisionsByDocumentIdQueryOptions } from './revisions';
 import { addDocumentToCache, removeDocumentFromCache } from './caches/documents';
 import { createLocalDocument, deleteLocalDocument } from '@repo/editor/indexeddb';
+import { importDocumentSchema } from '@repo/backend/operations.ts';
 const listDocuments = async ({ spaceId }: { spaceId: string }) => {
   return await getUserDocuments({ spaceId, documentType: 'note' });
 };
@@ -488,27 +486,27 @@ export const useCreateDocumentMutation = ({
           return newDocuments;
         },
       );
-      const { data, error } = await createNoteWithRevision(
-        {
-          name: name?.trim() || 'New Document',
-          icon: 'file',
-          parent_id: parentId ?? null,
-          position: newPosition,
-          space_id: spaceId!,
-          is_container: false,
-          client_id: clientId,
-        },
-        {
+      const { data, error } = await createDocumentWithRevision({
+        name: name?.trim() || 'New Document',
+        icon: 'file',
+        parentId: parentId ?? null,
+        position: newPosition,
+        spaceId: spaceId!,
+        isContainer: false,
+        clientId: clientId,
+        documentType: 'note',
+        revision: {
           content,
           checksum,
           text: name?.trim() || 'New Document',
           makeCurrentRevision: true,
         },
-      );
+      });
 
       if (error) throw error;
-      if (data.document) {
-        createLocalDocument(data.document.id, data.document.name);
+      if (data) {
+        const { currentRevision, ...document } = data;
+        createLocalDocument(document.id, document.name);
       }
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
@@ -522,18 +520,19 @@ export const useCreateDocumentMutation = ({
       return { toastId: toast.loading('Creating document...') };
     },
     onSuccess: async (data, { clientId }, { toastId }) => {
+      const { currentRevision, ...document } = data;
       queryClient.setQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
         (old: ListDocumentResult) => {
           return old?.map((document) => {
             if (document.id === clientId) {
-              return { ...data.document, from: undefined };
+              return { ...document, from: undefined };
             }
             return document;
           });
         },
       );
-      addDocumentToCache(data.document?.clientId ?? '', from);
+      addDocumentToCache(document.clientId ?? '', from);
 
       toast.success('Document created successfully', {
         id: toastId ?? undefined,
@@ -1243,9 +1242,16 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
       const fileText = await file.text();
       const document = JSON.parse(fileText);
+      const parsedDocument = await importDocumentSchema.safeParseAsync(document);
+      if (!parsedDocument.success) {
+        throw new Error('Invalid document');
+      }
+      if (parsedDocument.data.type !== 'note') {
+        throw new Error('Invalid document type');
+      }
 
       const { data, error } = await importDocument({
-        document: document,
+        document: parsedDocument.data.document,
         parentId,
         spaceId,
         position,

@@ -1,9 +1,9 @@
 import { inferAdditionalFields, usernameClient } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
-import { type auth, options } from '@repo/backend/auth';
+import { type auth } from '@repo/backend/auth';
 
 export const authClient = createAuthClient({
-  $InferAuth: options,
+  // $InferAuth: options,
   baseURL: import.meta.env.VITE_BACKEND_URL,
   plugins: [usernameClient(), inferAdditionalFields<typeof auth>()],
 });

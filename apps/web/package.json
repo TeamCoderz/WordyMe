@@ -26,6 +26,7 @@
     "@repo/shared": "workspace:*",
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
+    "@repo/backend": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-query": "^5.90.12",
     "@tanstack/react-query-devtools": "^5.91.1",
