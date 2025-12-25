@@ -17,7 +17,9 @@ import { userHasDocument, userHasRevision } from '../services/access.js';
 
 const router: Router = Router();
 
-router.post('/', requireAuth, validate({ body: createRevisionSchema }), async (req, res) => {
+router.use(requireAuth);
+
+router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.body.documentId))) {
     throw new HttpUnauthorized(
       'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
@@ -27,24 +29,18 @@ router.post('/', requireAuth, validate({ body: createRevisionSchema }), async (r
   res.status(201).json(revision);
 });
 
-router.get(
-  '/:revisionId',
-  requireAuth,
-  validate({ params: revisionIdParamSchema }),
-  async (req, res) => {
-    if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpUnauthorized(
-        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
-      );
-    }
-    const revision = await getRevisionById(req.params.revisionId);
-    res.status(200).json(revision);
-  },
-);
+router.get('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
+  if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
+    throw new HttpUnauthorized(
+      'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+    );
+  }
+  const revision = await getRevisionById(req.params.revisionId);
+  res.status(200).json(revision);
+});
 
 router.patch(
   '/:revisionId',
-  requireAuth,
   validate({ body: updateRevisionSchema, params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
@@ -57,19 +53,14 @@ router.patch(
   },
 );
 
-router.delete(
-  '/:revisionId',
-  requireAuth,
-  validate({ params: revisionIdParamSchema }),
-  async (req, res) => {
-    if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpUnauthorized(
-        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
-      );
-    }
-    await deleteRevisionById(req.params.revisionId);
-    res.status(204).send();
-  },
-);
+router.delete('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
+  if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
+    throw new HttpUnauthorized(
+      'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+    );
+  }
+  await deleteRevisionById(req.params.revisionId);
+  res.status(204).send();
+});
 
 export { router as revisionsRouter };

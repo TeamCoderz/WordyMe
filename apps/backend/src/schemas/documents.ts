@@ -4,7 +4,7 @@ import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { documentViewsTable } from '../models/document-views.js';
 import { favoritesTable } from '../models/favorites.js';
-import { revisionDetailsSchema } from './revisions.js';
+import { createRevisionSchema, revisionDetailsSchema } from './revisions.js';
 
 export const documentHandleParamSchema = createSelectSchema(documentsTable).pick({ handle: true });
 
@@ -23,6 +23,7 @@ export const documentFiltersSchema = z.object({
   parentId: z.uuid().optional(),
   orderBy: z.enum(['name', 'createdAt', 'lastViewedAt']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
+  isContainer: z.stringbool().optional(),
   days: z.coerce.number().min(1).optional(),
   limit: z.coerce.number().min(1).optional(),
 });
@@ -36,6 +37,10 @@ export const createDocumentSchema = createInsertSchema(documentsTable, {
   userId: true,
   currentRevisionId: true,
   handle: true,
+});
+
+export const createDocumentWithRevisionSchema = createDocumentSchema.extend({
+  revision: createRevisionSchema.omit({ documentId: true }),
 });
 
 export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
@@ -62,8 +67,6 @@ export const documentDetailsSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).extend({
   currentRevision: createSelectSchema(revisionsTable).nullable(),
-  views: z.array(createSelectSchema(documentViewsTable)).optional(),
-  favorites: z.array(createSelectSchema(favoritesTable)).optional(),
   isFavorite: z.boolean(),
   lastViewedAt: z.date().nullable(),
 });
@@ -76,6 +79,7 @@ export const copiedDocumentSchema = createSelectSchema(documentsTable, {
 
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
 export type CreateDocumentInput = z.output<typeof createDocumentSchema>;
+export type CreateDocumentWithRevisionInput = z.output<typeof createDocumentWithRevisionSchema>;
 export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
 export type DocumentListItem = z.output<typeof documentListItemSchema>;

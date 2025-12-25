@@ -11,6 +11,7 @@ import {
   documentFiltersSchema,
   documentListItemSchema,
   getSingleDocumentOptionsSchema,
+  createDocumentWithRevisionSchema,
 } from '../schemas/documents.js';
 import {
   createRevisionSchema,
@@ -50,6 +51,31 @@ export const openApiDocument = createDocument({
           },
         },
       },
+      post: {
+        summary: 'Create a new document',
+        tags: ['Documents'],
+        description:
+          "Creates a new document (space, folder, or note) in the authenticated user's workspace. The document can optionally be nested under a parent document and associated with a space.",
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: createDocumentSchema },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'Document created successfully. Returns the full document details including current revision state.',
+            content: {
+              'application/json': { schema: documentDetailsSchema },
+            },
+          },
+          401: {
+            description:
+              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
     },
     '/api/documents/last-viewed': {
       get: {
@@ -63,6 +89,29 @@ export const openApiDocument = createDocument({
             description: 'Paginated list of recently viewed documents with metadata.',
             content: {
               'application/json': { schema: paginatedResultSchema(documentListItemSchema) },
+            },
+          },
+        },
+      },
+    },
+    '/api/documents/with-revision': {
+      post: {
+        summary: 'Create a new document with initial revision',
+        tags: ['Documents'],
+        description:
+          'Creates a new document along with its initial revision in a single operation. Useful for quickly setting up a new document with content. The document can optionally be nested under a parent document and associated with a space.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': { schema: createDocumentWithRevisionSchema },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'Document and initial revision created successfully. Returns the full document details including current revision state.',
+            content: {
+              'application/json': { schema: documentDetailsSchema },
             },
           },
         },
@@ -158,34 +207,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-
-    '/api/documents/create': {
-      post: {
-        summary: 'Create a new document',
-        tags: ['Documents'],
-        description:
-          "Creates a new document (space, folder, or note) in the authenticated user's workspace. The document can optionally be nested under a parent document and associated with a space.",
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': { schema: createDocumentSchema },
-          },
-        },
-        responses: {
-          201: {
-            description:
-              'Document created successfully. Returns the full document details including current revision state.',
-            content: {
-              'application/json': { schema: documentDetailsSchema },
-            },
-          },
-          401: {
-            description:
-              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
-          },
-        },
-      },
-    },
     '/api/documents/import': {
       post: {
         summary: 'Import document tree',
@@ -244,7 +265,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-
     '/api/documents/{documentId}/update': {
       patch: {
         summary: 'Update document',
@@ -272,7 +292,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-
     '/api/documents/{documentId}': {
       get: {
         summary: 'Get document by ID',
@@ -340,7 +359,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-
     '/api/favorites': {
       get: {
         summary: 'List user favorite documents',
@@ -400,7 +418,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-
     '/api/revisions/{revisionId}': {
       get: {
         summary: 'Get revision details',

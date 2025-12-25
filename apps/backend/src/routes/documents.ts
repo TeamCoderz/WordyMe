@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   createDocumentSchema,
+  createDocumentWithRevisionSchema,
   documentFiltersSchema,
   documentHandleParamSchema,
   documentIdParamSchema,
@@ -26,7 +27,11 @@ import {
   HttpUnprocessableEntity,
   HttpUnauthorized,
 } from '@httpx/exception';
-import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
+import {
+  createRevision,
+  getCurrentRevisionByDocumentId,
+  getRevisionsByDocumentId,
+} from '../services/revisions.js';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
@@ -44,14 +49,13 @@ router.get('/', validate({ query: documentFiltersSchema }), async (req, res) => 
 router.get(
   '/last-viewed',
   validate({ query: documentFiltersSchema.and(paginationQuerySchema) }),
-
   async (req, res) => {
     const result = await getLastViewedDocuments(req.user!.id, req.query);
     res.status(200).json(result);
   },
 );
 
-router.post('/create', validate({ body: createDocumentSchema }), async (req, res) => {
+router.post('/', validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpUnauthorized(
@@ -68,10 +72,35 @@ router.post('/create', validate({ body: createDocumentSchema }), async (req, res
   res.status(201).json(document);
 });
 
+router.post(
+  '/with-revision',
+  validate({ body: createDocumentWithRevisionSchema }),
+  async (req, res) => {
+    const document = await createDocument(req.body, req.user!.id);
+    try {
+      const revision = await createRevision(
+        { ...req.body.revision, documentId: document.id },
+        req.user!.id,
+      );
+      res
+        .status(201)
+        .json({
+          ...document,
+          currentRevisionId: revision.id,
+          currentRevision: revision,
+          isFavorite: false,
+          lastViewedAt: null,
+        });
+    } catch (error) {
+      await deleteDocument(document.id);
+      throw error;
+    }
+  },
+);
+
 router.get(
   '/handle/:handle',
   validate({ params: documentHandleParamSchema, query: getSingleDocumentOptionsSchema }),
-
   async (req, res) => {
     const document = await getDocumentDetails({ handle: req.params.handle }, req.user!.id);
     if (!document) {
@@ -84,22 +113,16 @@ router.get(
   },
 );
 
-router.get(
-  '/:documentId',
-
-  validate({ params: documentIdParamSchema }),
-  async (req, res) => {
-    const document = await getDocumentDetails(req.params, req.user!.id);
-    if (!document) {
-      throw new HttpNotFound('Document not found or the user does not have access to it.');
-    }
-    res.status(200).json(document);
-  },
-);
+router.get('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
+  const document = await getDocumentDetails(req.params, req.user!.id);
+  if (!document) {
+    throw new HttpNotFound('Document not found or the user does not have access to it.');
+  }
+  res.status(200).json(document);
+});
 
 router.patch(
   '/:documentId/update',
-
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -126,33 +149,27 @@ router.patch(
   },
 );
 
-router.delete(
-  '/:documentId',
+router.delete('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
+  if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
+    throw new HttpUnauthorized(
+      'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+    );
+  }
 
-  validate({ params: documentIdParamSchema }),
-  async (req, res) => {
-    if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
-      throw new HttpUnauthorized(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
-      );
-    }
+  const documentCount = await getUserDocumentCount(req.user!.id);
+  if (documentCount <= 1) {
+    throw new HttpUnprocessableEntity({
+      message:
+        'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
+    });
+  }
 
-    const documentCount = await getUserDocumentCount(req.user!.id);
-    if (documentCount <= 1) {
-      throw new HttpUnprocessableEntity({
-        message:
-          'Cannot delete the last remaining document. Users must have at least one document in their workspace.',
-      });
-    }
-
-    await deleteDocument(req.params.documentId);
-    res.status(204).send();
-  },
-);
+  await deleteDocument(req.params.documentId);
+  res.status(204).send();
+});
 
 router.get(
   '/:documentId/revisions',
-
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -170,7 +187,6 @@ router.get(
 
 router.get(
   '/:documentId/revisions/current',
-
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
@@ -191,7 +207,6 @@ router.get(
 router.post(
   '/:documentId/copy',
   validate({ params: documentIdParamSchema, body: copyDocumentSchema }),
-
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpUnauthorized(
