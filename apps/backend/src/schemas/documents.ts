@@ -11,7 +11,9 @@ export const documentIdParamSchema = z.object({
 });
 
 export const getSingleDocumentOptionsSchema = z.object({
-  updateLastViewed: z.coerce.boolean().optional(),
+  updateLastViewed: z
+    .union([z.boolean(), z.enum(['true', 'false', '']).transform((val) => val === 'true')])
+    .optional(),
 });
 
 export const documentFiltersSchema = z.object({
