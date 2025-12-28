@@ -4,7 +4,7 @@ import { requireAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { revisionIdParamSchema } from '../schemas/revisions.js';
 import { userHasDocument, userHasRevision } from '../services/access.js';
-import { HttpUnauthorized, HttpUnprocessableEntity } from '@httpx/exception';
+import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../lib/storage.js';
 import { getRevisionContentUrl } from '../services/revision-contents.js';
 import { documentIdParamSchema } from '../schemas/documents.js';
@@ -21,7 +21,7 @@ router.get(
   validate({ params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpUnauthorized(
+      throw new HttpNotFound(
         'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
       );
     }
@@ -37,7 +37,7 @@ router.post(
     const { documentId } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpUnauthorized(
+      throw new HttpNotFound(
         'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
       );
     }
@@ -87,7 +87,7 @@ router.get(
     const { documentId, filename } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
-      throw new HttpUnauthorized(
+      throw new HttpNotFound(
         'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
       );
     }

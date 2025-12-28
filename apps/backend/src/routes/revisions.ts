@@ -12,7 +12,7 @@ import {
   updateRevisionName,
   deleteRevisionById,
 } from '../services/revisions.js';
-import { HttpUnauthorized } from '@httpx/exception';
+import { HttpNotFound } from '@httpx/exception';
 import { userHasDocument, userHasRevision } from '../services/access.js';
 
 const router: Router = Router();
@@ -21,7 +21,7 @@ router.use(requireAuth);
 
 router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.body.documentId))) {
-    throw new HttpUnauthorized(
+    throw new HttpNotFound(
       'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
     );
   }
@@ -31,7 +31,7 @@ router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
 
 router.get('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
   if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-    throw new HttpUnauthorized(
+    throw new HttpNotFound(
       'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
     );
   }
@@ -44,7 +44,7 @@ router.patch(
   validate({ body: updateRevisionSchema, params: revisionIdParamSchema }),
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-      throw new HttpUnauthorized(
+      throw new HttpNotFound(
         'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
       );
     }
@@ -55,7 +55,7 @@ router.patch(
 
 router.delete('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
   if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
-    throw new HttpUnauthorized(
+    throw new HttpNotFound(
       'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
     );
   }
