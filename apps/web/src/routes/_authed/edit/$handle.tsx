@@ -48,5 +48,17 @@ function RouteComponent() {
 
   const initialState = 'data' in revision ? JSON.stringify(revision.data) : undefined;
 
-  return <EditDocument user={user} document={document} initialState={initialState} />;
+  return (
+    <EditDocument
+      user={{
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.avatar_image?.calculatedImage,
+        handle: user.handle,
+      }}
+      document={document}
+      initialState={initialState}
+    />
+  );
 }

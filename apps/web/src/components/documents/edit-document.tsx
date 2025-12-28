@@ -22,7 +22,7 @@ interface EditDocumentProps {
   initialState?: string;
 }
 
-export function EditDocument({ document, user, initialState }: EditDocumentProps) {
+export function EditDocument({ document, initialState }: EditDocumentProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [openDesktop, setOpenDesktop] = useState(true);
   const [openMobile, setOpenMobile] = useState(false);
@@ -86,7 +86,7 @@ export function EditDocument({ document, user, initialState }: EditDocumentProps
     saveLocalRevision({ editorState });
   }, 300);
 
-  const services = useMemo(() => getServices(document.id, user.id), [document.id, user.id]);
+  const services = useMemo(() => getServices(document.id), [document.id]);
 
   return (
     <SidebarProvider

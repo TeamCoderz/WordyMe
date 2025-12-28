@@ -41,16 +41,70 @@ const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
 };
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: async ({ context: { session } }) => {
+  beforeLoad: async ({ context: { session, store } }) => {
+    let sessionUser: NonNullable<NonNullable<typeof session.data>['user']> | null =
+      session.data?.user ?? null;
     if (session.isLoading) {
       const { data, error } = await getSession();
       if (error || data == null) {
         throw redirect({ to: '/login' });
       }
-    }
-    if (session.data == null) {
+      sessionUser = data.user;
+    } else if (session.data == null) {
       throw redirect({ to: '/login' });
     }
+    if (!sessionUser) {
+      store.setState({
+        user: null,
+      });
+      return;
+    }
+
+    const cover_image = sessionUser.coverMeta;
+    const avatar_image = sessionUser.imageMeta;
+    const cover_image_url = sessionUser.cover;
+    const avatar_image_url = sessionUser.image;
+
+    store.setState({
+      user: {
+        ...sessionUser,
+        cover_image: cover_image
+          ? {
+              url: cover_image_url ?? null,
+              x: cover_image?.x ?? null,
+              y: cover_image?.y ?? null,
+              width: cover_image?.width ?? null,
+              height: cover_image?.height ?? null,
+              zoom: cover_image?.zoom ?? null,
+              type: cover_image?.type ?? null,
+              calculatedImage: null,
+              isLoading: true,
+            }
+          : undefined,
+        avatar_image: avatar_image
+          ? {
+              url: avatar_image_url ?? null,
+              x: avatar_image?.x ?? null,
+              y: avatar_image?.y ?? null,
+              width: avatar_image?.width ?? null,
+              height: avatar_image?.height ?? null,
+              zoom: avatar_image?.zoom ?? null,
+              type: avatar_image?.type ?? null,
+              calculatedImage: null,
+              isLoading: true,
+              provider: 'supabase',
+            }
+          : undefined,
+        editor_settings: {
+          id: '',
+          createdAt: new Date(),
+          userId: sessionUser.id,
+          keepPreviousRevision: false,
+          autosave: false,
+        },
+        isGuest: false,
+      },
+    });
   },
   component: RouteComponent,
   errorComponent: AuthedRouteErrorComponent,

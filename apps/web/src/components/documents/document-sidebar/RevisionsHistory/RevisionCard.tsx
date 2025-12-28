@@ -109,7 +109,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
     const toastId = toast.loading('Loading revision');
     try {
       const cloudRevision = await getRevisionByIdQueryOptions(revision.id, true).queryFn();
-      const serializedData = cloudRevision.data;
+      const serializedData = cloudRevision.content;
       const editorState = editor.parseEditorState(serializedData);
       editor.update(
         () => {
@@ -150,7 +150,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         });
       }
       const cloudRevision = await getRevisionByIdQueryOptions(revision.id, true).queryFn();
-      const serializedData = cloudRevision.data;
+      const serializedData = cloudRevision.content;
       const editorState = editor.parseEditorState(serializedData);
       editor.update(
         () => {

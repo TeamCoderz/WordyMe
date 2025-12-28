@@ -18,7 +18,7 @@ interface ViewDocumentProps {
   initialState?: string;
 }
 
-export function ViewDocument({ document, user, initialState }: ViewDocumentProps) {
+export function ViewDocument({ document, initialState }: ViewDocumentProps) {
   const isDesktop = useMediaQuery('(min-width: 1024px)');
   const [openDesktop, setOpenDesktop] = useState(true);
   const [openMobile, setOpenMobile] = useState(false);
@@ -32,7 +32,7 @@ export function ViewDocument({ document, user, initialState }: ViewDocumentProps
 
   const editorRef = useRef<LexicalEditor>(null);
 
-  const services = useMemo(() => getServices(document.id, user.id), [document.id, user.id]);
+  const services = useMemo(() => getServices(document.id), [document.id]);
 
   return (
     <SidebarProvider

@@ -59,7 +59,7 @@ export function TableOfContentsList({
         });
 
       if (visibleEntries.length > 0) {
-        const target = visibleEntries[0].target;
+        const target = visibleEntries[0]?.target;
         const key = headingElements.find(({ element }) => element === target)?.key;
         if (key) setSelectedKey(key);
       }
