@@ -11,7 +11,7 @@ export const documentIdParamSchema = z.object({
 });
 
 export const getSingleDocumentOptionsSchema = z.object({
-  updateLastViewed: z.boolean().optional(),
+  updateLastViewed: z.coerce.boolean().optional(),
 });
 
 export const documentFiltersSchema = z.object({
@@ -21,7 +21,7 @@ export const documentFiltersSchema = z.object({
   parentId: z.uuid().optional(),
   orderBy: z.enum(['name', 'createdAt', 'lastViewedAt']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
-  isContainer: z.stringbool().optional(),
+  isContainer: z.coerce.boolean().optional(),
   days: z.coerce.number().min(1).optional(),
   limit: z.coerce.number().min(1).optional(),
 });
