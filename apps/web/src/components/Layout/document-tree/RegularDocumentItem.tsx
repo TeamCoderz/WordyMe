@@ -141,12 +141,17 @@ export function RegularDocumentItem({
         onSuccess: (data) => {
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
+            (old: ListDocumentResult): ListDocumentResult => {
               removePlaceholderHandler();
               if (old) {
                 // Check if document is already in cache to avoid duplicates
-                if (!isDocumentCached(data?.document?.clientId as string) && data?.document) {
-                  return [...old, data.document];
+                if (!isDocumentCached(data?.clientId as string) && data) {
+                  const { currentRevision, ...document } = data;
+                  let newDocument: ListDocumentResult[number] = {
+                    ...document,
+                    currentRevisionId: currentRevision?.id ?? null,
+                  };
+                  return [...old, newDocument];
                 }
               }
               return old;

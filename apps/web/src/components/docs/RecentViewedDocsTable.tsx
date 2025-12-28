@@ -37,7 +37,7 @@ export function RecentViewedDocsTable() {
   };
   const queryClient = useQueryClient();
   const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.last_page ?? 1;
+  const lastPage = paginationMeta?.total ?? 1;
   const visualLastPage = Math.max(lastPage, 1);
   const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation({
     document: documents[0] || ({} as any),

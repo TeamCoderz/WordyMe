@@ -66,16 +66,19 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { isSpaceCached } from '@/queries/caches/spaces';
+import { ItemInstance } from '@headless-tree/core';
+import { TreeNode } from '@repo/lib/data/tree';
 
-type AnyItem = any;
+type SpaceTreeNode = TreeNode<ListSpaceResultItem>;
+type SpaceTreeItem = ItemInstance<SpaceTreeNode | null>;
 
 export interface ManageSpacesTableRowProps {
-  item: AnyItem;
+  item: SpaceTreeItem;
   index: number; // kept for future use if needed
   isLast: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  tree: any;
+  tree: ReturnType<typeof import('@headless-tree/react').useTree<SpaceTreeNode | null>>;
   getDescendantIds: (nodeId: string) => string[];
   onBeginInlineCreate?: (type: 'space' | 'folder') => void;
   onRemovePlaceholder?: () => void;
@@ -93,10 +96,21 @@ export function ManageSpacesTableRow({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageSpacesTableRowProps) {
-  const space = item.getItemData()?.data as ListSpaceResultItem;
-  const isCreating = space?.id === space?.clientId || space?.id === 'new-space';
-  const isPlaceholder = space?.id === 'new-space';
-  const [placeholderName, setPlaceholderName] = React.useState<string>(space?.name ?? '');
+  const itemData = item.getItemData() as SpaceTreeNode | null;
+  const space = itemData?.data as
+    | (ListSpaceResultItem & {
+        clientId?: string | null;
+      })
+    | undefined;
+
+  // Guard clause: component cannot function without a space
+  if (!space) {
+    return null;
+  }
+
+  const isCreating = space.id === space.clientId || space.id === 'new-space';
+  const isPlaceholder = space.id === 'new-space';
+  const [placeholderName, setPlaceholderName] = React.useState<string>(space.name ?? '');
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
@@ -683,31 +697,38 @@ export function ManageSpacesTableRow({
                 ? space.isContainer === true
                   ? 'folder'
                   : 'space'
-                : (item.getItemData()?.data as any)?.isContainer === true
-                  ? 'folder'
-                  : item.getItemData()?.data.type}
+                : (() => {
+                    const itemData = item.getItemData() as SpaceTreeNode | null;
+                    return itemData?.data?.isContainer === true ? 'folder' : 'space';
+                  })()}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : item.getItemData()?.data.createdAt
-                  ? format(new Date(item.getItemData().data.createdAt), 'MMMM d, yyyy')
-                  : '—'}
+                : (() => {
+                    const itemData = item.getItemData() as SpaceTreeNode | null;
+                    return itemData?.data?.createdAt
+                      ? format(new Date(itemData.data.createdAt), 'MMMM d, yyyy')
+                      : '—';
+                  })()}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : item.getItemData()?.data.updatedAt
-                  ? (() => {
-                      const date = new Date(item.getItemData().data.updatedAt);
-                      const now = new Date();
-                      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                      if (diffInSeconds < 60) {
-                        return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
-                      }
-                      return formatDistanceToNow(date, { addSuffix: true });
-                    })()
-                  : '—'}
+                : (() => {
+                    const itemData = item.getItemData() as SpaceTreeNode | null;
+                    return itemData?.data?.updatedAt
+                      ? (() => {
+                          const date = new Date(itemData.data.updatedAt);
+                          const now = new Date();
+                          const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+                          if (diffInSeconds < 60) {
+                            return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
+                          }
+                          return formatDistanceToNow(date, { addSuffix: true });
+                        })()
+                      : '—';
+                  })()}
             </div>
             <div className="flex justify-end px-2 h-10 relative">
               {!isPlaceholder && (

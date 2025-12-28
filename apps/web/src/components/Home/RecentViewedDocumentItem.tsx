@@ -6,12 +6,11 @@ type RecentViewedDocument = {
   name: string;
   handle?: string | null;
   icon?: string | null;
-  lastViewedAt?: string | null;
+  lastViewedAt?: Date | null;
 };
 
-function formatRelativeTime(iso?: string | null): string {
-  if (!iso) return '-';
-  const date = new Date(iso);
+function formatRelativeTime(date?: Date | null): string {
+  if (!date) return '-';
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.floor(diffMs / 60000);
   if (minutes < 1) return 'just now';

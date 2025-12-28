@@ -11,10 +11,14 @@ import {
 } from '@headless-tree/core';
 import { Tree, TreeDragLine } from '@repo/ui/components/tree';
 import { ManageDocumentsTableRow } from './TableRow';
-import { arrayToTree } from '@repo/lib/data/tree';
+import { arrayToTree, TreeNode } from '@repo/lib/data/tree';
 import { generatePositionKeysBetween } from '@repo/lib/utils/position';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
-import { updateDocument } from '@repo/backend/sdk/documents.js';
+import {
+  getAllDocumentsQueryOptions,
+  ListDocumentResult,
+  ListDocumentResultItem,
+} from '@/queries/documents';
+import { updateDocument } from '@repo/sdk/documents.ts';
 import { useSelector } from '@/store';
 // no-op
 // Create mutations not used directly here; placeholder rows handle submit
@@ -55,7 +59,8 @@ export const ManageDocumentsTableContent = React.forwardRef<
   const documents = documentsFromProps || documentsFromQuery;
   const [draggingId, setDraggingId] = React.useState<string | null>(null);
   // Inline create rows are no longer used in Manage; we insert placeholders instead
-  const documentsTree = React.useMemo(() => {
+  type DocumentTreeNode = TreeNode<ListDocumentResultItem>;
+  const documentsTree = React.useMemo<DocumentTreeNode>(() => {
     const filtered = documents.filter((d) => !(d.from === 'sidebar' && d.id === 'new-doc'));
 
     if (!rootDocumentId) return arrayToTree(filtered);
@@ -84,7 +89,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
     [onInsertPlaceholder],
   );
 
-  const tree = useTree<any | null>({
+  const tree = useTree<DocumentTreeNode | null>({
     initialState: {
       expandedItems: [],
       selectedItems: [],
@@ -92,13 +97,15 @@ export const ManageDocumentsTableContent = React.forwardRef<
     indent: 4,
     rootItemId: 'root',
     getItemName: (item) => {
-      return item.getItemData()?.data.name ?? '';
+      const itemData = item.getItemData();
+      return itemData?.data?.name ?? '';
     },
     isItemFolder: (item) => {
       try {
         const data = item.getItemData();
-        const hasChildren = Array.isArray(data?.children) && data.children.length > 0;
-        const isContainer = (data?.data as any)?.isContainer === true;
+        if (!data) return false;
+        const hasChildren = Array.isArray(data.children) && data.children.length > 0;
+        const isContainer = data.data?.isContainer === true;
         return isContainer || hasChildren;
       } catch {
         return false;
@@ -110,14 +117,13 @@ export const ManageDocumentsTableContent = React.forwardRef<
         if (!target || !target.item) return true;
         const targetId = typeof target.item.getId === 'function' ? target.item.getId() : undefined;
         if (rootDocumentId && targetId === 'root') return false;
-        const parentItem =
-          typeof target.item.getItemData === 'function' ? target.item.getItemData() : null;
-        const parentData = parentItem?.data ?? parentItem; // item data shape varies in use
+        const parentItem = target.item.getItemData() as DocumentTreeNode | null;
+        if (!parentItem) return true;
         const isContainer =
-          parentData?.isContainer === true ||
-          (Array.isArray(parentItem?.children) && parentItem.children.length > 0);
+          parentItem.data?.isContainer === true ||
+          (Array.isArray(parentItem.children) && parentItem.children.length > 0);
         // Disallow dropping inside non-container rows (except implicit root handling above)
-        if (parentItem && parentItem.id !== 'root' && !isContainer) {
+        if (parentItem.id !== 'root' && !isContainer) {
           return false;
         }
         return true;
@@ -126,19 +132,22 @@ export const ManageDocumentsTableContent = React.forwardRef<
       }
     },
     onDrop: async (items, target) => {
-      const parentItem = target.item.getItemData();
-      const parentId = parentItem?.id === 'root' ? null : parentItem?.id;
-      if (rootDocumentId && parentItem?.id === 'root') {
+      const parentItem = target.item.getItemData() as DocumentTreeNode | null;
+      if (!parentItem) return;
+      const parentId = parentItem.id === 'root' ? null : parentItem.id;
+      if (rootDocumentId && parentItem.id === 'root') {
         return;
       }
-      const children = parentItem?.children ?? [];
-      const childIndex = (target as any).childIndex ?? children.length;
+      const children = parentItem.children ?? [];
+      const childIndex = (target as { childIndex?: number }).childIndex ?? children.length;
 
       const prevKey = children[childIndex - 1]?.data.position;
       const nextKey = children[childIndex]?.data.position;
       const positionKeys = generatePositionKeysBetween(prevKey, nextKey, items.length);
       for (const [index, item] of items.entries()) {
-        const child = item.getItemData()?.data;
+        const itemData = item.getItemData() as DocumentTreeNode | null;
+        if (!itemData) continue;
+        const child = itemData.data;
         if (!child) continue;
         const newPosition = positionKeys[index];
         if (child.parentId !== parentId || child.position !== newPosition) {
@@ -158,7 +167,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
             tree.rebuildTree();
 
             const { data, error } = await updateDocument(child.id, {
-              parent_id: parentId,
+              parentId: parentId,
               position: newPosition,
             });
             if (error) throw error;
@@ -167,7 +176,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
               (old: ListDocumentResult) => {
                 return old?.map((d) => {
                   if (d.id === child.id) {
-                    return data as any;
+                    return data as ListDocumentResultItem;
                   }
                   return d;
                 });
@@ -220,7 +229,11 @@ export const ManageDocumentsTableContent = React.forwardRef<
           if (!node) {
             return [];
           }
-          return node.children?.filter((c: any) => c.id !== 'new')?.map((c: any) => c.id) ?? [];
+          return (
+            node.children
+              ?.filter((c: DocumentTreeNode) => c.id !== 'new')
+              ?.map((c: DocumentTreeNode) => c.id) ?? []
+          );
         } catch (error) {
           return [];
         }
@@ -275,7 +288,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
       const ids: string[] = [];
       const node = documentsTree?.findNodeById(nodeId);
       if (!node) return ids;
-      const walk = (n: any) => {
+      const walk = (n: DocumentTreeNode) => {
         const children = n.children ?? [];
         for (const child of children) {
           if (!child?.id) continue;
@@ -318,12 +331,12 @@ export const ManageDocumentsTableContent = React.forwardRef<
           <AssistiveTreeDescription tree={tree} />
           {itemsToRender.map((item, index) => {
             try {
-              const itemData = item?.getItemData?.();
+              const itemData = item.getItemData();
               if (!itemData) {
                 return null;
               }
               const nodeId = item.getId();
-              const fragmentKey = item.getItemData()?.data.clientId ?? item.getId();
+              const fragmentKey = itemData.data?.clientId ?? item.getId();
 
               return (
                 <React.Fragment key={fragmentKey}>

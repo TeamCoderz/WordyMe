@@ -132,7 +132,7 @@ export function SpaceSwitcher() {
     if (sortedSiblings.length === 0) {
       position = 'a0';
     } else {
-      const lastPosition = sortedSiblings[sortedSiblings.length - 1].position || 'a0';
+      const lastPosition = sortedSiblings[sortedSiblings.length - 1]?.position || 'a0';
       position = generatePositionKeyBetween(lastPosition, null);
     }
 
@@ -173,17 +173,15 @@ export function SpaceSwitcher() {
         position,
         parentId: resolvedParentId,
         spaceId: null,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         isFavorite: false,
         isContainer: params.type === 'folder',
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
         lastViewedAt: null,
-        head: null,
-        type: 'space',
+        documentType: 'space',
         from: 'sidebar',
+        userId: '',
+        currentRevisionId: null,
       };
 
       setPlaceholder(newPlaceholder);
@@ -294,7 +292,7 @@ export function SpaceSwitcher() {
                               <>
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs font-medium truncate">
-                                    {activeSpace.path[0].name}
+                                    {activeSpace.path[0]?.name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                               </>
@@ -325,7 +323,7 @@ export function SpaceSwitcher() {
                               <>
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
-                                    {activeSpace.path[0].name}
+                                    {activeSpace.path[0]?.name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="text-foreground" />
@@ -335,7 +333,7 @@ export function SpaceSwitcher() {
                                 <BreadcrumbSeparator className="text-foreground" />
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
-                                    {activeSpace.path[activeSpace.path.length - 1].name}
+                                    {activeSpace.path[activeSpace.path.length - 1]?.name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                               </>

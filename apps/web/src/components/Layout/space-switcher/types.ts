@@ -1,8 +1,10 @@
 import type { ActiveSpace } from '@repo/types';
-import { listSpaces } from '@repo/backend/sdk/spaces.js';
+import { getUserDocuments } from '@repo/sdk/documents.ts';
+import { TreeNode } from '@repo/lib/data/tree';
+import { ListSpaceResultItem } from '@/queries/spaces';
 
 // Simplified type alias for space data
-export type SpaceData = NonNullable<Awaited<ReturnType<typeof listSpaces>>['data']>[number];
+export type SpaceData = NonNullable<Awaited<ReturnType<typeof getUserDocuments>>['data']>[number];
 
 export interface SpaceItemProps {
   space: SpaceData;
@@ -48,8 +50,8 @@ export interface SpaceContextMenuProps {
 }
 
 export interface UseSpaceSwitcherReturn {
-  spaces: NonNullable<Awaited<ReturnType<typeof listSpaces>>['data']>;
-  spacesTree: any;
+  spaces: NonNullable<Awaited<ReturnType<typeof getUserDocuments>>['data']>;
+  spacesTree: TreeNode<ListSpaceResultItem>;
   activeSpace: ActiveSpace | null;
   expandedSpaces: Set<string>;
   openMenuSpaceId: string | null;

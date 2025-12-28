@@ -44,7 +44,7 @@ export function FavoriteDocsTable() {
   const [renamingDocumentId, setRenamingDocumentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.last_page ?? 1;
+  const lastPage = paginationMeta?.total ?? 1;
   const visualLastPage = Math.max(lastPage, 1);
 
   const handleRemove = async (documentId: string) => {

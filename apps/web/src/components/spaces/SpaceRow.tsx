@@ -244,7 +244,7 @@ export function SpaceRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="capitalize">{space.type}</TableCell>
+        <TableCell className="capitalize">{space.documentType}</TableCell>
         <TableCell>{format(new Date(space.createdAt), 'MMMM d, yyyy')}</TableCell>
         <TableCell>
           {(() => {

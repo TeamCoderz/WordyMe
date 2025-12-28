@@ -63,16 +63,20 @@ import {
 import { useSelector, useActions } from '@/store';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDocumentCached } from '@/queries/caches/documents';
+import { ItemInstance } from '@headless-tree/core';
+import { TreeNode } from '@repo/lib/data/tree';
+import { ListDocumentResultItem } from '@/queries/documents';
 
-type AnyItem = any;
+type DocumentTreeNode = TreeNode<ListDocumentResultItem>;
+type DocumentTreeItem = ItemInstance<DocumentTreeNode | null>;
 
 export interface ManageDocumentsTableRowProps {
-  item: AnyItem;
+  item: DocumentTreeItem;
   index: number;
   isLast: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  tree: any;
+  tree: ReturnType<typeof import('@headless-tree/react').useTree<DocumentTreeNode | null>>;
   getDescendantIds: (nodeId: string) => string[];
   spaceID: string;
   onBeginInlineCreate?: (type: 'note' | 'folder') => void;
@@ -92,12 +96,21 @@ export function ManageDocumentsTableRow({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageDocumentsTableRowProps) {
-  const doc = item.getItemData()?.data as ListDocumentResult[number] & {
-    clientId: string | null;
-  };
-  const isCreating = doc?.id === doc?.clientId || doc?.id === 'new-doc';
-  const isPlaceholder = doc?.id === 'new-doc';
-  const [placeholderName, setPlaceholderName] = React.useState<string>(doc?.name ?? '');
+  const itemData = item.getItemData() as DocumentTreeNode | null;
+  const doc = itemData?.data as
+    | (ListDocumentResultItem & {
+        clientId?: string | null;
+      })
+    | undefined;
+
+  // Guard clause: component cannot function without a document
+  if (!doc) {
+    return null;
+  }
+
+  const isCreating = doc.id === doc.clientId || doc.id === 'new-doc';
+  const isPlaceholder = doc.id === 'new-doc';
+  const [placeholderName, setPlaceholderName] = React.useState<string>(doc.name ?? '');
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
@@ -381,9 +394,10 @@ export function ManageDocumentsTableRow({
               getAllDocumentsQueryOptions(spaceID).queryKey,
               (old: ListDocumentResult) => {
                 removePlaceholderHandler();
-                if (old) {
-                  if (!isDocumentCached(data?.document?.clientId as string) && data?.document) {
-                    return [...old, data.document];
+                if (old && data) {
+                  const { currentRevision, ...document } = data;
+                  if (!isDocumentCached(document.clientId as string)) {
+                    return [...old, document as ListDocumentResultItem];
                   }
                 }
                 return old;
@@ -553,8 +567,13 @@ export function ManageDocumentsTableRow({
               </div>
               <div className="flex items-center gap-2 ps-[clamp(0px,var(--tree-padding),calc(var(--spacing)*32))] min-w-0 flex-1">
                 <div className="flex items-center justify-center">
-                  {(item.getItemData()?.data as any)?.isContainer === true ||
-                  item.getItemData()?.children.length > 0 ? (
+                  {(() => {
+                    const itemData = item.getItemData() as DocumentTreeNode | null;
+                    return (
+                      (itemData?.data as any)?.isContainer === true ||
+                      (itemData?.children.length ?? 0) > 0
+                    );
+                  })() ? (
                     <button
                       data-expand-toggle="true"
                       className="p-1 hover:bg-accent/50 rounded-sm"
@@ -717,22 +736,28 @@ export function ManageDocumentsTableRow({
               {(item.getItemData()?.data as any)?.isContainer === true ? 'folder' : 'note'}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
-              {item.getItemData()?.data.createdAt
-                ? format(new Date(item.getItemData().data.createdAt), 'MMMM d, yyyy')
-                : '—'}
+              {(() => {
+                const itemData = item.getItemData() as DocumentTreeNode | null;
+                return itemData?.data?.createdAt
+                  ? format(new Date(itemData.data.createdAt), 'MMMM d, yyyy')
+                  : '—';
+              })()}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
-              {item.getItemData()?.data.updatedAt
-                ? (() => {
-                    const date = new Date(item.getItemData().data.updatedAt);
-                    const now = new Date();
-                    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                    if (diffInSeconds < 60) {
-                      return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
-                    }
-                    return formatDistanceToNow(date, { addSuffix: true });
-                  })()
-                : '—'}
+              {(() => {
+                const itemData = item.getItemData() as DocumentTreeNode | null;
+                return itemData?.data?.updatedAt
+                  ? (() => {
+                      const date = new Date(itemData.data.updatedAt);
+                      const now = new Date();
+                      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+                      if (diffInSeconds < 60) {
+                        return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
+                      }
+                      return formatDistanceToNow(date, { addSuffix: true });
+                    })()
+                  : '—';
+              })()}
             </div>
             <div className="flex justify-end px-2 h-10 relative">
               <DropdownMenu>

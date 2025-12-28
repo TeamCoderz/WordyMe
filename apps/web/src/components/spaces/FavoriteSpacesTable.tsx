@@ -46,7 +46,7 @@ export function FavoriteSpacesTable() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingSpaceId, setRenamingSpaceId] = useState<string | null>(null);
   const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.last_page ?? 1;
+  const lastPage = paginationMeta?.total ?? 1;
   const visualLastPage = Math.max(lastPage, 1);
   const queryClient = useQueryClient();
   const handleRemove = async (spaceId: string) => {

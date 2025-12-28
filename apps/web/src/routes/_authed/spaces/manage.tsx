@@ -66,17 +66,15 @@ function ManageSpacesPage() {
         position,
         parentId: resolvedParentId,
         spaceId: null,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         isFavorite: false,
         isContainer: params.type === 'folder',
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
         lastViewedAt: null,
-        head: null,
-        type: 'space',
+        documentType: 'space',
         from: 'manage',
+        userId: '',
+        currentRevisionId: null,
       };
 
       setPlaceholder(newPlaceholder);
@@ -107,7 +105,7 @@ function ManageSpacesPage() {
     if (sortedSiblings.length === 0) {
       position = 'a0';
     } else {
-      const lastPosition = sortedSiblings[sortedSiblings.length - 1].position || 'a0';
+      const lastPosition = sortedSiblings[sortedSiblings.length - 1]?.position || 'a0';
       position = generatePositionKeyBetween(lastPosition, null);
     }
 

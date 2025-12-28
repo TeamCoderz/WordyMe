@@ -248,7 +248,7 @@ export function FavoriteDocumentRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="capitalize">{document.type}</TableCell>
+        <TableCell className="capitalize">{document.documentType}</TableCell>
         <TableCell>{format(new Date(document.createdAt), 'MMMM d, yyyy')}</TableCell>
         <TableCell>
           {(() => {

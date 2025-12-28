@@ -65,17 +65,15 @@ function ManageDocumentsPage() {
         position,
         parentId: resolvedParentId,
         spaceId: spaceID,
-        authorId: '',
-        authorImage: null,
-        authorName: '',
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(),
         isFavorite: false,
         isContainer: params.type === 'folder',
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
         lastViewedAt: null,
-        head: null,
-        type: params.type === 'folder' ? ('folder' as any) : ('note' as any),
+        documentType: params.type === 'folder' ? ('folder' as any) : ('note' as any),
         from: 'manage',
+        userId: '',
+        currentRevisionId: null,
       };
 
       setPlaceholder(newPlaceholder);

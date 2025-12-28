@@ -9,14 +9,10 @@ import {
   SidebarHeader,
   SidebarSeparator,
 } from '@repo/ui/components/sidebar';
-import { useSelector } from '@/store';
 import { SpaceSwitcher } from './space-switcher';
 import { NavDocumentsContextMenu } from './document-tree/NavDocumentsContextMenu';
-import { GuestUserCard } from './GuestUserCard';
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
-  const user = useSelector((state) => state.user);
-
   return (
     <Sidebar
       className="top-14 h-[calc(100svh---spacing(14))]! max-h-[calc(100svh---spacing(14))]!"
