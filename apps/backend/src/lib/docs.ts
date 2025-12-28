@@ -141,7 +141,7 @@ export const openApiDocument = createDocument({
       },
     },
     '/api/documents/{documentId}/export': {
-      get: {
+      post: {
         summary: 'Export document tree',
         tags: ['Documents'],
         description:

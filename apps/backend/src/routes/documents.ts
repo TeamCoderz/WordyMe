@@ -218,9 +218,8 @@ router.post(
   },
 );
 
-router.get(
+router.post(
   '/:documentId/export',
-
   validate({ params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
