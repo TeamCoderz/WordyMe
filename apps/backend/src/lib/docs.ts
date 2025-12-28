@@ -265,7 +265,7 @@ export const openApiDocument = createDocument({
         },
       },
     },
-    '/api/documents/{documentId}/update': {
+    '/api/documents/{documentId}/': {
       patch: {
         summary: 'Update document',
         tags: ['Documents'],

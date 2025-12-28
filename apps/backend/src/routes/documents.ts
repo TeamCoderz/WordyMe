@@ -115,7 +115,7 @@ router.get('/:documentId', validate({ params: documentIdParamSchema }), async (r
 });
 
 router.patch(
-  '/:documentId/update',
+  '/:documentId/',
   validate({ body: updateDocumentSchema, params: documentIdParamSchema }),
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
