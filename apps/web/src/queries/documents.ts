@@ -1242,21 +1242,23 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
       const fileText = await file.text();
       const document = JSON.parse(fileText);
-      const parsedDocument = await importDocumentSchema.safeParseAsync(document);
-      if (!parsedDocument.success) {
-        throw new Error('Invalid document');
-      }
-      if (parsedDocument.data.type !== 'note') {
-        throw new Error('Invalid document type');
-      }
-
-      const { data, error } = await importDocument({
-        document: parsedDocument.data.document,
+      console.log(document);
+      const parsedDocument = await importDocumentSchema.safeParseAsync({
         parentId,
         spaceId,
         position,
         type: 'note',
+        document: document,
       });
+      if (!parsedDocument.success) {
+        console.log(parsedDocument.error);
+        throw new Error('Invalid document');
+      }
+      if (parsedDocument.data.document.type !== 'note') {
+        throw new Error('Invalid document type');
+      }
+
+      const { data, error } = await importDocument(parsedDocument.data);
       if (error) {
         throw error;
       }

@@ -44,7 +44,7 @@ export function EditDocumentActions({ handle }: { handle: string }) {
     !document ||
     !checksum ||
     !revisions?.length ||
-    (isPreviouslySaved && cloudRevision.document_id !== document.id);
+    (isPreviouslySaved && cloudRevision.documentId !== document.id);
   const [isSaving, setIsSaving] = useState(false);
   const [isJustSaved, setIsJustSaved] = useState(false);
   const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;

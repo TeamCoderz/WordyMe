@@ -233,7 +233,7 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
               const steps = [0.35, 0.5, 0.65, 0.8, 1.0];
               const currentIndex = steps.findIndex((step) => sizeRatio <= step);
               const prevIndex = Math.max(0, currentIndex - 1);
-              setSizeRatio(steps[prevIndex]);
+              setSizeRatio(steps[prevIndex] ?? 0.35);
             }}
             disabled={sizeRatio <= 0.35}
           >
@@ -243,7 +243,7 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
           <div className="relative flex-1 z-0">
             <Slider
               value={[sizeRatio]}
-              onValueChange={(values) => setSizeRatio(values[0])}
+              onValueChange={(values) => setSizeRatio(values[0] ?? 0.35)}
               min={0.35}
               max={1}
               step={0.01}
@@ -296,7 +296,7 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
                 currentIndex === -1
                   ? steps.length - 1
                   : Math.min(steps.length - 1, currentIndex + 1);
-              setSizeRatio(steps[nextIndex]);
+              setSizeRatio(steps[nextIndex] ?? 1);
             }}
             disabled={sizeRatio >= 1}
           >

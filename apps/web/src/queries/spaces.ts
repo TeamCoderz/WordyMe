@@ -1006,20 +1006,20 @@ export function useImportSpaceMutation(parentId?: string | null, spaceId?: strin
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
       const fileText = await file.text();
       const document = JSON.parse(fileText);
-      const parsedDocument = await importDocumentSchema.safeParseAsync(document);
+      const parsedDocument = await importDocumentSchema.safeParseAsync({
+        parentId: parentId ?? null,
+        spaceId: spaceId ?? null,
+        position: position ?? null,
+        type: 'space',
+        document: document,
+      });
       if (!parsedDocument.success) {
         throw new Error('Invalid document');
       }
       if (parsedDocument.data.type !== 'space') {
         throw new Error('Invalid document type');
       }
-      const { data, error } = await importDocument({
-        parentId: parentId ?? null,
-        spaceId: spaceId ?? null,
-        position: position ?? null,
-        document: parsedDocument.data.document,
-        type: 'space',
-      });
+      const { data, error } = await importDocument(parsedDocument.data);
       if (error) {
         throw error;
       }

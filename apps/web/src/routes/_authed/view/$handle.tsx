@@ -40,7 +40,6 @@ function RouteComponent() {
       setActiveDocument(null);
     };
   }, [document]);
-
   if (isLoading || !document || !user || !revision) {
     return <ViewDocumentLoading handle={handle} />;
   }

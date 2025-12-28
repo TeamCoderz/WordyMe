@@ -1,3 +1,4 @@
+import { getDocumentByHandle } from '@repo/sdk/documents.js';
 import { Document } from '@repo/types';
 
 /**
@@ -5,15 +6,17 @@ import { Document } from '@repo/types';
  * Backend returns separate fields (authorId, authorName, authorImage, lastViewedAt)
  * Frontend expects nested objects (author: { id, name, image }, documentViews: [{ lastViewedAt }])
  */
-export function transformBackendDocument(backendDoc: any): Document {
+export function transformBackendDocument(
+  backendDoc: NonNullable<Awaited<ReturnType<typeof getDocumentByHandle>>['data']>,
+): Document {
   return {
     id: backendDoc.id,
     name: backendDoc.name,
-    head: backendDoc.head,
-    createdAt: backendDoc.createdAt,
-    updatedAt: backendDoc.updatedAt,
+    head: backendDoc.currentRevisionId,
+    createdAt: new Date(backendDoc.createdAt).toISOString(),
+    updatedAt: new Date(backendDoc.updatedAt).toISOString(),
     spaceId: backendDoc.spaceId,
-    type: backendDoc.type,
+    type: backendDoc.documentType,
     handle: backendDoc.handle,
     parentId: backendDoc.parentId,
     position: backendDoc.position,
@@ -22,11 +25,13 @@ export function transformBackendDocument(backendDoc: any): Document {
     ...(typeof backendDoc.isContainer !== 'undefined'
       ? { isContainer: backendDoc.isContainer }
       : {}),
-    documentViews: backendDoc.lastViewedAt ? [{ lastViewedAt: backendDoc.lastViewedAt }] : [],
+    documentViews: backendDoc.lastViewedAt
+      ? [{ lastViewedAt: new Date(backendDoc.lastViewedAt).toISOString() }]
+      : [],
     author: {
-      id: backendDoc.authorId,
-      name: backendDoc.authorName,
-      image: backendDoc.authorImage,
+      id: backendDoc.userId,
+      name: backendDoc.userId,
+      image: backendDoc.userId,
     },
   };
 }

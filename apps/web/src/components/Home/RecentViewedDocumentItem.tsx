@@ -9,8 +9,9 @@ type RecentViewedDocument = {
   lastViewedAt?: Date | null;
 };
 
-function formatRelativeTime(date?: Date | null): string {
-  if (!date) return '-';
+function formatRelativeTime(d?: Date | null): string {
+  if (!d) return '-';
+  const date = new Date(d);
   const diffMs = Date.now() - date.getTime();
   const minutes = Math.floor(diffMs / 60000);
   if (minutes < 1) return 'just now';

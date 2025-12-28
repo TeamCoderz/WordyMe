@@ -1,4 +1,4 @@
-import { useActions, useSelector } from '@/store';
+import { useSelector } from '@/store';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/card';
 import {
@@ -42,27 +42,12 @@ const PersonalInformation = () => {
       job_title: user?.job_title ?? '',
     },
   });
-  const { setUser } = useActions();
   const { mutate, isPending } = useUpdateProfileMutation();
   const onSubmit = ({ first_name, last_name, ...data }: PersonalInformationSchemaType) => {
-    mutate(
-      {
-        ...data,
-        name: [first_name.trim(), last_name.trim()].filter(Boolean).join(' '),
-      },
-      {
-        onSuccess: (updated) => {
-          if (updated)
-            setUser({
-              ...user!,
-              ...updated,
-              bio: updated.bio ?? null,
-              avatar_image: user?.avatar_image,
-              cover_image: user?.cover_image,
-            });
-        },
-      },
-    );
+    mutate({
+      ...data,
+      name: [first_name.trim(), last_name.trim()].filter(Boolean).join(' '),
+    });
   };
   return (
     <Card id="personal-information" className="bg-transparent p-0 overflow-hidden gap-0 @container">
