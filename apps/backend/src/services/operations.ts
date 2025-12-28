@@ -57,7 +57,7 @@ export const copyDocument = async (
       );
     }
   }
-
+  
   await copyDocumentAttachments(documentId, newDocument.id);
 
   const children = await db.query.documentsTable.findMany({

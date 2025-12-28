@@ -1,4 +1,5 @@
-import { cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
 
@@ -28,7 +29,15 @@ export const copyDocumentAttachments = async (
   const sourceDirectory = resolvePhysicalPath(`attachments/${sourceDocumentId}`);
   const targetDirectory = resolvePhysicalPath(`attachments/${targetDocumentId}`);
 
-  return await cp(sourceDirectory, targetDirectory, {
+  const sourceExists = await access(sourceDirectory, constants.F_OK)
+    .then(() => true)
+    .catch(() => false);
+
+  if (!sourceExists) {
+    return [];
+  }
+
+  await cp(sourceDirectory, targetDirectory, {
     recursive: true,
     errorOnExist: false,
   });
