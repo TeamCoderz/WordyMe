@@ -11,6 +11,7 @@ import { documentIdParamSchema } from '../schemas/documents.js';
 import { mkdir } from 'node:fs/promises';
 import z from 'zod';
 import { getAttachmentUrl } from '../services/attachments.js';
+import { safeFilename } from '../utils/strings.js';
 
 const router = Router();
 
@@ -52,6 +53,7 @@ router.post(
       maxFiles: 1,
       maxFileSize: 10 * 1024 * 1024, // 10MB
       keepExtensions: true,
+      filename: safeFilename,
     });
 
     form.on('fileBegin', (name) => {
