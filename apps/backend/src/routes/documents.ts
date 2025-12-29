@@ -100,7 +100,7 @@ router.get(
       throw new HttpNotFound('Document with the specified handle not found or not accessible.');
     }
     if (req.query.updateLastViewed === true) {
-      await dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },
