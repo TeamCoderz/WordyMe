@@ -27,14 +27,16 @@ router.use(requireAuth);
 router.get(
   '/revisions/:revisionId',
   validate({ params: revisionIdParamSchema }),
-  async (req, res) => {
+  async (req, res, next) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
       throw new HttpNotFound(
         'The revision does not exist or is not accessible by the authenticated user.',
       );
     }
 
-    res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)));
+    res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)), (err) => {
+      if (err) next(new HttpNotFound('Revision content not found'));
+    });
   },
 );
 
@@ -92,7 +94,7 @@ router.post(
 router.get(
   '/attachments/:documentId/:filename',
   validate({ params: documentIdParamSchema.extend({ filename: z.string() }) }),
-  async (req, res) => {
+  async (req, res, next) => {
     const { documentId, filename } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
@@ -101,7 +103,9 @@ router.get(
       );
     }
 
-    res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)));
+    res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)), (err) => {
+      if (err) next(new HttpNotFound('Attachment not found'));
+    });
   },
 );
 
@@ -152,9 +156,11 @@ router.delete('/images', async (req, res) => {
   res.status(204).send();
 });
 
-router.get('/images/:userId/:filename', async (req, res) => {
+router.get('/images/:userId/:filename', async (req, res, next) => {
   const { userId, filename } = req.params;
-  res.sendFile(resolvePhysicalPath(`images/${userId}/${filename}`));
+  res.sendFile(resolvePhysicalPath(`images/${userId}/${filename}`), (err) => {
+    if (err) next(new HttpNotFound('Profile image not found'));
+  });
 });
 
 router.put('/covers', async (req, res) => {
@@ -204,9 +210,11 @@ router.delete('/covers', async (req, res) => {
   res.status(204).send();
 });
 
-router.get('/covers/:userId/:filename', async (req, res) => {
+router.get('/covers/:userId/:filename', async (req, res, next) => {
   const { userId, filename } = req.params;
-  res.sendFile(resolvePhysicalPath(`covers/${userId}/${filename}`));
+  res.sendFile(resolvePhysicalPath(`covers/${userId}/${filename}`), (err) => {
+    if (err) next(new HttpNotFound('Cover image not found'));
+  });
 });
 
 export { router as storageRouter };
