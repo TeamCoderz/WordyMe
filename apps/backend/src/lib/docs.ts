@@ -27,6 +27,7 @@ import {
 import { paginationQuerySchema, paginatedResultSchema } from '../schemas/pagination.js';
 import { editorSettingsSchema } from '../schemas/editor-settings.js';
 import { favoriteSchema } from '../schemas/favorites.js';
+import { imageMetaSchema } from '../schemas/images.js';
 export const openApiDocument = createDocument({
   openapi: '3.0.0',
   info: {
@@ -585,6 +586,134 @@ export const openApiDocument = createDocument({
           404: {
             description:
               'The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/images': {
+      put: {
+        summary: 'Update user profile image',
+        tags: ['Storage'],
+        description:
+          "Uploads or updates the profile image for the authenticated user. The image is stored in the user's personal storage directory. Supports providing image transformation metadata (crop, zoom).",
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: imageMetaSchema.extend({
+                image: z.string().describe('The image file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Profile image updated successfully.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  url: z.string().describe('URL path to the updated profile image'),
+                  meta: imageMetaSchema,
+                }),
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        summary: 'Delete user profile image',
+        tags: ['Storage'],
+        description: 'Permanently deletes the profile image for the authenticated user.',
+        responses: {
+          204: {
+            description: 'Profile image deleted successfully.',
+          },
+        },
+      },
+    },
+    '/storage/images/{userId}/{filename}': {
+      get: {
+        summary: 'Get user profile image',
+        tags: ['Storage'],
+        description: 'Retrieves a specific profile image file for a user.',
+        requestParams: {
+          path: z.object({
+            userId: z.string().describe('The ID of the user'),
+            filename: z.string().describe('The filename of the image'),
+          }),
+        },
+        responses: {
+          200: {
+            description: 'Image file returned successfully.',
+            content: {
+              'image/*': {
+                schema: z.string(),
+              },
+            },
+          },
+        },
+      },
+    },
+    '/storage/covers': {
+      put: {
+        summary: 'Update user cover image',
+        tags: ['Storage'],
+        description:
+          "Uploads or updates the cover image for the authenticated user. The image is stored in the user's personal storage directory. Supports providing image transformation metadata (crop, zoom).",
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: imageMetaSchema.extend({
+                cover: z.string().describe('The cover image file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Cover image updated successfully.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  url: z.string().describe('URL path to the updated cover image'),
+                  meta: imageMetaSchema,
+                }),
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        summary: 'Delete user cover image',
+        tags: ['Storage'],
+        description: 'Permanently deletes the cover image for the authenticated user.',
+        responses: {
+          204: {
+            description: 'Cover image deleted successfully.',
+          },
+        },
+      },
+    },
+    '/storage/covers/{userId}/{filename}': {
+      get: {
+        summary: 'Get user cover image',
+        tags: ['Storage'],
+        description: 'Retrieves a specific cover image file for a user.',
+        requestParams: {
+          path: z.object({
+            userId: z.string().describe('The ID of the user'),
+            filename: z.string().describe('The filename of the cover image'),
+          }),
+        },
+        responses: {
+          200: {
+            description: 'Cover image file returned successfully.',
+            content: {
+              'image/*': {
+                schema: z.string(),
+              },
+            },
           },
         },
       },
