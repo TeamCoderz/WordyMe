@@ -22,7 +22,7 @@ router.get(
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
       throw new HttpNotFound(
-        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+        'The revision does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -38,7 +38,7 @@ router.post(
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -88,7 +88,7 @@ router.get(
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
 

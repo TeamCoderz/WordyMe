@@ -70,9 +70,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: documentDetailsSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -154,9 +154,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: exportedDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -175,9 +175,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: z.array(plainRevisionSchema) },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -196,13 +196,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
-            description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
-          },
           404: {
             description:
-              'No current revision exists for this document (document may be empty or newly created).',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -227,9 +223,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -255,9 +251,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: copiedDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
           500: {
             description: 'Internal server error. The copy operation failed unexpectedly.',
@@ -285,9 +281,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+              'The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -321,9 +317,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Document deleted successfully.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
           422: {
             description:
@@ -392,12 +388,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: favoriteSchema },
             },
           },
-          401: {
-            description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
-          },
           404: {
-            description: 'Failed to add document to favorites.',
+            description:
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -411,9 +404,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Document removed from favorites successfully. No content returned.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -433,9 +426,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -458,9 +451,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -474,9 +467,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Revision deleted successfully. No content returned.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -501,9 +494,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -525,9 +518,9 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -553,9 +546,9 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -589,9 +582,9 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },

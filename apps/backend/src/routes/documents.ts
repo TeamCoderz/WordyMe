@@ -54,12 +54,12 @@ router.post('/', validate({ body: createDocumentSchema }), async (req, res) => {
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
     );
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
     throw new HttpNotFound(
-      'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
     );
   }
 
@@ -120,7 +120,7 @@ router.patch(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -128,12 +128,12 @@ router.patch(
 
     if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document, specified parentId does not exist or is not accessible by the authenticated user.',
+        'The document, specified parentId does not exist or is not accessible by the authenticated user.',
       );
     }
     if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document, specified spaceId does not exist or is not accessible by the authenticated user.',
+        'The document, specified spaceId does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -145,7 +145,7 @@ router.patch(
 router.delete('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      'The document does not exist or is not accessible by the authenticated user.',
     );
   }
 
@@ -167,7 +167,7 @@ router.get(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
     const revisions = await getRevisionsByDocumentId(req.params.documentId);
@@ -184,7 +184,7 @@ router.get(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
     const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
@@ -203,7 +203,7 @@ router.post(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
     const copiedDocument = await dbWritesQueue.add(() =>
@@ -224,7 +224,7 @@ router.post(
   async (req, res) => {
     if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
     const exportedDocument = await exportDocumentTree(req.params.documentId);
@@ -242,12 +242,12 @@ router.post('/import', validate({ body: importDocumentSchema }), async (req, res
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The specified parentId does not exist or is not accessible by the authenticated user.',
+      'The specified parentId does not exist or is not accessible by the authenticated user.',
     );
   }
   if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
     throw new HttpNotFound(
-      'Unauthorized. The specified spaceId does not exist or is not accessible by the authenticated user.',
+      'The specified spaceId does not exist or is not accessible by the authenticated user.',
     );
   }
 
