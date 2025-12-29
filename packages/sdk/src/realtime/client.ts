@@ -25,3 +25,10 @@ export const on = <K extends SocketEventKey>(
 ) => {
   socket.on(event, callback as any);
 };
+
+export const off = <K extends SocketEventKey>(
+  event: K,
+  callback: (data: SocketEventsMap[K]) => void,
+) => {
+  socket.off(event, callback as any);
+};

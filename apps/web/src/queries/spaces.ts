@@ -29,7 +29,7 @@ import {
   importDocument,
   moveDocument,
 } from '@repo/sdk/operations.ts';
-import { addSpaceToCache, removeSpaceFromCache } from './caches/spaces';
+import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from './caches/spaces';
 import { getUserDocuments } from '@repo/sdk/documents.ts';
 import {
   addDocumentToFavorites,
@@ -49,8 +49,6 @@ export type ListSpaceResult = ListSpaceResultItem[];
 
 export const getAllSpacesQueryOptions: UseSuspenseQueryOptions<ListSpaceResult> = {
   queryKey: ['spaces'],
-  staleTime: Infinity,
-  gcTime: Infinity,
   queryFn: async () => {
     const { data, error } = await listSpaces();
     if (error) throw error;
@@ -406,41 +404,6 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
-
-      addSpaceToCache(clientId);
-      const mockSpace: ListSpaceResult[number] = {
-        id: clientId,
-        name: name?.trim() || 'New Space',
-        icon: 'briefcase',
-        position: newPosition,
-        parentId: parentId ?? null,
-        spaceId: spaceId ?? null,
-        isFavorite: false,
-        isContainer: false,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        handle: crypto.randomUUID(),
-        currentRevisionId: null,
-        userId: '',
-        clientId: clientId as any,
-        lastViewedAt: null,
-        documentType: 'space',
-        from: from,
-      };
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        let isApplied = false;
-        const newSpaces = old?.map((space) => {
-          if (space.clientId === clientId) {
-            isApplied = true;
-            return mockSpace;
-          }
-          return space;
-        });
-        if (!isApplied) {
-          return [...old, mockSpace];
-        }
-        return newSpaces;
-      });
       // Create space with default values and calculated position
       const { data, error } = await createDocument({
         name: name?.trim() || 'New Space',
@@ -460,17 +423,17 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
     onMutate() {
       return toast.loading('Creating space...');
     },
-    onSuccess: (data, { clientId }, toastId) => {
+    onSuccess: (data, _, toastId) => {
       if (data) {
-        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-          return old?.map((space) => {
-            if (space.id === clientId) {
-              return data;
+        if (!isSpaceCached(data?.clientId)) {
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            if (old) {
+              addSpaceToCache(data?.clientId);
+              return [...old, data];
             }
-            return space;
+            return old;
           });
-        });
-        addSpaceToCache(data?.clientId);
+        }
       }
       toast.success('Space created successfully', {
         id: toastId ?? undefined,
@@ -534,42 +497,6 @@ export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'm
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
-
-      // Create space with default values and calculated position
-      addSpaceToCache(clientId);
-      const mockSpace: ListSpaceResult[number] = {
-        id: clientId,
-        name: name?.trim() || 'New Container',
-        icon: 'folder-closed',
-        position: newPosition,
-        parentId: parentId ?? null,
-        spaceId: spaceId ?? null,
-        isFavorite: false,
-        isContainer: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        handle: crypto.randomUUID(),
-        currentRevisionId: null,
-        userId: '',
-        clientId: clientId as any,
-        lastViewedAt: null,
-        documentType: 'space',
-        from: from,
-      };
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        let isApplied = false;
-        const newSpaces = old?.map((space) => {
-          if (space.clientId === clientId) {
-            isApplied = true;
-            return mockSpace;
-          }
-          return space;
-        });
-        if (!isApplied) {
-          return [...old, mockSpace];
-        }
-        return newSpaces;
-      });
       const { data, error } = await createDocument({
         name: name?.trim() || 'New Container',
         icon: 'folder-closed',
@@ -588,17 +515,17 @@ export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'm
     onMutate() {
       return toast.loading('Creating container space...');
     },
-    onSuccess: (data, { clientId }, toastId) => {
+    onSuccess: (data, _, toastId) => {
       if (data) {
-        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-          return old?.map((space) => {
-            if (space.id === clientId) {
-              return data;
+        if (!isSpaceCached(data?.clientId)) {
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            if (old) {
+              addSpaceToCache(data?.clientId);
+              return [...old, data];
             }
-            return space;
+            return old;
           });
-        });
-        addSpaceToCache(data.clientId);
+        }
       }
 
       toast.success('Container space created successfully', {

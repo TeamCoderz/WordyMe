@@ -16,7 +16,11 @@ import './App.css';
 
 // Create a new router instance
 export const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  defaultOptions: {
+    queries: {
+      staleTime: 15 * 60 * 1000,
+    },
+  },
 });
 
 const router = createRouter({

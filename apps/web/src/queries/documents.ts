@@ -37,7 +37,7 @@ import { getInitialEditorState } from '@repo/editor/utils/getInitialEditorState'
 import { transformBackendDocument } from '@/utils/transformBackendDocument';
 import { useActions, useSelector } from '@/store';
 import { getRevisionsByDocumentIdQueryOptions } from './revisions';
-import { addDocumentToCache, removeDocumentFromCache } from './caches/documents';
+import { addDocumentToCache, isDocumentCached, removeDocumentFromCache } from './caches/documents';
 import { createLocalDocument, deleteLocalDocument } from '@repo/editor/indexeddb';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
 const listDocuments = async ({ spaceId }: { spaceId: string }) => {
@@ -55,8 +55,6 @@ export function getAllDocumentsQueryOptions(
 ): UseSuspenseQueryOptions<ListDocumentResult> {
   return {
     queryKey: ['documents', spaceID],
-    staleTime: Infinity,
-    gcTime: Infinity,
     queryFn: async () => {
       const { data, error } = await listDocuments({ spaceId: spaceID });
       if (error) {
@@ -449,43 +447,6 @@ export const useCreateDocumentMutation = ({
       const serializedEditorState = getInitialEditorState(name?.trim() || 'New Document');
       const checksum = computeChecksum(serializedEditorState);
       const content = JSON.stringify(serializedEditorState);
-      addDocumentToCache(clientId, from);
-      const mockDocument: ListDocumentResult[number] = {
-        id: clientId,
-        name: name?.trim() || 'New Document',
-        handle: crypto.randomUUID(),
-        icon: 'file',
-        position: newPosition,
-        parentId: parentId ?? null,
-        spaceId: spaceId ?? null,
-        createdAt: new Date(),
-        isFavorite: false,
-        isContainer: false,
-        updatedAt: new Date(),
-        clientId: clientId as any,
-        lastViewedAt: null,
-        from: from,
-        currentRevisionId: null,
-        documentType: 'note',
-        userId: '',
-      };
-      queryClient.setQueryData(
-        getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
-          let isApplied = false;
-          const newDocuments = old?.map((document) => {
-            if (document.clientId === clientId) {
-              isApplied = true;
-              return mockDocument;
-            }
-            return document;
-          });
-          if (!isApplied) {
-            newDocuments.push(mockDocument);
-          }
-          return newDocuments;
-        },
-      );
       const { data, error } = await createDocumentWithRevision({
         name: name?.trim() || 'New Document',
         icon: 'file',
@@ -521,19 +482,18 @@ export const useCreateDocumentMutation = ({
     },
     onSuccess: async (data, { clientId }, { toastId }) => {
       const { currentRevision, ...document } = data;
-      queryClient.setQueryData(
-        getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
-          return old?.map((document) => {
-            if (document.id === clientId) {
-              return { ...document, from: undefined };
+      if (!isDocumentCached(clientId)) {
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              addDocumentToCache(clientId, from);
+              return [...old, document];
             }
-            return document;
-          });
-        },
-      );
-      addDocumentToCache(document.clientId ?? '', from);
-
+            return old;
+          },
+        );
+      }
       toast.success('Document created successfully', {
         id: toastId ?? undefined,
       });
@@ -605,43 +565,6 @@ export const useCreateContainerDocumentMutation = ({
         // Generate a position after the last sibling
         newPosition = generatePositionKeyBetween(lastPosition, null);
       }
-      addDocumentToCache(clientId, from);
-      const mockDocument: ListDocumentResult[number] = {
-        id: clientId,
-        name: name?.trim() || 'New Folder',
-        handle: crypto.randomUUID(),
-        icon: 'folder',
-        position: newPosition,
-        parentId: parentId ?? null,
-        spaceId: spaceId ?? null,
-        createdAt: new Date(),
-        isFavorite: false,
-        isContainer: true,
-        updatedAt: new Date(),
-        clientId: clientId as any,
-        lastViewedAt: null,
-        documentType: 'folder',
-        from: from,
-        currentRevisionId: null,
-        userId: '',
-      };
-      queryClient.setQueryData(
-        getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
-          let isApplied = false;
-          const newDocuments = old?.map((document) => {
-            if (document.clientId === clientId) {
-              isApplied = true;
-              return mockDocument;
-            }
-            return document;
-          });
-          if (!isApplied) {
-            newDocuments.push(mockDocument);
-          }
-          return newDocuments;
-        },
-      );
       const { data, error } = await createDocument({
         name: name?.trim() || 'New Folder',
         icon: 'folder',
@@ -667,18 +590,18 @@ export const useCreateContainerDocumentMutation = ({
       return toast.loading('Creating folder...');
     },
     onSuccess: async (data, { clientId }, toastId) => {
-      queryClient.setQueryData(
-        getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
-          return old?.map((document) => {
-            if (document.id === clientId) {
-              return { ...data, from: undefined };
+      if (!isDocumentCached(clientId)) {
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              addDocumentToCache(data?.clientId ?? '', from);
+              return [...old, data];
             }
-            return document;
-          });
-        },
-      );
-      addDocumentToCache(data?.clientId ?? '', from);
+            return old;
+          },
+        );
+      }
       toast.success('Folder created successfully', {
         id: toastId ?? undefined,
       });

@@ -1,9 +1,9 @@
-import { getAllSpacesQueryOptions } from '@/queries/spaces';
+import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
 import { useActions, useSelector } from '@/store';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
 import { Space } from '@repo/types';
 import { Button } from '@repo/ui/components/button';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   createFileRoute,
   ErrorRouteComponent,
@@ -11,13 +11,31 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import AppSidebarProvider from '@/providers/AppSidebarProvider';
 import { AppHeader } from '@/components/Layout/app-header';
 import { AppSidebar } from '@/components/Layout/app-sidebar';
 import { SidebarInset } from '@repo/ui/components/sidebar';
 import { getSession, useSession } from '@repo/sdk/auth';
+import {
+  connectSocket,
+  disconnectSocket,
+  off,
+  on,
+  subscribeToSpace,
+  unsubscribeFromSpace,
+} from '@repo/sdk/realtime/client.ts';
+import { PlainDocument } from '@repo/backend/documents.js';
+import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from '@/queries/caches/spaces';
+import { useAllQueriesInvalidate } from '@/queries/utils';
+import { DOCUMENTS_QUERY_KEYS, SPACES_QUERY_KEYS } from '@/queries/query-keys';
+import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
+import {
+  addDocumentToCache,
+  isDocumentCached,
+  removeDocumentFromCache,
+} from '@/queries/caches/documents';
 
 const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
   useEffect(() => {
@@ -133,8 +151,8 @@ function RouteComponent() {
         </div>
       </AppSidebarProvider>
       <ActiveSpaceLoader />
-      {/* <RealTimeChangeListener /> */}
-      {/* <UserImagesLoader /> */}
+      <RealTimeChangeListener />
+      <UserImagesLoader />
       <UserSync />
       {/* <VersionChangeListener /> */}
     </>
@@ -269,6 +287,190 @@ function ActiveSpaceLoader() {
       }
     }
   }, [activeSpace, spaces, isLoading, spacesAsSpaceArray]);
+  return null;
+}
+function RealTimeChangeListener() {
+  const activeSpaceId = useSelector((state) => state.activeSpace?.id);
+  const queryClient = useQueryClient();
+  const invalidate = useAllQueriesInvalidate();
+  useEffect(() => {
+    connectSocket();
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+  useEffect(() => {
+    if (activeSpaceId) {
+      subscribeToSpace(activeSpaceId);
+      return () => {
+        unsubscribeFromSpace(activeSpaceId);
+      };
+    }
+    return;
+  }, [activeSpaceId]);
+  // handle spaces real-time changes
+  useEffect(() => {
+    // handle space created
+    const handleSpaceCreated = (data: PlainDocument) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        if (old) {
+          if (!isSpaceCached(data.clientId)) {
+            addSpaceToCache(data.clientId);
+            return [...old, data];
+          }
+        }
+        return old;
+      });
+      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
+    };
+    on('space:created', handleSpaceCreated);
+    // handle space updated
+    const handleSpaceUpdated = (data: PlainDocument) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        if (old) {
+          return old.map((space) => {
+            if (space.id === data.id) {
+              return data;
+            }
+            return space;
+          });
+        }
+        return old;
+      });
+      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
+    };
+    on('space:updated', handleSpaceUpdated);
+    // handle space deleted
+    const handleSpaceDeleted = (data: PlainDocument) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        if (old) {
+          removeSpaceFromCache(data.clientId);
+          return old.filter((space) => space.id !== data.id);
+        }
+        return old;
+      });
+      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
+    };
+    on('space:deleted', handleSpaceDeleted);
+    // handle space favorited
+    const handleSpaceFavorited = (data: { id: string; userId: string; documentId: string }) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        if (old) {
+          return old.map((space) => {
+            if (space.id === data.documentId) {
+              return { ...space, isFavorite: true };
+            }
+            return space;
+          });
+        }
+        return old;
+      });
+      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
+    };
+    on('space:favorited', handleSpaceFavorited);
+    // handle space unfavorited
+    const handleSpaceUnfavorited = (data: { id: string; userId: string; documentId: string }) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        if (old) {
+          return old.map((space) => {
+            if (space.id === data.documentId) {
+              return { ...space, isFavorite: false };
+            }
+            return space;
+          });
+        }
+        return old;
+      });
+      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
+    };
+    on('space:unfavorited', handleSpaceUnfavorited);
+    return () => {
+      off('space:created', handleSpaceCreated);
+      off('space:updated', handleSpaceUpdated);
+      off('space:deleted', handleSpaceDeleted);
+      off('space:favorited', handleSpaceFavorited);
+      off('space:unfavorited', handleSpaceUnfavorited);
+    };
+  }, [queryClient, invalidate]);
+  // handle documents real-time changes
+  useEffect(() => {
+    //handle document created
+    const handleDocumentCreated = (data: PlainDocument) => {
+      if (data.spaceId) {
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(data.spaceId).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              if (!isDocumentCached(data.clientId)) {
+                addDocumentToCache(data.clientId, 'real-time');
+                return [...old, data];
+              }
+            }
+            return old;
+          },
+        );
+      }
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+      ]);
+    };
+    on('document:created', handleDocumentCreated);
+    //handle document updated
+    const handleDocumentUpdated = (data: PlainDocument) => {
+      if (data.spaceId) {
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(data.spaceId).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              return old.map((document) => {
+                if (document.id === data.id) {
+                  return data;
+                }
+                return document;
+              });
+            }
+            return old;
+          },
+        );
+      }
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+      ]);
+    };
+    on('document:updated', handleDocumentUpdated);
+    //handle document deleted
+    const handleDocumentDeleted = (data: PlainDocument) => {
+      if (data.spaceId) {
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(data.spaceId).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              removeDocumentFromCache(data.clientId);
+              return old.filter((document) => document.id !== data.id);
+            }
+            return old;
+          },
+        );
+      }
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+      ]);
+    };
+    on('document:deleted', handleDocumentDeleted);
+    //handle document favorited
+    on('document:favorited', (data) => {});
+    return () => {
+      off('document:created', handleDocumentCreated);
+      off('document:updated', handleDocumentUpdated);
+      off('document:deleted', handleDocumentDeleted);
+    };
+  }, [queryClient, invalidate]);
   return null;
 }
 
@@ -557,158 +759,158 @@ function ActiveSpaceLoader() {
 //   }, []);
 //   return null;
 // }
-// function UserImagesLoader() {
-//   const user = useSelector((state) => state.user);
-//   const { setAvatarImage, setCoverImage } = useActions();
-//   const processingRef = useRef<Set<string>>(new Set());
+function UserImagesLoader() {
+  const user = useSelector((state) => state.user);
+  const { setAvatarImage, setCoverImage } = useActions();
+  const processingRef = useRef<Set<string>>(new Set());
 
-//   const createCroppedImage = useCallback(
-//     async (
-//       src: string,
-//       cropData: { x: number; y: number; width: number; height: number },
-//     ): Promise<string | null> => {
-//       try {
-//         const image = await new Promise<HTMLImageElement>((resolve, reject) => {
-//           const img = new Image();
-//           img.onload = () => resolve(img);
-//           img.onerror = reject;
-//           img.crossOrigin = 'anonymous';
-//           img.src = src;
-//         });
+  const createCroppedImage = useCallback(
+    async (
+      src: string,
+      cropData: { x: number; y: number; width: number; height: number },
+    ): Promise<string | null> => {
+      try {
+        const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.crossOrigin = 'anonymous';
+          img.src = src;
+        });
 
-//         const canvas = document.createElement('canvas');
-//         const ctx = canvas.getContext('2d');
-//         if (!ctx) return null;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
 
-//         canvas.width = cropData.width;
-//         canvas.height = cropData.height;
+        canvas.width = cropData.width;
+        canvas.height = cropData.height;
 
-//         ctx.drawImage(
-//           image,
-//           cropData.x,
-//           cropData.y,
-//           cropData.width,
-//           cropData.height,
-//           0,
-//           0,
-//           cropData.width,
-//           cropData.height,
-//         );
+        ctx.drawImage(
+          image,
+          cropData.x,
+          cropData.y,
+          cropData.width,
+          cropData.height,
+          0,
+          0,
+          cropData.width,
+          cropData.height,
+        );
 
-//         // Convert canvas to data URL instead of blob
-//         return canvas.toDataURL('image/png', 0.95);
-//       } catch (error) {
-//         console.error('Error creating cropped image:', error);
-//         return null;
-//       }
-//     },
-//     [],
-//   );
+        // Convert canvas to data URL instead of blob
+        return canvas.toDataURL('image/png', 0.95);
+      } catch (error) {
+        console.error('Error creating cropped image:', error);
+        return null;
+      }
+    },
+    [],
+  );
 
-//   // Process avatar image
-//   useEffect(() => {
-//     if (!user?.avatar_image?.url) return;
+  // Process avatar image
+  useEffect(() => {
+    if (!user?.avatar_image?.url) return;
 
-//     // If the avatar comes from the auth provider, use the original URL as the calculated image
-//     if (user?.avatar_image?.provider === 'auth_provider') {
-//       setAvatarImage({
-//         ...user.avatar_image,
-//         calculatedImage: user.avatar_image.url,
-//         isLoading: false,
-//       });
-//       return;
-//     }
+    // If the avatar comes from the auth provider, use the original URL as the calculated image
+    if (user?.avatar_image?.provider === 'auth_provider') {
+      setAvatarImage({
+        ...user.avatar_image,
+        calculatedImage: user.avatar_image.url,
+        isLoading: false,
+      });
+      return;
+    }
 
-//     const avatarKey = `avatar-${user.avatar_image.url}-${user.avatar_image.x}-${user.avatar_image.y}-${user.avatar_image.width}-${user.avatar_image.height}`;
+    const avatarKey = `avatar-${user.avatar_image.url}-${user.avatar_image.x}-${user.avatar_image.y}-${user.avatar_image.width}-${user.avatar_image.height}`;
 
-//     if (
-//       user.avatar_image.x !== null &&
-//       user.avatar_image.y !== null &&
-//       user.avatar_image.width !== null &&
-//       user.avatar_image.height !== null &&
-//       !processingRef.current.has(avatarKey)
-//     ) {
-//       processingRef.current.add(avatarKey);
+    if (
+      user.avatar_image.x !== null &&
+      user.avatar_image.y !== null &&
+      user.avatar_image.width !== null &&
+      user.avatar_image.height !== null &&
+      !processingRef.current.has(avatarKey)
+    ) {
+      processingRef.current.add(avatarKey);
 
-//       const processAvatar = async () => {
-//         const croppedUrl = await createCroppedImage(user.avatar_image!.url!, {
-//           x: user.avatar_image!.x!,
-//           y: user.avatar_image!.y!,
-//           width: user.avatar_image!.width!,
-//           height: user.avatar_image!.height!,
-//         });
+      const processAvatar = async () => {
+        const croppedUrl = await createCroppedImage(user.avatar_image!.url!, {
+          x: user.avatar_image!.x!,
+          y: user.avatar_image!.y!,
+          width: user.avatar_image!.width!,
+          height: user.avatar_image!.height!,
+        });
 
-//         if (user?.avatar_image) {
-//           setAvatarImage({
-//             ...user.avatar_image,
-//             calculatedImage: croppedUrl,
-//             isLoading: false,
-//           });
-//         }
-//       };
+        if (user?.avatar_image) {
+          setAvatarImage({
+            ...user.avatar_image,
+            calculatedImage: croppedUrl,
+            isLoading: false,
+          });
+        }
+      };
 
-//       processAvatar();
-//     }
-//   }, [
-//     user?.avatar_image?.url,
-//     user?.avatar_image?.provider,
-//     user?.avatar_image?.x,
-//     user?.avatar_image?.y,
-//     user?.avatar_image?.width,
-//     user?.avatar_image?.height,
-//     user?.avatar_image?.calculatedImage,
-//     createCroppedImage,
-//     setAvatarImage,
-//   ]);
+      processAvatar();
+    }
+  }, [
+    user?.avatar_image?.url,
+    user?.avatar_image?.provider,
+    user?.avatar_image?.x,
+    user?.avatar_image?.y,
+    user?.avatar_image?.width,
+    user?.avatar_image?.height,
+    user?.avatar_image?.calculatedImage,
+    createCroppedImage,
+    setAvatarImage,
+  ]);
 
-//   // Process cover image
-//   useEffect(() => {
-//     if (!user?.cover_image?.url) return;
+  // Process cover image
+  useEffect(() => {
+    if (!user?.cover_image?.url) return;
 
-//     const coverKey = `cover-${user.cover_image.url}-${user.cover_image.x}-${user.cover_image.y}-${user.cover_image.width}-${user.cover_image.height}`;
+    const coverKey = `cover-${user.cover_image.url}-${user.cover_image.x}-${user.cover_image.y}-${user.cover_image.width}-${user.cover_image.height}`;
 
-//     if (
-//       user.cover_image.x !== null &&
-//       user.cover_image.y !== null &&
-//       user.cover_image.width !== null &&
-//       user.cover_image.height !== null &&
-//       !processingRef.current.has(coverKey)
-//     ) {
-//       processingRef.current.add(coverKey);
+    if (
+      user.cover_image.x !== null &&
+      user.cover_image.y !== null &&
+      user.cover_image.width !== null &&
+      user.cover_image.height !== null &&
+      !processingRef.current.has(coverKey)
+    ) {
+      processingRef.current.add(coverKey);
 
-//       const processCover = async () => {
-//         const croppedUrl = await createCroppedImage(user.cover_image!.url!, {
-//           x: user.cover_image!.x!,
-//           y: user.cover_image!.y!,
-//           width: user.cover_image!.width!,
-//           height: user.cover_image!.height!,
-//         });
+      const processCover = async () => {
+        const croppedUrl = await createCroppedImage(user.cover_image!.url!, {
+          x: user.cover_image!.x!,
+          y: user.cover_image!.y!,
+          width: user.cover_image!.width!,
+          height: user.cover_image!.height!,
+        });
 
-//         const currentUser = user;
-//         if (currentUser?.cover_image) {
-//           setCoverImage({
-//             ...currentUser.cover_image,
-//             calculatedImage: croppedUrl,
-//             isLoading: false,
-//           });
-//         }
-//       };
+        const currentUser = user;
+        if (currentUser?.cover_image) {
+          setCoverImage({
+            ...currentUser.cover_image,
+            calculatedImage: croppedUrl,
+            isLoading: false,
+          });
+        }
+      };
 
-//       processCover();
-//     }
-//   }, [
-//     user?.cover_image?.url,
-//     user?.cover_image?.x,
-//     user?.cover_image?.y,
-//     user?.cover_image?.width,
-//     user?.cover_image?.height,
-//     user?.cover_image?.calculatedImage,
-//     createCroppedImage,
-//     setCoverImage,
-//   ]);
+      processCover();
+    }
+  }, [
+    user?.cover_image?.url,
+    user?.cover_image?.x,
+    user?.cover_image?.y,
+    user?.cover_image?.width,
+    user?.cover_image?.height,
+    user?.cover_image?.calculatedImage,
+    createCroppedImage,
+    setCoverImage,
+  ]);
 
-//   return null;
-// }
+  return null;
+}
 // function VersionChangeListener() {
 //   const reload = useCallback(() => {
 //     const url = window.location.href.split('?')[0];

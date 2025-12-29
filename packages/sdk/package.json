@@ -11,7 +11,9 @@
   "license": "ISC",
   "exports": {
     "./*": "./src/app/*",
-    "./auth": "./src/auth/index.ts"
+    "./auth": "./src/auth/index.ts",
+    "./realtime/client": "./src/realtime/client.ts",
+    "./realtime/*": "./src/realtime/*"
   },
   "type": "module",
   "devDependencies": {

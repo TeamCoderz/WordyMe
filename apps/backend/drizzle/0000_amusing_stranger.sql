@@ -118,10 +118,18 @@ CREATE TABLE `users` (
 	`email_verified` integer DEFAULT false NOT NULL,
 	`image` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
-	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`username` text,
+	`display_username` text,
+	`cover` text,
+	`bio` text,
+	`job_title` text,
+	`image_meta` text DEFAULT '{}',
+	`cover_meta` text DEFAULT '{}'
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `users_email_unique` ON `users` (`email`);--> statement-breakpoint
+CREATE UNIQUE INDEX `users_username_unique` ON `users` (`username`);--> statement-breakpoint
 CREATE TABLE `verifications` (
 	`id` text PRIMARY KEY NOT NULL,
 	`identifier` text NOT NULL,
