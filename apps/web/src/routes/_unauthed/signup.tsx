@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -62,16 +62,18 @@ function RouteComponent() {
     },
   });
 
-  const onSubmit = (data: SignupFormValues) => {
-    registerMutation.mutate(
-      { name: data.name, email: data.email, password: data.password },
-      {
-        onSuccess: () => {
-          // Navigate to login page after successful registration
-          navigate({ to: '/login' });
-        },
-      },
-    );
+  const onSubmit = async (data: SignupFormValues) => {
+    const { data: result, error } = await registerMutation.mutateAsync({
+      name: data.name,
+      email: data.email,
+      password: data.password,
+    });
+    if (error) {
+      return;
+    }
+    if (result) {
+      navigate({ to: '/login' });
+    }
   };
 
   return (
@@ -198,6 +200,12 @@ function RouteComponent() {
                   'Create account'
                 )}
               </Button>
+              <div className="text-center text-sm text-muted-foreground">
+                Already have an account?{' '}
+                <Link to="/login" className="text-primary hover:underline font-medium">
+                  Sign in
+                </Link>
+              </div>
             </form>
           </Form>
         </CardContent>

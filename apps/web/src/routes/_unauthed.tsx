@@ -1,4 +1,5 @@
-import { getSession } from '@repo/sdk/auth';
+import { useActions } from '@/store';
+import { getSession, useSession } from '@repo/sdk/auth';
 import { Button } from '@repo/ui/components/button';
 import {
   createFileRoute,
@@ -6,8 +7,9 @@ import {
   Link,
   Outlet,
   redirect,
+  useNavigate,
 } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 
 const UnauthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
   useEffect(() => {
@@ -31,8 +33,7 @@ const UnauthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
 };
 
 export const Route = createFileRoute('/_unauthed')({
-  beforeLoad: async ({ context: { session } }) => {
-    console.log('session.isLoading', session.isLoading);
+  beforeLoad: async ({ context: { session, store } }) => {
     if (session.isLoading) {
       const { data, error } = await getSession();
       if (error || data !== null) {
@@ -41,10 +42,71 @@ export const Route = createFileRoute('/_unauthed')({
     } else if (session.data !== null) {
       throw redirect({ to: '/' });
     }
+    store.setState({
+      user: null,
+    });
   },
   component: RouteComponent,
   errorComponent: UnauthedRouteErrorComponent,
 });
 function RouteComponent() {
-  return <Outlet />;
+  return (
+    <>
+      <Outlet />
+      <UserSync />
+    </>
+  );
+}
+function UserSync() {
+  const { data: session } = useSession();
+  const { setUser } = useActions();
+  const navigate = useNavigate();
+  useLayoutEffect(() => {
+    if (session?.user) {
+      const cover_image = session.user.coverMeta;
+      const avatar_image = session.user.imageMeta;
+      const cover_image_url = session.user.cover;
+      const avatar_image_url = session.user.image;
+      setUser({
+        ...session.user,
+        cover_image: cover_image
+          ? {
+              url: cover_image_url ?? null,
+              x: cover_image?.x ?? null,
+              y: cover_image?.y ?? null,
+              width: cover_image?.width ?? null,
+              height: cover_image?.height ?? null,
+              zoom: cover_image?.zoom ?? null,
+              type: 'cover',
+              calculatedImage: null,
+              isLoading: true,
+            }
+          : undefined,
+        avatar_image: avatar_image
+          ? {
+              url: avatar_image_url ?? null,
+              x: avatar_image?.x ?? null,
+              y: avatar_image?.y ?? null,
+              width: avatar_image?.width ?? null,
+              height: avatar_image?.height ?? null,
+              zoom: avatar_image?.zoom ?? null,
+              type: 'avatar',
+              calculatedImage: null,
+              isLoading: true,
+              provider: 'supabase',
+            }
+          : undefined,
+        editor_settings: {
+          id: '',
+          createdAt: new Date(),
+          userId: session.user.id,
+          keepPreviousRevision: false,
+          autosave: false,
+        },
+        isGuest: false,
+      });
+      navigate({ to: '/' });
+    }
+  }, [session, setUser, navigate]);
+  return null;
 }

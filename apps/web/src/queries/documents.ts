@@ -62,6 +62,7 @@ export function getAllDocumentsQueryOptions(
       }
       return filterValidHierarchy(data || []);
     },
+    staleTime: 0,
   };
 }
 

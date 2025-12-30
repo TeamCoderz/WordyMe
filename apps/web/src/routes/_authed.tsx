@@ -10,8 +10,9 @@ import {
   Link,
   Outlet,
   redirect,
+  useNavigate,
 } from '@tanstack/react-router';
-import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef } from 'react';
 
 import AppSidebarProvider from '@/providers/AppSidebarProvider';
 import { AppHeader } from '@/components/Layout/app-header';
@@ -162,10 +163,16 @@ function UserSync() {
   const { setUser: setUserAction } = useActions();
   const { data: userSession } = useSession();
   const user = useSelector((state) => state.user);
+  const navigate = useNavigate();
+  useLayoutEffect(() => {
+    if (!userSession?.user) {
+      navigate({ to: '/login' });
+      return;
+    }
+  }, [userSession, navigate]);
   const updateUser = useEffectEvent(
     (session: typeof userSession, setUser: typeof setUserAction) => {
       if (!session?.user) {
-        setUser(null);
         return;
       }
 

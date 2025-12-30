@@ -21,6 +21,7 @@ import {
 } from '@repo/ui/components/sidebar';
 import { useSelector } from '@/store';
 import { logout } from '@repo/sdk/auth';
+import { version } from '../../../../../package.json';
 type NavUserProps = {
   variant?: 'sidebar' | 'avatar';
   dropdownMenuSide?: 'top' | 'bottom' | 'left' | 'right';
@@ -30,7 +31,6 @@ type NavUserProps = {
 export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: NavUserProps) {
   const { isMobile } = useSidebar();
   const user = useSelector((state) => state.user);
-
   if (variant === 'sidebar') {
     return (
       <SidebarMenu {...props}>
@@ -90,7 +90,12 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
         <MenuContent
           dropdownMenuSide={dropdownMenuSide}
           isMobile={isMobile}
-          handleLogout={logout}
+          handleLogout={async () => {
+            const { data, error } = await logout();
+            if (error || !data.success) {
+              return;
+            }
+          }}
         />
       </DropdownMenu>
     ) : null;
@@ -108,7 +113,6 @@ function MenuContent({
   handleLogout: () => void;
 }) {
   const user = useSelector((state) => state.user);
-  const version = useSelector((state) => state.version);
   return (
     <>
       <DropdownMenuContent

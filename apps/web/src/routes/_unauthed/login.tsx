@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -52,16 +52,17 @@ function RouteComponent() {
     },
   });
 
-  const onSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(
-      { email: data.email, password: data.password },
-      {
-        onSuccess: () => {
-          // Navigate to the authenticated home page
-          navigate({ to: '/' });
-        },
-      },
-    );
+  const onSubmit = async (data: LoginFormValues) => {
+    const { data: sessionData, error } = await loginMutation.mutateAsync({
+      email: data.email,
+      password: data.password,
+    });
+    if (error) {
+      return;
+    }
+    if (sessionData) {
+      navigate({ to: '/' });
+    }
   };
 
   return (
@@ -136,6 +137,12 @@ function RouteComponent() {
                   'Sign in'
                 )}
               </Button>
+              <div className="text-center text-sm text-muted-foreground">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-primary hover:underline font-medium">
+                  Sign up
+                </Link>
+              </div>
             </form>
           </Form>
         </CardContent>
