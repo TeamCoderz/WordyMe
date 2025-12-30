@@ -1,10 +1,11 @@
-import { asc, desc, eq, gte, isNotNull, like, SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, like, SQL } from 'drizzle-orm';
 import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
 import { PaginationQuery } from '../schemas/pagination.js';
 import { db } from '../lib/db.js';
 
 export class CollectionQuery<Q extends SQLiteSelect> {
   query: Q;
+  whereClauses: SQL[] = [];
 
   constructor(query: Q) {
     this.query = query;
@@ -12,20 +13,20 @@ export class CollectionQuery<Q extends SQLiteSelect> {
 
   filter(column: SQLiteColumn, value: string | number | boolean | undefined): this {
     if (value !== undefined) {
-      this.query = this.query.where(eq(column, value));
+      this.whereClauses.push(eq(column, value));
     }
     return this;
   }
 
   search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
-      this.query = this.query.where(like(column, `%${searchTerm}%`));
+      this.whereClauses.push(like(column, `%${searchTerm}%`));
     }
     return this;
   }
 
   notNull(column: SQLiteColumn): this {
-    this.query = this.query.where(isNotNull(column));
+    this.whereClauses.push(isNotNull(column));
     return this;
   }
 
@@ -33,7 +34,7 @@ export class CollectionQuery<Q extends SQLiteSelect> {
     if (days !== undefined && days > 0) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - days);
-      this.query = this.query.where(gte(column, daysAgo));
+      this.whereClauses.push(gte(column, daysAgo));
     }
     return this;
   }
@@ -54,16 +55,19 @@ export class CollectionQuery<Q extends SQLiteSelect> {
   }
 
   async getResult() {
-    return await this.query;
+    return await this.query.where(and(...this.whereClauses));
   }
 
   async getPaginatedResult({ page, limit }: PaginationQuery) {
     console.log(this.query.toSQL());
     const offset = (page - 1) * limit;
 
-    const total = await db.$count(this.query);
+    const total = await db.$count(this.query.where(and(...this.whereClauses)));
 
-    const items = await this.query.limit(limit).offset(offset);
+    const items = await this.query
+      .where(and(...this.whereClauses))
+      .limit(limit)
+      .offset(offset);
 
     return {
       items,
