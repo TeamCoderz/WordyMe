@@ -1,4 +1,9 @@
-import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  UseQueryOptions,
+  UseSuspenseQueryOptions,
+} from '@tanstack/react-query';
 import {
   deleteDocument,
   updateDocument,
@@ -50,9 +55,7 @@ export type ListDocumentResultItem = NonNullable<
 };
 export type ListDocumentResult = ListDocumentResultItem[];
 
-export function getAllDocumentsQueryOptions(
-  spaceID: string,
-): UseSuspenseQueryOptions<ListDocumentResult> {
+export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<ListDocumentResult> {
   return {
     queryKey: ['documents', spaceID],
     queryFn: async () => {
@@ -63,6 +66,7 @@ export function getAllDocumentsQueryOptions(
       return filterValidHierarchy(data || []);
     },
     staleTime: 0,
+    enabled: !!spaceID,
   };
 }
 

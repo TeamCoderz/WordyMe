@@ -112,7 +112,7 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
 
   const canPaste =
     !!clipboardDocument && (clipboardDocument.type === 'copy' || clipboardDocument.type === 'move');
-
+  if (!activeSpace?.id) return <>{children}</>;
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>

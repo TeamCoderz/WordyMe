@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, ErrorRouteComponent, useNavigate, Link } from '@tanstack/react-router';
 import z from 'zod';
 import { ManageDocumentsTopbar } from '@/components/documents/manage/Topbar';
 import { ManageDocumentsTable } from '@/components/documents/manage/Table';
@@ -8,14 +8,43 @@ import { useSelector } from '@/store';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
 import { toast } from 'sonner';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
+import { Button } from '@repo/ui/components/button';
+import { FolderOpen } from '@repo/ui/components/icons';
 
 const validateSearch = z.object({
   item: z.string().optional(),
 });
 
+const ManageDocumentsErrorComponent: ErrorRouteComponent = ({ error: _error }) => {
+  return (
+    <div className="w-full flex-1 flex items-center justify-center p-4 flex-col gap-4 min-h-[calc(100vh-var(--spacing)*14-1px)]">
+      <div className="flex flex-col items-center justify-center gap-2">
+        <FolderOpen className="h-12 w-12 opacity-50 text-muted-foreground" />
+        <h1 className="text-2xl font-bold text-center">No Active Space</h1>
+        <p className="text-muted-foreground text-center max-w-md">
+          Please select a space to manage documents. You need to have an active space to view and
+          manage your documents.
+        </p>
+      </div>
+      <div className="flex items-center gap-2">
+        <Button variant="outline" asChild>
+          <Link to="/">Go to Home Page</Link>
+        </Button>
+      </div>
+    </div>
+  );
+};
+
 export const Route = createFileRoute('/_authed/docs/manage')({
+  beforeLoad: async ({ context: { store } }) => {
+    const activeSpace = store.getState().activeSpace;
+    if (!activeSpace?.id) {
+      throw new Error('No active space selected. Please select a space to manage documents.');
+    }
+  },
   component: ManageDocumentsPage,
   validateSearch,
+  errorComponent: ManageDocumentsErrorComponent,
 });
 
 function ManageDocumentsPage() {

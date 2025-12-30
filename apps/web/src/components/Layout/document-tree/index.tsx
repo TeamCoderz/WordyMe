@@ -9,17 +9,20 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
+import { FolderOpen, FileText } from '@repo/ui/components/icons';
 
 export function DocumentTree() {
   const activeSpace = useSelector((s) => s.activeSpace);
   const spaceId = activeSpace?.id ?? '';
-  const { data: documentsData } = useQuery(getAllDocumentsQueryOptions(spaceId!));
+  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery(
+    getAllDocumentsQueryOptions(spaceId!),
+  );
 
   const [placeholder, setPlaceholder] = React.useState<ListDocumentResult[number] | null>(null);
 
   // Merge placeholder with documents data
   const documentsWithPlaceholder = React.useMemo(() => {
-    if (!documentsData) return documentsData;
+    if (!documentsData) return [];
     if (!placeholder) return documentsData;
     return [...documentsData, placeholder];
   }, [documentsData, placeholder]);
@@ -32,9 +35,9 @@ export function DocumentTree() {
     handleSelectDocument,
     toggleExpanded,
     setOpenMenuDocumentId,
-    isLoading,
+    isLoading: isLoadingDocumentsTree,
   } = useDocumentTree(documentsWithPlaceholder);
-
+  const isLoading = isLoadingDocuments || isLoadingDocumentsTree;
   const rootDocuments = documentsTree?.children ?? [];
   const inlineCreate = useSelector((s) => s.inlineCreate);
   const { clearInlineCreate } = useActions();
@@ -143,11 +146,23 @@ export function DocumentTree() {
       <SidebarMenu className="min-h-0 overflow-x-hidden overflow-y-auto scrollbar-thin max-w-full gap-0.5">
         {isLoading ? (
           <SidebarMenuSkeleton showIcon />
+        ) : !spaceId ? (
+          <div className="flex flex-col items-center justify-center px-3 py-8 text-sm text-muted-foreground gap-2">
+            <FolderOpen className="h-8 w-8 opacity-50" />
+            <p className="text-center">Please select a space to view documents</p>
+          </div>
+        ) : rootDocuments.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-3 py-8 text-sm text-muted-foreground gap-2">
+            <FileText className="h-8 w-8 opacity-50" />
+            <p className="text-center">
+              No documents yet. Create your first document to get started.
+            </p>
+          </div>
         ) : (
           rootDocuments.map((document: any) => renderDocumentItem(document))
         )}
       </SidebarMenu>
-      {!isLoading && <CreateDocumentSection />}
+      {!isLoading && spaceId && <CreateDocumentSection />}
     </>
   );
 }

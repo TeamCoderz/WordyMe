@@ -273,7 +273,7 @@ function ActiveSpaceLoader() {
         });
       } else {
         const space = spaces.find((s) => Boolean(s.isContainer) == false);
-        if (!space) return;
+        if (!space) return setActiveSpace(null);
         const path = calculateSpacePath(space.id, spacesAsSpaceArray);
         setActiveSpace({
           ...convertToSpace(space),
