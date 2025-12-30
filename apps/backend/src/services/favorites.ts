@@ -76,7 +76,6 @@ export const listFavorites = async (userId: string, filters: DocumentFilters & P
         eq(documentViewsTable.userId, userId),
       ),
     )
-    .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
     .$dynamic();
 
@@ -84,6 +83,7 @@ export const listFavorites = async (userId: string, filters: DocumentFilters & P
 
   const result = await new CollectionQuery(query)
     .search(documentsTable.name, filters.search)
+    .filter(documentsTable.userId, userId)
     .filter(documentsTable.documentType, filters.documentType)
     .filter(documentsTable.spaceId, filters.spaceId)
     .filter(documentsTable.parentId, filters.parentId)

@@ -3,6 +3,10 @@ import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
 import { PaginationQuery } from '../schemas/pagination.js';
 import { db } from '../lib/db.js';
 
+/**
+ * IMPORTANT: Don't pass a query with existing where clauses to this class.
+ * It will not work as expected.
+ */
 export class CollectionQuery<Q extends SQLiteSelect> {
   query: Q;
   whereClauses: SQL[] = [];

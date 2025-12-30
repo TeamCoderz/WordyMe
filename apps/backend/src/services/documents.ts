@@ -78,11 +78,11 @@ export const getUserDocuments = async (
         eq(documentViewsTable.userId, userId),
       ),
     )
-    .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
     .$dynamic();
 
   const result = await new CollectionQuery(query)
+    .filter(documentsTable.userId, userId)
     .filter(documentsTable.documentType, filters.documentType)
     .filter(documentsTable.parentId, filters.parentId)
     .filter(documentsTable.spaceId, filters.spaceId)
@@ -118,13 +118,13 @@ export const getLastViewedDocuments = async (
       favoritesTable,
       and(eq(favoritesTable.documentId, documentsTable.id), eq(favoritesTable.userId, userId)),
     )
-    .where(eq(documentsTable.userId, userId))
     .groupBy(documentsTable.id)
     .$dynamic();
 
   const orderByColumn = orderByColumns[filters.orderBy ?? 'lastViewedAt'];
 
   const result = await new CollectionQuery(query)
+    .filter(documentsTable.userId, userId)
     .notNull(documentViewsTable.lastViewedAt)
     .lastNDays(documentViewsTable.lastViewedAt, filters.days)
     .search(documentsTable.name, filters.search)
