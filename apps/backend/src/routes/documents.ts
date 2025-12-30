@@ -88,13 +88,20 @@ router.get(
   },
 );
 
-router.get('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
-  const document = await getDocumentDetails(req.params, req.user!.id);
-  if (!document) {
-    throw new HttpNotFound('Document not found or the user does not have access to it.');
-  }
-  res.status(200).json(document);
-});
+router.get(
+  '/:documentId',
+  validate({ params: documentIdParamSchema, query: getSingleDocumentOptionsSchema }),
+  async (req, res) => {
+    const document = await getDocumentDetails(req.params, req.user!.id);
+    if (!document) {
+      throw new HttpNotFound('Document not found or the user does not have access to it.');
+    }
+    if (req.query.updateLastViewed === true) {
+      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+    }
+    res.status(200).json(document);
+  },
+);
 
 router.patch(
   '/:documentId/',
