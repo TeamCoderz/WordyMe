@@ -12,7 +12,7 @@ function EditorPreferencesSettings() {
   const editorSettings = useSelector((state) => state.user?.editor_settings);
 
   const [keepPreviousRevision, setKeepPreviousRevision] = useState(
-    editorSettings?.keep_previous_revision,
+    editorSettings?.keepPreviousRevision,
   );
   const [autosave, setAutosave] = useState(editorSettings?.autosave);
   const { mutate: toggleKeepPreviousRevision, isPending: isKeepPreviousRevisionPending } =

@@ -87,6 +87,7 @@ export function EditDocument({ document, initialState }: EditDocumentProps) {
   }, 300);
 
   const services = useMemo(() => getServices(document.id), [document.id]);
+  console.log(services);
 
   return (
     <SidebarProvider

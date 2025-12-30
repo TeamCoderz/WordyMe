@@ -15,15 +15,6 @@ import {
 } from '@repo/shared/navigation';
 import { SessionData } from '@repo/sdk/auth';
 
-async function clearBrowserStorage() {
-  try {
-    localStorage.removeItem('app_version');
-    localStorage.removeItem('deployment_id');
-  } catch {
-    // no action
-  }
-}
-
 export const Route = createRootRouteWithContext<{
   store: AppStoreApi;
   queryClient: QueryClient;

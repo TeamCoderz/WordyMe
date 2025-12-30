@@ -11,7 +11,7 @@ import {
   Outlet,
   redirect,
 } from '@tanstack/react-router';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef } from 'react';
 
 import AppSidebarProvider from '@/providers/AppSidebarProvider';
 import { AppHeader } from '@/components/Layout/app-header';
@@ -82,6 +82,7 @@ export const Route = createFileRoute('/_authed')({
     const avatar_image = sessionUser.imageMeta;
     const cover_image_url = sessionUser.cover;
     const avatar_image_url = sessionUser.image;
+    const user = store.getState().user;
 
     store.setState({
       user: {
@@ -94,9 +95,9 @@ export const Route = createFileRoute('/_authed')({
               width: cover_image?.width ?? null,
               height: cover_image?.height ?? null,
               zoom: cover_image?.zoom ?? null,
-              type: cover_image?.type ?? null,
-              calculatedImage: null,
-              isLoading: true,
+              type: 'cover',
+              calculatedImage: user?.cover_image?.calculatedImage ?? null,
+              isLoading: user?.cover_image?.isLoading ?? true,
             }
           : undefined,
         avatar_image: avatar_image
@@ -107,9 +108,9 @@ export const Route = createFileRoute('/_authed')({
               width: avatar_image?.width ?? null,
               height: avatar_image?.height ?? null,
               zoom: avatar_image?.zoom ?? null,
-              type: avatar_image?.type ?? null,
-              calculatedImage: null,
-              isLoading: true,
+              type: 'avatar',
+              calculatedImage: user?.avatar_image?.calculatedImage ?? null,
+              isLoading: user?.avatar_image?.isLoading ?? true,
               provider: 'supabase',
             }
           : undefined,
@@ -154,64 +155,67 @@ function RouteComponent() {
       <RealTimeChangeListener />
       <UserImagesLoader />
       <UserSync />
-      {/* <VersionChangeListener /> */}
     </>
   );
 }
 function UserSync() {
-  const { setUser } = useActions();
-  const { data: session } = useSession();
+  const { setUser: setUserAction } = useActions();
+  const { data: userSession } = useSession();
+  const user = useSelector((state) => state.user);
+  const updateUser = useEffectEvent(
+    (session: typeof userSession, setUser: typeof setUserAction) => {
+      if (!session?.user) {
+        setUser(null);
+        return;
+      }
 
+      const cover_image = session.user.coverMeta;
+      const avatar_image = session.user.imageMeta;
+      const cover_image_url = session.user.cover;
+      const avatar_image_url = session.user.image;
+      setUser({
+        ...session.user,
+        cover_image: cover_image
+          ? {
+              url: cover_image_url ?? null,
+              x: cover_image?.x ?? null,
+              y: cover_image?.y ?? null,
+              width: cover_image?.width ?? null,
+              height: cover_image?.height ?? null,
+              zoom: cover_image?.zoom ?? null,
+              type: 'cover',
+              calculatedImage: user?.cover_image?.calculatedImage ?? null,
+              isLoading: user?.cover_image?.isLoading ?? true,
+            }
+          : undefined,
+        avatar_image: avatar_image
+          ? {
+              url: avatar_image_url ?? null,
+              x: avatar_image?.x ?? null,
+              y: avatar_image?.y ?? null,
+              width: avatar_image?.width ?? null,
+              height: avatar_image?.height ?? null,
+              zoom: avatar_image?.zoom ?? null,
+              type: 'avatar',
+              calculatedImage: user?.avatar_image?.calculatedImage ?? null,
+              isLoading: user?.avatar_image?.isLoading ?? true,
+              provider: 'supabase',
+            }
+          : undefined,
+        editor_settings: {
+          id: '',
+          createdAt: new Date(),
+          userId: session.user.id,
+          keepPreviousRevision: false,
+          autosave: false,
+        },
+        isGuest: false,
+      });
+    },
+  );
   useEffect(() => {
-    if (!session?.user) {
-      setUser(null);
-      return;
-    }
-
-    const cover_image = session.user.coverMeta;
-    const avatar_image = session.user.imageMeta;
-    const cover_image_url = session.user.cover;
-    const avatar_image_url = session.user.image;
-
-    setUser({
-      ...session.user,
-      cover_image: cover_image
-        ? {
-            url: cover_image_url ?? null,
-            x: cover_image?.x ?? null,
-            y: cover_image?.y ?? null,
-            width: cover_image?.width ?? null,
-            height: cover_image?.height ?? null,
-            zoom: cover_image?.zoom ?? null,
-            type: cover_image?.type ?? null,
-            calculatedImage: null,
-            isLoading: true,
-          }
-        : undefined,
-      avatar_image: avatar_image
-        ? {
-            url: avatar_image_url ?? null,
-            x: avatar_image?.x ?? null,
-            y: avatar_image?.y ?? null,
-            width: avatar_image?.width ?? null,
-            height: avatar_image?.height ?? null,
-            zoom: avatar_image?.zoom ?? null,
-            type: avatar_image?.type ?? null,
-            calculatedImage: null,
-            isLoading: true,
-            provider: 'supabase',
-          }
-        : undefined,
-      editor_settings: {
-        id: '',
-        createdAt: new Date(),
-        userId: session.user.id,
-        keepPreviousRevision: false,
-        autosave: false,
-      },
-      isGuest: false,
-    });
-  }, [setUser, session]);
+    updateUser(userSession, setUserAction);
+  }, [setUserAction, userSession]);
   return null;
 }
 
@@ -464,7 +468,7 @@ function RealTimeChangeListener() {
     };
     on('document:deleted', handleDocumentDeleted);
     //handle document favorited
-    on('document:favorited', (data) => {});
+    // on('document:favorited', (data) => {});
     return () => {
       off('document:created', handleDocumentCreated);
       off('document:updated', handleDocumentUpdated);
@@ -474,291 +478,6 @@ function RealTimeChangeListener() {
   return null;
 }
 
-// function RealTimeChangeListener() {
-//   const queryClient = useQueryClient();
-//   const removeFromCache = useRemoveWithDescendantsFromCache();
-//   const invalidate = useAllQueriesInvalidate();
-//   useEffect(() => {
-//     const channel = supabase
-//       .channel('spaces_changes')
-//       .on(
-//         'postgres_changes',
-//         {
-//           event: '*',
-//           schema: 'public',
-//           table: 'documents',
-//           filter: 'type=eq.space',
-//         },
-//         async (payload) => {
-//           switch (payload.eventType) {
-//             case 'UPDATE':
-//               if (payload.new.deleted_at) {
-//                 // delete the space from the cache
-//                 removeFromCache(getAllSpacesQueryOptions.queryKey, payload.old.id);
-//                 removeSpaceFromCache(payload.old.client_id ?? payload.old.id);
-//               } else {
-//                 const { data: space } = await getSpaceById(payload.new.id);
-//                 if (space) {
-//                   let isApplied = false;
-//                   queryClient.setQueryData(
-//                     getAllSpacesQueryOptions.queryKey,
-//                     (old: ListSpaceResult) =>
-//                       old.map((s) => {
-//                         if (s.id === space.id) {
-//                           isApplied = true;
-//                           return space;
-//                         }
-//                         return s;
-//                       }),
-//                   );
-//                   if (!isApplied) {
-//                     queryClient.setQueryData(
-//                       getAllSpacesQueryOptions.queryKey,
-//                       (old: ListSpaceResult) => [...old, space],
-//                     );
-//                   }
-//                 }
-//               }
-//               break;
-//             case 'INSERT': {
-//               if (!isSpaceCached(payload.new.client_id)) {
-//                 addSpaceToCache(payload.new.client_id ?? payload.new.id);
-//                 const { data: space } = await getSpaceById(payload.new.id);
-//                 if (space) {
-//                   try {
-//                     queryClient.setQueryData(
-//                       getAllSpacesQueryOptions.queryKey,
-//                       (old: ListSpaceResult) => [...old, space],
-//                     );
-//                   } catch (error) {
-//                     // ignore
-//                   }
-//                 }
-//               }
-//               break;
-//             }
-//           }
-//           // if (
-//           //   payload.eventType === "UPDATE" ||
-//           //   payload.eventType === "INSERT"
-//           // ) {
-//           //   queryClient.invalidateQueries({
-//           //     queryKey: getAllSpacesQueryOptions.queryKey,
-//           //     exact: true,
-//           //   });
-//           // }
-//           invalidate([SPACES_QUERY_KEYS.HOME.BASE, SPACES_QUERY_KEYS.FAVORITES]);
-//         },
-//       )
-//       .subscribe();
-//     return () => {
-//       channel.unsubscribe();
-//     };
-//   }, []);
-//   useEffect(() => {
-//     const channel = supabase
-//       .channel('documents_changes')
-//       .on(
-//         'postgres_changes',
-//         {
-//           event: '*',
-//           schema: 'public',
-//           table: 'documents',
-//           filter: 'type=neq.space',
-//         },
-//         async (payload) => {
-//           switch (payload.eventType) {
-//             case 'INSERT': {
-//               if (!isDocumentCached(payload.new.client_id)) {
-//                 addDocumentToCache(payload.new.client_id ?? payload.new.id, 'real-time');
-//                 const { data: document } = await getDocumentById(payload.new.id);
-//                 if (document) {
-//                   try {
-//                     queryClient.setQueryData(
-//                       getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                       (old: ListDocumentResult) => [...old, document],
-//                     );
-//                   } catch {
-//                     // ignore
-//                   }
-//                 }
-//               }
-//               break;
-//             }
-//             case 'UPDATE': {
-//               if (payload.new.deleted_at) {
-//                 // delete the document from the cache
-//                 removeFromCache(
-//                   getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                   payload.new.id,
-//                 );
-//                 removeDocumentFromCache(payload.new.client_id ?? payload.new.id);
-//               } else {
-//                 if (payload.new.space_id !== payload.old.space_id) {
-//                   queryClient.setQueryData(
-//                     getAllDocumentsQueryOptions(payload.old.space_id).queryKey,
-//                     (old: ListDocumentResult) => {
-//                       return old?.filter?.((d) => d.id !== payload.old.id);
-//                     },
-//                   );
-//                   removeDocumentFromCache(payload.new.client_id ?? payload.new.id);
-//                   const isQueryExist = queryClient.getQueryData(
-//                     getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                   );
-//                   if (isQueryExist) {
-//                     const { data } = await getDocumentById(payload.new.id);
-//                     if (data) {
-//                       queryClient.setQueryData(
-//                         getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                         (old: ListDocumentResult) => {
-//                           return [...old, data];
-//                         },
-//                       );
-//                     }
-//                   }
-//                 } else {
-//                   const inCacheDocument = (
-//                     queryClient.getQueryData(
-//                       getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                     ) as ListDocumentResult
-//                   )?.find((d) => d.id === payload.new.id);
-
-//                   const { data: document } = await getDocumentById(payload.new.id);
-//                   if (document) {
-//                     if (inCacheDocument) {
-//                       let isApplied = false;
-//                       queryClient.setQueryData(
-//                         getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                         (old: ListDocumentResult) => {
-//                           return old.map((d) => {
-//                             if (d.id === document.id) {
-//                               isApplied = true;
-//                               return document;
-//                             }
-//                             return d;
-//                           });
-//                         },
-//                       );
-//                       if (!isApplied) {
-//                         queryClient.invalidateQueries({
-//                           queryKey: getAllDocumentsQueryOptions(payload.new.space_id).queryKey,
-//                           exact: true,
-//                         });
-//                       }
-//                     }
-//                   }
-//                 }
-//               }
-//               break;
-//             }
-//           }
-
-//           invalidate([DOCUMENTS_QUERY_KEYS.HOME.BASE, DOCUMENTS_QUERY_KEYS.FAVORITES]);
-//         },
-//       )
-//       .subscribe();
-//     return () => {
-//       channel.unsubscribe();
-//     };
-//   }, []);
-
-//   useEffect(() => {
-//     const channel = supabase
-//       .channel('favorites_changes')
-//       .on(
-//         'postgres_changes',
-//         {
-//           event: '*',
-//           schema: 'public',
-//           table: 'favorites',
-//         },
-//         async (payload) => {
-//           switch (payload.eventType) {
-//             case 'INSERT': {
-//               const { data: favorite } = await getDocumentById(payload.new.document_id);
-//               if (favorite) {
-//                 if (favorite.type === 'space') {
-//                   let isApplied = false;
-//                   queryClient.setQueryData(
-//                     getAllSpacesQueryOptions.queryKey,
-//                     (old: ListSpaceResult) => {
-//                       return old.map((s) => {
-//                         if (s.id === favorite.id) {
-//                           isApplied = true;
-//                           return favorite;
-//                         }
-//                         return s;
-//                       });
-//                     },
-//                   );
-//                   if (!isApplied) {
-//                     try {
-//                       queryClient.setQueryData(
-//                         getAllSpacesQueryOptions.queryKey,
-//                         (old: ListSpaceResult) => [...old, favorite],
-//                       );
-//                     } catch {
-//                       // ignore
-//                     }
-//                   }
-//                 } else {
-//                   let isApplied = false;
-//                   queryClient.setQueryData(
-//                     getAllDocumentsQueryOptions(favorite.spaceId!).queryKey,
-//                     (old: ListDocumentResult) => {
-//                       return old.map((d) => {
-//                         if (d.id === favorite.id) {
-//                           isApplied = true;
-//                           return favorite;
-//                         }
-//                         return d;
-//                       });
-//                     },
-//                   );
-//                   if (!isApplied) {
-//                     try {
-//                       queryClient.setQueryData(
-//                         getAllDocumentsQueryOptions(favorite.spaceId!).queryKey,
-//                         (old: ListDocumentResult) => [...old, favorite],
-//                       );
-//                     } catch {
-//                       // ignore
-//                     }
-//                   }
-//                 }
-//               }
-//               invalidate([DOCUMENTS_QUERY_KEYS.HOME.BASE, SPACES_QUERY_KEYS.HOME.BASE]);
-//               break;
-//             }
-//             case 'UPDATE': {
-//               if (payload.new.deleted_at) {
-//                 const { data: favorite } = await getDocumentById(payload.new.document_id);
-//                 if (favorite) {
-//                   queryClient.setQueryData(
-//                     getAllDocumentsQueryOptions(favorite.spaceId!).queryKey,
-//                     (old: ListDocumentResult) =>
-//                       old.map((d) => {
-//                         if (d.id === favorite.id) {
-//                           return favorite;
-//                         }
-//                         return d;
-//                       }),
-//                   );
-//                 }
-//                 invalidate([DOCUMENTS_QUERY_KEYS.HOME.BASE, SPACES_QUERY_KEYS.HOME.BASE]);
-//               }
-//               break;
-//             }
-//           }
-//         },
-//       )
-//       .subscribe();
-//     return () => {
-//       channel.unsubscribe();
-//     };
-//   }, []);
-//   return null;
-// }
 function UserImagesLoader() {
   const user = useSelector((state) => state.user);
   const { setAvatarImage, setCoverImage } = useActions();
@@ -769,18 +488,89 @@ function UserImagesLoader() {
       src: string,
       cropData: { x: number; y: number; width: number; height: number },
     ): Promise<string | null> => {
+      if (!src || typeof src !== 'string' || src.trim() === '') {
+        console.warn('Invalid image source URL:', src);
+        return null;
+      }
+
       try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL;
+        let imageBlob: Blob;
+        let imageUrl: string;
+
+        // Handle different URL types
+        if (src.startsWith('blob:') || src.startsWith('data:')) {
+          // For blob/data URLs, use directly
+          imageUrl = src;
+        } else if (src.startsWith('http://') || src.startsWith('https://')) {
+          // For absolute URLs, use fetch with credentials
+          try {
+            const response = await fetch(src, {
+              credentials: 'include',
+            });
+            if (!response.ok) {
+              throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
+            imageBlob = await response.blob();
+            imageUrl = URL.createObjectURL(imageBlob);
+          } catch (error) {
+            console.error('Error fetching external image:', { src, error });
+            return null;
+          }
+        } else {
+          // For relative paths, use fetch with storage endpoint
+          // Normalize the path - remove leading slash if present
+          const normalizedPath = src.startsWith('/') ? src.slice(1) : src;
+          const storageUrl = `${backendUrl}/${normalizedPath}`;
+          try {
+            const response = await fetch(storageUrl, {
+              credentials: 'include',
+            });
+            if (!response.ok) {
+              throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
+            imageBlob = await response.blob();
+            imageUrl = URL.createObjectURL(imageBlob);
+          } catch (error) {
+            console.error('Error fetching image from storage:', {
+              src,
+              normalizedPath,
+              storageUrl,
+              error,
+            });
+            return null;
+          }
+        }
+
+        // Load the image from blob URL (no CORS issues)
         const image = await new Promise<HTMLImageElement>((resolve, reject) => {
           const img = new Image();
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.crossOrigin = 'anonymous';
-          img.src = src;
+          const timeout = setTimeout(() => {
+            reject(new Error('Image load timeout'));
+          }, 30000); // 30 second timeout
+
+          img.onload = () => {
+            clearTimeout(timeout);
+            resolve(img);
+          };
+          img.onerror = (error) => {
+            clearTimeout(timeout);
+            reject(error);
+          };
+
+          img.src = imageUrl;
         });
 
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        if (!ctx) return null;
+        if (!ctx) {
+          console.error('Failed to get canvas context');
+          // Clean up blob URL if we created one
+          if (imageUrl.startsWith('blob:') && imageUrl !== src) {
+            URL.revokeObjectURL(imageUrl);
+          }
+          return null;
+        }
 
         canvas.width = cropData.width;
         canvas.height = cropData.height;
@@ -797,10 +587,21 @@ function UserImagesLoader() {
           cropData.height,
         );
 
-        // Convert canvas to data URL instead of blob
-        return canvas.toDataURL('image/png', 0.95);
+        // Convert canvas to data URL
+        const dataUrl = canvas.toDataURL('image/png', 0.95);
+
+        // Clean up blob URL if we created one
+        if (imageUrl.startsWith('blob:') && imageUrl !== src) {
+          URL.revokeObjectURL(imageUrl);
+        }
+
+        return dataUrl;
       } catch (error) {
-        console.error('Error creating cropped image:', error);
+        console.error('Error creating cropped image:', {
+          src,
+          cropData,
+          error,
+        });
         return null;
       }
     },
@@ -911,153 +712,3 @@ function UserImagesLoader() {
 
   return null;
 }
-// function VersionChangeListener() {
-//   const reload = useCallback(() => {
-//     const url = window.location.href.split('?')[0];
-//     const timestamp = new Date().getTime();
-//     window.location.replace(`${url}?v=${timestamp}`);
-//   }, []);
-//   const { version, deployment_id } = useSelector((state) => ({
-//     version: state.version,
-//     deployment_id: state.deployment_id,
-//   }));
-//   const toastVersion = useRef<{
-//     version: string;
-//     deployment_id: string;
-//     toastId: string | number;
-//   } | null>(null);
-//   useEffect(() => {
-//     const channel = supabase
-//       .channel('version_changes')
-//       .on(
-//         'postgres_changes',
-//         {
-//           event: '*',
-//           schema: 'public',
-//           table: 'deployments',
-//         },
-//         async (payload) => {
-//           switch (payload.eventType) {
-//             case 'INSERT':
-//             case 'UPDATE': {
-//               if (
-//                 (toastVersion.current?.version !== payload.new.version_number &&
-//                   version !== payload.new.version_number) ||
-//                 (toastVersion.current?.deployment_id !== payload.new.deployment_id &&
-//                   deployment_id !== payload.new.deployment_id)
-//               ) {
-//                 toast.dismiss(toastVersion.current?.toastId);
-//                 toastVersion.current = {
-//                   toastId: toast('New update available', {
-//                     description: `New update of wordy app is now available, please refresh the page to get the latest updates!`,
-//                     action: {
-//                       label: <RotateCw className="size-4" />,
-//                       onClick: () => {
-//                         reload();
-//                       },
-//                     },
-//                     onAutoClose: (toast) => {
-//                       if (toastVersion.current?.toastId === toast.id) {
-//                         toastVersion.current = null;
-//                       }
-//                     },
-//                     onDismiss: (toast) => {
-//                       if (toastVersion.current?.toastId === toast.id) {
-//                         toastVersion.current = null;
-//                       }
-//                     },
-//                   }),
-//                   version: payload.new.version_number,
-//                   deployment_id: payload.new.deployment_id,
-//                 };
-//               }
-//             }
-//           }
-//         },
-//       )
-//       .subscribe();
-//     const handleVisibilityChange = async () => {
-//       if (document.visibilityState === 'visible') {
-//         const { data: versionData } = await getVersion();
-//         if (
-//           versionData &&
-//           (versionData.version_number !== version || versionData.deployment_id !== deployment_id)
-//         )
-//           if (
-//             toastVersion.current?.version !== versionData.version_number ||
-//             toastVersion.current?.deployment_id !== versionData.deployment_id
-//           ) {
-//             toastVersion.current = {
-//               toastId: toast('New update available', {
-//                 description: `New update of wordy app is now available, please refresh the page to get the latest updates!`,
-//                 action: {
-//                   label: <RotateCw className="size-4" />,
-//                   onClick: () => {
-//                     reload();
-//                   },
-//                 },
-//                 onAutoClose: (toast) => {
-//                   if (toastVersion.current?.toastId === toast.id) {
-//                     toastVersion.current = null;
-//                   }
-//                 },
-//                 onDismiss: (toast) => {
-//                   if (toastVersion.current?.toastId === toast.id) {
-//                     toastVersion.current = null;
-//                   }
-//                 },
-//               }),
-//               version: versionData.version_number,
-//               deployment_id: versionData.deployment_id,
-//             };
-//           }
-//       }
-//     };
-//     const handleOnlineChange = async () => {
-//       if (navigator.onLine) {
-//         const { data: versionData } = await getVersion();
-//         if (
-//           versionData &&
-//           (versionData.version_number !== version || versionData.deployment_id !== deployment_id)
-//         )
-//           if (
-//             toastVersion.current?.version !== versionData.version_number ||
-//             toastVersion.current?.deployment_id !== versionData.deployment_id
-//           ) {
-//             toastVersion.current = {
-//               toastId: toast('New update available', {
-//                 description: `New update of wordy app is now available, please refresh the page to get the latest updates!`,
-//                 action: {
-//                   label: <RotateCw className="size-4" />,
-//                   onClick: () => {
-//                     reload();
-//                   },
-//                 },
-//                 onAutoClose: (toast) => {
-//                   if (toastVersion.current?.toastId === toast.id) {
-//                     toastVersion.current = null;
-//                   }
-//                 },
-//                 onDismiss: (toast) => {
-//                   if (toastVersion.current?.toastId === toast.id) {
-//                     toastVersion.current = null;
-//                   }
-//                 },
-//               }),
-//               version: versionData.version_number,
-//               deployment_id: versionData.deployment_id,
-//             };
-//           }
-//       }
-//     };
-//     window.addEventListener('online', handleOnlineChange);
-//     document.addEventListener('visibilitychange', handleVisibilityChange);
-//     return () => {
-//       channel.unsubscribe();
-//       document.removeEventListener('visibilitychange', handleVisibilityChange);
-//       window.removeEventListener('online', handleOnlineChange);
-//     };
-//   }, []);
-
-//   return null;
-// }

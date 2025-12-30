@@ -84,7 +84,7 @@ export function EditDocumentActions({ handle }: { handle: string }) {
           document: document!,
           editorState,
           checksum,
-          keepPreviousRevision: editorSettings?.keep_previous_revision && !editorSettings?.autosave,
+          keepPreviousRevision: editorSettings?.keepPreviousRevision && !editorSettings?.autosave,
           isAutosave,
         });
       }
@@ -177,7 +177,7 @@ export function EditDocumentActions({ handle }: { handle: string }) {
             }}
             options={[
               ...[
-                editorSettings?.keep_previous_revision && !editorSettings?.autosave
+                editorSettings?.keepPreviousRevision && !editorSettings?.autosave
                   ? {
                       label: 'Save and overwrite',
                       value: 'saveAndOverwrite',

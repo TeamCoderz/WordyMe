@@ -53,7 +53,7 @@ function RouteComponent() {
         name: user.name,
         email: user.email,
         image: user.avatar_image?.calculatedImage,
-        handle: user.handle,
+        handle: user.username ?? '',
       }}
       document={document}
       initialState={initialState}

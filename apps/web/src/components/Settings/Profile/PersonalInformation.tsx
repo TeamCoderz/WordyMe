@@ -39,7 +39,7 @@ const PersonalInformation = () => {
       first_name: user?.name?.split(' ')[0],
       last_name: user?.name?.split(' ')[1],
       bio: user?.bio ?? '',
-      job_title: user?.job_title ?? '',
+      job_title: user?.jobTitle ?? '',
     },
   });
   const { mutate, isPending } = useUpdateProfileMutation();

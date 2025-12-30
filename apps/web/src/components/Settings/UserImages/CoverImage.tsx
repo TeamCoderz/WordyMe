@@ -214,7 +214,7 @@ export default function CoverImage() {
   }, [changeCover, updateCoverMetadata, croppedAreaPixels, sourceUrl, zoom, isNewUpload]);
 
   const handleReEdit = useCallback(() => {
-    const displaySrc = (user?.cover_image?.url as string | null) ?? coverSrc;
+    const displaySrc = `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user?.cover_image?.url ?? ''}`;
     if (!displaySrc) return;
     if (fileInputRef.current) fileInputRef.current.value = '';
     setSourceUrl(displaySrc);

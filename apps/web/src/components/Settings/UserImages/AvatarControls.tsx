@@ -25,7 +25,9 @@ export default function AvatarControls() {
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent>
             <AvatarCropper
-              image={user?.avatar_image?.url || null}
+              image={
+                `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user?.avatar_image?.url ?? ''}` || null
+              }
               isNewUpload={false}
               onClose={() => setEditOpen(false)}
             />

@@ -361,7 +361,7 @@ export const useSpaceFavoritesMutation = () => {
   };
 };
 
-export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' }) => {
+export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage' }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
@@ -454,7 +454,7 @@ export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' })
 
   return mutation;
 };
-export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' }) => {
+export const useCreateContainerSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage' }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({

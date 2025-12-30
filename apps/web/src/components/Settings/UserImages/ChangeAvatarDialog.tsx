@@ -69,6 +69,7 @@ const ChangeAvatarFirstStep = ({
     setFile(files);
     if (files && files.length > 0) {
       const f = files[0];
+      // @ts-ignore
       const url = URL.createObjectURL(f);
       setImage(url);
       // Auto-proceed after a brief delay for visual feedback

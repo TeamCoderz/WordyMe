@@ -6,13 +6,14 @@ import { createContext } from 'react';
 import type { ListDocumentResult } from '@/queries/documents';
 import type { ListSpaceResult } from '@/queries/spaces';
 import type { TopBarFormValues } from '@/schemas/top-bar-form.schema';
-import type { ProfilePayloads } from '@repo/backend/sdk/profiles.js';
 import type { Space, Document, Revision, NavigationConfig, ActiveSpace } from '@repo/types';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
+import { EditorSettings } from '@repo/backend/editor-settings.js';
+import { SessionData } from '@repo/sdk/auth';
 
 export interface StoreState {
   user:
-    | (NonNullable<Omit<ProfilePayloads['one'], 'user_images' | 'editor_settings'>> & {
+    | (NonNullable<Omit<NonNullable<SessionData>['user'], 'user_images' | 'editor_settings'>> & {
         email?: string;
         last_signed_in?: string;
         avatar_image?: {
@@ -38,7 +39,7 @@ export interface StoreState {
           calculatedImage: string | null;
           isLoading: boolean;
         };
-        editor_settings: ProfilePayloads['one']['editor_settings'];
+        editor_settings: EditorSettings;
         isGuest: boolean;
       })
     | null;
@@ -171,11 +172,46 @@ export const createAppStore = (initState = defaultInitState) => {
               if (!spaces) return;
               const space = spaces.find((space) => space.id === spaceId);
               if (space) {
-                const path = calculateSpacePath(spaceId, spaces as Space[]);
+                // Convert spaces array to Space[] format for calculateSpacePath
+                const spacesAsSpaceArray: Space[] = spaces.map(
+                  (item): Space => ({
+                    id: item.id,
+                    name: item.name,
+                    description: null,
+                    createdAt:
+                      item.createdAt instanceof Date
+                        ? item.createdAt.toISOString()
+                        : item.createdAt,
+                    updatedAt:
+                      item.updatedAt instanceof Date
+                        ? item.updatedAt.toISOString()
+                        : (item.updatedAt ?? null),
+                    icon: item.icon ?? '',
+                    parentId: item.parentId ?? null,
+                    handle: item.handle ?? null,
+                  }),
+                );
+                const path = calculateSpacePath(spaceId, spacesAsSpaceArray);
+                // Convert space to Space format
+                const convertedSpace: Space = {
+                  id: space.id,
+                  name: space.name,
+                  description: null,
+                  createdAt:
+                    space.createdAt instanceof Date
+                      ? space.createdAt.toISOString()
+                      : space.createdAt,
+                  updatedAt:
+                    space.updatedAt instanceof Date
+                      ? space.updatedAt.toISOString()
+                      : (space.updatedAt ?? null),
+                  icon: space.icon || 'briefcase',
+                  parentId: space.parentId ?? null,
+                  handle: space.handle ?? null,
+                };
                 set({
                   activeSpace: {
-                    ...space,
-                    icon: space.icon || 'briefcase',
+                    ...convertedSpace,
                     path,
                   },
                 });

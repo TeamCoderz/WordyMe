@@ -18,7 +18,8 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
   const user = useSelector((state) => state.user);
 
   // Use image from props for new uploads, or from user data for edits
-  const imageSource = image || user?.avatar_image?.url || null;
+  const imageSource =
+    image || `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user?.avatar_image?.url ?? ''}` || null;
   const { mutate: changeAvatar, isPending: isUploadingAvatar } = useChangeAvatarMutation();
   const { mutate: updateAvatarMetadata, isPending: isUpdatingAvatar } =
     useUpdateAvatarMetadataMutation();

@@ -21,7 +21,7 @@ export function AppSidebarProvider({
     const match = document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
     if (!match) return true;
     try {
-      return decodeURIComponent(match[1]) === 'true';
+      return decodeURIComponent(match[1] ?? '') === 'true';
     } catch {
       return match[1] === 'true';
     }

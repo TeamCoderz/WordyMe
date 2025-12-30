@@ -384,8 +384,8 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
       e.preventDefault();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
-      const distance = getTouchDistance(touch1, touch2);
-      const center = getTouchCenter(touch1, touch2);
+      const distance = getTouchDistance(touch1!, touch2!);
+      const center = getTouchCenter(touch1!, touch2!);
       const container = containerRef.current;
 
       if (container) {
@@ -413,8 +413,8 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
       e.preventDefault();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
-      const distance = getTouchDistance(touch1, touch2);
-      const center = getTouchCenter(touch1, touch2);
+      const distance = getTouchDistance(touch1!, touch2!);
+      const center = getTouchCenter(touch1!, touch2!);
       const container = containerRef.current;
       const image = imageRef.current;
 

@@ -1,10 +1,5 @@
 import { useActions, useSelector } from '@/store';
-// import {
-//   uploadUserImage,
-//   deleteUserImage,
-//   getUserImageSignedUrl,
-//   updateImageMetaData,
-// } from '@repo/backend/sdk/storage/user-images.js';
+import { updateUserImage, updateUserCover, deleteUserImage } from '@repo/sdk/storage.ts';
 import { useMutation } from '@tanstack/react-query';
 import { updateEditorSettings } from '@repo/sdk/editor-settings.ts';
 import { toast } from 'sonner';
@@ -30,8 +25,7 @@ export function useChangeAvatarMutation() {
       height: number;
       zoom: number;
     }) => {
-      const { data, error } = await uploadUserImage(image, {
-        type: 'avatar',
+      const { data, error } = await updateUserImage(image, {
         x,
         y,
         width,
@@ -39,16 +33,7 @@ export function useChangeAvatarMutation() {
         zoom,
       });
       if (error) throw error;
-      const signedUrl = (await getUserImageSignedUrl(data?.path ?? '')).data?.signedUrl;
-      return {
-        url: signedUrl ?? null,
-        x: data?.x ?? null,
-        y: data?.y ?? null,
-        width: data?.width ?? null,
-        height: data?.height ?? null,
-        zoom: data?.zoom ?? null,
-        type: data?.type ?? null,
-      };
+      return data;
     },
     onMutate() {
       return toast.loading('Uploading avatar...');
@@ -62,7 +47,13 @@ export function useChangeAvatarMutation() {
           ...user,
           avatar_image: data
             ? {
-                ...data,
+                url: data.url,
+                height: data.meta.height ?? null,
+                width: data.meta.width ?? null,
+                x: data.meta.x ?? null,
+                y: data.meta.y ?? null,
+                zoom: data.meta.zoom ?? null,
+                type: 'avatar',
                 calculatedImage: user.avatar_image?.calculatedImage ?? null,
                 isLoading: user.avatar_image?.isLoading ?? false,
                 provider: 'supabase',
@@ -98,8 +89,7 @@ export function useChangeCoverMutation() {
       height: number;
       zoom: number;
     }) => {
-      const { data, error } = await uploadUserImage(image, {
-        type: 'cover',
+      const { data, error } = await updateUserCover(image, {
         x,
         y,
         width,
@@ -107,16 +97,7 @@ export function useChangeCoverMutation() {
         zoom,
       });
       if (error) throw error;
-      const signedUrl = (await getUserImageSignedUrl(data?.path ?? '')).data?.signedUrl;
-      return {
-        url: signedUrl ?? null,
-        x: data?.x ?? null,
-        y: data?.y ?? null,
-        width: data?.width ?? null,
-        height: data?.height ?? null,
-        zoom: data?.zoom ?? null,
-        type: data?.type ?? null,
-      };
+      return data;
     },
     onMutate() {
       return toast.loading('Uploading cover...');
@@ -130,7 +111,13 @@ export function useChangeCoverMutation() {
           ...user,
           cover_image: data
             ? {
-                ...data,
+                url: data.url,
+                height: data.meta.height ?? null,
+                width: data.meta.width ?? null,
+                x: data.meta.x ?? null,
+                y: data.meta.y ?? null,
+                zoom: data.meta.zoom ?? null,
+                type: 'cover',
                 calculatedImage: user.cover_image?.calculatedImage ?? null,
                 isLoading: user.cover_image?.isLoading ?? false,
               }
@@ -146,8 +133,6 @@ export function useChangeCoverMutation() {
   });
 }
 export function useUpdateCoverMetadataMutation() {
-  const user = useSelector((state) => state.user);
-  const { setUser } = useActions();
   return useMutation({
     mutationKey: ['updateCoverMetadata'],
     mutationFn: async (metadata: {
@@ -158,35 +143,17 @@ export function useUpdateCoverMetadataMutation() {
       zoom: number;
       type: 'cover';
     }) => {
-      const { data, error } = await updateImageMetaData(metadata);
+      const { data, error } = await authClient.updateUser({ coverMeta: metadata });
       if (error) throw error;
-      return {
-        x: data?.x ?? null,
-        y: data?.y ?? null,
-        width: data?.width ?? null,
-        height: data?.height ?? null,
-        zoom: data?.zoom ?? null,
-        type: data?.type ?? null,
-      };
+      return data;
     },
     onMutate() {
       return toast.loading('Updating cover metadata...');
     },
-    onSuccess: (data, __, toastId) => {
+    onSuccess: (_, __, toastId) => {
       toast.success('Cover metadata updated successfully', {
         id: toastId ?? undefined,
       });
-      if (user) {
-        setUser({
-          ...user,
-          cover_image: {
-            ...data,
-            url: user.cover_image?.url ?? null,
-            calculatedImage: user.cover_image?.calculatedImage ?? null,
-            isLoading: user.cover_image?.isLoading ?? false,
-          },
-        });
-      }
     },
     onError: (_, __, toastId) => {
       toast.error('Failed to update cover metadata', {
@@ -197,8 +164,6 @@ export function useUpdateCoverMetadataMutation() {
 }
 
 export function useUpdateAvatarMetadataMutation() {
-  const user = useSelector((state) => state.user);
-  const { setUser } = useActions();
   return useMutation({
     mutationKey: ['updateAvatarMetadata'],
     mutationFn: async (metadata: {
@@ -209,36 +174,17 @@ export function useUpdateAvatarMetadataMutation() {
       zoom: number;
       type: 'avatar';
     }) => {
-      const { data, error } = await updateImageMetaData(metadata);
+      const { data, error } = await authClient.updateUser({ imageMeta: metadata });
       if (error) throw error;
-      return {
-        x: data?.x ?? null,
-        y: data?.y ?? null,
-        width: data?.width ?? null,
-        height: data?.height ?? null,
-        zoom: data?.zoom ?? null,
-        type: data?.type ?? null,
-      };
+      return data;
     },
     onMutate() {
       return toast.loading('Updating avatar metadata...');
     },
-    onSuccess: (data, __, toastId) => {
+    onSuccess: (_, __, toastId) => {
       toast.success('Avatar metadata updated successfully', {
         id: toastId ?? undefined,
       });
-      if (user) {
-        setUser({
-          ...user,
-          avatar_image: {
-            ...data,
-            url: user.avatar_image?.url ?? null,
-            calculatedImage: user.avatar_image?.calculatedImage ?? null,
-            isLoading: user.avatar_image?.isLoading ?? false,
-            provider: 'supabase',
-          },
-        });
-      }
     },
     onError: (_, __, toastId) => {
       toast.error('Failed to update avatar metadata', {
@@ -254,9 +200,9 @@ export function useDeleteAvatarMutation() {
   return useMutation({
     mutationKey: ['deleteAvatar'],
     mutationFn: async () => {
-      const req = await deleteUserImage('avatar');
+      const req = await deleteUserImage();
       if (req?.error) throw req.error;
-      return req?.data;
+      return;
     },
     onMutate() {
       return toast.loading('Deleting avatar...');

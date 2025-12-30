@@ -4,11 +4,9 @@ import { useEffect } from 'react';
 import { ThemeCustomizer } from '@repo/ui/theme/theme-customizer';
 import { NavUser } from './nav-user';
 import { cn } from '@repo/ui/lib/utils';
-import { useSelector } from '@/store';
 import { Link } from '@tanstack/react-router';
 
 export const AppHeader = () => {
-  const user = useSelector((state) => state.user);
   const handleResize = () => {
     const keyboardInsetHeight =
       window.innerHeight - (window.visualViewport?.height || window.innerHeight);
