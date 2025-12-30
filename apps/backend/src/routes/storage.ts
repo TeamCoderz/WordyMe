@@ -11,6 +11,14 @@ import { documentIdParamSchema } from '../schemas/documents.js';
 import { mkdir } from 'node:fs/promises';
 import z from 'zod';
 import { getAttachmentUrl } from '../services/attachments.js';
+import { safeFilename } from '../utils/strings.js';
+import { imageMetaSchema } from '../schemas/images.js';
+import {
+  deleteUserCover,
+  deleteUserImage,
+  updateUserCover,
+  updateUserImage,
+} from '../services/images.js';
 
 const router = Router();
 
@@ -19,14 +27,16 @@ router.use(requireAuth);
 router.get(
   '/revisions/:revisionId',
   validate({ params: revisionIdParamSchema }),
-  async (req, res) => {
+  async (req, res, next) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
       throw new HttpNotFound(
-        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+        'The revision does not exist or is not accessible by the authenticated user.',
       );
     }
 
-    res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)));
+    res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)), (err) => {
+      if (err) next(new HttpNotFound('Revision content not found'));
+    });
   },
 );
 
@@ -38,7 +48,7 @@ router.post(
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
 
@@ -52,6 +62,7 @@ router.post(
       maxFiles: 1,
       maxFileSize: 10 * 1024 * 1024, // 10MB
       keepExtensions: true,
+      filename: safeFilename,
     });
 
     form.on('fileBegin', (name) => {
@@ -83,17 +94,127 @@ router.post(
 router.get(
   '/attachments/:documentId/:filename',
   validate({ params: documentIdParamSchema.extend({ filename: z.string() }) }),
-  async (req, res) => {
+  async (req, res, next) => {
     const { documentId, filename } = req.params;
 
     if (!(await userHasDocument(req.user!.id, documentId))) {
       throw new HttpNotFound(
-        'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+        'The document does not exist or is not accessible by the authenticated user.',
       );
     }
 
-    res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)));
+    res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)), (err) => {
+      if (err) next(new HttpNotFound('Attachment not found'));
+    });
   },
 );
+
+router.put('/images', async (req, res) => {
+  const uploadDir = resolvePhysicalPath(`images/${req.user!.id}`);
+
+  await mkdir(uploadDir, { recursive: true });
+
+  const form = formidable({
+    uploadDir,
+    multiples: false,
+    maxFiles: 1,
+    maxFileSize: 5 * 1024 * 1024, // 5MB
+    keepExtensions: true,
+    filename(name, ext) {
+      return `image${ext}`;
+    },
+    filter(part) {
+      return part.mimetype?.startsWith('image/') || false;
+    },
+  });
+
+  form.on('fileBegin', (name) => {
+    if (name !== 'image') {
+      throw new HttpUnprocessableEntity({
+        message:
+          'Invalid upload. Either no file was provided, the field name was incorrect (expected "image").',
+      });
+    }
+  });
+
+  const [fields, files] = await form.parse(req);
+
+  if (!files.image || files.image.length === 0) {
+    throw new HttpUnprocessableEntity({
+      message:
+        'Invalid upload. Either no file was provided, the field name was incorrect (expected "image").',
+    });
+  }
+
+  const meta = imageMetaSchema.parse(fields);
+
+  res.status(200).json(await updateUserImage(req.user!.id, files.image[0].newFilename, meta));
+});
+
+router.delete('/images', async (req, res) => {
+  await deleteUserImage(req.user!.id);
+  res.status(204).send();
+});
+
+router.get('/images/:userId/:filename', async (req, res, next) => {
+  const { userId, filename } = req.params;
+  res.sendFile(resolvePhysicalPath(`images/${userId}/${filename}`), (err) => {
+    if (err) next(new HttpNotFound('Profile image not found'));
+  });
+});
+
+router.put('/covers', async (req, res) => {
+  const uploadDir = resolvePhysicalPath(`covers/${req.user!.id}`);
+
+  await mkdir(uploadDir, { recursive: true });
+
+  const form = formidable({
+    uploadDir,
+    multiples: false,
+    maxFiles: 1,
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    keepExtensions: true,
+    filename(name, ext) {
+      return safeFilename('cover', ext);
+    },
+    filter(part) {
+      return part.mimetype?.startsWith('image/') || false;
+    },
+  });
+
+  form.on('fileBegin', (name) => {
+    if (name !== 'cover') {
+      throw new HttpUnprocessableEntity({
+        message:
+          'Invalid upload. Either no file was provided, the field name was incorrect (expected "cover").',
+      });
+    }
+  });
+
+  const [fields, files] = await form.parse(req);
+
+  if (!files.cover || files.cover.length === 0) {
+    throw new HttpUnprocessableEntity({
+      message:
+        'Invalid upload. Either no file was provided, the field name was incorrect (expected "cover").',
+    });
+  }
+
+  const meta = imageMetaSchema.parse(fields);
+
+  res.status(200).json(await updateUserCover(req.user!.id, files.cover[0].newFilename, meta));
+});
+
+router.delete('/covers', async (req, res) => {
+  await deleteUserCover(req.user!.id);
+  res.status(204).send();
+});
+
+router.get('/covers/:userId/:filename', async (req, res, next) => {
+  const { userId, filename } = req.params;
+  res.sendFile(resolvePhysicalPath(`covers/${userId}/${filename}`), (err) => {
+    if (err) next(new HttpNotFound('Cover image not found'));
+  });
+});
 
 export { router as storageRouter };

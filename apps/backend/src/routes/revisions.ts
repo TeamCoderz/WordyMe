@@ -22,7 +22,7 @@ router.use(requireAuth);
 router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.body.documentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      'The document does not exist or is not accessible by the authenticated user.',
     );
   }
   const revision = await createRevision(req.body, req.user!.id);
@@ -32,7 +32,7 @@ router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
 router.get('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
   if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
     throw new HttpNotFound(
-      'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+      'The revision does not exist or is not accessible by the authenticated user.',
     );
   }
   const revision = await getRevisionById(req.params.revisionId);
@@ -45,7 +45,7 @@ router.patch(
   async (req, res) => {
     if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
       throw new HttpNotFound(
-        'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+        'The revision does not exist or is not accessible by the authenticated user.',
       );
     }
     const updatedRevision = await updateRevisionName(req.params.revisionId, req.body);
@@ -56,7 +56,7 @@ router.patch(
 router.delete('/:revisionId', validate({ params: revisionIdParamSchema }), async (req, res) => {
   if (!(await userHasRevision(req.user!.id, req.params.revisionId))) {
     throw new HttpNotFound(
-      'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+      'The revision does not exist or is not accessible by the authenticated user.',
     );
   }
   await deleteRevisionById(req.params.revisionId);

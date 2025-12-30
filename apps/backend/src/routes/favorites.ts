@@ -28,7 +28,7 @@ router.get(
 router.post('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      'The document does not exist or is not accessible by the authenticated user.',
     );
   }
   const favorite = await addDocumentToFavorites(req.user!.id, req.params.documentId);
@@ -38,7 +38,7 @@ router.post('/:documentId', validate({ params: documentIdParamSchema }), async (
 router.delete('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
   if (!(await userHasDocument(req.user!.id, req.params.documentId))) {
     throw new HttpNotFound(
-      'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+      'The document does not exist or is not accessible by the authenticated user.',
     );
   }
   await removeDocumentFromFavorites(req.user!.id, req.params.documentId);

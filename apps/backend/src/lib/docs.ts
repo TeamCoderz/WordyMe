@@ -27,6 +27,7 @@ import {
 import { paginationQuerySchema, paginatedResultSchema } from '../schemas/pagination.js';
 import { editorSettingsSchema } from '../schemas/editor-settings.js';
 import { favoriteSchema } from '../schemas/favorites.js';
+import { imageMetaSchema } from '../schemas/images.js';
 export const openApiDocument = createDocument({
   openapi: '3.0.0',
   info: {
@@ -70,9 +71,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: documentDetailsSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -154,9 +155,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: exportedDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -175,9 +176,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: z.array(plainRevisionSchema) },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -196,13 +197,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
-            description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
-          },
           404: {
             description:
-              'No current revision exists for this document (document may be empty or newly created).',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -227,9 +224,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -255,9 +252,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: copiedDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
           500: {
             description: 'Internal server error. The copy operation failed unexpectedly.',
@@ -285,9 +282,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainDocumentSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
+              'The document, specified parentId, or spaceId does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -321,9 +318,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Document deleted successfully.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
           422: {
             description:
@@ -392,12 +389,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: favoriteSchema },
             },
           },
-          401: {
-            description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
-          },
           404: {
-            description: 'Failed to add document to favorites.',
+            description:
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -411,9 +405,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Document removed from favorites successfully. No content returned.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -433,9 +427,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -458,9 +452,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -474,9 +468,9 @@ export const openApiDocument = createDocument({
           204: {
             description: 'Revision deleted successfully. No content returned.',
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -501,9 +495,9 @@ export const openApiDocument = createDocument({
               'application/json': { schema: plainRevisionSchema },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -525,9 +519,9 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The revision does not exist or is not accessible by the authenticated user.',
+              'The revision does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -553,9 +547,9 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
           },
         },
       },
@@ -589,9 +583,137 @@ export const openApiDocument = createDocument({
               },
             },
           },
-          401: {
+          404: {
             description:
-              'Unauthorized. The document does not exist or is not accessible by the authenticated user.',
+              'The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/images': {
+      put: {
+        summary: 'Update user profile image',
+        tags: ['Storage'],
+        description:
+          "Uploads or updates the profile image for the authenticated user. The image is stored in the user's personal storage directory. Supports providing image transformation metadata (crop, zoom).",
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: imageMetaSchema.extend({
+                image: z.string().describe('The image file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Profile image updated successfully.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  url: z.string().describe('URL path to the updated profile image'),
+                  meta: imageMetaSchema,
+                }),
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        summary: 'Delete user profile image',
+        tags: ['Storage'],
+        description: 'Permanently deletes the profile image for the authenticated user.',
+        responses: {
+          204: {
+            description: 'Profile image deleted successfully.',
+          },
+        },
+      },
+    },
+    '/storage/images/{userId}/{filename}': {
+      get: {
+        summary: 'Get user profile image',
+        tags: ['Storage'],
+        description: 'Retrieves a specific profile image file for a user.',
+        requestParams: {
+          path: z.object({
+            userId: z.string().describe('The ID of the user'),
+            filename: z.string().describe('The filename of the image'),
+          }),
+        },
+        responses: {
+          200: {
+            description: 'Image file returned successfully.',
+            content: {
+              'image/*': {
+                schema: z.string(),
+              },
+            },
+          },
+        },
+      },
+    },
+    '/storage/covers': {
+      put: {
+        summary: 'Update user cover image',
+        tags: ['Storage'],
+        description:
+          "Uploads or updates the cover image for the authenticated user. The image is stored in the user's personal storage directory. Supports providing image transformation metadata (crop, zoom).",
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: imageMetaSchema.extend({
+                cover: z.string().describe('The cover image file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          200: {
+            description: 'Cover image updated successfully.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  url: z.string().describe('URL path to the updated cover image'),
+                  meta: imageMetaSchema,
+                }),
+              },
+            },
+          },
+        },
+      },
+      delete: {
+        summary: 'Delete user cover image',
+        tags: ['Storage'],
+        description: 'Permanently deletes the cover image for the authenticated user.',
+        responses: {
+          204: {
+            description: 'Cover image deleted successfully.',
+          },
+        },
+      },
+    },
+    '/storage/covers/{userId}/{filename}': {
+      get: {
+        summary: 'Get user cover image',
+        tags: ['Storage'],
+        description: 'Retrieves a specific cover image file for a user.',
+        requestParams: {
+          path: z.object({
+            userId: z.string().describe('The ID of the user'),
+            filename: z.string().describe('The filename of the cover image'),
+          }),
+        },
+        responses: {
+          200: {
+            description: 'Cover image file returned successfully.',
+            content: {
+              'image/*': {
+                schema: z.string(),
+              },
+            },
           },
         },
       },
