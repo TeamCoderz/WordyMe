@@ -174,7 +174,7 @@ export const createDocumentWithRevision = async (
     if (await checkExistingDocumentHandle(handle)) {
       handle = appendUniqueSuffix(handle);
     }
-    const [document] = await db
+    const [document] = await tx
       .insert(documentsTable)
       .values({
         ...payload,
@@ -183,7 +183,7 @@ export const createDocumentWithRevision = async (
       })
       .returning();
 
-    const [revision] = await db
+    const [revision] = await tx
       .insert(revisionsTable)
       .values({
         documentId: document.id,
@@ -196,7 +196,7 @@ export const createDocumentWithRevision = async (
 
     await saveRevisionContent(payload.revision.content, revision.id);
 
-    await db
+    await tx
       .update(documentsTable)
       .set({
         currentRevisionId: revision.id,
