@@ -1,9 +1,9 @@
-import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { useActions, useSelector } from '@/store';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
 import { Space } from '@repo/types';
 import { Button } from '@repo/ui/components/button';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   createFileRoute,
   ErrorRouteComponent,
@@ -19,24 +19,7 @@ import { AppHeader } from '@/components/Layout/app-header';
 import { AppSidebar } from '@/components/Layout/app-sidebar';
 import { SidebarInset } from '@repo/ui/components/sidebar';
 import { getSession, useSession } from '@repo/sdk/auth';
-import {
-  connectSocket,
-  disconnectSocket,
-  off,
-  on,
-  subscribeToSpace,
-  unsubscribeFromSpace,
-} from '@repo/sdk/realtime/client.ts';
-import { PlainDocument } from '@repo/backend/documents.js';
-import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from '@/queries/caches/spaces';
-import { useAllQueriesInvalidate } from '@/queries/utils';
-import { DOCUMENTS_QUERY_KEYS, SPACES_QUERY_KEYS } from '@/queries/query-keys';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
-import {
-  addDocumentToCache,
-  isDocumentCached,
-  removeDocumentFromCache,
-} from '@/queries/caches/documents';
+import { RealtimeProvider } from '@/providers/RealtimeProvider';
 
 const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
   useEffect(() => {
@@ -142,7 +125,7 @@ function NotFoundComponent() {
 }
 function RouteComponent() {
   return (
-    <>
+    <RealtimeProvider>
       <AppSidebarProvider>
         <AppHeader />
         <div className="relative flex flex-1">
@@ -153,10 +136,9 @@ function RouteComponent() {
         </div>
       </AppSidebarProvider>
       <ActiveSpaceLoader />
-      <RealTimeChangeListener />
       <UserImagesLoader />
       <UserSync />
-    </>
+    </RealtimeProvider>
   );
 }
 function UserSync() {
@@ -298,190 +280,6 @@ function ActiveSpaceLoader() {
       }
     }
   }, [activeSpace, spaces, isLoading, spacesAsSpaceArray]);
-  return null;
-}
-function RealTimeChangeListener() {
-  const activeSpaceId = useSelector((state) => state.activeSpace?.id);
-  const queryClient = useQueryClient();
-  const invalidate = useAllQueriesInvalidate();
-  useEffect(() => {
-    connectSocket();
-    return () => {
-      disconnectSocket();
-    };
-  }, []);
-  useEffect(() => {
-    if (activeSpaceId) {
-      subscribeToSpace(activeSpaceId);
-      return () => {
-        unsubscribeFromSpace(activeSpaceId);
-      };
-    }
-    return;
-  }, [activeSpaceId]);
-  // handle spaces real-time changes
-  useEffect(() => {
-    // handle space created
-    const handleSpaceCreated = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        if (old) {
-          if (!isSpaceCached(data.clientId)) {
-            addSpaceToCache(data.clientId);
-            return [...old, data];
-          }
-        }
-        return old;
-      });
-      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-    };
-    on('space:created', handleSpaceCreated);
-    // handle space updated
-    const handleSpaceUpdated = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        if (old) {
-          return old.map((space) => {
-            if (space.id === data.id) {
-              return data;
-            }
-            return space;
-          });
-        }
-        return old;
-      });
-      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-    };
-    on('space:updated', handleSpaceUpdated);
-    // handle space deleted
-    const handleSpaceDeleted = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        if (old) {
-          removeSpaceFromCache(data.clientId);
-          return old.filter((space) => space.id !== data.id);
-        }
-        return old;
-      });
-      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-    };
-    on('space:deleted', handleSpaceDeleted);
-    // handle space favorited
-    const handleSpaceFavorited = (data: { id: string; userId: string; documentId: string }) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        if (old) {
-          return old.map((space) => {
-            if (space.id === data.documentId) {
-              return { ...space, isFavorite: true };
-            }
-            return space;
-          });
-        }
-        return old;
-      });
-      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-    };
-    on('space:favorited', handleSpaceFavorited);
-    // handle space unfavorited
-    const handleSpaceUnfavorited = (data: { id: string; userId: string; documentId: string }) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        if (old) {
-          return old.map((space) => {
-            if (space.id === data.documentId) {
-              return { ...space, isFavorite: false };
-            }
-            return space;
-          });
-        }
-        return old;
-      });
-      invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
-    };
-    on('space:unfavorited', handleSpaceUnfavorited);
-    return () => {
-      off('space:created', handleSpaceCreated);
-      off('space:updated', handleSpaceUpdated);
-      off('space:deleted', handleSpaceDeleted);
-      off('space:favorited', handleSpaceFavorited);
-      off('space:unfavorited', handleSpaceUnfavorited);
-    };
-  }, [queryClient, invalidate]);
-  // handle documents real-time changes
-  useEffect(() => {
-    //handle document created
-    const handleDocumentCreated = (data: PlainDocument) => {
-      if (data.spaceId) {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
-            if (old) {
-              if (!isDocumentCached(data.clientId)) {
-                addDocumentToCache(data.clientId, 'real-time');
-                return [...old, data];
-              }
-            }
-            return old;
-          },
-        );
-      }
-      invalidate([
-        DOCUMENTS_QUERY_KEYS.HOME.BASE,
-        DOCUMENTS_QUERY_KEYS.FAVORITES,
-        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
-      ]);
-    };
-    on('document:created', handleDocumentCreated);
-    //handle document updated
-    const handleDocumentUpdated = (data: PlainDocument) => {
-      if (data.spaceId) {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
-            if (old) {
-              return old.map((document) => {
-                if (document.id === data.id) {
-                  return data;
-                }
-                return document;
-              });
-            }
-            return old;
-          },
-        );
-      }
-      invalidate([
-        DOCUMENTS_QUERY_KEYS.HOME.BASE,
-        DOCUMENTS_QUERY_KEYS.FAVORITES,
-        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
-      ]);
-    };
-    on('document:updated', handleDocumentUpdated);
-    //handle document deleted
-    const handleDocumentDeleted = (data: PlainDocument) => {
-      if (data.spaceId) {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
-            if (old) {
-              removeDocumentFromCache(data.clientId);
-              return old.filter((document) => document.id !== data.id);
-            }
-            return old;
-          },
-        );
-      }
-      invalidate([
-        DOCUMENTS_QUERY_KEYS.HOME.BASE,
-        DOCUMENTS_QUERY_KEYS.FAVORITES,
-        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
-      ]);
-    };
-    on('document:deleted', handleDocumentDeleted);
-    //handle document favorited
-    // on('document:favorited', (data) => {});
-    return () => {
-      off('document:created', handleDocumentCreated);
-      off('document:updated', handleDocumentUpdated);
-      off('document:deleted', handleDocumentDeleted);
-    };
-  }, [queryClient, invalidate]);
   return null;
 }
 

@@ -1,135 +1,238 @@
-# Turborepo starter
+# WordyMe
 
-This Turborepo starter is maintained by the Turborepo core team.
+**WordyMe** is a centralized platform for students to manage educational information. It provides a rich note-taking experience with support for documents, spaces, and a powerful editor with diagram and math support.
 
-## Using this example
+## Overview
 
-Run the following command:
+WordyMe is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions.
 
-```sh
-npx create-turbo@latest
+## Architecture
+
+### Monorepo Structure
+
+This project uses [Turborepo](https://turborepo.com) for managing a monorepo with the following structure:
+
+#### Applications
+
+- **`apps/web`** - Frontend React application built with Vite
+- **`apps/backend`** - Backend Express.js API server
+
+#### Packages
+
+- **`@repo/editor`** - Rich text editor built with Lexical, supporting diagrams (Mermaid), math (KaTeX), and more
+- **`@repo/ui`** - Shared UI component library (shadcn/ui based)
+- **`@repo/sdk`** - Client SDK for API communication
+- **`@repo/types`** - Shared TypeScript type definitions
+- **`@repo/lib`** - Shared utility functions
+- **`@repo/shared`** - Shared business logic
+- **`@repo/eslint-config`** - Shared ESLint configurations
+- **`@repo/typescript-config`** - Shared TypeScript configurations
+
+## Technology Stack
+
+### Frontend (`apps/web`)
+
+- **React 19** - UI library
+- **Vite** - Build tool and dev server (using Rolldown)
+- **TanStack Router** - Type-safe file-based routing
+- **TanStack Query** - Data fetching and state management
+- **Zustand** - Global state management
+- **Tailwind CSS** - Utility-first CSS framework
+- **Lexical** - Rich text editor framework
+- **Mermaid** - Diagram rendering
+- **KaTeX** - Math rendering
+- **PWA Support** - Progressive Web App capabilities
+
+### Backend (`apps/backend`)
+
+- **Express.js** - Web framework
+- **Better Auth** - Authentication system
+- **Drizzle ORM** - Type-safe database ORM
+- **libSQL (SQLite)** - Embedded database
+- **Socket.io** - Real-time communication
+- **Zod** - Schema validation
+
+### Development Tools
+
+- **TypeScript** - Type safety across the entire codebase
+- **ESLint** - Code linting
+- **Prettier** - Code formatting
+- **Turborepo** - Monorepo build system
+- **pnpm** - Package manager
+
+## Key Features
+
+### Document Management
+
+- Create, edit, and organize documents in a hierarchical structure
+- Support for different document types (notes, spaces, containers)
+- Document versioning with revision history
+- Document favorites and recent views
+- Search and filtering capabilities
+
+### Rich Text Editor
+
+- WYSIWYG editing with Lexical
+- Support for markdown
+- Math equations with KaTeX
+- Diagrams with Mermaid (flowcharts, sequence diagrams, class diagrams, etc.)
+- Code blocks with syntax highlighting
+- Image support with cropping and optimization
+
+### Spaces & Organization
+
+- Organize documents into spaces
+- Hierarchical document structure
+- Favorite spaces and documents
+- Recent activity tracking
+
+### User Features
+
+- User authentication and authorization
+- User profiles with avatar and cover images
+- Editor settings and preferences
+- Real-time updates via WebSocket
+
+### Performance
+
+- Code splitting and lazy loading
+- Optimized bundle sizes
+- PWA support for offline capabilities
+- Efficient caching strategies
+
+## Project Structure
+
+```
+WordyMe/
+├── apps/
+│   ├── backend/          # Express.js API server
+│   │   ├── src/
+│   │   │   ├── routes/   # API route handlers
+│   │   │   ├── services/ # Business logic
+│   │   │   ├── models/   # Database models
+│   │   │   ├── schemas/  # Zod validation schemas
+│   │   │   └── lib/      # Core libraries (auth, db, socket)
+│   │   └── storage/      # File storage and database
+│   └── web/             # React frontend application
+│       ├── src/
+│       │   ├── components/  # React components
+│       │   ├── routes/      # TanStack Router routes
+│       │   ├── queries/     # TanStack Query hooks
+│       │   ├── store/       # Zustand stores
+│       │   └── utils/       # Utility functions
+│       └── public/          # Static assets
+├── packages/
+│   ├── editor/          # Lexical-based rich text editor
+│   ├── ui/              # Shared UI components
+│   ├── sdk/             # API client SDK
+│   ├── types/           # TypeScript type definitions
+│   ├── lib/             # Shared utilities
+│   └── shared/          # Shared business logic
+└── turbo.json           # Turborepo configuration
 ```
 
-## What's inside?
+## Development Workflow
 
-This Turborepo includes the following packages/apps:
+### Prerequisites
 
-### Apps and Packages
+- **Node.js** >= 18
+- **pnpm** 9.0.0 (specified in `packageManager` field)
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+### Available Scripts
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+From the root directory:
 
-### Utilities
+- `pnpm dev` - Start all apps in development mode
+- `pnpm build` - Build all apps and packages
+- `pnpm lint` - Lint all packages
+- `pnpm format` - Format code with Prettier
+- `pnpm check-types` - Type-check all packages
+- `pnpm start` - Start all apps in production mode
 
-This Turborepo has some additional tools already setup for you:
+### Running Specific Packages
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
+You can run commands for specific packages using Turborepo filters:
 
-### Build
+```bash
+# Run only the web app
+pnpm dev --filter=web
 
-To build all apps and packages, run the following command:
+# Run only the backend
+pnpm dev --filter=@repo/backend
 
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Build only the web app
+pnpm build --filter=web
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Build System
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+This project uses **Turborepo** for:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+- **Parallel execution** - Run tasks across packages in parallel
+- **Caching** - Intelligent caching of build outputs
+- **Task dependencies** - Automatic dependency resolution
+- **Remote caching** - Share build caches across team and CI/CD
 
 ### Remote Caching
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+Turborepo supports remote caching with Vercel (free for all plans). To enable:
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
+```bash
+# Authenticate with Vercel
 pnpm exec turbo login
-```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
+# Link your repository
 pnpm exec turbo link
 ```
 
+## Code Quality
+
+### TypeScript
+
+All packages use TypeScript with strict type checking. Type definitions are shared through `@repo/types`.
+
+### Linting
+
+ESLint is configured across all packages with shared configurations in `@repo/eslint-config`.
+
+### Formatting
+
+Prettier is used for consistent code formatting. A pre-commit hook (via Lefthook) ensures code is formatted before commits.
+
+## Database
+
+The backend uses **libSQL** (SQLite-compatible) for data storage. The database file is stored in `apps/backend/storage/local.db` by default.
+
+### Migrations
+
+Database migrations are managed with Drizzle Kit. Run migrations with:
+
+```bash
+cd apps/backend
+pnpm drizzle-kit generate
+pnpm drizzle-kit migrate
+```
+
+## API Documentation
+
+The backend API includes OpenAPI documentation. When running the backend, visit `/api-docs` for interactive API documentation.
+
+## Contributing
+
+1. Ensure all dependencies are installed: `pnpm install`
+2. Run type checking: `pnpm check-types`
+3. Run linting: `pnpm lint`
+4. Format code: `pnpm format`
+5. Run tests: `pnpm test` (where applicable)
+
+## License
+
+See [LICENSE](LICENSE) file for details.
+
 ## Useful Links
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+- [Turborepo Documentation](https://turborepo.com/docs)
+- [TanStack Router](https://tanstack.com/router)
+- [Lexical Editor](https://lexical.dev)
+- [Drizzle ORM](https://orm.drizzle.team)
+- [Better Auth](https://www.better-auth.com)

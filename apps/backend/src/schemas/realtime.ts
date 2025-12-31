@@ -14,6 +14,8 @@ export type SocketEventsMap = {
   'space:deleted': PlainDocument;
   'space:favorited': FavoriteRealtimeResponse;
   'space:unfavorited': FavoriteRealtimeResponse;
+  connect: void;
+  disconnect: void;
 };
 
 export type SocketEventKey = keyof SocketEventsMap;
