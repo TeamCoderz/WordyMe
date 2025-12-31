@@ -53,6 +53,9 @@ export const options = {
               {
                 name: 'My Workspace',
                 documentType: 'space',
+                icon: 'briefcase',
+                position: 'a0',
+                isContainer: false,
               },
               user.id,
             ),

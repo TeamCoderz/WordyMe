@@ -1,4 +1,4 @@
-import {
+import type {
   CreateDocumentInput,
   CreateDocumentWithRevisionInput,
   DocumentDetails,
@@ -8,7 +8,7 @@ import {
   PlainDocument,
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
-import { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
+import type { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
 import { del, get, patch, post } from './client.js';
 
 export const createDocument = async (data: CreateDocumentInput) => {

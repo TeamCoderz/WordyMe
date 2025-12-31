@@ -3,11 +3,12 @@ import { type Server as HttpServer } from 'node:http';
 import { ioRequireAuth } from '../middlewares/auth.js';
 import { userHasDocument } from '../services/access.js';
 import { SocketEventKey, SocketEventsMap } from '../schemas/realtime.js';
+import { env } from '../env.js';
 
 let io: Server | null = null;
 
 export const initializeSocket = (server: HttpServer) => {
-  io = new Server(server, { cors: { origin: '*' } });
+  io = new Server(server, { cors: { origin: env.CLIENT_URL, credentials: true } });
 
   io.use(ioRequireAuth);
 

@@ -1,0 +1,185 @@
+/* Temporary highlight for newly created document items */
+.flash-highlight {
+  @apply bg-muted;
+  transition: background-color 300ms ease;
+}
+@import "@repo/ui/globals.css";
+
+/* Animated highlight utility for first-render/cached rows */
+.flash-highlight-animate {
+  animation: flashHighlight 1s ease;
+  -webkit-animation: flashHighlight 1s ease;
+}
+
+@keyframes flashHighlight {
+  0% {
+    background-color: var(--color-muted);
+  }
+  50% {
+    background-color: var(--color-muted);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@layer base {
+  .editor-input *,
+  .editor-input ::after,
+  .editor-input ::before,
+  .editor-input ::backdrop,
+  .editor-input ::file-selector-button {
+    margin: revert-layer;
+    font-size: revert-layer;
+    font-weight: revert-layer;
+    list-style: revert-layer;
+  }
+}
+
+:root {
+  --keyboard-inset-height: 0px;
+}
+
+html {
+  position: relative;
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: none;
+}
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 100vh;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  overscroll-behavior-y: none;
+}
+
+header {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+::selection {
+  background-color: rgb(95 183 255 / 50%);
+}
+
+@media screen {
+  .selected,
+  .selection-highlight {
+    background-color: rgb(95 183 255 / 50%);
+  }
+}
+
+.viewer-container :is([id], [target="_self"], h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: calc(var(--spacing) * 20);
+}
+
+.editor-container :is([id], [target="_self"], h1, h2, h3, h4, h5, h6) {
+  scroll-margin-top: calc(var(--spacing) * 34);
+}
+
+.editor-input {
+  resize: none;
+  caret-color: #444;
+  position: relative;
+  tab-size: 1;
+  outline: 0;
+}
+
+.excalidraw.excalidraw-modal-container,
+#typeahead-menu {
+  z-index: 1500 !important;
+}
+
+html > body.fullscreen {
+  position: initial !important;
+  overflow-y: hidden !important;
+}
+
+.dark {
+  .editor-input {
+    caret-color: #eee;
+  }
+}
+
+@media print {
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  *,
+  *:before,
+  *:after {
+    filter: unset !important;
+    color-scheme: light !important;
+    --background: oklch(1 0 0) !important;
+    --foreground: oklch(0.145 0 0) !important;
+  }
+
+  body
+    *:not(
+      .editor-input ,
+      .editor-input *,
+      :has(.editor-input)
+    ) {
+    display: none !important;
+  }
+
+  .editor-input  {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    width: 100% !important;
+    height: auto !important;
+    zoom: 1 !important;
+  }
+}
+
+@font-face {
+  font-family: Virgil;
+  src: url(/fonts/Virgil-Regular.woff2);
+}
+
+@font-face {
+  font-family: Cascadia;
+  src: url(/fonts/CascadiaCode-Regular.woff2);
+}
+
+@font-face {
+  font-family: Assistant;
+  src: url(/fonts/Assistant-Regular.woff2);
+}
+
+@font-face {
+  font-family: Poppins;
+  src: url(/fonts/Poppins-Regular.woff2);
+}
+
+@font-face {
+  font-family: Gyrochrome;
+  src: url(/fonts/GyrochromeVF.ttf) format("truetype");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@utility font-logo {
+  font-family: Gyrochrome, sans-serif;
+}
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-hide {
+  /* Hide scrollbar for IE, Edge and Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

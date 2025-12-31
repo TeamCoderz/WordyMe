@@ -1,5 +1,5 @@
 {
-  "name": "sdk",
+  "name": "@repo/sdk",
   "version": "1.0.0",
   "description": "",
   "scripts": {
@@ -11,7 +11,9 @@
   "license": "ISC",
   "exports": {
     "./*": "./src/app/*",
-    "./auth": "./src/auth/index.ts"
+    "./auth": "./src/auth/index.ts",
+    "./realtime/client": "./src/realtime/client.ts",
+    "./realtime/*": "./src/realtime/*"
   },
   "type": "module",
   "devDependencies": {

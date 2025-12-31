@@ -1,9 +1,9 @@
-import {
+import type {
   CopyDocumentInput,
   ExportedDocument,
   ImportDocumentInput,
 } from '@repo/backend/operations.js';
-import { PlainDocument } from '@repo/backend/documents.js';
+import type { PlainDocument } from '@repo/backend/documents.js';
 import { patch, post } from './client.js';
 
 export const copyDocument = async (documentId: string, payload: CopyDocumentInput) => {

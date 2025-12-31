@@ -1,0 +1,24 @@
+{
+  "name": "@repo/lib",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    "./data/*": "./src/data/*.ts",
+    "./utils/*": "./src/utils/*.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.50.0"
+  },
+  "dependencies": {
+    "fractional-indexing": "^3.2.0"
+  }
+}
