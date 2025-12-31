@@ -175,7 +175,7 @@ router.put('/covers', async (req, res) => {
     maxFileSize: 10 * 1024 * 1024, // 10MB
     keepExtensions: true,
     filename(name, ext) {
-      return safeFilename('cover', ext);
+      return `cover${ext}`;
     },
     filter(part) {
       return part.mimetype?.startsWith('image/') || false;
