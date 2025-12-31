@@ -188,20 +188,37 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     //handle document updated
     const handleDocumentUpdated = (data: PlainDocument) => {
       if (data.spaceId) {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
-            if (old) {
-              return old.map((document) => {
-                if (document.id === data.id) {
-                  return data;
-                }
-                return document;
-              });
-            }
-            return old;
-          },
-        );
+        const spaceHasDocument = (
+          queryClient.getQueryData(
+            getAllDocumentsQueryOptions(data.spaceId).queryKey,
+          ) as ListDocumentResult
+        )?.find((document) => document.id === data.id);
+        if (spaceHasDocument) {
+          queryClient.setQueryData(
+            getAllDocumentsQueryOptions(data.spaceId).queryKey,
+            (old: ListDocumentResult) => {
+              if (old) {
+                return old.map((document) => {
+                  if (document.id === data.id) {
+                    return data;
+                  }
+                  return document;
+                });
+              }
+              return old;
+            },
+          );
+        } else {
+          queryClient.setQueryData(
+            getAllDocumentsQueryOptions(data.spaceId).queryKey,
+            (old: ListDocumentResult) => {
+              if (old) {
+                return [...old, data];
+              }
+              return [data];
+            },
+          );
+        }
       }
       invalidate([
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
