@@ -12,6 +12,7 @@ import { requireAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import {
   createDocument,
+  createDocumentWithRevision,
   deleteDocument,
   getDocumentDetails,
   getLastViewedDocuments,
@@ -22,11 +23,7 @@ import {
 } from '../services/documents.js';
 import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
-import {
-  createRevision,
-  getCurrentRevisionByDocumentId,
-  getRevisionsByDocumentId,
-} from '../services/revisions.js';
+import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
@@ -71,23 +68,8 @@ router.post(
   '/with-revision',
   validate({ body: createDocumentWithRevisionSchema }),
   async (req, res) => {
-    const document = await createDocument(req.body, req.user!.id);
-    try {
-      const revision = await createRevision(
-        { ...req.body.revision, documentId: document.id },
-        req.user!.id,
-      );
-      res.status(201).json({
-        ...document,
-        currentRevisionId: revision.id,
-        currentRevision: revision,
-        isFavorite: false,
-        lastViewedAt: null,
-      });
-    } catch (error) {
-      await deleteDocument(document.id);
-      throw error;
-    }
+    const document = await createDocumentWithRevision(req.body, req.user!.id);
+    res.status(201).json(document);
   },
 );
 
@@ -106,13 +88,20 @@ router.get(
   },
 );
 
-router.get('/:documentId', validate({ params: documentIdParamSchema }), async (req, res) => {
-  const document = await getDocumentDetails(req.params, req.user!.id);
-  if (!document) {
-    throw new HttpNotFound('Document not found or the user does not have access to it.');
-  }
-  res.status(200).json(document);
-});
+router.get(
+  '/:documentId',
+  validate({ params: documentIdParamSchema, query: getSingleDocumentOptionsSchema }),
+  async (req, res) => {
+    const document = await getDocumentDetails(req.params, req.user!.id);
+    if (!document) {
+      throw new HttpNotFound('Document not found or the user does not have access to it.');
+    }
+    if (req.query.updateLastViewed === true) {
+      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+    }
+    res.status(200).json(document);
+  },
+);
 
 router.patch(
   '/:documentId/',

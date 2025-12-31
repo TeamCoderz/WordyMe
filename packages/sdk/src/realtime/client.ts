@@ -19,6 +19,14 @@ export const unsubscribeFromSpace = (spaceId: string) => {
   socket.emit('unsubscribeFromSpace', spaceId);
 };
 
+export const onConnect = (callback: () => void | Promise<void>) => {
+  socket.on('connect', callback);
+};
+
+export const onDisconnect = (callback: () => void | Promise<void>) => {
+  socket.on('disconnect', callback);
+};
+
 export const on = <K extends SocketEventKey>(
   event: K,
   callback: (data: SocketEventsMap[K]) => void,

@@ -1,17 +1,19 @@
-import { PlainDocument } from './documents.js';
+import { DocumentDetails, PlainDocument } from './documents.js';
 import { Favorite } from './favorites.js';
 
+export type FavoriteRealtimeResponse = Favorite & { spaceId: string | null };
+
 export type SocketEventsMap = {
-  'document:created': PlainDocument;
+  'document:created': DocumentDetails;
   'document:updated': PlainDocument;
   'document:deleted': PlainDocument;
-  'document:favorited': Favorite;
-  'document:unfavorited': Favorite;
-  'space:created': PlainDocument;
+  'document:favorited': FavoriteRealtimeResponse;
+  'document:unfavorited': FavoriteRealtimeResponse;
+  'space:created': DocumentDetails;
   'space:updated': PlainDocument;
   'space:deleted': PlainDocument;
-  'space:favorited': Favorite;
-  'space:unfavorited': Favorite;
+  'space:favorited': FavoriteRealtimeResponse;
+  'space:unfavorited': FavoriteRealtimeResponse;
 };
 
 export type SocketEventKey = keyof SocketEventsMap;

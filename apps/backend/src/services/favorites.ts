@@ -7,7 +7,7 @@ import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { orderByColumns } from './documents.js';
 import { DocumentFilters, DocumentListItem } from '../schemas/documents.js';
 import { CollectionQuery } from '../utils/collections.js';
-import { emitToSpace, emitToUser } from '../lib/socket.js';
+import { emitToUser } from '../lib/socket.js';
 
 export const addDocumentToFavorites = async (userId: string, documentId: string) => {
   const [favorite] = await db
@@ -28,11 +28,11 @@ export const addDocumentToFavorites = async (userId: string, documentId: string)
     where: eq(documentsTable.id, documentId),
   });
 
-  if (document?.documentType === 'space') {
-    emitToUser(userId, 'space:favorited', favorite);
-  } else if (document?.spaceId) {
-    emitToSpace(document.spaceId, 'document:favorited', favorite);
-  }
+  emitToUser(
+    userId,
+    document?.documentType === 'space' ? 'space:favorited' : 'document:favorited',
+    { ...favorite, spaceId: document?.spaceId ?? null },
+  );
 
   return favorite;
 };
@@ -48,12 +48,11 @@ export const removeDocumentFromFavorites = async (userId: string, documentId: st
     where: eq(documentsTable.id, documentId),
   });
 
-  if (document?.documentType === 'space') {
-    emitToUser(userId, 'space:unfavorited', favorite);
-  } else if (document?.spaceId) {
-    emitToSpace(document.spaceId, 'document:unfavorited', favorite);
-  }
-
+  emitToUser(
+    userId,
+    document?.documentType === 'space' ? 'space:unfavorited' : 'document:unfavorited',
+    { ...favorite, spaceId: document?.spaceId ?? null },
+  );
   return favorite;
 };
 

@@ -2,14 +2,13 @@ import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { CopyDocumentInput, ExportedDocument, ImportDocumentInput } from '../schemas/operations.js';
 import { documentsTable } from '../models/documents.js';
-import { createDocument } from './documents.js';
-import { createRevision, getRevisionById } from './revisions.js';
+import { createDocument, createDocumentWithRevision } from './documents.js';
+import { getRevisionById } from './revisions.js';
 import {
   copyDocumentAttachments,
   exportDocumentAttachments,
   importDocumentAttachment,
 } from './attachments.js';
-import { RevisionDetails } from '../schemas/revisions.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { readRevisionContent } from './revision-contents.js';
 
@@ -26,37 +25,24 @@ export const copyDocument = async (
     return false;
   }
 
-  const newDocument = await createDocument(
-    {
-      name: payload.name,
-      icon: originalDocument.icon,
-      position: payload.position ?? originalDocument.position,
-      parentId: payload.parentId,
-      spaceId: payload.spaceId,
-      documentType: originalDocument.documentType,
-      isContainer: originalDocument.isContainer,
-      clientId: null,
-    },
-    userId,
-  );
+  const documentBody = {
+    name: payload.name,
+    icon: originalDocument.icon,
+    position: payload.position ?? originalDocument.position,
+    parentId: payload.parentId,
+    spaceId: payload.spaceId,
+    documentType: originalDocument.documentType,
+    isContainer: originalDocument.isContainer,
+    clientId: null,
+  };
 
-  let newRevision: RevisionDetails | null = null;
-  if (originalDocument.currentRevisionId) {
-    const originalRevision = await getRevisionById(originalDocument.currentRevisionId);
-    if (originalRevision) {
-      newRevision = await createRevision(
-        {
-          documentId: newDocument.id,
-          revisionName: originalRevision.revisionName,
-          text: originalRevision.text,
-          checksum: originalRevision.checksum,
-          content: originalRevision.content,
-          makeCurrentRevision: true,
-        },
-        userId,
-      );
-    }
-  }
+  const originalRevision =
+    originalDocument.currentRevisionId &&
+    (await getRevisionById(originalDocument.currentRevisionId));
+
+  const newDocument = originalRevision
+    ? await createDocumentWithRevision({ ...documentBody, revision: originalRevision }, userId)
+    : await createDocument(documentBody, userId);
 
   await copyDocumentAttachments(documentId, newDocument.id);
 
@@ -82,7 +68,7 @@ export const copyDocument = async (
     ),
   );
 
-  return { ...newDocument, currentRevision: newRevision };
+  return newDocument;
 };
 
 export const exportDocumentTree = async (
@@ -160,32 +146,26 @@ export const importDocumentTree = async (
     throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
   }
 
-  const newDocument = await createDocument(
-    {
-      name: payload.document.name,
-      icon: payload.document.icon,
-      documentType: payload.document.type as 'space' | 'folder' | 'note',
-      isContainer: payload.document.is_container,
-      position: payload.position ?? payload.document.position,
-      spaceId: payload.spaceId ?? null,
-      parentId: payload.parentId ?? null,
-      clientId: null,
-    },
-    userId,
-  );
+  const documentBody = {
+    name: payload.document.name,
+    icon: payload.document.icon,
+    documentType: payload.document.type as 'space' | 'folder' | 'note',
+    isContainer: payload.document.is_container,
+    position: payload.position ?? payload.document.position,
+    spaceId: payload.spaceId ?? null,
+    parentId: payload.parentId ?? null,
+    clientId: null,
+  };
 
-  if (payload.document.revision) {
-    await createRevision(
-      {
-        documentId: newDocument.id,
-        text: payload.document.revision.text,
-        checksum: payload.document.revision.checksum,
-        content: payload.document.revision.content,
-        makeCurrentRevision: true,
-      },
-      userId,
-    );
-  }
+  const newDocument = payload.document.revision
+    ? await createDocumentWithRevision(
+        {
+          ...documentBody,
+          revision: payload.document.revision,
+        },
+        userId,
+      )
+    : await createDocument(documentBody, userId);
 
   await Promise.all(
     payload.document.attachments.map((attachment) =>

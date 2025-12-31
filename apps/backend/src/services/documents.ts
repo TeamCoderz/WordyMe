@@ -4,6 +4,7 @@ import { db } from '../lib/db.js';
 import { documentsTable } from '../models/documents.js';
 import {
   CreateDocumentInput,
+  CreateDocumentWithRevisionInput,
   DocumentFilters,
   DocumentIdentifier,
   UpdateDocumentInput,
@@ -16,6 +17,8 @@ import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
+import { revisionsTable } from '../models/revisions.js';
+import { saveRevisionContent } from './revision-contents.js';
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -151,13 +154,71 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
     })
     .returning();
 
+  const result = { ...document, isFavorite: false, lastViewedAt: null, currentRevision: null };
+
   if (payload.documentType === 'space') {
-    emitToUser(userId, 'space:created', document);
+    emitToUser(userId, 'space:created', result);
   } else if (payload.spaceId) {
-    emitToSpace(payload.spaceId, 'document:created', document);
+    emitToSpace(payload.spaceId, 'document:created', result);
   }
 
-  return document;
+  return result;
+};
+
+export const createDocumentWithRevision = async (
+  payload: CreateDocumentWithRevisionInput,
+  userId: string,
+) => {
+  const result = await db.transaction(async (tx) => {
+    let handle = slugify(payload.name);
+    if (await checkExistingDocumentHandle(handle)) {
+      handle = appendUniqueSuffix(handle);
+    }
+    const [document] = await db
+      .insert(documentsTable)
+      .values({
+        ...payload,
+        handle,
+        userId,
+      })
+      .returning();
+
+    const [revision] = await db
+      .insert(revisionsTable)
+      .values({
+        documentId: document.id,
+        text: payload.revision.text,
+        checksum: payload.revision.checksum,
+        revisionName: payload.revision.revisionName,
+        userId,
+      })
+      .returning();
+
+    await saveRevisionContent(payload.revision.content, revision.id);
+
+    await db
+      .update(documentsTable)
+      .set({
+        currentRevisionId: revision.id,
+      })
+      .where(eq(documentsTable.id, document.id));
+
+    return {
+      ...document,
+      currentRevisionId: revision.id,
+      currentRevision: revision,
+      isFavorite: false,
+      lastViewedAt: null,
+    };
+  });
+
+  if (payload.documentType === 'space') {
+    emitToUser(userId, 'space:created', result);
+  } else if (payload.spaceId) {
+    emitToSpace(payload.spaceId, 'document:created', result);
+  }
+
+  return result;
 };
 
 export const viewDocument = async (documentId: string, userId: string) => {
@@ -218,5 +279,17 @@ export const getUserDocumentCount = async (userId: string): Promise<number> => {
 };
 
 export const deleteDocument = async (documentId: string) => {
-  return await db.delete(documentsTable).where(eq(documentsTable.id, documentId));
+  const [document] = await db
+    .delete(documentsTable)
+    .where(eq(documentsTable.id, documentId))
+    .returning();
+
+  if (!document) return;
+
+  if (document.documentType === 'space') {
+    emitToUser(document.userId, 'space:deleted', document);
+  } else if (document.spaceId) {
+    emitToSpace(document.spaceId, 'document:deleted', document);
+  }
+  return document;
 };
