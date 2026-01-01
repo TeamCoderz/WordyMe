@@ -1,9 +1,9 @@
 import { betterAuth, BetterAuthOptions } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { bearer, openAPI, username } from 'better-auth/plugins';
+import { bearer, customSession, openAPI, username } from 'better-auth/plugins';
 import { db } from './db.js';
 import { env } from '../env.js';
-import { setEditorSettings } from '../services/editor-settings.js';
+import { getEditorSettings, setEditorSettings } from '../services/editor-settings.js';
 import { createDocument } from '../services/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 
@@ -68,4 +68,16 @@ export const options = {
   plugins: [bearer(), openAPI(), username()],
 } as const satisfies BetterAuthOptions;
 
-export const auth = betterAuth(options);
+export const auth = betterAuth({
+  ...options,
+  plugins: [
+    ...options.plugins,
+    customSession(async ({ user, session }) => {
+      return {
+        session,
+        user,
+        editorSettings: await getEditorSettings(user.id),
+      };
+    }, options),
+  ],
+});
