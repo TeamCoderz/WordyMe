@@ -1,4 +1,4 @@
-# Dependency Directories
+# Dependencies
 node_modules
 apps/*/node_modules
 packages/*/node_modules
@@ -19,7 +19,10 @@ build
 storage/*.db
 *.sqlite
 *.sqlite-journal
+apps/backend/*.db
+apps/backend/local.db
 backend/*.db
+apps/backend/storage/*.db
 
 # Version Control & Logs
 .git

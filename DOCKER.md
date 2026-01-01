@@ -69,7 +69,12 @@ The `docker-compose.yml` file defines two services:
   - `BETTER_AUTH_SECRET` (from `.env` or default)
 - **Volumes**:
   - `wordyme-storage` - Persists SQLite database and uploaded files
-- **Health Check**: Monitors backend availability every 30 seconds
+- **Restart Policy**: `unless-stopped`
+- **Health Check**:
+  - Tests HTTP endpoint every 30 seconds
+  - Timeout: 10 seconds
+  - Retries: 3
+  - Start period: 40 seconds
 
 ### Web Service
 
@@ -79,13 +84,14 @@ The `docker-compose.yml` file defines two services:
 - **Build Args**:
   - `VITE_BACKEND_URL` - Backend URL for the frontend (from `.env` or empty for same-origin)
 - **Depends On**: `backend` service
+- **Restart Policy**: `unless-stopped`
 - **Features**:
   - Serves static files via Nginx
   - Proxies `/api/` requests to the backend
-  - Proxies `/storage/` requests to the backend (for file uploads and downloads)
-  - Proxies `/socket.io/` WebSocket connections to the backend (for real-time updates)
+  - Proxies `/storage/` requests to the backend (for file uploads and downloads, max 10MB upload size)
+  - Proxies `/socket.io/` WebSocket connections to the backend (for real-time updates, 24h timeout)
   - Gzip compression enabled
-  - SPA routing support
+  - SPA routing support with fallback to `index.html`
 
 ## Common Commands
 
@@ -153,10 +159,12 @@ docker compose ps
 The application uses Docker volumes to persist data:
 
 - **Volume Name**: `wordyme-storage`
-- **Location**: Managed by Docker (typically in `/var/lib/docker/volumes/`)
+- **Driver**: `local` (default Docker volume driver)
+- **Location**: Managed by Docker (typically in `/var/lib/docker/volumes/wordyme-storage/_data/` on Linux)
 - **Contains**:
   - SQLite database (`local.db`)
   - Uploaded files and user content
+- **Mount Point**: `/app/storage` in the backend container
 
 ### Backup Database
 
@@ -197,8 +205,26 @@ Then edit `.env` with your values. The `.env.example` file contains all availabl
 - The `.env` file is excluded from Docker builds (via `.dockerignore`) for security - it won't be copied into the image
 - Docker Compose automatically reads `.env` files from the project root for variable substitution in `docker-compose.yml`
 - **Runtime variables** (backend) are passed to containers through the `environment` section in `docker-compose.yml`
-- **Build-time variables** (web app) are passed as build args and embedded into the JavaScript bundle during the Docker build
+- **Build-time variables** (web app and backend secrets) are passed as build args and embedded during the Docker build
 - See `.env.example` for a complete list of all environment variables with descriptions
+
+### What's Excluded from Docker Builds
+
+The `.dockerignore` file excludes the following from Docker builds:
+
+- **Dependencies**: `node_modules`, `.pnpm-store`
+- **Build outputs**: `dist`, `build`, `.turbo`
+- **Environment files**: `.env`, `.env.local`, `.env.*` (but keeps `.env.example`)
+- **Database files**: `*.db`, `*.sqlite`, `*.sqlite-journal` (prevents copying local dev databases)
+- **Version control**: `.git`
+- **Logs**: `npm-debug.log*`, `yarn-debug.log*`, `pnpm-debug.log*`
+- **System files**: `.DS_Store`
+
+This ensures:
+
+- Smaller build context and faster builds
+- No accidental inclusion of secrets or local databases
+- Clean production images
 
 ### Method 2: Directly in `docker-compose.yml`
 
@@ -321,11 +347,15 @@ If the build fails:
 
 The Docker setup is optimized for production:
 
-- Multi-stage builds for smaller images
-- Production dependencies only
-- Optimized Nginx configuration
-- Health checks enabled
-- Automatic restarts on failure
+- **Multi-stage builds** for smaller images (pruner → builder → backend/web)
+- **Turbo pruning** to include only necessary monorepo packages
+- **Production dependencies only** (via `pnpm --prod deploy`)
+- **Database migrations** run during build for faster startup
+- **Seed database** created during build
+- **Optimized Nginx configuration** with gzip and proper proxying
+- **Health checks enabled** for backend service
+- **Automatic restarts** on failure (`unless-stopped` restart policy)
+- **Non-root user** for backend security
 
 ### Development
 
@@ -348,28 +378,60 @@ This provides:
 
 ## Dockerfile Architecture
 
-The `Dockerfile` uses a multi-stage build process:
+The `Dockerfile` uses a multi-stage build process optimized for a monorepo:
 
-1. **Pruner Stage**: Prunes the monorepo to only include necessary files
-2. **Builder Stage**: Installs dependencies and builds the application
-   - Accepts build args for web app environment variables (e.g., `VITE_BACKEND_URL`)
-   - Builds both backend and frontend applications
-3. **Backend Stage**: Creates a minimal Node.js image for the backend
-4. **Web Stage**: Creates an Nginx image for serving the frontend
-   - Configures Nginx to proxy multiple endpoints:
-     - `/api/` - API requests
-     - `/storage/` - File uploads and downloads
-     - `/socket.io/` - WebSocket connections for real-time updates
-   - Enables Gzip compression
-   - Supports SPA routing with fallback to `index.html`
+### Stage 1: Pruner
+
+- **Base**: `node:20-alpine`
+- **Purpose**: Uses Turbo to prune the monorepo, keeping only files needed for `web` and `@repo/backend` packages
+- **Output**: Pruned workspace with only necessary dependencies
+
+### Stage 2: Builder
+
+- **Base**: `node:20-alpine` with `sqlite` and `libc6-compat`
+- **Package Manager**: pnpm 9.0.0 (via Corepack)
+- **Process**:
+  1. Copies pruned files from pruner stage
+  2. Installs dependencies with `pnpm install --frozen-lockfile`
+  3. Runs database migrations (`pnpm drizzle-kit migrate`)
+  4. Builds both backend and frontend applications
+  5. Creates production deployment for backend
+- **Build Args**:
+  - `VITE_BACKEND_URL` - Embedded into web app bundle
+- **Output**: Built applications and a seed database (`local.db`)
+
+### Stage 3: Backend Runner
+
+- **Base**: `node:20-alpine` with `sqlite`
+- **User**: Runs as non-root user (`nodejs`, UID 1001)
+- **Features**:
+  - Copies production backend from builder
+  - Copies seed database to `storage/local.db`
+  - Creates `storage` directory with proper permissions
+  - Exposes port 3000
+- **Command**: `node dist/index.js`
+
+### Stage 4: Web Runner
+
+- **Base**: `nginx:alpine`
+- **Features**:
+  - Serves static files from `/usr/share/nginx/html`
+  - Nginx configuration with:
+    - Gzip compression for text-based files
+    - SPA routing (fallback to `index.html`)
+    - Proxy `/api/` → `http://backend:3000`
+    - Proxy `/storage/` → `http://backend:3000` (10MB max upload)
+    - Proxy `/socket.io/` → `http://backend:3000` (WebSocket with 24h timeout)
+  - Exposes port 80
 
 This approach results in:
 
-- Smaller final images
-- Faster builds (with layer caching)
-- Better security (minimal base images)
-- Separation of concerns
-- Efficient proxying of all backend endpoints through Nginx
+- **Smaller final images**: Only production dependencies and built artifacts
+- **Faster builds**: Turbo pruning reduces build context, layer caching optimizes rebuilds
+- **Better security**: Minimal base images, non-root user for backend
+- **Separation of concerns**: Backend and frontend in separate containers
+- **Efficient proxying**: All backend endpoints accessible through Nginx
+- **Database initialization**: Seed database created during build for faster startup
 
 ## Advanced Usage
 
@@ -416,12 +478,27 @@ networks:
 
 ## Security Considerations
 
-1. **Change Default Secrets**: Always set `BETTER_AUTH_SECRET` in production
+1. **Change Default Secrets**: Always set `BETTER_AUTH_SECRET` in production using a secure random value:
+
+   ```bash
+   openssl rand -base64 32
+   ```
+
 2. **Environment Files**: `.env` files are excluded from Docker builds (via `.dockerignore`) to prevent secrets from being baked into images. Docker Compose still reads them for variable substitution, but they remain on the host system only.
-3. **Use HTTPS**: In production, use a reverse proxy (e.g., Traefik, Nginx) with SSL
-4. **Limit Port Exposure**: Only expose necessary ports
-5. **Regular Updates**: Keep Docker images and base images updated
-6. **Volume Permissions**: Ensure proper file permissions for volumes
+
+3. **Non-Root User**: The backend container runs as a non-root user (`nodejs`, UID 1001) for better security isolation.
+
+4. **Minimal Base Images**: Uses Alpine Linux base images for smaller attack surface.
+
+5. **Use HTTPS**: In production, use a reverse proxy (e.g., Traefik, Nginx) with SSL certificates.
+
+6. **Limit Port Exposure**: Only expose necessary ports (3000 for backend, 5173 for web).
+
+7. **Regular Updates**: Keep Docker images and base images updated with security patches.
+
+8. **Volume Permissions**: The `storage` directory is created with proper ownership for the `nodejs` user.
+
+9. **Database Isolation**: Local development databases are excluded from builds to prevent accidental data leaks.
 
 ## Support
 
