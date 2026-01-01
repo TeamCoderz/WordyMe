@@ -1,0 +1,47 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: backend
+    container_name: wordyme-backend
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_FILE_NAME=file:storage/local.db
+      - CLIENT_URL=http://localhost:5173
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
+    volumes:
+      # Persist the SQLite database and uploaded files
+      - wordyme-storage:/app/storage
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: web
+    container_name: wordyme-web
+    ports:
+      - '5173:80' # Maps localhost:5173 to container port 80 (Nginx)
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  wordyme-storage:
+    driver: local
