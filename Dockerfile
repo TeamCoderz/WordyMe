@@ -62,6 +62,7 @@ USER nodejs
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV DB_FILE_NAME=file:storage/local.db
+ENV CLIENT_URL=http://localhost:5173
 
 EXPOSE 3000
 

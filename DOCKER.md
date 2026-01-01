@@ -76,10 +76,14 @@ The `docker-compose.yml` file defines two services:
 - **Container Name**: `wordyme-web`
 - **Port**: `5173:80` (maps to Nginx port 80)
 - **Image**: Built from `Dockerfile` (target: `web`)
+- **Build Args**:
+  - `VITE_BACKEND_URL` - Backend URL for the frontend (from `.env` or empty for same-origin)
 - **Depends On**: `backend` service
 - **Features**:
   - Serves static files via Nginx
   - Proxies `/api/` requests to the backend
+  - Proxies `/storage/` requests to the backend (for file uploads and downloads)
+  - Proxies `/socket.io/` WebSocket connections to the backend (for real-time updates)
   - Gzip compression enabled
   - SPA routing support
 
@@ -192,7 +196,8 @@ Then edit `.env` with your values. The `.env.example` file contains all availabl
 
 - The `.env` file is excluded from Docker builds (via `.dockerignore`) for security - it won't be copied into the image
 - Docker Compose automatically reads `.env` files from the project root for variable substitution in `docker-compose.yml`
-- Variables are passed to containers through the `environment` section in `docker-compose.yml`
+- **Runtime variables** (backend) are passed to containers through the `environment` section in `docker-compose.yml`
+- **Build-time variables** (web app) are passed as build args and embedded into the JavaScript bundle during the Docker build
 - See `.env.example` for a complete list of all environment variables with descriptions
 
 ### Method 2: Directly in `docker-compose.yml`
@@ -207,6 +212,10 @@ environment:
 
 ### Available Environment Variables
 
+#### Backend (Runtime Variables)
+
+These variables are available at runtime and can be changed without rebuilding:
+
 | Variable             | Description                   | Default                                              |
 | -------------------- | ----------------------------- | ---------------------------------------------------- |
 | `BETTER_AUTH_SECRET` | Secret key for authentication | `change-me-in-production-use-openssl-rand-base64-32` |
@@ -214,6 +223,20 @@ environment:
 | `NODE_ENV`           | Node environment              | `production`                                         |
 | `PORT`               | Backend port                  | `3000`                                               |
 | `DB_FILE_NAME`       | Database file path            | `file:storage/local.db`                              |
+
+#### Web App (Build-time Variables)
+
+These variables are embedded into the JavaScript bundle at build time. To change them, you must rebuild the Docker image:
+
+| Variable           | Description                                                                 | Default |
+| ------------------ | --------------------------------------------------------------------------- | ------- |
+| `VITE_BACKEND_URL` | Backend URL for API calls. Leave empty for same-origin (recommended with Nginx proxy) | Empty   |
+
+> **Note**: Since `VITE_BACKEND_URL` is a build-time variable, if you change it in `.env`, you need to rebuild the web service:
+> ```bash
+> docker compose build web
+> docker compose up -d
+> ```
 
 ## Troubleshooting
 
@@ -328,8 +351,16 @@ The `Dockerfile` uses a multi-stage build process:
 
 1. **Pruner Stage**: Prunes the monorepo to only include necessary files
 2. **Builder Stage**: Installs dependencies and builds the application
+   - Accepts build args for web app environment variables (e.g., `VITE_BACKEND_URL`)
+   - Builds both backend and frontend applications
 3. **Backend Stage**: Creates a minimal Node.js image for the backend
 4. **Web Stage**: Creates an Nginx image for serving the frontend
+   - Configures Nginx to proxy multiple endpoints:
+     - `/api/` - API requests
+     - `/storage/` - File uploads and downloads
+     - `/socket.io/` - WebSocket connections for real-time updates
+   - Enables Gzip compression
+   - Supports SPA routing with fallback to `index.html`
 
 This approach results in:
 
@@ -337,6 +368,7 @@ This approach results in:
 - Faster builds (with layer caching)
 - Better security (minimal base images)
 - Separation of concerns
+- Efficient proxying of all backend endpoints through Nginx
 
 ## Advanced Usage
 
