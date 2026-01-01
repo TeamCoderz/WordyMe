@@ -1,4 +1,4 @@
-import { generatePositionKeyBetween } from '../utils/position';
+import { generatePositionKeyBetween } from '../utils/position.js';
 
 export interface TreeNodeData {
   id: string;
@@ -43,8 +43,10 @@ export class TreeNode<T extends TreeNodeData = TreeNodeData> {
     const index = this.children.findIndex((child) => child.id === id);
     if (index !== -1) {
       const [removed] = this.children.splice(index, 1);
-      removed.parent = null;
-      return removed;
+      if (removed) {
+        removed.parent = null;
+        return removed;
+      }
     }
     return null;
   }

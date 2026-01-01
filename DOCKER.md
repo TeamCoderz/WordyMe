@@ -228,11 +228,12 @@ These variables are available at runtime and can be changed without rebuilding:
 
 These variables are embedded into the JavaScript bundle at build time. To change them, you must rebuild the Docker image:
 
-| Variable           | Description                                                                 | Default |
-| ------------------ | --------------------------------------------------------------------------- | ------- |
+| Variable           | Description                                                                           | Default |
+| ------------------ | ------------------------------------------------------------------------------------- | ------- |
 | `VITE_BACKEND_URL` | Backend URL for API calls. Leave empty for same-origin (recommended with Nginx proxy) | Empty   |
 
 > **Note**: Since `VITE_BACKEND_URL` is a build-time variable, if you change it in `.env`, you need to rebuild the web service:
+>
 > ```bash
 > docker compose build web
 > docker compose up -d

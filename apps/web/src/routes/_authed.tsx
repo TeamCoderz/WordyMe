@@ -99,11 +99,11 @@ export const Route = createFileRoute('/_authed')({
             }
           : undefined,
         editor_settings: {
-          id: '',
-          createdAt: new Date(),
-          userId: sessionUser.id,
-          keepPreviousRevision: false,
-          autosave: false,
+          id: session.data?.editorSettings?.id ?? '',
+          createdAt: session.data?.editorSettings?.createdAt ?? new Date(),
+          userId: session.data?.editorSettings?.userId ?? '',
+          keepPreviousRevision: session.data?.editorSettings?.keepPreviousRevision ?? false,
+          autosave: session.data?.editorSettings?.autosave ?? false,
         },
         isGuest: false,
       },
@@ -192,11 +192,11 @@ function UserSync() {
             }
           : undefined,
         editor_settings: {
-          id: '',
-          createdAt: new Date(),
-          userId: session.user.id,
-          keepPreviousRevision: false,
-          autosave: false,
+          id: userSession?.editorSettings?.id ?? '',
+          createdAt: userSession?.editorSettings?.createdAt ?? new Date(),
+          userId: userSession?.user?.id ?? '',
+          keepPreviousRevision: userSession?.editorSettings?.keepPreviousRevision ?? false,
+          autosave: userSession?.editorSettings?.autosave ?? false,
         },
         isGuest: false,
       });

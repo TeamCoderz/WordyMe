@@ -31,8 +31,8 @@ ARG VITE_BACKEND_URL
 
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
 
-RUN  cd /app/apps/backend && pnpm drizzle-kit generate
-RUN cd /app/apps/backend && pnpm drizzle-kit push
+RUN  cd /app/apps/backend && pnpm drizzle-kit migrate
+
 
 RUN pnpm build --filter=web... --filter=@repo/backend...
 

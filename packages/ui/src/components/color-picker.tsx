@@ -213,7 +213,9 @@ function ColorPicker({
         ? bgColorHsv
         : borderColorHsv;
   const setCurrentColorHsv = (color: HsvaColor) => {
-    handleValueChange(activeTab, hsvaToHex(color));
+    if (activeTab) {
+      handleValueChange(activeTab, hsvaToHex(color));
+    }
   };
 
   const currentSwatches =

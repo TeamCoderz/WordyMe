@@ -157,7 +157,9 @@ export const DropzoneEmptyState = ({ children, className }: DropzoneEmptyStatePr
 
   const acceptedTypes = accept
     ? Object.keys(accept)
-        .flatMap((key) => (accept[key].length > 0 ? accept[key] : `any ${key.split('/')[0]}`))
+        .flatMap((key) =>
+          (accept[key]?.length ?? 0 > 0) ? accept[key] : `any ${key.split('/')[0]}`,
+        )
         .filter(Boolean)
         .join(', ')
     : '';
