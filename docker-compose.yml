@@ -35,6 +35,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: web
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
     container_name: wordyme-web
     ports:
       - '5173:80' # Maps localhost:5173 to container port 80 (Nginx)

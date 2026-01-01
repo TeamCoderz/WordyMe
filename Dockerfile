@@ -26,6 +26,11 @@ COPY --from=pruner /app/out/full/ .
 
 ENV DB_FILE_NAME=file:/app/apps/backend/local.db
 
+# Web app environment variables (build-time)
+ARG VITE_BACKEND_URL
+
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
+
 RUN  cd /app/apps/backend && pnpm drizzle-kit generate
 RUN cd /app/apps/backend && pnpm drizzle-kit push
 
@@ -88,6 +93,26 @@ RUN echo 'server { \
         proxy_pass http://backend:3000; \
         proxy_set_header Host $host; \
         proxy_set_header X-Real-IP $remote_addr; \
+    } \
+    \
+    # Proxy storage requests to the backend container \
+    location /storage/ { \
+        proxy_pass http://backend:3000; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+        client_max_body_size 10M; \
+    } \
+    \
+    # Proxy WebSocket connections for Socket.io \
+    location /socket.io/ { \
+        proxy_pass http://backend:3000; \
+        proxy_http_version 1.1; \
+        proxy_set_header Upgrade $http_upgrade; \
+        proxy_set_header Connection "upgrade"; \
+        proxy_set_header Host $host; \
+        proxy_set_header X-Real-IP $remote_addr; \
+        proxy_read_timeout 86400; \
+        proxy_send_timeout 86400; \
     } \
 }' > /etc/nginx/conf.d/default.conf
 
