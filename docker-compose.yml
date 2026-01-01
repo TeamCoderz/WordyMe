@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: backend
+      args:
+        - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
     container_name: wordyme-backend
     ports:
       - '3000:3000'
@@ -35,6 +37,8 @@ services:
       context: .
       dockerfile: Dockerfile
       target: web
+      args:
+        - VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
     container_name: wordyme-web
     ports:
       - '5173:80' # Maps localhost:5173 to container port 80 (Nginx)
