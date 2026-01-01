@@ -21,7 +21,7 @@ export const documentFiltersSchema = z.object({
   parentId: z.uuid().optional(),
   orderBy: z.enum(['name', 'createdAt', 'lastViewedAt']).optional(),
   order: z.enum(['asc', 'desc']).optional(),
-  isContainer: z.coerce.boolean().optional(),
+  isContainer: z.stringbool().optional(),
   days: z.coerce.number().min(1).optional(),
   limit: z.coerce.number().min(1).optional(),
 });
