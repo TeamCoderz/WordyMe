@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { toast } from 'sonner';
-import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
+import { useQueryClient, useSuspenseQuery, UseSuspenseQueryOptions } from '@tanstack/react-query';
 import { AssistiveTreeDescription, useTree } from '@headless-tree/react';
 import {
   dragAndDropFeature,
@@ -53,7 +53,12 @@ export const ManageDocumentsTableContent = React.forwardRef<
 ) {
   const queryClient = useQueryClient();
   const spaceID = useSelector((state: any) => state.activeSpace?.id);
-  const { data: documentsFromQuery } = useSuspenseQuery(getAllDocumentsQueryOptions(spaceID!));
+  const queryOptions = React.useMemo(() => {
+    const options = getAllDocumentsQueryOptions(spaceID!);
+    delete options.enabled;
+    return options as UseSuspenseQueryOptions<ListDocumentResult>;
+  }, [spaceID]);
+  const { data: documentsFromQuery } = useSuspenseQuery(queryOptions);
 
   // Use documents from props if provided, otherwise fall back to query
   const documents = documentsFromProps || documentsFromQuery;

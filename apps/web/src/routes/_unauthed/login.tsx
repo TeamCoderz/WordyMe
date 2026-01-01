@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -40,7 +40,6 @@ export const Route = createFileRoute('/_unauthed/login')({
 });
 
 function RouteComponent() {
-  const navigate = useNavigate();
   const loginMutation = useLoginMutation();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -53,15 +52,12 @@ function RouteComponent() {
   });
 
   const onSubmit = async (data: LoginFormValues) => {
-    const { data: sessionData, error } = await loginMutation.mutateAsync({
+    const { error } = await loginMutation.mutateAsync({
       email: data.email,
       password: data.password,
     });
     if (error) {
       return;
-    }
-    if (sessionData) {
-      navigate({ to: '/' });
     }
   };
 

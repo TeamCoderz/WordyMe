@@ -19,6 +19,7 @@ build
 storage/*.db
 *.sqlite
 *.sqlite-journal
+backend/*.db
 
 # Version Control & Logs
 .git

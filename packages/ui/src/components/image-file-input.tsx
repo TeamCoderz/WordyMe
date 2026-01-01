@@ -180,12 +180,12 @@ export const FileUploader = forwardRef<
 
         if (rejectedFiles.length > 0) {
           for (let i = 0; i < rejectedFiles.length; i++) {
-            if (rejectedFiles[i].errors[0]?.code === 'file-too-large') {
+            if (rejectedFiles[i]?.errors[0]?.code === 'file-too-large') {
               toast.error(`File is too large. Max size is ${maxSize / 1024 / 1024}MB`);
               break;
             }
-            if (rejectedFiles[i].errors[0]?.message) {
-              toast.error(rejectedFiles[i].errors[0].message);
+            if (rejectedFiles[i]?.errors[0]?.message) {
+              toast.error(rejectedFiles[i]?.errors[0]?.message);
               break;
             }
           }

@@ -68,7 +68,7 @@ export function ThemeCustomizer({
 
   const handleSliderChange = useCallback(
     (values: number[]) => {
-      const newScale = scaleIndexToValue(values[0]);
+      const newScale = scaleIndexToValue(values[0] ?? 2);
       handleScaleChange(newScale);
     },
     [handleScaleChange],

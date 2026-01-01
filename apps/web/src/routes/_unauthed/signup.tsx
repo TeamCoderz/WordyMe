@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -47,7 +47,6 @@ export const Route = createFileRoute('/_unauthed/signup')({
 });
 
 function RouteComponent() {
-  const navigate = useNavigate();
   const registerMutation = useRegisterMutation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -63,16 +62,13 @@ function RouteComponent() {
   });
 
   const onSubmit = async (data: SignupFormValues) => {
-    const { data: result, error } = await registerMutation.mutateAsync({
+    const { error } = await registerMutation.mutateAsync({
       name: data.name,
       email: data.email,
       password: data.password,
     });
     if (error) {
       return;
-    }
-    if (result) {
-      navigate({ to: '/login' });
     }
   };
 
