@@ -131,6 +131,27 @@ WordyMe/
 └── turbo.json           # Turborepo configuration
 ```
 
+## Running with Docker
+
+WordyMe can be run using Docker and Docker Compose for easy deployment. See [DOCKER.md](DOCKER.md) for complete Docker documentation, including:
+
+- Quick start guide
+- Common commands
+- Data persistence and backups
+- Troubleshooting
+- Production considerations
+
+**Quick Start:**
+
+```bash
+docker compose up -d
+```
+
+The application will be available at:
+
+- Web: http://localhost:5173
+- API: http://localhost:3000
+
 ## Development Workflow
 
 ### Prerequisites
