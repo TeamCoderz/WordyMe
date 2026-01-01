@@ -1,0 +1,28 @@
+# Dependency Directories
+node_modules
+apps/*/node_modules
+packages/*/node_modules
+.pnpm-store
+
+# Build Outputs
+dist
+build
+.turbo
+
+# Environment Variables & Secrets
+.env
+.env.local
+.env.*
+!.env.example
+
+# Database (CRITICAL: Do not copy local dev DB)
+storage/*.db
+*.sqlite
+*.sqlite-journal
+
+# Version Control & Logs
+.git
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
