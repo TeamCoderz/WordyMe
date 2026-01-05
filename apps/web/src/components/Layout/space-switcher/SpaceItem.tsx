@@ -24,7 +24,7 @@ import { SpaceItemProps, SpaceData } from './types';
 import { useActions, useSelector } from '@/store';
 import { toast } from 'sonner';
 import { IconPicker } from '@repo/ui/components/icon-picker';
-import { Input } from '@repo/ui/components/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@repo/ui/components/input-group';
 import { SidebarMenuButton } from '@repo/ui/components/sidebar';
 import {
   Collapsible,
@@ -59,7 +59,238 @@ import { useNavigate } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { addSpaceToCache, isSpaceCached } from '@/queries/caches/spaces';
-import { queryClient } from '@/App';
+import { dispatchEscapeKey } from '@/utils/keyboard';
+import { set } from 'zod';
+
+interface SpaceNameInputProps {
+  space: SpaceData;
+  mode: 'placeholder' | 'renaming';
+  onRemovePlaceholder?: () => void;
+  onRenameComplete?: () => void;
+  setIsManageDisabled?: (disabled: boolean) => void;
+  setCanCloseDropdown?: (canClose: boolean) => void;
+  placeholderClientId?: string | null;
+  isContainer?: boolean;
+}
+
+function SpaceNameInput({
+  space,
+  mode,
+  onRemovePlaceholder,
+  onRenameComplete,
+  setIsManageDisabled,
+  setCanCloseDropdown,
+  isContainer = false,
+}: SpaceNameInputProps) {
+  const queryClient = useQueryClient();
+  const [inputValue, setInputValue] = React.useState(space.name);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+
+  // Mutations
+  const { updateSpaceName, isPending: isRenamingPending } = useRenameSpaceMutation();
+  const createContainerSpaceMutation = useCreateContainerSpaceMutation({
+    from: 'sidebar',
+  });
+  const createSpaceMutation = useCreateSpaceMutation({ from: 'sidebar' });
+
+  const isPlaceholder = mode === 'placeholder';
+  const isRenaming = mode === 'renaming';
+
+  // Handle placeholder submission
+  const submitPlaceholder = React.useCallback(() => {
+    if (!isPlaceholder) return;
+    const name = inputValue.trim();
+    if (!name) {
+      onRemovePlaceholder?.();
+      return;
+    }
+
+    const mutation = isContainer ? createContainerSpaceMutation : createSpaceMutation;
+    mutation.mutate(
+      {
+        parentId: space.parentId ?? null,
+        spaceId: null,
+        name,
+        clientId: (space.clientId as string) ?? crypto.randomUUID(),
+      },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(
+            getAllSpacesQueryOptions.queryKey,
+            (old: ListSpaceResult | undefined) => {
+              onRemovePlaceholder?.();
+              if (old) {
+                if (!isSpaceCached(data?.clientId as string)) {
+                  addSpaceToCache(data?.clientId as string);
+                  return [...old, data];
+                }
+              }
+              return old;
+            },
+          );
+        },
+        onError: () => {
+          onRemovePlaceholder?.();
+        },
+      },
+    );
+  }, [
+    isPlaceholder,
+    inputValue,
+    isContainer,
+    space.parentId,
+    space.clientId,
+    createContainerSpaceMutation,
+    createSpaceMutation,
+    queryClient,
+    onRemovePlaceholder,
+  ]);
+
+  // Handle rename submission
+  const submitRename = React.useCallback(async () => {
+    if (!isRenaming || isRenamingPending) return;
+    if (inputValue.trim() && inputValue.trim() !== space.name) {
+      try {
+        await updateSpaceName(space.id, inputValue.trim());
+      } catch {
+        toast.error('Failed to rename space');
+        setInputValue(space.name); // Reset on error
+      }
+    }
+    onRenameComplete?.();
+  }, [
+    isRenaming,
+    isRenamingPending,
+    inputValue,
+    space.id,
+    space.name,
+    updateSpaceName,
+    onRenameComplete,
+  ]);
+
+  // Handle cancel
+  const handleCancel = React.useCallback(() => {
+    if (isPlaceholder) {
+      onRemovePlaceholder?.();
+    } else if (isRenaming) {
+      setInputValue(space.name);
+      onRenameComplete?.();
+    }
+  }, [isPlaceholder, isRenaming, space.name, onRemovePlaceholder, onRenameComplete]);
+
+  // Handle keyboard events
+  const handleKeyDown = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (isPlaceholder) {
+          submitPlaceholder();
+        } else {
+          submitRename();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        handleCancel();
+      }
+    },
+    [isPlaceholder, submitPlaceholder, submitRename, handleCancel],
+  );
+
+  // Handle blur
+  const handleBlur = React.useCallback(() => {
+    if (isPlaceholder) {
+      submitPlaceholder();
+    } else {
+      submitRename();
+    }
+  }, [isPlaceholder, submitPlaceholder, submitRename]);
+
+  // Focus management
+  React.useEffect(() => {
+    if (isRenaming || isPlaceholder) {
+      setIsManageDisabled?.(true);
+      setCanCloseDropdown?.(false);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }, 100);
+      return () => {
+        setIsManageDisabled?.(false);
+        setCanCloseDropdown?.(true);
+      };
+    }
+    return undefined;
+  }, [isRenaming, isPlaceholder, setIsManageDisabled, setCanCloseDropdown]);
+
+  // Handle click outside to save
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        (isRenaming || isPlaceholder) &&
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        const target = event.target as Element;
+        const isSpaceItem = target.closest('[data-space-id]');
+        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
+
+        if (
+          isNavigationElement ||
+          (isSpaceItem && isSpaceItem.getAttribute('data-space-id') !== space.id)
+        ) {
+          if (isPlaceholder) {
+            submitPlaceholder();
+          } else {
+            submitRename();
+          }
+        }
+      }
+    };
+
+    if (isRenaming || isPlaceholder) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+    return undefined;
+  }, [isRenaming, isPlaceholder, space.id, submitPlaceholder, submitRename]);
+
+  const isPending =
+    (isPlaceholder &&
+      (isContainer
+        ? createContainerSpaceMutation.isPending || createContainerSpaceMutation.isSuccess
+        : createSpaceMutation.isPending || createSpaceMutation.isSuccess)) ||
+    (isRenaming && isRenamingPending);
+
+  return (
+    <InputGroup className="w-full ring-0!" onClick={(e) => e.stopPropagation()}>
+      {isContainer && (
+        <InputGroupAddon align="inline-start">
+          <ChevronRight className="transition-transform size-4" />
+        </InputGroupAddon>
+      )}
+      <InputGroupAddon align="inline-start">
+        <DynamicIcon
+          name={space.icon || (isContainer ? 'folder-closed' : 'briefcase')}
+          className="size-4"
+        />
+      </InputGroupAddon>
+      <InputGroupInput
+        ref={inputRef}
+        value={inputValue}
+        onChange={(e) => setInputValue(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onKeyUp={(e) => e.stopPropagation()}
+        onKeyPress={(e) => e.stopPropagation()}
+        onBlur={handleBlur}
+        disabled={isPending}
+        className="h-6 text-sm"
+      />
+    </InputGroup>
+  );
+}
 
 export function SpaceItem({
   space,
@@ -158,10 +389,7 @@ function ContainerSpaceItem({
   const queryClient = useQueryClient();
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
-  const [renameName, setRenameName] = React.useState(space.name);
-  const renameInputRef = React.useRef<HTMLInputElement>(null);
   const isCreating = space.id === space.clientId;
-  const { updateSpaceName, isPending: isRenamingPending } = useRenameSpaceMutation();
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
   // Favorites not used in container context menu
   const { setSpacesClipboard } = useActions();
@@ -170,9 +398,6 @@ function ContainerSpaceItem({
     !!clipboardSpace &&
     (clipboardSpace.type === 'copy' || clipboardSpace.type === 'move') &&
     clipboardSpace.space.id !== space.id;
-  const createContainerSpaceMutation = useCreateContainerSpaceMutation({
-    from: 'sidebar',
-  });
   const duplicateSpaceMutation = useDuplicateSpaceMutation({
     space: space as any,
   });
@@ -182,8 +407,6 @@ function ContainerSpaceItem({
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
 
   const isPlaceholder = space.id === 'new-space';
-  const [placeholderName, setPlaceholderName] = React.useState(space.name);
-  const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const { mutate: exportSpace, isPending: isExportingSpace } = useExportSpaceMutation(
     space.id,
     space.name,
@@ -205,6 +428,18 @@ function ContainerSpaceItem({
   const removePlaceholderHandler = React.useCallback(() => {
     onRemovePlaceholder?.();
   }, [onRemovePlaceholder]);
+
+  // Reset placeholder when the actual space is created
+  React.useLayoutEffect(() => {
+    if (
+      space.id !== 'new-space' &&
+      space.clientId &&
+      placeholderClientId &&
+      space.clientId === placeholderClientId
+    ) {
+      removePlaceholderHandler();
+    }
+  }, [isPlaceholder, space.id, space.clientId, placeholderClientId, removePlaceholderHandler]);
 
   const isAncestor = useSelector((state) =>
     state.activeSpace?.path.map((p) => p.id).includes(space.id),
@@ -260,72 +495,7 @@ function ContainerSpaceItem({
 
   const handleRename = () => {
     setIsRenaming(true);
-    setRenameName(space.name);
   };
-
-  const handleRenameSubmit = async () => {
-    if (isRenamingPending) return;
-    if (renameName.trim() && renameName.trim() !== space.name) {
-      try {
-        await updateSpaceName(space.id, renameName.trim());
-      } catch {
-        toast.error('Failed to rename space');
-        setRenameName(space.name); // Reset on error
-      }
-    }
-    setIsRenaming(false);
-  };
-
-  const handleRenameCancel = () => {
-    setIsRenaming(false);
-    setRenameName(space.name);
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRenameSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleRenameCancel();
-    }
-  };
-
-  // Focus input when entering rename mode
-  React.useEffect(() => {
-    if (isRenaming) {
-      setIsManageDisabled?.(true);
-      setTimeout(() => {
-        if (renameInputRef.current) {
-          renameInputRef.current.focus();
-          renameInputRef.current.select();
-        }
-      }, 100);
-    } else {
-      setIsManageDisabled?.(false);
-    }
-  }, [isRenaming, setIsManageDisabled]);
-
-  // Control dropdown close behavior based on renaming or placeholder state
-  React.useEffect(() => {
-    if (isRenaming || isPlaceholder) {
-      setCanCloseDropdown?.(false);
-    } else {
-      setCanCloseDropdown?.(true);
-    }
-  }, [isRenaming, isPlaceholder, setCanCloseDropdown]);
-
-  // Reset placeholder when the actual space is created
-  React.useLayoutEffect(() => {
-    if (
-      space.id !== 'new-space' &&
-      space.clientId &&
-      placeholderClientId &&
-      space.clientId === placeholderClientId
-    ) {
-      removePlaceholderHandler();
-    }
-  }, [space.id, space.clientId, placeholderClientId, removePlaceholderHandler]);
 
   // Highlight and scroll newly created container spaces
   React.useEffect(() => {
@@ -342,82 +512,9 @@ function ContainerSpaceItem({
     };
   }, [space.id, isCreating]);
 
-  // Handle click outside to save - only when actually clicking, not just hovering
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isRenaming &&
-        renameInputRef.current &&
-        !renameInputRef.current.contains(event.target as Node)
-      ) {
-        // Only save if clicking on a space item or navigation element
-        const target = event.target as Element;
-        const isSpaceItem = target.closest('[data-space-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        // Only dismiss if clicking on a different space item (not the current one being renamed)
-        // or on navigation elements
-        if (
-          isNavigationElement ||
-          (isSpaceItem && isSpaceItem.getAttribute('data-space-id') !== space.id)
-        ) {
-          handleRenameSubmit();
-        }
-      }
-    };
-
-    if (isRenaming) {
-      // Use click instead of mousedown to avoid triggering on hover
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-    return undefined;
-  }, [isRenaming, renameName]);
-
   const beginInlineCreate = (type: 'space' | 'folder') => {
     if (!isExpanded) onToggleExpanded(space.id);
     insertPlaceholderHandler({ type });
-  };
-
-  const submitPlaceholder = () => {
-    const name = placeholderName.trim();
-    if (!isPlaceholder) return;
-    if (!name) {
-      removePlaceholderHandler();
-      return;
-    }
-    // This is a container placeholder: create folder under its parent
-
-    createContainerSpaceMutation.mutate(
-      {
-        parentId: space.parentId,
-        spaceId: null,
-        name,
-        clientId: (space.clientId as string) ?? crypto.randomUUID(),
-      },
-      {
-        onSuccess: (data) => {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-            removePlaceholderHandler();
-            if (old) {
-              if (!isSpaceCached(data?.clientId as string)) {
-                addSpaceToCache(data?.clientId as string);
-                return [...old, data];
-              }
-            }
-            return old;
-          });
-        },
-        onError: () => {
-          removePlaceholderHandler();
-        },
-      },
-    );
-  };
-
-  const cancelPlaceholder = () => {
-    if (!isPlaceholder) return;
-    removePlaceholderHandler();
   };
 
   const handleCreateChildSpace = () => beginInlineCreate('space');
@@ -467,16 +564,23 @@ function ContainerSpaceItem({
     event.target.value = '';
   };
 
-  // Focus the placeholder input when present
-  React.useEffect(() => {
-    if (isPlaceholder && placeholderInputRef.current) {
-      const el = placeholderInputRef.current;
-      setTimeout(() => {
-        el?.focus();
-        el?.select();
-      }, 100);
-    }
-  }, [isPlaceholder]);
+  // Return SpaceNameInput directly for placeholder or renaming mode
+  if (isPlaceholder || isRenaming) {
+    return (
+      <SidebarMenuItem>
+        <SpaceNameInput
+          space={space}
+          mode={isPlaceholder ? 'placeholder' : 'renaming'}
+          onRemovePlaceholder={removePlaceholderHandler}
+          onRenameComplete={isRenaming ? () => setIsRenaming(false) : undefined}
+          setIsManageDisabled={setIsManageDisabled}
+          setCanCloseDropdown={setCanCloseDropdown}
+          placeholderClientId={placeholderClientId}
+          isContainer={true}
+        />
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
@@ -516,62 +620,9 @@ function ContainerSpaceItem({
                 <div className="flex items-center justify-center p-1 hover:bg-accent/50 rounded-sm">
                   <DynamicIcon name={space.icon || 'folder-closed'} className="size-4" />
                 </div>
-                {isPlaceholder ? (
-                  <Input
-                    ref={placeholderInputRef}
-                    value={placeholderName}
-                    onChange={(e) => setPlaceholderName(e.target.value)}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        submitPlaceholder();
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cancelPlaceholder();
-                      }
-                    }}
-                    onKeyUp={(e) => e.stopPropagation()}
-                    onKeyPress={(e) => e.stopPropagation()}
-                    onBlur={submitPlaceholder}
-                    className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={
-                      createContainerSpaceMutation.isPending ||
-                      createContainerSpaceMutation.isSuccess
-                    }
-                  />
-                ) : isRenaming ? (
-                  <Input
-                    ref={(el) => {
-                      renameInputRef.current = el;
-                      if (el && !el.dataset.focused) {
-                        // Only focus and select once when input first appears
-                        el.dataset.focused = 'true';
-                        setTimeout(() => {
-                          el.focus();
-                          el.select();
-                        }, 100);
-                      }
-                    }}
-                    value={renameName}
-                    onChange={(e) => setRenameName(e.target.value)}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      handleRenameKeyDown(e);
-                    }}
-                    onKeyUp={(e) => e.stopPropagation()}
-                    onKeyPress={(e) => e.stopPropagation()}
-                    onBlur={handleRenameSubmit}
-                    disabled={isRenamingPending}
-                    className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none "
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <span title={space.name} className="truncate text-sm min-w-0 flex-1">
-                    {space.name}
-                  </span>
-                )}
+                <span title={space.name} className="truncate text-sm min-w-0 flex-1">
+                  {space.name}
+                </span>
               </SidebarMenuButton>
             </CollapsibleTrigger>
             {!isPlaceholder && !isCreating && (
@@ -631,16 +682,38 @@ function ContainerSpaceItem({
               </>
             ) : (
               <>
-                <ContextMenuItem className="group" onSelect={() => beginInlineCreate('space')}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      beginInlineCreate('space');
+                    }, 0);
+                  }}
+                >
                   <BriefcaseMedical className="mr-2 h-4 w-4" />
                   Create Child Space
                 </ContextMenuItem>
-                <ContextMenuItem className="group" onSelect={() => beginInlineCreate('folder')}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      beginInlineCreate('folder');
+                    }, 0);
+                  }}
+                >
                   <FolderClosed className="mr-2 h-4 w-4" />
                   Create Child Folder
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem className="group" onSelect={handleRename}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(handleRename, 0);
+                  }}
+                >
                   <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Rename
                 </ContextMenuItem>
@@ -829,13 +902,8 @@ function RegularSpaceItem({
   const navigate = useNavigate();
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
-  const [renameName, setRenameName] = React.useState(space.name);
-  const renameInputRef = React.useRef<HTMLInputElement>(null);
-
-  const { updateSpaceName, isPending: isRenamingPending } = useRenameSpaceMutation();
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
   const { addToFavorites, removeFromFavorites } = useSpaceFavoritesMutation();
-  const createSpaceMutation = useCreateSpaceMutation({ from: 'sidebar' });
   const isActive = useSelector((state) => state.activeSpace?.id === space.id);
   const isCreating = space.id === (space.clientId ?? '');
   const { setSpacesClipboard } = useActions();
@@ -849,8 +917,6 @@ function RegularSpaceItem({
     clipboardSpaceRegular?.type === 'move' && clipboardSpaceRegular.space.id === space.id;
 
   const isPlaceholder = space.id === 'new-space' && !space.isContainer;
-  const [placeholderName, setPlaceholderName] = React.useState(space.name);
-  const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const { mutate: exportSpace, isPending: isExportingSpace } = useExportSpaceMutation(
     space.id,
     space.name,
@@ -860,47 +926,17 @@ function RegularSpaceItem({
     onRemovePlaceholder?.();
   }, [onRemovePlaceholder]);
 
-  const submitPlaceholder = () => {
-    if (!isPlaceholder) return;
-    const name = placeholderName.trim();
-    if (!name) {
+  // Reset placeholder when the actual space is created
+  React.useLayoutEffect(() => {
+    if (
+      space.id !== 'new-space' &&
+      space.clientId &&
+      placeholderClientId &&
+      space.clientId === placeholderClientId
+    ) {
       removePlaceholderHandler();
-      return;
     }
-    createSpaceMutation.mutate(
-      {
-        parentId: space.parentId ?? null,
-        spaceId: null,
-        name,
-        clientId: (space.clientId as string) ?? crypto.randomUUID(),
-      },
-      {
-        onSuccess: (data) => {
-          queryClient.setQueryData(
-            getAllSpacesQueryOptions.queryKey,
-            (old: ListSpaceResult | undefined) => {
-              removePlaceholderHandler();
-              if (old) {
-                if (!isSpaceCached(data?.clientId as string)) {
-                  addSpaceToCache(data?.clientId as string);
-                  return [...old, data];
-                }
-              }
-              return old;
-            },
-          );
-        },
-        onError: () => {
-          removePlaceholderHandler();
-        },
-      },
-    );
-  };
-
-  const cancelPlaceholder = () => {
-    if (!isPlaceholder) return;
-    removePlaceholderHandler();
-  };
+  }, [isPlaceholder, space.id, space.clientId, placeholderClientId, removePlaceholderHandler]);
 
   const handleIconChange = async (newIcon: string) => {
     try {
@@ -964,116 +1000,26 @@ function RegularSpaceItem({
 
   const handleRename = () => {
     setIsRenaming(true);
-    setRenameName(space.name);
   };
-
-  const handleRenameSubmit = async () => {
-    if (renameName.trim() && renameName.trim() !== space.name) {
-      try {
-        await updateSpaceName(space.id, renameName.trim());
-      } catch {
-        toast.error('Failed to rename space');
-        setRenameName(space.name); // Reset on error
-      }
-    }
-    setIsRenaming(false);
-  };
-
-  const handleRenameCancel = () => {
-    setIsRenaming(false);
-    setRenameName(space.name);
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRenameSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleRenameCancel();
-    }
-  };
-
-  // Focus input when entering rename mode
-  React.useEffect(() => {
-    if (isRenaming) {
-      setIsManageDisabled?.(true);
-      setTimeout(() => {
-        if (renameInputRef.current) {
-          renameInputRef.current.focus();
-          renameInputRef.current.select();
-        }
-      }, 100);
-    } else {
-      setIsManageDisabled?.(false);
-    }
-  }, [isRenaming, setIsManageDisabled]);
-
-  // Control dropdown close behavior based on renaming or placeholder state
-  React.useEffect(() => {
-    if (isRenaming || isPlaceholder) {
-      setCanCloseDropdown?.(false);
-    } else {
-      setCanCloseDropdown?.(true);
-    }
-  }, [isRenaming, isPlaceholder, setCanCloseDropdown]);
-
-  // Focus placeholder input when present
-  React.useEffect(() => {
-    if (isPlaceholder && placeholderInputRef.current) {
-      const el = placeholderInputRef.current;
-      setTimeout(() => {
-        el?.focus();
-        el?.select();
-      }, 100);
-    }
-  }, [isPlaceholder]);
-
-  // Reset placeholder when the actual space is created
-  React.useLayoutEffect(() => {
-    if (
-      space.id !== 'new-space' &&
-      space.clientId &&
-      placeholderClientId &&
-      space.clientId === placeholderClientId
-    ) {
-      removePlaceholderHandler();
-    }
-  }, [space.id, space.clientId, placeholderClientId, removePlaceholderHandler]);
-
-  // Handle click outside to save - only when actually clicking, not just hovering
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isRenaming &&
-        renameInputRef.current &&
-        !renameInputRef.current.contains(event.target as Node)
-      ) {
-        // Only save if clicking on a space item or navigation element
-        const target = event.target as Element;
-        const isSpaceItem = target.closest('[data-space-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        // Only dismiss if clicking on a different space item (not the current one being renamed)
-        // or on navigation elements
-        if (
-          isNavigationElement ||
-          (isSpaceItem && isSpaceItem.getAttribute('data-space-id') !== space.id)
-        ) {
-          handleRenameSubmit();
-        }
-      }
-    };
-
-    if (isRenaming) {
-      // Use click instead of mousedown to avoid triggering on hover
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-    return undefined;
-  }, [isRenaming, renameName]);
 
   // Regular items no longer expose add-child from context menu
+
+  // Return SpaceNameInput directly for placeholder or renaming mode
+  if (isPlaceholder || isRenaming) {
+    return (
+      <SidebarMenuItem>
+        <SpaceNameInput
+          space={space}
+          mode={isPlaceholder ? 'placeholder' : 'renaming'}
+          onRemovePlaceholder={removePlaceholderHandler}
+          onRenameComplete={isRenaming ? () => setIsRenaming(false) : undefined}
+          setIsManageDisabled={setIsManageDisabled}
+          setCanCloseDropdown={setCanCloseDropdown}
+          isContainer={false}
+        />
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
@@ -1108,56 +1054,7 @@ function RegularSpaceItem({
                 className="size-4 group-hover:text-foreground"
               />
             </div>
-            {isPlaceholder ? (
-              <Input
-                ref={placeholderInputRef}
-                value={placeholderName}
-                onChange={(e) => setPlaceholderName(e.target.value)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    submitPlaceholder();
-                  } else if (e.key === 'Escape') {
-                    e.preventDefault();
-                    cancelPlaceholder();
-                  }
-                }}
-                onKeyUp={(e) => e.stopPropagation()}
-                onKeyPress={(e) => e.stopPropagation()}
-                onBlur={submitPlaceholder}
-                disabled={createSpaceMutation.isPending || createSpaceMutation.isSuccess}
-                className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : isRenaming ? (
-              <Input
-                ref={(el) => {
-                  renameInputRef.current = el;
-                  if (el && !el.dataset.focused) {
-                    el.dataset.focused = 'true';
-                    setTimeout(() => {
-                      el.focus();
-                      el.select();
-                    }, 100);
-                  }
-                }}
-                value={renameName}
-                onChange={(e) => setRenameName(e.target.value)}
-                onKeyDown={(e) => {
-                  e.stopPropagation();
-                  handleRenameKeyDown(e);
-                }}
-                onKeyUp={(e) => e.stopPropagation()}
-                onKeyPress={(e) => e.stopPropagation()}
-                onBlur={handleRenameSubmit}
-                disabled={isRenamingPending}
-                className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                onClick={(e) => e.stopPropagation()}
-              />
-            ) : (
-              <span className="truncate min-w-0 flex-1">{space.name}</span>
-            )}
+            <span className="truncate min-w-0 flex-1">{space.name}</span>
           </SidebarMenuButton>
         </ContextMenuTrigger>
         <ContextMenuContent
@@ -1183,8 +1080,13 @@ function RegularSpaceItem({
             </>
           ) : (
             <>
-              {' '}
-              <ContextMenuItem className="group" onSelect={handleRename}>
+              <ContextMenuItem
+                className="group"
+                onSelect={() => {
+                  dispatchEscapeKey();
+                  setTimeout(handleRename, 0);
+                }}
+              >
                 <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
                 Rename
               </ContextMenuItem>

@@ -59,6 +59,7 @@ import {
 } from '@/queries/spaces';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { toast } from 'sonner';
+import { dispatchEscapeKey } from '@/utils/keyboard';
 
 export function SpaceSwitcher() {
   const { isMobile } = useSidebar();
@@ -390,7 +391,7 @@ export function SpaceSwitcher() {
               <DropdownMenuSeparator />
 
               {/* Scrollable space items */}
-              <SidebarMenu className="bg-sidebar text-sidebar-foreground w-64 max-h-80 overflow-x-hidden overflow-y-auto scrollbar-thin space-y-0.5 min-h-0">
+              <SidebarMenu className="bg-sidebar text-sidebar-foreground w-64 max-h-80 overflow-x-hidden overflow-y-auto scrollbar-thin space-y-0.5 min-h-0 pb-1">
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, index) => (
                     <SidebarMenuSkeleton key={index} showIcon />
@@ -429,7 +430,10 @@ export function SpaceSwitcher() {
                     <ContextMenuItem
                       className="group"
                       onSelect={() => {
-                        insertPlaceholder({ parentId: null, type: 'space' });
+                        dispatchEscapeKey();
+                        setTimeout(() => {
+                          insertPlaceholder({ parentId: null, type: 'space' });
+                        }, 0);
                       }}
                     >
                       <BriefcaseMedical className="mr-2 h-4 w-4" />
@@ -438,7 +442,10 @@ export function SpaceSwitcher() {
                     <ContextMenuItem
                       className="group"
                       onSelect={() => {
-                        insertPlaceholder({ parentId: null, type: 'folder' });
+                        dispatchEscapeKey();
+                        setTimeout(() => {
+                          insertPlaceholder({ parentId: null, type: 'folder' });
+                        }, 0);
                       }}
                     >
                       <FolderClosed className="mr-2 h-4 w-4" />

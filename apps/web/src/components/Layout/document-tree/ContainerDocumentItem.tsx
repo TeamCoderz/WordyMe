@@ -20,7 +20,7 @@ import { cn } from '@repo/ui/lib/utils';
 import { DocumentData } from './types';
 import { useSelector, useActions } from '@/store';
 import { IconPicker } from '@repo/ui/components/icon-picker';
-import { Input } from '@repo/ui/components/input';
+import { DocumentNameInput } from './DocumentItem';
 import {
   Collapsible,
   CollapsibleContent,
@@ -33,21 +33,16 @@ import {
   useSidebar,
 } from '@repo/ui/components/sidebar';
 import { useNavigate } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import {
-  useRenameDocumentMutation,
   useUpdateDocumentIconMutation,
   useDeleteDocumentMutation,
   useDuplicateDocumentMutation,
   useCopyDocumentMutation,
   useMoveDocumentMutation,
-  useCreateContainerDocumentMutation,
   useExportDocumentMutation,
-  getAllDocumentsQueryOptions,
-  ListDocumentResult,
 } from '@/queries/documents';
 import { alert } from '../alert';
-import { cachedDocuments, isDocumentCached } from '@/queries/caches/documents';
+import { cachedDocuments } from '@/queries/caches/documents';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -55,6 +50,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
+import { dispatchEscapeKey } from '@/utils/keyboard';
 
 interface ContainerDocumentItemProps {
   document: DocumentData;
@@ -91,9 +87,7 @@ export function ContainerDocumentItem({
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = React.useState(false);
-  const [renameName, setRenameName] = React.useState(document.name);
-  const renameInputRef = React.useRef<HTMLInputElement>(null);
-  const queryClient = useQueryClient();
+
   // Note: container items are not links; click toggles expand/collapse
   const isCreating = document.id === document.clientId;
   const { isMobile: isMobileSidebar, setOpenMobile } = useSidebar();
@@ -101,19 +95,9 @@ export function ContainerDocumentItem({
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
   const highlightAsAncestorCollapsed = !!isAncestor && !isExpanded;
 
-  // Use the rename document mutation
-  const { updateDocumentName, isPending: isRenamingPending } = useRenameDocumentMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
-
   // Use the update document icon mutation
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({
     document: document as any, // Cast to match ListDocumentResult type
-  });
-
-  const createFolderMutation = useCreateContainerDocumentMutation({
-    document: document,
-    from: 'sidebar',
   });
 
   // Use the delete document mutation
@@ -141,8 +125,6 @@ export function ContainerDocumentItem({
   const { clearInlineCreate } = useActions();
 
   const isPlaceholder = document.id === 'new-doc';
-  const [placeholderName, setPlaceholderName] = React.useState(document.name);
-  const placeholderInputRef = React.useRef<HTMLInputElement>(null);
 
   const insertPlaceholderHandler = React.useCallback(
     (params: { type: 'note' | 'folder'; name?: string }) => {
@@ -162,49 +144,6 @@ export function ContainerDocumentItem({
   const beginInlineCreate = (type: 'note' | 'folder') => {
     if (!isExpanded) onToggleExpanded(document.id);
     insertPlaceholderHandler({ type });
-  };
-
-  const submitPlaceholder = () => {
-    const name = placeholderName.trim();
-    if (!isPlaceholder) return;
-    if (!name) {
-      removePlaceholderHandler();
-      return;
-    }
-    createFolderMutation.mutate(
-      {
-        parentId: document.parentId,
-        spaceId: document.spaceId,
-        name,
-        clientId: document.clientId as string,
-      },
-      {
-        onSuccess: (data) => {
-          queryClient.setQueryData(
-            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
-              removePlaceholderHandler();
-              if (old) {
-                // Check if document is already in cache to avoid duplicates
-
-                if (!isDocumentCached(data?.clientId as string) && data) {
-                  return [...old, data];
-                }
-              }
-              return old;
-            },
-          );
-        },
-        onError: () => {
-          removePlaceholderHandler();
-        },
-      },
-    );
-  };
-
-  const cancelPlaceholder = () => {
-    if (!isPlaceholder) return;
-    removePlaceholderHandler();
   };
 
   const handleCreateChildNote = () => beginInlineCreate('note');
@@ -327,51 +266,7 @@ export function ContainerDocumentItem({
 
   const handleRename = () => {
     setIsRenaming(true);
-    setRenameName(document.name);
   };
-
-  const handleRenameSubmit = () => {
-    if (isRenamingPending) return;
-    if (renameName.trim() && renameName.trim() !== document.name) {
-      try {
-        updateDocumentName(document.id, renameName.trim());
-        setIsRenaming(false);
-      } catch {
-        // Error handling is done in the mutation
-        setRenameName(document.name); // Reset on error
-        setIsRenaming(false);
-      }
-    } else {
-      setIsRenaming(false);
-    }
-  };
-
-  const handleRenameCancel = () => {
-    setIsRenaming(false);
-    setRenameName(document.name);
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRenameSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleRenameCancel();
-    }
-  };
-
-  // Focus input when entering rename mode
-  React.useEffect(() => {
-    if (isRenaming) {
-      setTimeout(() => {
-        if (renameInputRef.current) {
-          renameInputRef.current.focus();
-          renameInputRef.current.select();
-        }
-      }, 100);
-    }
-  }, [isRenaming]);
 
   // Scroll and highlight if this is a newly created container (client_id matches id)
   React.useEffect(() => {
@@ -392,38 +287,6 @@ export function ContainerDocumentItem({
     };
   }, [isCreating]);
 
-  // Handle click outside to save - only when actually clicking, not just hovering
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isRenaming &&
-        renameInputRef.current &&
-        !renameInputRef.current.contains(event.target as Node)
-      ) {
-        // Only save if clicking on a document item or navigation element
-        const target = event.target as Element;
-        const isDocumentItem = target.closest('[data-document-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        // Only dismiss if clicking on a different document item (not the current one being renamed)
-        // or on navigation elements
-        if (
-          isNavigationElement ||
-          (isDocumentItem && isDocumentItem.getAttribute('data-document-id') !== document.id)
-        ) {
-          handleRenameSubmit();
-        }
-      }
-    };
-
-    if (isRenaming) {
-      // Use click instead of mousedown to avoid triggering on hover
-      window.document.addEventListener('click', handleClickOutside);
-      return () => window.document.removeEventListener('click', handleClickOutside);
-    }
-    return undefined;
-  }, [isRenaming, renameName]);
-
   // Reset placeholder when the actual document is created
   React.useLayoutEffect(() => {
     if (
@@ -434,18 +297,13 @@ export function ContainerDocumentItem({
     ) {
       removePlaceholderHandler();
     }
-  }, [document.id, document.clientId, placeholderClientId, removePlaceholderHandler]);
-
-  // Focus the placeholder input when present
-  React.useEffect(() => {
-    if (isPlaceholder && placeholderInputRef.current) {
-      const el = placeholderInputRef.current;
-      setTimeout(() => {
-        el?.focus();
-        el?.select();
-      }, 100);
-    }
-  }, [isPlaceholder]);
+  }, [
+    isPlaceholder,
+    document.id,
+    document.clientId,
+    placeholderClientId,
+    removePlaceholderHandler,
+  ]);
 
   // Respond to global inlineCreate triggers for this parent
   React.useEffect(() => {
@@ -467,6 +325,31 @@ export function ContainerDocumentItem({
     insertPlaceholderHandler,
     clearInlineCreate,
   ]);
+
+  // Handle cancel
+  const handleCancel = React.useCallback(() => {
+    if (isPlaceholder) {
+      removePlaceholderHandler();
+    } else if (isRenaming) {
+      setIsRenaming(false);
+    }
+  }, [isPlaceholder, isRenaming, removePlaceholderHandler]);
+
+  // Return DocumentNameInput directly for placeholder or renaming mode
+  if (isPlaceholder || isRenaming) {
+    return (
+      <SidebarMenuItem>
+        <DocumentNameInput
+          document={document}
+          mode={isPlaceholder ? 'placeholder' : 'renaming'}
+          onRemovePlaceholder={removePlaceholderHandler}
+          onRenameComplete={isRenaming ? () => setIsRenaming(false) : undefined}
+          onCancel={handleCancel}
+          isContainer={true}
+        />
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
@@ -507,58 +390,9 @@ export function ContainerDocumentItem({
                 <div className="flex items-center justify-center p-0.5 rounded-sm">
                   <DynamicIcon name={document.icon || 'file'} className="size-4" />
                 </div>
-                {isPlaceholder ? (
-                  <Input
-                    ref={placeholderInputRef}
-                    value={placeholderName}
-                    onChange={(e) => setPlaceholderName(e.target.value)}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        submitPlaceholder();
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        cancelPlaceholder();
-                      }
-                    }}
-                    onKeyUp={(e) => e.stopPropagation()}
-                    onKeyPress={(e) => e.stopPropagation()}
-                    onBlur={submitPlaceholder}
-                    className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={createFolderMutation.isPending || createFolderMutation.isSuccess}
-                  />
-                ) : isRenaming ? (
-                  <Input
-                    ref={(el) => {
-                      renameInputRef.current = el;
-                      if (el && !el.dataset.focused) {
-                        el.dataset.focused = 'true';
-                        setTimeout(() => {
-                          el.focus();
-                          el.select();
-                        }, 100);
-                      }
-                    }}
-                    value={renameName}
-                    onChange={(e) => setRenameName(e.target.value)}
-                    onKeyDown={(e) => {
-                      e.stopPropagation();
-                      handleRenameKeyDown(e);
-                    }}
-                    onKeyUp={(e) => e.stopPropagation()}
-                    onKeyPress={(e) => e.stopPropagation()}
-                    onBlur={handleRenameSubmit}
-                    className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    onClick={(e) => e.stopPropagation()}
-                    disabled={isRenamingPending}
-                  />
-                ) : (
-                  <span title={document.name} className="truncate text-sm flex-1 min-w-0">
-                    {document.name}
-                  </span>
-                )}
+                <span title={document.name} className="truncate text-sm flex-1 min-w-0">
+                  {document.name}
+                </span>
               </SidebarMenuButton>
             </CollapsibleTrigger>
             {!isPlaceholder && !isCreating && (
@@ -616,16 +450,40 @@ export function ContainerDocumentItem({
               />
             ) : (
               <>
-                <ContextMenuItem className="group" onSelect={handleCreateChildNote}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      handleCreateChildNote();
+                    }, 0);
+                  }}
+                >
                   <FilePlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Add Child Note
                 </ContextMenuItem>
-                <ContextMenuItem className="group" onSelect={handleCreateChildFolder}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      handleCreateChildFolder();
+                    }, 0);
+                  }}
+                >
                   <FolderPlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Add Child Folder
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem className="group" onSelect={handleRename}>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      handleRename();
+                    }, 0);
+                  }}
+                >
                   <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Rename
                 </ContextMenuItem>

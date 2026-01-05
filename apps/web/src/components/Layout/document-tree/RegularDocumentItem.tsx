@@ -6,16 +6,12 @@ import { cn } from '@repo/ui/lib/utils';
 import { DocumentData } from './types';
 import { useSelector, useActions } from '@/store';
 import { IconPicker } from '@repo/ui/components/icon-picker';
-import { Input } from '@repo/ui/components/input';
+import { DocumentNameInput } from './DocumentItem';
 import {
-  useRenameDocumentMutation,
   useUpdateDocumentIconMutation,
   useDocumentFavoritesMutation,
   useDeleteDocumentMutation,
-  useCreateDocumentMutation,
   useExportDocumentMutation,
-  getAllDocumentsQueryOptions,
-  ListDocumentResult,
 } from '@/queries/documents';
 import { alert } from '../alert';
 import { Link, useNavigate } from '@tanstack/react-router';
@@ -32,9 +28,8 @@ import {
   FileOutput,
 } from '@repo/ui/components/icons';
 import { SidebarMenuButton, SidebarMenuItem, useSidebar } from '@repo/ui/components/sidebar';
-import { cachedDocuments, isDocumentCached } from '@/queries/caches/documents';
+import { cachedDocuments } from '@/queries/caches/documents';
 import { useDuplicateDocumentMutation } from '@/queries/documents';
-import { useQueryClient } from '@tanstack/react-query';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -42,6 +37,7 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
+import { dispatchEscapeKey } from '@/utils/keyboard';
 
 interface RegularDocumentItemProps {
   document: DocumentData;
@@ -68,11 +64,8 @@ export function RegularDocumentItem({
 }: RegularDocumentItemProps) {
   // Export document mutation
   const exportDocumentMutation = useExportDocumentMutation(document.id, document.name);
-  const queryClient = useQueryClient();
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
-  const [renameName, setRenameName] = React.useState(document.name);
-  const renameInputRef = React.useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const isActive = useSelector((state) => state.activeDocument?.id === document.id);
   const clipboardDocument = useSelector((state) => state.documentsClipboard);
@@ -82,11 +75,6 @@ export function RegularDocumentItem({
 
   const { isMobile: isMobileSidebar, setOpenMobile } = useSidebar();
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
-
-  // Use the rename document mutation
-  const { updateDocumentName, isPending: isRenamingPending } = useRenameDocumentMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
 
   // Use the update document icon mutation
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({
@@ -108,67 +96,13 @@ export function RegularDocumentItem({
     document: document as any,
   });
 
-  const createDocumentMutation = useCreateDocumentMutation({
-    document: document as any,
-    from: 'sidebar',
-  });
-
   // Clipboard state management
   const { setDocumentsClipboard } = useActions();
   const isPlaceholder = document.id === 'new-doc' && !document.isContainer;
-  const [placeholderName, setPlaceholderName] = React.useState(document.name);
-  const placeholderInputRef = React.useRef<HTMLInputElement>(null);
 
   const removePlaceholderHandler = React.useCallback(() => {
     onRemovePlaceholder?.();
   }, [onRemovePlaceholder]);
-
-  const submitPlaceholder = () => {
-    if (!isPlaceholder) return;
-    const name = placeholderName.trim();
-    if (!name) {
-      removePlaceholderHandler();
-      return;
-    }
-    createDocumentMutation.mutate(
-      {
-        parentId: document.parentId ?? null,
-        spaceId: document.spaceId,
-        name,
-        clientId: document.clientId as string,
-      },
-      {
-        onSuccess: (data) => {
-          queryClient.setQueryData(
-            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult): ListDocumentResult => {
-              removePlaceholderHandler();
-              if (old) {
-                // Check if document is already in cache to avoid duplicates
-                if (!isDocumentCached(data?.clientId as string) && data) {
-                  const { currentRevision, ...document } = data;
-                  let newDocument: ListDocumentResult[number] = {
-                    ...document,
-                    currentRevisionId: currentRevision?.id ?? null,
-                  };
-                  return [...old, newDocument];
-                }
-              }
-              return old;
-            },
-          );
-        },
-        onError: () => {
-          removePlaceholderHandler();
-        },
-      },
-    );
-  };
-
-  const cancelPlaceholder = () => {
-    if (!isPlaceholder) return;
-    removePlaceholderHandler();
-  };
 
   const handleDelete = () => {
     alert({
@@ -216,6 +150,23 @@ export function RegularDocumentItem({
       );
     }
   };
+  // Reset placeholder when the actual document is created
+  React.useLayoutEffect(() => {
+    if (
+      document.id !== 'new-doc' &&
+      document.clientId &&
+      placeholderClientId &&
+      document.clientId === placeholderClientId
+    ) {
+      removePlaceholderHandler();
+    }
+  }, [
+    isPlaceholder,
+    document.id,
+    document.clientId,
+    placeholderClientId,
+    removePlaceholderHandler,
+  ]);
 
   // Close picker when clicking elsewhere
   React.useEffect(() => {
@@ -247,73 +198,16 @@ export function RegularDocumentItem({
 
   const handleRename = () => {
     setIsRenaming(true);
-    setRenameName(document.name);
   };
 
-  const handleRenameSubmit = async () => {
-    if (renameName.trim() && renameName.trim() !== document.name) {
-      try {
-        await updateDocumentName(document.id, renameName.trim());
-        setIsRenaming(false);
-      } catch {
-        // Error handling is done in the mutation
-        setRenameName(document.name); // Reset on error
-        setIsRenaming(false);
-      }
-    } else {
+  // Handle cancel
+  const handleCancel = React.useCallback(() => {
+    if (isPlaceholder) {
+      removePlaceholderHandler();
+    } else if (isRenaming) {
       setIsRenaming(false);
     }
-  };
-
-  const handleRenameCancel = () => {
-    setIsRenaming(false);
-    setRenameName(document.name);
-  };
-
-  const handleRenameKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleRenameSubmit();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      handleRenameCancel();
-    }
-  };
-
-  // Reset placeholder when the actual document is created
-  React.useLayoutEffect(() => {
-    if (
-      document.id !== 'new-doc' &&
-      document.clientId &&
-      placeholderClientId &&
-      document.clientId === placeholderClientId
-    ) {
-      removePlaceholderHandler();
-    }
-  }, [document.id, document.clientId, placeholderClientId, removePlaceholderHandler]);
-
-  // Focus input when entering rename mode
-  React.useEffect(() => {
-    if (isRenaming) {
-      setTimeout(() => {
-        if (renameInputRef.current) {
-          renameInputRef.current.focus();
-          renameInputRef.current.select();
-        }
-      }, 100);
-    }
-  }, [isRenaming]);
-
-  // Focus placeholder input when present
-  React.useEffect(() => {
-    if (isPlaceholder && placeholderInputRef.current) {
-      const el = placeholderInputRef.current;
-      setTimeout(() => {
-        el?.focus();
-        el?.select();
-      }, 100);
-    }
-  }, [isPlaceholder]);
+  }, [isPlaceholder, isRenaming, removePlaceholderHandler]);
 
   // While this item is newly created (id === client_id), keep it highlighted; otherwise remove
   React.useEffect(() => {
@@ -335,37 +229,21 @@ export function RegularDocumentItem({
     };
   }, [isCreating]);
 
-  // Handle click outside to save - only when actually clicking, not just hovering
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isRenaming &&
-        renameInputRef.current &&
-        !renameInputRef.current.contains(event.target as Node)
-      ) {
-        // Only save if clicking on a document item or navigation element
-        const target = event.target as Element;
-        const isDocumentItem = target.closest('[data-document-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        // Only dismiss if clicking on a different document item (not the current one being renamed)
-        // or on navigation elements
-        if (
-          isNavigationElement ||
-          (isDocumentItem && isDocumentItem.getAttribute('data-document-id') !== document.id)
-        ) {
-          handleRenameSubmit();
-        }
-      }
-    };
-
-    if (isRenaming) {
-      // Use click instead of mousedown to avoid triggering on hover
-      window.document.addEventListener('click', handleClickOutside);
-      return () => window.document.removeEventListener('click', handleClickOutside);
-    }
-    return undefined;
-  }, [isRenaming, renameName]);
+  // Return DocumentNameInput directly for placeholder or renaming mode
+  if (isPlaceholder || isRenaming) {
+    return (
+      <SidebarMenuItem>
+        <DocumentNameInput
+          document={document}
+          mode={isPlaceholder ? 'placeholder' : 'renaming'}
+          onRemovePlaceholder={removePlaceholderHandler}
+          onRenameComplete={isRenaming ? () => setIsRenaming(false) : undefined}
+          onCancel={handleCancel}
+          isContainer={false}
+        />
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <SidebarMenuItem>
@@ -402,76 +280,7 @@ export function RegularDocumentItem({
                 <div className="flex items-center justify-center p-0.5 rounded-sm">
                   <DynamicIcon name={document.icon || 'file'} className="size-4" />
                 </div>
-                <span className="truncate flex-1 min-w-0">{document.name}</span>
-              </div>
-            ) : isPlaceholder ? (
-              <div
-                className="flex items-center gap-2 flex-1 min-w-0 basis-0 px-2 py-1.5"
-                data-document-id={document.id}
-              >
-                <div className="flex items-center justify-center p-0.5 hover:bg-accent/50 rounded-sm">
-                  <DynamicIcon name={document.icon || 'file'} className="size-4" />
-                </div>
-                <Input
-                  ref={placeholderInputRef}
-                  value={placeholderName}
-                  onChange={(e) => setPlaceholderName(e.target.value)}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      submitPlaceholder();
-                    } else if (e.key === 'Escape') {
-                      e.preventDefault();
-                      cancelPlaceholder();
-                    }
-                  }}
-                  onKeyUp={(e) => e.stopPropagation()}
-                  onKeyPress={(e) => e.stopPropagation()}
-                  onBlur={submitPlaceholder}
-                  disabled={createDocumentMutation.isPending || createDocumentMutation.isSuccess}
-                  className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                />
-              </div>
-            ) : isRenaming ? (
-              <div
-                className="flex items-center gap-2 flex-1 min-w-0 basis-0 px-2 py-1.5"
-                data-document-id={document.id}
-              >
-                <div className="flex items-center justify-center p-0.5 hover:bg-accent/50 rounded-sm">
-                  <DynamicIcon name={document.icon || 'file'} className="size-4" />
-                </div>
-                <Input
-                  ref={(el) => {
-                    renameInputRef.current = el;
-                    if (el && !el.dataset.focused) {
-                      el.dataset.focused = 'true';
-                      setTimeout(() => {
-                        el.focus();
-                        el.select();
-                      }, 100);
-                    }
-                  }}
-                  value={renameName}
-                  onChange={(e) => setRenameName(e.target.value)}
-                  onKeyDown={(e) => {
-                    e.stopPropagation();
-                    handleRenameKeyDown(e);
-                  }}
-                  onKeyUp={(e) => e.stopPropagation()}
-                  onKeyPress={(e) => e.stopPropagation()}
-                  onBlur={handleRenameSubmit}
-                  className="h-6 text-sm text-foreground px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  disabled={isRenamingPending}
-                />
+                <span className="flex-1 min-w-0">{document.name}</span>
               </div>
             ) : (
               <Link
@@ -540,7 +349,15 @@ export function RegularDocumentItem({
             </>
           ) : (
             <>
-              <ContextMenuItem className="group" onSelect={handleRename}>
+              <ContextMenuItem
+                className="group"
+                onSelect={() => {
+                  dispatchEscapeKey();
+                  setTimeout(() => {
+                    handleRename();
+                  }, 0);
+                }}
+              >
                 <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
                 Rename
               </ContextMenuItem>
