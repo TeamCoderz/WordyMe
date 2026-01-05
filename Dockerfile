@@ -14,6 +14,7 @@ RUN turbo prune --scope=web --scope=@repo/backend --docker
 FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat sqlite
 WORKDIR /app
+
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # Copy pruned files
@@ -31,7 +32,7 @@ ARG VITE_BACKEND_URL
 
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
 
-RUN  cd /app/apps/backend && pnpm drizzle-kit migrate
+RUN cd /app/apps/backend && node node_modules/drizzle-kit/bin.cjs migrate
 
 
 RUN pnpm build --filter=web... --filter=@repo/backend...
