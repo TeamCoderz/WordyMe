@@ -97,49 +97,75 @@ export function DocumentTree() {
     }
   }, [inlineCreate, insertPlaceholder, clearInlineCreate]);
 
-  const renderDocumentItem = ({
-    data: document,
-    children,
-  }: Pick<{ data: any; children: any[] }, 'data' | 'children'>) => {
-    const activeId = activeDocument?.id;
+  // Memoize stable callbacks to prevent unnecessary rerenders
+  const handleCloseContextMenu = React.useCallback(() => {
+    setOpenMenuDocumentId(null);
+  }, [setOpenMenuDocumentId]);
 
-    const mapNode = (node: any, depth: number): any => {
-      const mappedChildren = node.children.map((child: any) => mapNode(child, depth + 1));
-      const hasActiveInChildren = mappedChildren.some((c: any) => c.isActive || c.isAncestor);
-      const isNodeActive = node.data.id === activeId;
-      const isNodeAncestor = !isNodeActive && hasActiveInChildren;
-      return {
-        document: node.data,
-        children: mappedChildren,
-        isActive: isNodeActive,
-        isExpanded: isExpanded(node.data.id),
-        isAncestor: isNodeAncestor,
-        depth,
-        openMenuDocumentId,
-        onSelectDocument: handleSelectDocument,
-        onToggleExpanded: toggleExpanded,
-        onOpenContextMenu: setOpenMenuDocumentId,
-        onInsertPlaceholder: insertPlaceholder,
-        onRemovePlaceholder: removePlaceholder,
-        placeholderClientId: placeholder?.clientId as string | undefined,
+  const renderDocumentItem = React.useCallback(
+    ({ data: document, children }: Pick<{ data: any; children: any[] }, 'data' | 'children'>) => {
+      const activeId = activeDocument?.id;
+
+      const mapNode = (node: any, depth: number): any => {
+        const mappedChildren = node.children.map((child: any) => mapNode(child, depth + 1));
+        const hasActiveInChildren = mappedChildren.some((c: any) => c.isActive || c.isAncestor);
+        const isNodeActive = node.data.id === activeId;
+        const isNodeAncestor = !isNodeActive && hasActiveInChildren;
+        return {
+          document: node.data,
+          children: mappedChildren,
+          isActive: isNodeActive,
+          isExpanded: isExpanded(node.data.id),
+          isAncestor: isNodeAncestor,
+          depth,
+          openMenuDocumentId,
+          onSelectDocument: handleSelectDocument,
+          onToggleExpanded: toggleExpanded,
+          onOpenContextMenu: setOpenMenuDocumentId,
+          onInsertPlaceholder: insertPlaceholder,
+          onRemovePlaceholder: removePlaceholder,
+          placeholderClientId: placeholder?.clientId as string | undefined,
+        };
       };
-    };
 
-    return (
-      <DocumentItem
-        key={(document as any).clientId ?? document.id}
-        {...mapNode({ data: document, children }, 0)}
-        openMenuDocumentId={openMenuDocumentId}
-        onSelectDocument={handleSelectDocument}
-        onToggleExpanded={toggleExpanded}
-        onOpenContextMenu={setOpenMenuDocumentId}
-        onCloseContextMenu={() => setOpenMenuDocumentId(null)}
-        onInsertPlaceholder={insertPlaceholder}
-        onRemovePlaceholder={removePlaceholder}
-        placeholderClientId={placeholder?.clientId as string | undefined}
-      />
-    );
-  };
+      return (
+        <DocumentItem
+          {...mapNode({ data: document, children }, 0)}
+          openMenuDocumentId={openMenuDocumentId}
+          onSelectDocument={handleSelectDocument}
+          onToggleExpanded={toggleExpanded}
+          onOpenContextMenu={setOpenMenuDocumentId}
+          onCloseContextMenu={handleCloseContextMenu}
+          onInsertPlaceholder={insertPlaceholder}
+          onRemovePlaceholder={removePlaceholder}
+          placeholderClientId={placeholder?.clientId as string | undefined}
+        />
+      );
+    },
+    [
+      activeDocument,
+      isExpanded,
+      openMenuDocumentId,
+      handleSelectDocument,
+      toggleExpanded,
+      setOpenMenuDocumentId,
+      insertPlaceholder,
+      removePlaceholder,
+      placeholder?.clientId,
+      handleCloseContextMenu,
+    ],
+  );
+
+  // Memoize the rendered document items to prevent unnecessary rerenders
+  const renderedDocumentItems = React.useMemo(
+    () =>
+      rootDocuments.map((document: any) => (
+        <React.Fragment key={document.data?.clientId ?? document.data?.id}>
+          {renderDocumentItem(document)}
+        </React.Fragment>
+      )),
+    [rootDocuments, renderDocumentItem],
+  );
 
   return (
     <>
@@ -159,7 +185,7 @@ export function DocumentTree() {
             </p>
           </div>
         ) : (
-          rootDocuments.map((document: any) => renderDocumentItem(document))
+          <>{renderedDocumentItems}</>
         )}
       </SidebarMenu>
       {!isLoading && spaceId && <CreateDocumentSection />}

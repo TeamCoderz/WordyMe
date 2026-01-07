@@ -200,57 +200,93 @@ export function SpaceSwitcher() {
     });
   };
 
-  const renderSpaceItem = ({
-    data: space,
-    children,
-  }: Pick<TreeNode<SpaceData>, 'data' | 'children'>) => {
-    const ancestorIds = activeSpace?.path?.map((p) => p.id) ?? [];
-    const allParentsExpandedForActive = ancestorIds.every((id) => isExpanded(id));
+  // Memoize stable callbacks to prevent unnecessary rerenders
+  const handleCloseContextMenu = React.useCallback(() => {
+    setOpenMenuSpaceId(null);
+  }, [setOpenMenuSpaceId]);
 
-    const mapChildToSpaceItemProps = (
-      child: TreeNode<SpaceData>,
-      depth: number = 0,
-    ): SpaceItemProps => ({
-      space: child.data,
-      children: child.children.map((grandChild) => mapChildToSpaceItemProps(grandChild, depth + 1)),
-      isActive: child.data.id === activeSpace?.id,
-      isExpanded: isExpanded(child.data.id),
-      isAncestor: ancestorIds.includes(child.data.id),
-      depth,
-      allParentsExpandedForActive,
+  const handleCloseSwitcher = React.useCallback(() => {
+    setIsSwitcherOpen(false);
+  }, []);
+
+  const renderSpaceItem = React.useCallback(
+    ({ data: space, children }: Pick<TreeNode<SpaceData>, 'data' | 'children'>) => {
+      const ancestorIds = activeSpace?.path?.map((p) => p.id) ?? [];
+      const allParentsExpandedForActive = ancestorIds.every((id) => isExpanded(id));
+
+      const mapChildToSpaceItemProps = (
+        child: TreeNode<SpaceData>,
+        depth: number = 0,
+      ): SpaceItemProps => ({
+        space: child.data,
+        children: child.children.map((grandChild) =>
+          mapChildToSpaceItemProps(grandChild, depth + 1),
+        ),
+        isActive: child.data.id === activeSpace?.id,
+        isExpanded: isExpanded(child.data.id),
+        isAncestor: ancestorIds.includes(child.data.id),
+        depth,
+        allParentsExpandedForActive,
+        openMenuSpaceId,
+        onSelectSpace: handleSelectSpace,
+        onToggleExpanded: toggleExpanded,
+        onOpenContextMenu: setOpenMenuSpaceId,
+        setIsManageDisabled,
+        setCanCloseDropdown,
+        onInsertPlaceholder: insertPlaceholder,
+        onRemovePlaceholder: removePlaceholder,
+        placeholderClientId: placeholder?.clientId as string | undefined,
+      });
+
+      return (
+        <SpaceItem
+          space={space}
+          children={children.map((child) => mapChildToSpaceItemProps(child, 0))}
+          isExpanded={isExpanded(space.id)}
+          depth={0}
+          allParentsExpandedForActive={allParentsExpandedForActive}
+          openMenuSpaceId={openMenuSpaceId}
+          onSelectSpace={handleSelectSpace}
+          onToggleExpanded={toggleExpanded}
+          onOpenContextMenu={setOpenMenuSpaceId}
+          onCloseContextMenu={handleCloseContextMenu}
+          onCloseSwitcher={handleCloseSwitcher}
+          setIsManageDisabled={setIsManageDisabled}
+          setCanCloseDropdown={setCanCloseDropdown}
+          onInsertPlaceholder={insertPlaceholder}
+          onRemovePlaceholder={removePlaceholder}
+          placeholderClientId={placeholder?.clientId as string | undefined}
+        />
+      );
+    },
+    [
+      activeSpace,
+      isExpanded,
       openMenuSpaceId,
-      onSelectSpace: handleSelectSpace,
-      onToggleExpanded: toggleExpanded,
-      onOpenContextMenu: setOpenMenuSpaceId,
+      handleSelectSpace,
+      toggleExpanded,
+      setOpenMenuSpaceId,
       setIsManageDisabled,
       setCanCloseDropdown,
-      onInsertPlaceholder: insertPlaceholder,
-      onRemovePlaceholder: removePlaceholder,
-      placeholderClientId: placeholder?.clientId as string | undefined,
-    });
+      insertPlaceholder,
+      removePlaceholder,
+      placeholder?.clientId,
+      handleCloseContextMenu,
+      handleCloseSwitcher,
+    ],
+  );
 
-    return (
-      <SpaceItem
-        key={space.clientId ?? space.id}
-        space={space}
-        children={children.map((child) => mapChildToSpaceItemProps(child, 0))}
-        isExpanded={isExpanded(space.id)}
-        depth={0}
-        allParentsExpandedForActive={allParentsExpandedForActive}
-        openMenuSpaceId={openMenuSpaceId}
-        onSelectSpace={handleSelectSpace}
-        onToggleExpanded={toggleExpanded}
-        onOpenContextMenu={setOpenMenuSpaceId}
-        onCloseContextMenu={() => setOpenMenuSpaceId(null)}
-        onCloseSwitcher={() => setIsSwitcherOpen(false)}
-        setIsManageDisabled={setIsManageDisabled}
-        setCanCloseDropdown={setCanCloseDropdown}
-        onInsertPlaceholder={insertPlaceholder}
-        onRemovePlaceholder={removePlaceholder}
-        placeholderClientId={placeholder?.clientId as string | undefined}
-      />
-    );
-  };
+  // Memoize the rendered space items to prevent unnecessary rerenders
+  // Only recalculate when rootSpaces structure changes or placeholder clientId changes
+  const renderedSpaceItems = React.useMemo(
+    () =>
+      rootSpaces.map((space: TreeNode<SpaceData>) => (
+        <React.Fragment key={space.data.clientId ?? space.data.id}>
+          {renderSpaceItem(space)}
+        </React.Fragment>
+      )),
+    [rootSpaces, renderSpaceItem],
+  );
 
   return (
     <SidebarMenu>
@@ -397,7 +433,7 @@ export function SpaceSwitcher() {
                     <SidebarMenuSkeleton key={index} showIcon />
                   ))
                 ) : (
-                  <>{rootSpaces.map((space: TreeNode<SpaceData>) => renderSpaceItem(space))}</>
+                  <>{renderedSpaceItems}</>
                 )}
               </SidebarMenu>
 

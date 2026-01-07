@@ -60,7 +60,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { addSpaceToCache, isSpaceCached } from '@/queries/caches/spaces';
 import { dispatchEscapeKey } from '@/utils/keyboard';
-import { set } from 'zod';
 
 interface SpaceNameInputProps {
   space: SpaceData;
@@ -292,7 +291,7 @@ function SpaceNameInput({
   );
 }
 
-export function SpaceItem({
+function SpaceItemComponent({
   space,
   children,
   isExpanded,
@@ -352,6 +351,50 @@ export function SpaceItem({
     />
   );
 }
+
+// Memoize SpaceItem with custom comparison to prevent unnecessary rerenders
+// Only rerender if this specific item's props changed, ignoring placeholderClientId
+// unless this item is the placeholder
+export const SpaceItem = React.memo(SpaceItemComponent, (prevProps, nextProps) => {
+  // If space ID changed, definitely rerender
+  if (prevProps.space.id !== nextProps.space.id) return false;
+
+  // Check if this item is the placeholder
+  const isPlaceholder = prevProps.space.id === 'new-space';
+  const isNextPlaceholder = nextProps.space.id === 'new-space';
+
+  // If placeholderClientId changed and this is the placeholder, rerender
+  if (isPlaceholder || isNextPlaceholder) {
+    if (prevProps.placeholderClientId !== nextProps.placeholderClientId) return false;
+  }
+
+  // Check if space data changed (shallow comparison of relevant fields)
+  if (
+    prevProps.space.name !== nextProps.space.name ||
+    prevProps.space.icon !== nextProps.space.icon ||
+    prevProps.space.isContainer !== nextProps.space.isContainer ||
+    prevProps.space.clientId !== nextProps.space.clientId
+  ) {
+    return false;
+  }
+
+  // Check if expansion state changed
+  if (prevProps.isExpanded !== nextProps.isExpanded) return false;
+
+  // Check if menu state changed for this item
+  if (
+    (prevProps.openMenuSpaceId === prevProps.space.id) !==
+    (nextProps.openMenuSpaceId === nextProps.space.id)
+  ) {
+    return false;
+  }
+
+  // Check if children array reference changed (length or structure)
+  if (prevProps.children?.length !== nextProps.children?.length) return false;
+
+  // If all checks pass, don't rerender
+  return true;
+});
 
 function ContainerSpaceItem({
   space,
