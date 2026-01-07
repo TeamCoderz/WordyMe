@@ -84,7 +84,7 @@ export interface ManageDocumentsTableRowProps {
   placeholderClientId?: string;
 }
 
-export function ManageDocumentsTableRow({
+function ManageDocumentsTableRowComponent({
   item,
   isLast,
   draggingId,
@@ -97,6 +97,7 @@ export function ManageDocumentsTableRow({
   placeholderClientId,
 }: ManageDocumentsTableRowProps) {
   const itemData = item.getItemData() as DocumentTreeNode | null;
+
   const doc = itemData?.data as
     | (ListDocumentResultItem & {
         clientId?: string | null;
@@ -1073,3 +1074,57 @@ export function ManageDocumentsTableRow({
     </ContextMenu>
   );
 }
+
+// Memoize ManageDocumentsTableRow with custom comparison to prevent unnecessary rerenders
+// Only rerender if this specific item's props changed, ignoring placeholderClientId
+// unless this item is the placeholder
+export const ManageDocumentsTableRow = React.memo(
+  ManageDocumentsTableRowComponent,
+  (prevProps, nextProps) => {
+    // Get document IDs for comparison
+    const prevItemData = prevProps.item.getItemData() as DocumentTreeNode | null;
+    const nextItemData = nextProps.item.getItemData() as DocumentTreeNode | null;
+    const prevDoc = prevItemData?.data;
+    const nextDoc = nextItemData?.data;
+
+    // If document ID changed, definitely rerender
+    if (prevDoc?.id !== nextDoc?.id) return false;
+
+    // Check if this item is the placeholder
+    const isPlaceholder = prevDoc?.id === 'new-doc';
+    const isNextPlaceholder = nextDoc?.id === 'new-doc';
+
+    // If placeholderClientId changed and this is the placeholder, rerender
+    if (isPlaceholder || isNextPlaceholder) {
+      if (prevProps.placeholderClientId !== nextProps.placeholderClientId) return false;
+    }
+
+    // Check if document data changed (shallow comparison of relevant fields)
+    if (
+      prevDoc?.name !== nextDoc?.name ||
+      prevDoc?.icon !== nextDoc?.icon ||
+      prevDoc?.isContainer !== nextDoc?.isContainer ||
+      prevDoc?.clientId !== nextDoc?.clientId
+    ) {
+      return false;
+    }
+
+    // Check if dragging state changed for this item
+    const prevIsDragging = prevProps.draggingId === prevProps.item.getId();
+    const nextIsDragging = nextProps.draggingId === nextProps.item.getId();
+    if (prevIsDragging !== nextIsDragging) return false;
+
+    // Check if isLast changed
+    if (prevProps.isLast !== nextProps.isLast) return false;
+
+    // Check if item expansion state changed
+    const prevIsExpanded =
+      typeof prevProps.item.isExpanded === 'function' ? prevProps.item.isExpanded() : false;
+    const nextIsExpanded =
+      typeof nextProps.item.isExpanded === 'function' ? nextProps.item.isExpanded() : false;
+    if (prevIsExpanded !== nextIsExpanded) return false;
+
+    // If all checks pass, don't rerender
+    return true;
+  },
+);

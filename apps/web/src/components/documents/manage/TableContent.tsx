@@ -309,6 +309,60 @@ export const ManageDocumentsTableContent = React.forwardRef<
 
   const itemsToRender = tree.getItems().filter((item) => item.getId() !== 'root');
 
+  // Memoize the rendered rows to prevent unnecessary rerenders
+  // Create a stable key based on item IDs to track changes
+  const itemsToRenderIds = React.useMemo(
+    () => itemsToRender.map((item) => item.getId()).join(','),
+    [itemsToRender],
+  );
+
+  const renderedRows = React.useMemo(
+    () =>
+      itemsToRender.map((item, index) => {
+        try {
+          const itemData = item.getItemData();
+          if (!itemData) {
+            return null;
+          }
+          const nodeId = item.getId();
+          const fragmentKey = itemData.data?.clientId ?? item.getId();
+
+          return (
+            <React.Fragment key={fragmentKey}>
+              <ManageDocumentsTableRow
+                item={item}
+                index={index}
+                isLast={index === itemsToRender.length - 1}
+                draggingId={draggingId}
+                setDraggingId={setDraggingId}
+                tree={tree}
+                getDescendantIds={getDescendantIds}
+                spaceID={spaceID}
+                onBeginInlineCreate={(type) => insertPlaceholderHandler({ parentId: nodeId, type })}
+                onRemovePlaceholder={onRemovePlaceholder}
+                placeholderClientId={placeholderClientId}
+              />
+            </React.Fragment>
+          );
+        } catch (error) {
+          return null;
+        }
+      }),
+    [
+      itemsToRender,
+      itemsToRenderIds,
+      itemsToRender.length,
+      draggingId,
+      setDraggingId,
+      tree,
+      getDescendantIds,
+      spaceID,
+      insertPlaceholderHandler,
+      onRemovePlaceholder,
+      placeholderClientId,
+    ],
+  );
+
   return (
     <div className="w-full min-w-fit select-none">
       <div className="grid grid-cols-[minmax(16rem,2fr)_minmax(8rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] gap-4 border-b border-dashed data-[state=selected]:bg-muted transition-colors hover:bg-accent/50">
@@ -334,38 +388,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
       ) : (
         <Tree indent={16} itemID="clientId" tree={tree} onDragEnd={() => setDraggingId(null)}>
           <AssistiveTreeDescription tree={tree} />
-          {itemsToRender.map((item, index) => {
-            try {
-              const itemData = item.getItemData();
-              if (!itemData) {
-                return null;
-              }
-              const nodeId = item.getId();
-              const fragmentKey = itemData.data?.clientId ?? item.getId();
-
-              return (
-                <React.Fragment key={fragmentKey}>
-                  <ManageDocumentsTableRow
-                    item={item}
-                    index={index}
-                    isLast={index === itemsToRender.length - 1}
-                    draggingId={draggingId}
-                    setDraggingId={setDraggingId}
-                    tree={tree}
-                    getDescendantIds={getDescendantIds}
-                    spaceID={spaceID}
-                    onBeginInlineCreate={(type) =>
-                      insertPlaceholderHandler({ parentId: nodeId, type })
-                    }
-                    onRemovePlaceholder={onRemovePlaceholder}
-                    placeholderClientId={placeholderClientId}
-                  />
-                </React.Fragment>
-              );
-            } catch (error) {
-              return null;
-            }
-          })}
+          {renderedRows}
           <TreeDragLine />
         </Tree>
       )}

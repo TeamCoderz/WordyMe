@@ -304,6 +304,62 @@ export const ManageSpacesTableContent = React.forwardRef<
 
   const itemsToRender = tree.getItems().filter((item) => item.getId() !== 'root');
 
+  // Memoize the rendered rows to prevent unnecessary rerenders
+  // Create a stable key based on item IDs to track changes
+  const itemsToRenderIds = React.useMemo(
+    () => itemsToRender.map((item) => item.getId()).join(','),
+    [itemsToRender],
+  );
+
+  const renderedRows = React.useMemo(
+    () =>
+      itemsToRender.map((item, index) => {
+        try {
+          const itemData = item.getItemData() as SpaceTreeNode | null;
+          if (!itemData) {
+            console.warn(`Item data not found for: ${item.getId()}`);
+            return null;
+          }
+          const nodeId = item.getId();
+          return (
+            <ManageSpacesTableRow
+              key={item.getId()}
+              item={item}
+              index={index}
+              isLast={index === itemsToRender.length - 1}
+              draggingId={draggingId}
+              setDraggingId={setDraggingId}
+              tree={tree}
+              getDescendantIds={getDescendantIds}
+              onBeginInlineCreate={(type) =>
+                insertPlaceholderHandler({
+                  parentId: nodeId,
+                  type,
+                })
+              }
+              onRemovePlaceholder={onRemovePlaceholder}
+              placeholderClientId={placeholderClientId}
+            />
+          );
+        } catch (error) {
+          console.error(`Error rendering item ${item.getId()}:`, error);
+          return null;
+        }
+      }),
+    [
+      itemsToRender,
+      itemsToRenderIds,
+      itemsToRender.length,
+      draggingId,
+      setDraggingId,
+      tree,
+      getDescendantIds,
+      insertPlaceholderHandler,
+      onRemovePlaceholder,
+      placeholderClientId,
+    ],
+  );
+
   return (
     <div className="min-w-fit w-full select-none">
       <div className="grid grid-cols-[minmax(16rem,2fr)_minmax(8rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] gap-4 border-b border-dashed hover:bg-accent/50 data-[state=selected]:bg-accent transition-colors">
@@ -324,39 +380,7 @@ export const ManageSpacesTableContent = React.forwardRef<
 
       <Tree indent={16} tree={tree} onDragEnd={() => setDraggingId(null)}>
         <AssistiveTreeDescription tree={tree} />
-        {itemsToRender.map((item, index) => {
-          try {
-            const itemData = item.getItemData() as SpaceTreeNode | null;
-            if (!itemData) {
-              console.warn(`Item data not found for: ${item.getId()}`);
-              return null;
-            }
-            const nodeId = item.getId();
-            return (
-              <ManageSpacesTableRow
-                key={item.getId()}
-                item={item}
-                index={index}
-                isLast={index === itemsToRender.length - 1}
-                draggingId={draggingId}
-                setDraggingId={setDraggingId}
-                tree={tree}
-                getDescendantIds={getDescendantIds}
-                onBeginInlineCreate={(type) =>
-                  insertPlaceholderHandler({
-                    parentId: nodeId,
-                    type,
-                  })
-                }
-                onRemovePlaceholder={onRemovePlaceholder}
-                placeholderClientId={placeholderClientId}
-              />
-            );
-          } catch (error) {
-            console.error(`Error rendering item ${item.getId()}:`, error);
-            return null;
-          }
-        })}
+        {renderedRows}
         <TreeDragLine />
       </Tree>
     </div>

@@ -1170,7 +1170,7 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
       const fileText = await file.text();
       const document = JSON.parse(fileText);
-      console.log(document);
+
       const parsedDocument = await importDocumentSchema.safeParseAsync({
         parentId,
         spaceId,
@@ -1179,7 +1179,6 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
         document: document,
       });
       if (!parsedDocument.success) {
-        console.log(parsedDocument.error);
         throw new Error('Invalid document');
       }
       if (parsedDocument.data.document.type !== 'note') {
