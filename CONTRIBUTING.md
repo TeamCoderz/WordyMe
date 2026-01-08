@@ -13,7 +13,7 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 - **Join a community** — Connect with developers who share your passion
 - **Make an impact** — Help students worldwide manage their educational information better
 
-> **Before you start:** Please search [existing issues](../../issues) and [pull requests](../../pulls) to see if someone else is working on something similar.
+> **Before you start:** Please search [existing issues](https://github.com/TeamCoderz/WordyMe/issues) and [pull requests](https://github.com/TeamCoderz/WordyMe/pulls) to see if someone else is working on something similar.
 
 ---
 
@@ -41,7 +41,7 @@ Be **welcoming, inclusive, and respectful**. We don't tolerate harassment or exc
 
 If you have questions about implementation details or need help:
 
-- Use [GitHub Discussions](../../discussions) for general questions
+- Use [GitHub Discussions](https://github.com/TeamCoderz/WordyMe/discussions) for general questions
 - Search existing issues before creating a new one
 - Issues identified as questions will be redirected to Discussions
 
@@ -51,8 +51,8 @@ If you have questions about implementation details or need help:
 
 | Type | Description |
 |------|-------------|
-| **Bug Reports** | [Open an issue](../../issues/new) with reproduction steps, expected vs. actual behavior, and environment details |
-| **Feature Requests** | [Open an issue](../../issues/new) describing the feature, the problem it solves, and implementation ideas |
+| **Bug Reports** | [Open an issue](https://github.com/TeamCoderz/WordyMe/issues/new) with reproduction steps, expected vs. actual behavior, and environment details |
+| **Feature Requests** | [Open an issue](https://github.com/TeamCoderz/WordyMe/issues/new) describing the feature, the problem it solves, and implementation ideas |
 | **Documentation** | Fix typos, add examples, improve clarity, translate content |
 | **Code Review** | Review open PRs — fresh eyes catch bugs |
 | **Design** | UI/UX feedback, accessibility improvements |
@@ -245,8 +245,8 @@ Use descriptive prefixes: `feature/`, `fix/`, `docs/`, `refactor/`
 
 ## Getting Help
 
-- [GitHub Discussions](../../discussions) — Questions and ideas
-- [GitHub Issues](../../issues) — Bug reports
+- [GitHub Discussions](https://github.com/TeamCoderz/WordyMe/discussions) — Questions and ideas
+- [GitHub Issues](https://github.com/TeamCoderz/WordyMe/issues) — Bug reports
 - Security issues — Report privately to maintainers
 
 ---
