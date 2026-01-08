@@ -41,9 +41,8 @@ Be **welcoming, inclusive, and respectful**. We don't tolerate harassment or exc
 
 If you have questions about implementation details or need help:
 
-- Use [GitHub Discussions](https://github.com/TeamCoderz/WordyMe/discussions) for general questions
-- Search existing issues before creating a new one
-- Issues identified as questions will be redirected to Discussions
+- Search [existing issues](https://github.com/TeamCoderz/WordyMe/issues) before creating a new one
+- Open an issue with the `question` label for implementation questions
 
 ---
 
@@ -51,8 +50,8 @@ If you have questions about implementation details or need help:
 
 | Type | Description |
 |------|-------------|
-| **Bug Reports** | [Open an issue](https://github.com/TeamCoderz/WordyMe/issues/new) with reproduction steps, expected vs. actual behavior, and environment details |
-| **Feature Requests** | [Open an issue](https://github.com/TeamCoderz/WordyMe/issues/new) describing the feature, the problem it solves, and implementation ideas |
+| **Bug Reports** | [Report a bug](https://github.com/TeamCoderz/WordyMe/issues/new?template=bug_report.md) with reproduction steps and environment details |
+| **Feature Requests** | [Request a feature](https://github.com/TeamCoderz/WordyMe/issues/new?template=feature_request.md) describing the problem it solves |
 | **Documentation** | Fix typos, add examples, improve clarity, translate content |
 | **Code Review** | Review open PRs — fresh eyes catch bugs |
 | **Design** | UI/UX feedback, accessibility improvements |
@@ -245,8 +244,7 @@ Use descriptive prefixes: `feature/`, `fix/`, `docs/`, `refactor/`
 
 ## Getting Help
 
-- [GitHub Discussions](https://github.com/TeamCoderz/WordyMe/discussions) — Questions and ideas
-- [GitHub Issues](https://github.com/TeamCoderz/WordyMe/issues) — Bug reports
+- [GitHub Issues](https://github.com/TeamCoderz/WordyMe/issues) — Questions, ideas, and bug reports
 - Security issues — Report privately to maintainers
 
 ---
