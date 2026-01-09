@@ -1,3 +1,15 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - bun
+  - core-js
+  - core-js-pure
+  - esbuild
+  - gl
+  - lefthook
+
+patchedDependencies:
+  '@lexical/clipboard': patches/@lexical__clipboard.patch
+  '@lexical/html': patches/@lexical__html.patch
