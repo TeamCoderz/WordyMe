@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
 
   // Default values for environment variables
   const defaultEnv = {
-    VITE_BACKEND_URL: env.VITE_BACKEND_URL || 'http://localhost:3000',
+    VITE_BACKEND_URL: env.VITE_BACKEND_URL,
     BUILD_OUT_DIR: env.BUILD_OUT_DIR || './dist',
     SERVER_ORIGIN: env.SERVER_ORIGIN || 'http://localhost:5173',
     ANALAYZE_BUNDLE: env.ANALAYZE_BUNDLE || false,
