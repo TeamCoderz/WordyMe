@@ -15,7 +15,7 @@ FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat sqlite
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
 
 # Copy pruned files
 COPY --from=pruner /app/out/json/ .
@@ -37,7 +37,7 @@ RUN cd /app/apps/backend && node node_modules/drizzle-kit/bin.cjs migrate
 
 RUN pnpm build --filter=web... --filter=@repo/backend...
 
-RUN pnpm --filter @repo/backend --prod deploy pruned-backend
+RUN pnpm --filter @repo/backend --prod deploy --legacy pruned-backend
 
 # ==========================================
 # STAGE 3: Backend Runner
