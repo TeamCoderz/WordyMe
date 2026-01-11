@@ -149,11 +149,13 @@ function RouteComponent() {
 }
 function UserSync() {
   const { setUser: setUserAction } = useActions();
-  const { data: userSession } = useSession();
+  const { data: userSession, isPending } = useSession();
   const user = useSelector((state) => state.user);
   const navigate = useNavigate();
   useLayoutEffect(() => {
-    if (!userSession?.user) {
+    console.log('UserSync useLayoutEffect');
+    if (!userSession?.user && !isPending) {
+      console.log('UserSync useLayoutEffect: userSession?.user is null');
       navigate({ to: '/login' });
       return;
     }
