@@ -34,12 +34,16 @@ const UnauthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
 
 export const Route = createFileRoute('/_unauthed')({
   beforeLoad: async ({ context: { session, store } }) => {
+    console.log('Unauthed route beforeLoad');
     if (session.isLoading) {
+      console.log('Unauthed route beforeLoad: session is loading');
       const { data, error } = await getSession();
+      console.log('Unauthed route beforeLoad: session is loaded', data, error);
       if (error || data !== null) {
         throw redirect({ to: '/' });
       }
     } else if (session.data !== null) {
+      console.log('Unauthed route beforeLoad: session is not null');
       throw redirect({ to: '/' });
     }
     store.setState({

@@ -60,6 +60,9 @@ function Root() {
       queryClient.clear();
     }
   }, [user]);
+  useEffect(() => {
+    console.log('Loaded root route');
+  }, []);
 
   return (
     <>
