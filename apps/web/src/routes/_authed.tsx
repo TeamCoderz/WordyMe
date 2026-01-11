@@ -153,9 +153,7 @@ function UserSync() {
   const user = useSelector((state) => state.user);
   const navigate = useNavigate();
   useLayoutEffect(() => {
-    console.log('UserSync useLayoutEffect');
     if (!userSession?.user && !isPending) {
-      console.log('UserSync useLayoutEffect: userSession?.user is null');
       navigate({ to: '/login' });
       return;
     }
