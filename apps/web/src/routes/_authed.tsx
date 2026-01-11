@@ -44,24 +44,18 @@ const AuthedRouteErrorComponent: ErrorRouteComponent = ({ error, reset }) => {
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async ({ context: { session, store } }) => {
-    console.log('Authed route beforeLoad');
     let sessionUser: NonNullable<NonNullable<typeof session.data>['user']> | null =
       session.data?.user ?? null;
-    console.log('Authed route beforeLoad: sessionUser', sessionUser);
     if (session.isLoading) {
-      console.log('Authed route beforeLoad: session is loading');
       const { data, error } = await getSession();
-      console.log('Authed route beforeLoad: session is loaded', data, error);
       if (error || data == null) {
         throw redirect({ to: '/login' });
       }
       sessionUser = data.user;
-      console.log('Authed route beforeLoad: sessionUser', sessionUser);
     } else if (session.data == null) {
       throw redirect({ to: '/login' });
     }
     if (!sessionUser) {
-      console.log('Authed route beforeLoad: sessionUser is null');
       store.setState({
         user: null,
       });
