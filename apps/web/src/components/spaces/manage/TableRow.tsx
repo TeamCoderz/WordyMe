@@ -604,6 +604,7 @@ function ManageSpacesTableRowComponent({
                     ref={placeholderInputRef}
                     data-placeholder-input="true"
                     value={placeholderName}
+                    onContextMenu={(e) => e.stopPropagation()}
                     onChange={(e) => setPlaceholderName(e.target.value)}
                     onBlur={() => {
                       // Trigger placeholder submit on blur
@@ -630,6 +631,7 @@ function ManageSpacesTableRowComponent({
                       data-rename-input="true"
                       value={renameName}
                       onChange={(e) => setRenameName(e.target.value)}
+                      onContextMenu={(e) => e.stopPropagation()}
                       onBlur={() => {
                         // Trigger rename on blur to save changes when input loses focus
                         handleRenameSubmit();

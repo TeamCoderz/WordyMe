@@ -236,7 +236,11 @@ function DocumentNameInput({
     (isRenaming && isRenamingPending);
 
   return (
-    <InputGroup className="w-full ring-0!" onClick={(e) => e.stopPropagation()}>
+    <InputGroup
+      onContextMenu={(e) => e.stopPropagation()}
+      className="w-full ring-0!"
+      onClick={(e) => e.stopPropagation()}
+    >
       {isContainer && (
         <InputGroupAddon align="inline-start">
           <ChevronRight className="transition-transform size-4" />

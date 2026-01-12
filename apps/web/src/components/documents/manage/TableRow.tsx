@@ -654,6 +654,7 @@ function ManageDocumentsTableRowComponent({
                       data-rename-input="true"
                       value={placeholderName}
                       onChange={(e) => setPlaceholderName(e.target.value)}
+                      onContextMenu={(e) => e.stopPropagation()}
                       onKeyDown={(e) => {
                         e.stopPropagation();
                         if (e.key === 'Enter') {
@@ -675,6 +676,7 @@ function ManageDocumentsTableRowComponent({
                       ref={renameInputRef}
                       data-rename-input="true"
                       value={renameName}
+                      onContextMenu={(e) => e.stopPropagation()}
                       onChange={(e) => setRenameName(e.target.value)}
                       onKeyDown={(e) => {
                         e.stopPropagation();
