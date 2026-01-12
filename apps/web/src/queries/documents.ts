@@ -1040,66 +1040,6 @@ export const useMoveDocumentMutation = (
       toast.success('Document moved successfully', {
         id: toastId ?? undefined,
       });
-      // if (data?.spaceId !== clipboardDocument?.document.spaceId) {
-      //   const removedDocuments = [
-      //     clipboardDocument?.document,
-      //     ...(getDescendants(
-      //       queryClient.getQueryData(
-      //         getAllDocumentsQueryOptions(
-      //           clipboardDocument?.document.spaceId ?? ""
-      //         ).queryKey
-      //       ) as ListDocumentResult,
-      //       clipboardDocument?.document.id ?? ""
-      //     ) as ListDocumentResult),
-      //   ];
-      //   const removedDocumentsIds = removedDocuments.map(
-      //     (document) => document?.id ?? ""
-      //   );
-      //   queryClient.setQueryData(
-      //     getAllDocumentsQueryOptions(clipboardDocument?.document.spaceId ?? "")
-      //       .queryKey,
-      //     (old: ListDocumentResult) => {
-      //       return old?.filter(
-      //         (document) => !removedDocumentsIds.includes(document.id)
-      //       );
-      //     }
-      //   );
-      //   queryClient.setQueryData(
-      //     getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      //     (old: ListDocumentResult) => {
-      //       return [
-      //         ...old,
-      //         ...removedDocuments.map((document, index) => {
-      //           if (index === 0) {
-      //             return {
-      //               ...document,
-      //               parentId: newParentDocument.id,
-      //               position: newPositionRef.current,
-      //               spaceId: newParentDocument.spaceId,
-      //             };
-      //           }
-      //           return { ...document, spaceId: newParentDocument.spaceId };
-      //         }),
-      //       ];
-      //     }
-      //   );
-      // } else {
-      //   queryClient.setQueryData(
-      //     getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      //     (old: ListDocumentResult) => {
-      //       return old?.map((document) => {
-      //         if (document.id === clipboardDocument?.document.id) {
-      //           return {
-      //             ...document,
-      //             parentId: newParentDocument.id,
-      //             position: newPositionRef.current,
-      //           };
-      //         }
-      //         return document;
-      //       });
-      //     }
-      //   );
-      // }
       clearDocumentsClipboard();
     },
     onError: (error, __, toastId) => {
@@ -1168,24 +1108,17 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
   return useMutation({
     mutationKey: ['import-document', parentId, spaceId],
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
-      const fileText = await file.text();
-      const document = JSON.parse(fileText);
-
-      const parsedDocument = await importDocumentSchema.safeParseAsync({
+      const parsedMetadata = await importDocumentSchema.safeParseAsync({
         parentId,
         spaceId,
         position,
         type: 'note',
-        document: document,
       });
-      if (!parsedDocument.success) {
+      if (!parsedMetadata.success) {
         throw new Error('Invalid document');
       }
-      if (parsedDocument.data.document.type !== 'note') {
-        throw new Error('Invalid document type');
-      }
 
-      const { data, error } = await importDocument(parsedDocument.data);
+      const { data, error } = await importDocument(file, parsedMetadata.data);
       if (error) {
         throw error;
       }

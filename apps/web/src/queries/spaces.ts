@@ -1,14 +1,4 @@
-import {
-  createDocument,
-  deleteDocument,
-  updateDocument, // listSpaces,
-  // updateSpace,
-  // addSpaceToFavorites,
-  // removeSpaceFromFavorites,
-  // createSpace,
-  // listFavoriteSpaces,
-  // deleteSpace,
-} from '@repo/sdk/documents.ts';
+import { createDocument, deleteDocument, updateDocument } from '@repo/sdk/documents.ts';
 import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -931,22 +921,17 @@ export function useImportSpaceMutation(parentId?: string | null, spaceId?: strin
   return useMutation({
     mutationKey: ['import-space', parentId, spaceId],
     mutationFn: async ({ file, position }: { file: File; position?: string | null }) => {
-      const fileText = await file.text();
-      const document = JSON.parse(fileText);
-      const parsedDocument = await importDocumentSchema.safeParseAsync({
+      const parsedMetadata = await importDocumentSchema.safeParseAsync({
         parentId: parentId ?? null,
         spaceId: spaceId ?? null,
         position: position ?? null,
         type: 'space',
-        document: document,
       });
-      if (!parsedDocument.success) {
+      if (!parsedMetadata.success) {
         throw new Error('Invalid document');
       }
-      if (parsedDocument.data.type !== 'space') {
-        throw new Error('Invalid document type');
-      }
-      const { data, error } = await importDocument(parsedDocument.data);
+      console.log(parsedMetadata.data);
+      const { data, error } = await importDocument(file, parsedMetadata.data);
       if (error) {
         throw error;
       }
