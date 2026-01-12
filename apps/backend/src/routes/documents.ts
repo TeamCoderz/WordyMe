@@ -24,10 +24,17 @@ import {
 import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
-import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
+import {
+  copyDocumentSchema,
+  ExportedDocument,
+  exportedDocumentSchema,
+  importDocumentSchema,
+} from '../schemas/operations.js';
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
+import formidable from 'formidable';
+import { readFile } from 'node:fs/promises';
 
 const router: Router = Router();
 
@@ -226,8 +233,36 @@ router.post(
   },
 );
 
-router.post('/import', validate({ body: importDocumentSchema }), async (req, res) => {
-  const { spaceId, parentId } = req.body;
+router.post('/import', async (req, res) => {
+  const form = formidable({
+    maxFileSize: 50 * 1024 * 1024, // 50 MB
+    multiples: false,
+  });
+
+  form.on('fileBegin', (name, file) => {
+    if (name !== 'document') {
+      throw new HttpUnprocessableEntity({ message: 'Unexpected file field in the form data.' });
+    }
+  });
+
+  const [fields, files] = await form.parse(req);
+  const body = importDocumentSchema.parse(fields);
+
+  if (!files.document || files.document.length === 0) {
+    throw new HttpUnprocessableEntity({ message: 'No document file provided in the form data.' });
+  }
+
+  let document: ExportedDocument;
+
+  try {
+    document = exportedDocumentSchema.parse(
+      JSON.parse(await readFile(files.document[0].filepath, 'utf-8')),
+    );
+  } catch (error) {
+    throw new HttpUnprocessableEntity({ message: 'Invalid document file format.' });
+  }
+
+  const { spaceId, parentId, type } = body;
 
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpNotFound(
@@ -240,13 +275,13 @@ router.post('/import', validate({ body: importDocumentSchema }), async (req, res
     );
   }
 
-  if (req.body.type !== req.body.document.type) {
+  if (type !== document.type) {
     throw new HttpUnprocessableEntity(
-      `Document type mismatch: expected ${req.body.type}, got ${req.body.document.type}`,
+      `Document type mismatch: expected ${type}, got ${document.type}`,
     );
   }
 
-  const importedDocument = await importDocumentTree(req.body, req.user!.id);
+  const importedDocument = await importDocumentTree(document, body, req.user!.id);
 
   res.status(201).json(importedDocument);
 });

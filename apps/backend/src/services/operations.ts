@@ -138,46 +138,45 @@ export const exportDocumentTree = async (
 };
 
 export const importDocumentTree = async (
+  document: ExportedDocument,
   payload: ImportDocumentInput,
   userId: string,
   currentDepth: number = 0,
-): Promise<{ id: string; name: string }> => {
+) => {
   if (currentDepth >= 100) {
     throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
   }
 
   const documentBody = {
-    name: payload.document.name,
-    icon: payload.document.icon,
-    documentType: payload.document.type as 'space' | 'folder' | 'note',
-    isContainer: payload.document.is_container,
-    position: payload.position ?? payload.document.position,
+    name: document.name,
+    icon: document.icon,
+    documentType: document.type as 'space' | 'folder' | 'note',
+    isContainer: document.is_container,
+    position: payload.position ?? document.position,
     spaceId: payload.spaceId ?? null,
     parentId: payload.parentId ?? null,
     clientId: null,
   };
 
-  const newDocument = payload.document.revision
+  const newDocument = document.revision
     ? await createDocumentWithRevision(
         {
           ...documentBody,
-          revision: payload.document.revision,
+          revision: document.revision,
         },
         userId,
       )
     : await createDocument(documentBody, userId);
 
   await Promise.all(
-    payload.document.attachments.map((attachment) =>
-      importDocumentAttachment(attachment, newDocument.id),
-    ),
+    document.attachments.map((attachment) => importDocumentAttachment(attachment, newDocument.id)),
   );
 
-  for (const child of payload.document.children) {
+  for (const child of document.children) {
     dbWritesQueue.add(() =>
       importDocumentTree(
+        child,
         {
-          document: child,
           type: child.type,
           spaceId: payload.spaceId,
           parentId: newDocument.id,
@@ -189,11 +188,11 @@ export const importDocumentTree = async (
     );
   }
 
-  for (const spaceChild of payload.document.spaceRootChildren) {
+  for (const spaceChild of document.spaceRootChildren) {
     dbWritesQueue.add(() =>
       importDocumentTree(
+        spaceChild,
         {
-          document: spaceChild,
           type: spaceChild.type,
           spaceId: newDocument.id,
           parentId: null,

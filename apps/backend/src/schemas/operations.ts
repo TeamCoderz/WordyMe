@@ -44,7 +44,6 @@ export const importDocumentSchema = z.object({
   parentId: z.uuid().optional().nullable(),
   position: z.string().optional().nullable(),
   type: z.enum(['space', 'folder', 'note']),
-  document: exportedDocumentSchema,
 });
 
 export const copyDocumentSchema = createInsertSchema(documentsTable).omit({

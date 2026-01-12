@@ -25,6 +25,19 @@ export const post = async <T>(url: string, data?: unknown) => {
   }
 };
 
+export const sendFormData = async <T>(
+  url: string,
+  formData: FormData,
+  method: 'post' | 'put' = 'post',
+) => {
+  try {
+    const response = await client[method]<T>(url, formData, {});
+    return { data: response.data, error: null };
+  } catch (error) {
+    return { data: null, error: error as AxiosError<HttpException> };
+  }
+};
+
 export const patch = async <T>(url: string, data?: unknown) => {
   try {
     const response = await client.patch<T>(url, data);
