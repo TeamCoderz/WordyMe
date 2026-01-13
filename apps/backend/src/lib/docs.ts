@@ -209,11 +209,15 @@ export const openApiDocument = createDocument({
         summary: 'Import document tree',
         tags: ['Documents'],
         description:
-          "Imports a previously exported document tree into the user's workspace. Recreates the full document hierarchy including all nested children and their content.",
+          "Imports a previously exported document tree into the user's workspace. Recreates the full document hierarchy including all nested children and their content. The request must be a multipart/form-data request containing the exported document JSON file and import options.",
         requestBody: {
           required: true,
           content: {
-            'application/json': { schema: importDocumentSchema },
+            'multipart/form-data': {
+              schema: importDocumentSchema.extend({
+                document: z.string().describe('The exported document JSON file'),
+              }),
+            },
           },
         },
         responses: {
@@ -227,6 +231,10 @@ export const openApiDocument = createDocument({
           404: {
             description:
               'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+          },
+          422: {
+            description:
+              'Invalid import data. This can occur if the document file is missing, the file format is invalid, or there is a mismatch between the specified document type and the actual type in the export file.',
           },
         },
       },

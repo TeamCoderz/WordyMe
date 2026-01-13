@@ -40,10 +40,12 @@ export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
 );
 
 export const importDocumentSchema = z.object({
-  spaceId: z.uuid().optional().nullable(),
-  parentId: z.uuid().optional().nullable(),
-  position: z.string().optional().nullable(),
-  type: z.enum(['space', 'folder', 'note']),
+  spaceId: z.coerce.string().optional().nullable(),
+  parentId: z.coerce.string().optional().nullable(),
+  position: z.coerce.string().optional().nullable(),
+  type: z.coerce
+    .string()
+    .refine((val) => ['space', 'folder', 'note'].includes(val), 'Invalid document type'),
 });
 
 export const copyDocumentSchema = createInsertSchema(documentsTable).omit({
