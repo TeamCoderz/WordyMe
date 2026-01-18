@@ -338,46 +338,4 @@ function DocumentItemComponent({
 // Memoize DocumentItem with custom comparison to prevent unnecessary rerenders
 // Only rerender if this specific item's props changed, ignoring placeholderClientId
 // unless this item is the placeholder
-export const DocumentItem = React.memo(DocumentItemComponent, (prevProps, nextProps) => {
-  // If document ID changed, definitely rerender
-  if (prevProps.document.id !== nextProps.document.id) return false;
-
-  // Check if this item is the placeholder
-  const isPlaceholder = prevProps.document.id === 'new-doc';
-  const isNextPlaceholder = nextProps.document.id === 'new-doc';
-
-  // If placeholderClientId changed and this is the placeholder, rerender
-  if (isPlaceholder || isNextPlaceholder) {
-    if (prevProps.placeholderClientId !== nextProps.placeholderClientId) return false;
-  }
-
-  // Check if document data changed (shallow comparison of relevant fields)
-  if (
-    prevProps.document.name !== nextProps.document.name ||
-    prevProps.document.icon !== nextProps.document.icon ||
-    prevProps.document.isContainer !== nextProps.document.isContainer ||
-    prevProps.document.clientId !== nextProps.document.clientId
-  ) {
-    return false;
-  }
-
-  // Check if expansion state changed
-  if (prevProps.isExpanded !== nextProps.isExpanded) return false;
-
-  // Check if ancestor state changed
-  if (prevProps.isAncestor !== nextProps.isAncestor) return false;
-
-  // Check if menu state changed for this item
-  if (
-    (prevProps.openMenuDocumentId === prevProps.document.id) !==
-    (nextProps.openMenuDocumentId === nextProps.document.id)
-  ) {
-    return false;
-  }
-
-  // Check if children array reference changed (length or structure)
-  if (prevProps.children?.length !== nextProps.children?.length) return false;
-
-  // If all checks pass, don't rerender
-  return true;
-});
+export const DocumentItem = React.memo(DocumentItemComponent);
