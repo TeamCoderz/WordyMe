@@ -39,7 +39,6 @@
     "date-fns": "^4.1.0",
     "day-time-greet": "^1.0.6",
     "mobile-drag-drop": "3.0.0-rc.0",
-    "posthog-js": "^1.308.0",
     "react": "^19.2.3",
     "react-cropper": "^2.3.3",
     "react-dom": "^19.2.3",
