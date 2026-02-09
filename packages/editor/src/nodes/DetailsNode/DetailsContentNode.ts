@@ -18,9 +18,14 @@ import {
 } from 'lexical';
 import { IS_CHROME } from '@lexical/utils';
 import invariant from '@repo/shared/invariant';
+import { cva } from 'class-variance-authority';
 
 import { $isDetailsContainerNode } from './DetailsContainerNode';
 import { domOnBeforeMatch, setDomHiddenUntilFound } from './utils';
+
+const detailsContentVariants = cva(
+  'p-2 [&[hidden]]:hidden data-[hidden]:hidden [&>*:last-child]:!mb-0',
+);
 
 type SerializedDetailsContentNode = SerializedElementNode;
 
@@ -42,18 +47,25 @@ export class DetailsContentNode extends ElementNode {
 
   createDOM(_config: EditorConfig, editor: LexicalEditor): HTMLElement {
     const dom = document.createElement('div');
-    dom.classList.add('details__content');
-    if (IS_CHROME) {
-      editor.getEditorState().read(() => {
-        const containerNode = this.getParentOrThrow();
-        invariant(
-          $isDetailsContainerNode(containerNode),
-          'Expected parent node to be a DetailsContainerNode',
-        );
-        if (!containerNode.__open) {
+    dom.className = detailsContentVariants();
+
+    // Set initial hidden state
+    editor.getEditorState().read(() => {
+      const containerNode = this.getParentOrThrow();
+      invariant(
+        $isDetailsContainerNode(containerNode),
+        'Expected parent node to be a DetailsContainerNode',
+      );
+      if (!containerNode.getOpen()) {
+        if (IS_CHROME) {
           setDomHiddenUntilFound(dom);
+        } else {
+          dom.setAttribute('data-hidden', '');
         }
-      });
+      }
+    });
+
+    if (IS_CHROME) {
       domOnBeforeMatch(dom, () => {
         editor.update(() => {
           const containerNode = this.getParentOrThrow().getLatest();
@@ -70,7 +82,26 @@ export class DetailsContentNode extends ElementNode {
     return dom;
   }
 
-  updateDOM(): boolean {
+  updateDOM(prevNode: DetailsContentNode, dom: HTMLElement): boolean {
+    // Update hidden state based on parent container
+    const containerNode = this.getParentOrThrow();
+    if ($isDetailsContainerNode(containerNode)) {
+      const isOpen = containerNode.getOpen();
+      const prevContainerNode = prevNode.getParentOrThrow();
+      if ($isDetailsContainerNode(prevContainerNode)) {
+        const wasOpen = prevContainerNode.getOpen();
+        if (isOpen !== wasOpen) {
+          if (!IS_CHROME) {
+            if (isOpen) {
+              dom.removeAttribute('data-hidden');
+            } else {
+              dom.setAttribute('data-hidden', '');
+            }
+          }
+          return true;
+        }
+      }
+    }
     return false;
   }
 
@@ -90,7 +121,7 @@ export class DetailsContentNode extends ElementNode {
 
   exportDOM(): DOMExportOutput {
     const element = document.createElement('div');
-    element.classList.add('details__content');
+    element.className = detailsContentVariants();
     element.setAttribute('data-lexical-Details-content', 'true');
     return { element };
   }

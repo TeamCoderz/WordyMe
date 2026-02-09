@@ -38,7 +38,9 @@ export default function ScorePlugin() {
       throw new Error('ScorePlugin: ScoreNode not registered on editor');
     }
     const uploadDataUrl = async (dataUrl: string, filename: string, mimeType: string) => {
-      const blob = await fetch(dataUrl).then((response) => response.blob());
+      const blob = await fetch(dataUrl, { credentials: 'include' }).then((response) =>
+        response.blob(),
+      );
       const file = new File([blob], filename, { type: mimeType });
       const { data: uploadData, error: uploadError } = await uploadAttachment(file);
       if (uploadError) throw uploadError;

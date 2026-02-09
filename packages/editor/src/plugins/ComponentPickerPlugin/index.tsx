@@ -70,6 +70,7 @@ import {
   TableIcon,
   FileUpIcon,
   HashIcon,
+  ShapesIcon,
 } from '@repo/ui/components/icons';
 import { YoutubeIcon } from '@repo/editor/components/icons';
 import { cn } from '@repo/ui/lib/utils';
@@ -140,8 +141,8 @@ function getDynamicOptions(editor: LexicalEditor, queryString: string) {
   const tableMatch = queryString.match(/^([1-9]\d?)(?:x([1-9]\d?)?)?$/);
 
   if (tableMatch !== null) {
-    const rows = tableMatch[1];
-    const colOptions = tableMatch[2]
+    const rows = tableMatch[1]!;
+    const colOptions = tableMatch[2]!
       ? [tableMatch[2]]
       : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(String);
 
@@ -299,10 +300,17 @@ export default function ComponentPickerMenuPlugin() {
       }),
       new ComponentPickerOption('Sketch', {
         icon: <BrushIcon className="size-4" />,
-        keywords: ['excalidraw', 'sketch', 'drawing', 'diagram'],
+        keywords: ['excalidraw', 'sketch'],
         keyboardShortcut: '/sketch',
         desc: 'Draw a sketch',
         onSelect: () => updateEditorStoreState('openDialog', 'sketch'),
+      }),
+      new ComponentPickerOption('Diagram', {
+        icon: <ShapesIcon className="size-4" />,
+        keywords: ['diagram', 'drawio'],
+        keyboardShortcut: '/diagram',
+        desc: 'Draw a diagram',
+        onSelect: () => updateEditorStoreState('openDialog', 'diagram'),
       }),
       new ComponentPickerOption('Score', {
         icon: <MusicIcon className="size-4" />,

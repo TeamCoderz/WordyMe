@@ -42,7 +42,7 @@ function NoteTools({ node }: { node: StickyNode }) {
         backgroundColor: backgroundColor,
       });
     }
-  }, [editor, node]);
+  }, [editor, node, updateEditorStoreState]);
 
   useEffect(() => {
     return editor.registerUpdateListener(() => {
@@ -67,6 +67,7 @@ function NoteTools({ node }: { node: StickyNode }) {
 
   const updateFloat = useCallback(
     (newFloat: 'left' | 'right') => {
+      if (!newFloat) return;
       editor.update(() => {
         node.select();
         $patchStyle(node, { float: newFloat });

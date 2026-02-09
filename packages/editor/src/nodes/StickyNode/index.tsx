@@ -34,13 +34,13 @@ export class StickyNode extends ElementNode {
 
   createDOM(config: EditorConfig, editor: LexicalEditor): HTMLElement {
     const dom = document.createElement('div');
-    dom.className = 'group group/sticky sticky-note light relative';
+    dom.className = 'LexicalTheme__sticky group group/sticky light relative';
     const style = getStyleObjectFromRawCSS(this.__style);
     const color = style.color;
     const backgroundColor = style['background-color'];
     const float = style.float;
-    dom.style.color = color;
-    dom.style.backgroundColor = backgroundColor;
+    dom.style.color = color ?? '';
+    dom.style.backgroundColor = backgroundColor ?? '';
     floatWrapperElement(dom, config, float);
 
     if (editor.isEditable()) {

@@ -19,6 +19,10 @@ export interface EditorDocument {
   icon: string | null;
   author: User;
   revision: EditorRevision;
+  isFavorite: boolean;
+  isContainer: boolean;
+  clientId: string | null;
+  lastViewedAt: string | null;
 }
 
 export type Document = Omit<EditorDocument, 'revision'>;

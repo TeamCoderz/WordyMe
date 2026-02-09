@@ -194,11 +194,23 @@ const defaultInitState: EditorStoreState = {
   pageSetup: null,
 };
 
-export const createEditorStore = (services: Services, initState = defaultInitState) => {
+export const createEditorStore = (services?: Services, initState = defaultInitState) => {
   return createStore<EditorStore>()((set) => ({
     ...initState,
     actions: {
-      ...services,
+      getAttachmentSignedUrl:
+        services?.getAttachmentSignedUrl ?? (async () => ({ error: null, data: null })),
+      getImageSignedUrl: services?.getImageSignedUrl ?? (async () => ({ error: null, data: null })),
+      uploadAttachment: services?.uploadAttachment ?? (async () => ({ error: null, data: null })),
+      uploadImage: services?.uploadImage ?? (async () => ({ error: null, data: null })),
+      navigate: services?.navigate ?? (() => void 0),
+      getSpaces: services?.getSpaces ?? (async () => []),
+      getDocumentsBySpaceId: services?.getDocumentsBySpaceId ?? (async () => []),
+      getDocumentById: services?.getDocumentById ?? (async () => null),
+      getDocumentByHandle: services?.getDocumentByHandle ?? (async () => null),
+      getLocalRevisionByDocumentId: services?.getLocalRevisionByDocumentId ?? (async () => null),
+      getRevisionsByDocumentId: services?.getRevisionsByDocumentId ?? (async () => []),
+      getRevisionById: services?.getRevisionById ?? (async () => null),
       updateEditorStoreState: <Key extends EditorStoreStateKey>(
         key: Key,
         value: EditorStoreStateValue<Key>,

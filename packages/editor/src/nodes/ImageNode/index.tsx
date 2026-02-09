@@ -1,4 +1,5 @@
 import {
+  BaseSelection,
   DOMConversionMap,
   DOMConversionOutput,
   DOMExportOutput,
@@ -353,6 +354,13 @@ export class ImageNode extends ElementNode {
 
   isInline(): boolean {
     return true;
+  }
+
+  isSelected(selection?: null | BaseSelection): boolean {
+    const isSelected = super.isSelected(selection);
+    if (isSelected) return true;
+    if (!selection) return false;
+    return selection.getNodes().every((n) => this.is(n.getParent()));
   }
 }
 

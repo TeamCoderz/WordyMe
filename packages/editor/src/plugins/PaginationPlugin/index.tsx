@@ -1,5 +1,4 @@
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $generateNodesFromSerializedNodes } from '@lexical/clipboard';
 import { $getNearestNodeOfType, $wrapNodeInElement, mergeRegister } from '@lexical/utils';
 import {
   $addUpdateTag,
@@ -18,7 +17,6 @@ import {
   DELETE_CHARACTER_COMMAND,
   HISTORIC_TAG,
   HISTORY_MERGE_TAG,
-  isHTMLElement,
   KEY_ARROW_LEFT_COMMAND,
   KEY_ARROW_RIGHT_COMMAND,
   LexicalCommand,
@@ -27,7 +25,7 @@ import {
   SELECTION_CHANGE_COMMAND,
   SKIP_SCROLL_INTO_VIEW_TAG,
 } from 'lexical';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   $createPageNode,
   $createPageContentNode,
@@ -46,13 +44,13 @@ import {
   PAGE_SIZES,
   PageHeaderNode,
   PageFooterNode,
-  EMPTY_PARAGRAPH,
   HeaderConfig,
   FooterConfig,
   $isPageNumberNode,
   $createPageNumberNode,
   PageNumberNode,
   PageNumberVariant,
+  PAGE_SETUP_TAG,
 } from '@repo/editor/nodes/PageNode';
 import {
   $createPageBreakNode,
@@ -62,43 +60,55 @@ import {
 import { useActions } from '@repo/editor/store';
 import { useDebouncedCallback } from '@repo/ui/hooks/use-debounce';
 
-// Exported commands
 export const INSERT_PAGE_BREAK: LexicalCommand<undefined> = createCommand('INSERT_PAGE_BREAK');
 export const INSERT_PAGE_NUMBER_COMMAND: LexicalCommand<PageNumberVariant> = createCommand(
   'INSERT_PAGE_NUMBER_COMMAND',
 );
 
+type RafTask = 'measurement' | 'header' | 'footer' | 'pageNumber';
+
 export default function PaginationPlugin() {
   const [editor] = useLexicalComposerContext();
-  const [isPageStructureInvalid, setIsPageStructureInvalid] = useState(false);
   const isMountedRef = useRef(false);
   const isTouchedRef = useRef(false);
 
-  // Shared RAF ref for scheduled updates
-  const rafIdRef = useRef<number | null>(null);
-  const headerRafIdRef = useRef<number | null>(null);
-  const footerRafIdRef = useRef<number | null>(null);
-  const pageNumberRafIdRef = useRef<number | null>(null);
+  const rafIdsRef = useRef<Map<RafTask, number>>(new Map());
 
   const previousPageKeyRef = useRef<NodeKey | null>(null);
   const mutatedHeaderKeyRef = useRef<NodeKey | null>(null);
   const mutatedFooterKeyRef = useRef<NodeKey | null>(null);
+  const selectedHeaderOrFooterKeyRef = useRef<NodeKey | null>(null);
 
   const { updateEditorStoreState } = useActions();
 
-  // ==================== ZOOM & DIMENSIONS ====================
+  const scheduleRaf = useCallback((task: RafTask, callback: () => void) => {
+    const existingId = rafIdsRef.current.get(task);
+    if (existingId !== undefined) {
+      cancelAnimationFrame(existingId);
+    }
+    const newId = requestAnimationFrame(() => {
+      rafIdsRef.current.delete(task);
+      callback();
+    });
+    rafIdsRef.current.set(task, newId);
+  }, []);
+
+  const cancelAllRaf = useCallback(() => {
+    rafIdsRef.current.forEach((id) => cancelAnimationFrame(id));
+    rafIdsRef.current.clear();
+  }, []);
+
   const updateZoom = useCallback(() => {
     const rootElement = editor.getRootElement();
     if (!rootElement) return;
     const PAGE_WIDTH = parseInt(document.documentElement.style.getPropertyValue('--page-width'));
     if (!PAGE_WIDTH) return;
-    const prevZoom = +(rootElement.style.zoom || '1');
-    const rootWidth = Math.floor(rootElement.scrollWidth * prevZoom);
+    const prevZoom = rootElement.style.zoom || '1';
+    const rootWidth = rootElement.getBoundingClientRect().width;
     const rootPadding = parseFloat(getComputedStyle(rootElement).paddingLeft) * 2;
-    const nextZoom = Math.ceil(Math.min(rootWidth / (PAGE_WIDTH + rootPadding), 1) * 10000) / 10000;
-    const diff = +Math.abs(+nextZoom - +prevZoom).toFixed(4);
-    if (diff <= 0.0001) return;
-    rootElement.style.zoom = nextZoom.toString();
+    const nextZoom = Math.min(rootWidth / (PAGE_WIDTH + rootPadding), 1).toFixed(6);
+    if (nextZoom === prevZoom) return;
+    rootElement.style.zoom = nextZoom;
   }, [editor]);
 
   const updatePageDimensions = useCallback(() => {
@@ -140,63 +150,51 @@ export default function PaginationPlugin() {
     });
   }, [editor, updateZoom]);
 
-  useEffect(() => {
-    return editor.registerMutationListener(PageSetupNode, updatePageDimensions);
-  }, [editor, updatePageDimensions]);
-
-  // ==================== PAGE MEASUREMENT ====================
   const schedulePageMeasurement = useCallback(() => {
-    if (rafIdRef.current !== null) {
-      cancelAnimationFrame(rafIdRef.current);
-    }
-    rafIdRef.current = requestAnimationFrame(() => {
+    scheduleRaf('measurement', () => {
       editor.update(
         () => {
+          $addUpdateTag(SKIP_SCROLL_INTO_VIEW_TAG);
           const root = $getRoot();
           const children = root.getChildren();
-          const pages = children.filter((child) => $isPageNode(child));
-          const pagesToFix = pages.filter((page) => page.isMarkedForMeasurement());
-          pagesToFix.forEach((page) => page.fixFlow());
+          for (const child of children) {
+            if ($isPageNode(child) && child.isMarkedForMeasurement()) {
+              child.fixFlow();
+            }
+          }
         },
         { tag: HISTORIC_TAG },
       );
     });
-  }, [editor]);
+  }, [editor, scheduleRaf]);
 
-  // ==================== HEADER SYNC ====================
   const syncHeadersFromPageSetup = useCallback(() => {
-    if (headerRafIdRef.current !== null) {
-      cancelAnimationFrame(headerRafIdRef.current);
-    }
-    headerRafIdRef.current = requestAnimationFrame(() => {
+    scheduleRaf('header', () => {
       editor.update(
         () => {
           $addUpdateTag(SKIP_SCROLL_INTO_VIEW_TAG);
           const pageSetupNode = $getPageSetupNode();
           if (!pageSetupNode) return;
           const { headers, isPaged } = pageSetupNode.getPageSetup();
-          const headerChecksums = pageSetupNode.getHeadersChecksum();
-          const headerNodes = $getRoot()
-            .getChildren()
-            .filter($isPageNode)
-            .map((pageNode) => pageNode.getHeaderNode());
+          const headerChecksums = pageSetupNode.getHeaderChecksums();
+          const mutatedKey = mutatedHeaderKeyRef.current;
 
-          headerNodes.forEach((headerNode) => {
+          for (const child of $getRoot().getChildren()) {
+            if (!$isPageNode(child)) continue;
+            const headerNode = child.getHeaderNode();
+
             if (!headers.enabled || !isPaged) {
-              headerNode.clear();
-              return;
+              headerNode.hide();
+              continue;
             }
-            if (headerNode.isDirty()) return;
-            if (headerNode.getKey() === mutatedHeaderKeyRef.current) return;
+            headerNode.show();
+            if (headerNode.isDirty() || headerNode.getKey() === mutatedKey) continue;
+
             const variant = headerNode.getVariant();
-            const nextNodes = headers[variant] ?? [EMPTY_PARAGRAPH];
             const nextChecksum = headerChecksums[variant];
-            const previousChecksum = headerNode.getChecksum();
-            if (previousChecksum === nextChecksum) return;
-            headerNode.clear();
-            const nodes = $generateNodesFromSerializedNodes(nextNodes);
-            nodes.forEach((node) => headerNode.append(node));
-          });
+            if (headerNode.getChecksum() === nextChecksum) continue;
+            headerNode.updateVariant();
+          }
         },
         {
           tag: HISTORY_MERGE_TAG,
@@ -204,11 +202,12 @@ export default function PaginationPlugin() {
         },
       );
     });
-  }, [editor]);
+  }, [editor, scheduleRaf]);
 
   const syncHeadersToPageSetup = useDebouncedCallback((nodeKey: NodeKey) => {
     editor.update(
       () => {
+        $addUpdateTag(PAGE_SETUP_TAG);
         const headerNode = $getNodeByKey(nodeKey);
         if (!$isPageHeaderNode(headerNode)) return;
         const pageSetupNode = $getPageSetupNode();
@@ -217,7 +216,7 @@ export default function PaginationPlugin() {
         if (!headers.enabled || !isPaged) return;
         const variant = headerNode.getVariant();
         const nextNodes = headerNode.getSerializedChildren();
-        const nextHeaders: HeaderConfig = { ...headers };
+        const nextHeaders: Partial<HeaderConfig> = {};
         if (variant === 'first') nextHeaders.first = nextNodes;
         else if (variant === 'even') nextHeaders.even = nextNodes;
         else nextHeaders.default = nextNodes;
@@ -230,42 +229,33 @@ export default function PaginationPlugin() {
     );
   }, 500);
 
-  // ==================== FOOTER SYNC ====================
   const syncFootersFromPageSetup = useCallback(() => {
-    if (footerRafIdRef.current !== null) {
-      cancelAnimationFrame(footerRafIdRef.current);
-    }
-    footerRafIdRef.current = requestAnimationFrame(() => {
+    scheduleRaf('footer', () => {
       editor.update(
         () => {
           $addUpdateTag(SKIP_SCROLL_INTO_VIEW_TAG);
           const pageSetupNode = $getPageSetupNode();
           if (!pageSetupNode) return;
-          const pageSetup = pageSetupNode.getPageSetup();
-          const footers = pageSetup.footers;
-          const isPaged = pageSetup.isPaged;
-          const footerChecksums = pageSetupNode.getFootersChecksum();
-          const footerNodes = $getRoot()
-            .getChildren()
-            .filter($isPageNode)
-            .map((pageNode) => pageNode.getFooterNode());
+          const { footers, isPaged } = pageSetupNode.getPageSetup();
+          const footerChecksums = pageSetupNode.getFooterChecksums();
+          const mutatedKey = mutatedFooterKeyRef.current;
 
-          footerNodes.forEach((footerNode) => {
+          for (const child of $getRoot().getChildren()) {
+            if (!$isPageNode(child)) continue;
+            const footerNode = child.getFooterNode();
+
             if (!footers.enabled || !isPaged) {
-              footerNode.clear();
-              return;
+              footerNode.hide();
+              continue;
             }
-            if (footerNode.isDirty()) return;
-            if (footerNode.getKey() === mutatedFooterKeyRef.current) return;
+            footerNode.show();
+            if (footerNode.isDirty() || footerNode.getKey() === mutatedKey) continue;
+
             const variant = footerNode.getVariant();
-            const nextNodes = footers[variant] ?? [EMPTY_PARAGRAPH];
             const nextChecksum = footerChecksums[variant];
-            const previousChecksum = footerNode.getChecksum();
-            if (previousChecksum === nextChecksum) return;
-            footerNode.clear();
-            const nodes = $generateNodesFromSerializedNodes(nextNodes);
-            nodes.forEach((node) => footerNode.append(node));
-          });
+            if (footerNode.getChecksum() === nextChecksum) continue;
+            footerNode.updateVariant();
+          }
         },
         {
           tag: HISTORY_MERGE_TAG,
@@ -273,21 +263,21 @@ export default function PaginationPlugin() {
         },
       );
     });
-  }, [editor]);
+  }, [editor, scheduleRaf]);
 
   const syncFootersToPageSetup = useDebouncedCallback((nodeKey: NodeKey) => {
     editor.update(
       () => {
+        $addUpdateTag(PAGE_SETUP_TAG);
         const footerNode = $getNodeByKey(nodeKey);
         if (!$isPageFooterNode(footerNode)) return;
         const pageSetupNode = $getPageSetupNode();
         if (!pageSetupNode) return;
-        const pageSetup = pageSetupNode.getPageSetup();
-        const footers = pageSetup.footers;
-        if (!footers.enabled || !pageSetup.isPaged) return;
+        const { footers, isPaged } = pageSetupNode.getPageSetup();
+        if (!footers.enabled || !isPaged) return;
         const variant = footerNode.getVariant();
         const nextNodes = footerNode.getSerializedChildren();
-        const nextFooters: FooterConfig = { ...footers };
+        const nextFooters: Partial<FooterConfig> = {};
         if (variant === 'first') nextFooters.first = nextNodes;
         else if (variant === 'even') nextFooters.even = nextNodes;
         else nextFooters.default = nextNodes;
@@ -300,29 +290,30 @@ export default function PaginationPlugin() {
     );
   }, 500);
 
-  // ==================== PAGE NUMBER SYNC ====================
   const schedulePageNumberUpdate = useCallback(() => {
-    if (pageNumberRafIdRef.current !== null) {
-      cancelAnimationFrame(pageNumberRafIdRef.current);
-    }
-    pageNumberRafIdRef.current = requestAnimationFrame(() => {
+    scheduleRaf('pageNumber', () => {
       editor.update(
         () => {
           $addUpdateTag(SKIP_SCROLL_INTO_VIEW_TAG);
           const root = $getRoot();
           const pages = root.getChildren().filter($isPageNode);
           const totalPages = pages.length;
-          pages.forEach((page, index) => {
-            page.getAllTextNodes().forEach((textNode) => {
+          if (totalPages === 0) return;
+          const totalStr = String(totalPages);
+
+          for (let pageIndex = 0; pageIndex < totalPages; pageIndex++) {
+            const page = pages[pageIndex];
+            const currentStr = String(pageIndex + 1);
+            const headerTextNodes = page.getHeaderNode().getAllTextNodes();
+            const footerTextNodes = page.getFooterNode().getAllTextNodes();
+            const textNodes = headerTextNodes.concat(footerTextNodes);
+            for (const textNode of textNodes) {
               if ($isPageNumberNode(textNode)) {
-                const variant = textNode.getVariant();
-                const expectedText = variant === 'current' ? String(index + 1) : String(totalPages);
-                if (textNode.getTextContent() !== expectedText) {
-                  textNode.setTextContent(expectedText);
-                }
+                const expectedText = textNode.getVariant() === 'current' ? currentStr : totalStr;
+                textNode.setTextContent(expectedText);
               }
-            });
-          });
+            }
+          }
         },
         {
           tag: HISTORY_MERGE_TAG,
@@ -330,9 +321,81 @@ export default function PaginationPlugin() {
         },
       );
     });
-  }, [editor]);
+  }, [editor, scheduleRaf]);
 
-  // ==================== LIFECYCLE ====================
+  const fixPageStructure = useCallback(() => {
+    editor.update(
+      () => {
+        const root = $getRoot();
+        const children = root.getChildren();
+        const pages = [] as Array<PageNode | PageBreakNode | PageSetupNode>;
+        if (!$isPageSetupNode(children[0])) {
+          children[0].insertBefore($createPageSetupNode());
+          return;
+        }
+        for (const child of children) {
+          if ($isPageNode(child)) {
+            pages.push(child);
+          } else if ($isPageBreakNode(child) || $isPageSetupNode(child)) {
+            pages.push(child);
+          } else {
+            const lastPage = pages[pages.length - 1];
+            if ($isPageNode(lastPage)) {
+              lastPage.getContentNode().append(child);
+            } else {
+              const newPage = $createPageNode(1);
+              newPage.getContentNode().append(child);
+              pages.push(newPage);
+            }
+          }
+        }
+        root.clear();
+        root.append(...pages);
+        for (const page of pages) {
+          if ($isPageNode(page)) {
+            page.markForMeasurement();
+          }
+        }
+        if (!pages.some($isPageNode)) {
+          const newPage = $createPageNode(1);
+          const paragraph = $createParagraphNode();
+          newPage.getContentNode().append(paragraph);
+          root.append(newPage);
+          paragraph.selectStart();
+          newPage.markForMeasurement();
+        }
+        isTouchedRef.current = true;
+        schedulePageMeasurement();
+      },
+      {
+        discrete: true,
+        tag: HISTORIC_TAG,
+      },
+    );
+  }, [editor, schedulePageMeasurement]);
+
+  const resizePages = useCallback(() => {
+    editor.read(() => {
+      const root = $getRoot();
+      const children = root.getChildren();
+      PageNode.clearMeasurementFlags();
+      for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (!$isPageNode(child)) continue;
+        if ($isPageNode(child.getPreviousSibling())) continue;
+        child.markForMeasurement();
+        const nextSibling = child.getNextSibling();
+        if (!$isPageNode(nextSibling)) continue;
+        nextSibling.markForMeasurement();
+        const nextSiblingNextSibling = nextSibling.getNextSibling();
+        if (!$isPageNode(nextSiblingNextSibling)) continue;
+        nextSiblingNextSibling.markForMeasurement();
+      }
+      isTouchedRef.current = true;
+      schedulePageMeasurement();
+    });
+  }, [editor, schedulePageMeasurement]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -340,7 +403,6 @@ export default function PaginationPlugin() {
     };
   }, []);
 
-  // ==================== MAIN PLUGIN REGISTRATIONS ====================
   useEffect(() => {
     if (!editor.hasNodes([PageNode])) {
       throw new Error('PaginationPlugin: PageNode is not registered on editor');
@@ -359,9 +421,15 @@ export default function PaginationPlugin() {
       const isPaged = document.documentElement.dataset.paged === 'true';
       if (!isPaged) return;
       editor.read(() => {
-        const pageNode = $getNearestNodeFromDOMNode(pageContent);
+        const pageContentNode = $getNearestNodeFromDOMNode(pageContent);
+        if (!$isPageContentNode(pageContentNode)) return;
+        const pageNode = pageContentNode.getParent();
         if (!$isPageNode(pageNode)) return;
+        const previousPage = pageNode.getPreviousPage();
+        if (previousPage) previousPage.markForMeasurement();
         pageNode.markForMeasurement();
+        const nextPage = pageNode.getNextPage();
+        if (nextPage) nextPage.markForMeasurement();
         schedulePageMeasurement();
       });
     });
@@ -373,41 +441,62 @@ export default function PaginationPlugin() {
       if (!isEditable) return;
       const root = $getRoot();
       const children = root.getChildren();
-      const isPageStructureInvalid =
+      const isInvalid =
+        !$isPageSetupNode(children[0]) ||
         !children.some($isPageNode) ||
         children.some(
           (child) => !$isPageNode(child) && !$isPageBreakNode(child) && !$isPageSetupNode(child),
         );
-      setIsPageStructureInvalid(isPageStructureInvalid);
+      if (isInvalid) {
+        queueMicrotask(fixPageStructure);
+      }
     };
 
     const ensurePageNodeChildren = (pageNode: PageNode) => {
       const children = pageNode.getChildren();
-      let header = children.find($isPageHeaderNode);
-      let content = children.find($isPageContentNode);
-      let footer = children.find($isPageFooterNode);
-      const strayChildren = children.filter(
-        (child) =>
-          !$isPageHeaderNode(child) && !$isPageContentNode(child) && !$isPageFooterNode(child),
-      );
-      if (header && content && footer && !strayChildren.length) return;
+      let header: PageHeaderNode | undefined;
+      let content: PageContentNode | undefined;
+      let footer: PageFooterNode | undefined;
+      const strayChildren: typeof children = [];
+
+      for (const child of children) {
+        if ($isPageHeaderNode(child)) {
+          header = child;
+        } else if ($isPageContentNode(child)) {
+          content = child;
+        } else if ($isPageFooterNode(child)) {
+          footer = child;
+        } else {
+          strayChildren.push(child);
+        }
+      }
+
+      if (header && content && footer && strayChildren.length === 0) return;
+
       if (!header) {
-        header = $createPageHeaderNode();
+        const headerVariant =
+          $getPageSetupNode()?.getHeaders().differentEven && pageNode.getPageNumber() % 2 === 0
+            ? 'even'
+            : 'default';
+        header = $createPageHeaderNode(headerVariant);
       }
       if (!content) {
         content = $createPageContentNode();
-        content.append(...strayChildren);
-      } else {
+      }
+      if (strayChildren.length > 0) {
         content.append(...strayChildren);
       }
       if (!footer) {
-        footer = $createPageFooterNode();
+        const footerVariant =
+          $getPageSetupNode()?.getFooters().differentEven && pageNode.getPageNumber() % 2 === 0
+            ? 'even'
+            : 'default';
+        footer = $createPageFooterNode(footerVariant);
       }
       pageNode.clear();
       pageNode.append(header, content, footer);
     };
 
-    // ==================== NODE TRANSFORMS ====================
     const removePageTransform = editor.registerNodeTransform(PageNode, (pageNode) => {
       ensurePageNodeChildren(pageNode);
       if (!isTouchedRef.current) return;
@@ -435,26 +524,6 @@ export default function PaginationPlugin() {
       schedulePageMeasurement();
     });
 
-    // Header/Footer transforms to ensure they have at least one child
-    const removePageHeaderTransform = editor.registerNodeTransform(PageHeaderNode, (node) => {
-      const pageSetupNode = $getPageSetupNode();
-      if (!pageSetupNode) return;
-      const { isPaged, headers } = pageSetupNode.getPageSetup();
-      if (!isPaged || !headers.enabled) return;
-      if (node.getChildrenSize()) return;
-      node.append($createParagraphNode());
-    });
-
-    const removePageFooterTransform = editor.registerNodeTransform(PageFooterNode, (node) => {
-      const pageSetupNode = $getPageSetupNode();
-      if (!pageSetupNode) return;
-      const { isPaged, footers } = pageSetupNode.getPageSetup();
-      if (!isPaged || !footers.enabled) return;
-      if (node.getChildrenSize()) return;
-      node.append($createParagraphNode());
-    });
-
-    // ==================== NAVIGATION COMMANDS ====================
     const $onEscapeLeft = () => {
       const selection = $getSelection();
       if (
@@ -473,8 +542,10 @@ export default function PaginationPlugin() {
       const previousPage = nearestRoot.getPageNode().getPreviousPage();
       if (previousPage) return previousPage.getFooterNode().selectStart() && false;
       const currentPageHeader = nearestRoot.getPageNode().getHeaderNode();
-      if (currentPageHeader) currentPageHeader.setEditable(true);
-
+      if (currentPageHeader) {
+        $addUpdateTag(HISTORY_MERGE_TAG);
+        currentPageHeader.setEditable(true);
+      }
       return true;
     };
 
@@ -494,11 +565,13 @@ export default function PaginationPlugin() {
       const nextPage = nearestRoot.getPageNode().getNextPage();
       if (nextPage) return nextPage.getHeaderNode().selectEnd() && false;
       const currentPageFooter = nearestRoot.getPageNode().getFooterNode();
-      if (currentPageFooter) currentPageFooter.setEditable(true);
+      if (currentPageFooter) {
+        $addUpdateTag(HISTORY_MERGE_TAG);
+        currentPageFooter.setEditable(true);
+      }
       return true;
     };
 
-    // ==================== COMMAND REGISTRATIONS ====================
     const removeCommandListeners = mergeRegister(
       editor.registerCommand(
         SELECTION_CHANGE_COMMAND,
@@ -507,33 +580,56 @@ export default function PaginationPlugin() {
           const selection = $getSelection();
           if (!$isRangeSelection(selection)) return false;
           const anchorNode = selection.anchor.getNode();
+          if ($isRootNode(anchorNode)) {
+            const firstPage = anchorNode.getFirstChild()?.getNextSibling();
+            if (!$isPageNode(firstPage)) return false;
+            const pageContentKey = firstPage.getContentNode().getKey();
+            const isCollapsed = selection.isCollapsed();
+            if (selection.anchor.offset === 0) {
+              selection.anchor.set(pageContentKey, 0, 'element');
+              if (isCollapsed) selection.focus.set(pageContentKey, 0, 'element');
+            }
+            return false;
+          }
           const nearestRoot =
             anchorNode.getKey() === 'root' ? anchorNode : $getNearestRootOrShadowRoot(anchorNode);
-          const root = $getRoot();
-          const children = root.getChildren();
-          const pages = children.filter((child) => $isPageNode(child));
-          const pageHeaders = pages.map((page) => page.getHeaderNode());
-          const pageFooters = pages.map((page) => page.getFooterNode());
           const nearestHeader = $getNearestNodeOfType(nearestRoot, PageHeaderNode);
-          if (nearestHeader) nearestHeader.setEditable(true);
-          else pageHeaders.forEach((header) => header.setEditable(false));
           const nearestFooter = $getNearestNodeOfType(nearestRoot, PageFooterNode);
-          if (nearestFooter) nearestFooter.setEditable(true);
-          else pageFooters.forEach((footer) => footer.setEditable(false));
+          if (nearestHeader && nearestHeader.getKey() !== selectedHeaderOrFooterKeyRef.current) {
+            $addUpdateTag(HISTORY_MERGE_TAG);
+            nearestHeader.setEditable(true);
+            selectedHeaderOrFooterKeyRef.current = nearestHeader.getKey();
+          } else if (
+            nearestFooter &&
+            nearestFooter.getKey() !== selectedHeaderOrFooterKeyRef.current
+          ) {
+            $addUpdateTag(HISTORY_MERGE_TAG);
+            nearestFooter.setEditable(true);
+            selectedHeaderOrFooterKeyRef.current = nearestFooter.getKey();
+          } else if (!nearestHeader && !nearestFooter && selectedHeaderOrFooterKeyRef.current) {
+            const selectedHeaderOrFooter = $getNodeByKey(selectedHeaderOrFooterKeyRef.current);
+            if (
+              $isPageHeaderNode(selectedHeaderOrFooter) ||
+              $isPageFooterNode(selectedHeaderOrFooter)
+            ) {
+              $addUpdateTag(HISTORY_MERGE_TAG);
+              selectedHeaderOrFooter.setEditable(false);
+              selectedHeaderOrFooterKeyRef.current = null;
+            }
+          }
           if (!$isPageContentNode(nearestRoot)) return false;
           const currentPage = nearestRoot.getPageNode();
           const currentPageKey = currentPage.getKey();
           const previousPageKey = previousPageKeyRef.current;
           const pageContentElement = currentPage.getPageContentElement();
-          if (!isHTMLElement(pageContentElement)) return false;
+          if (!pageContentElement) return false;
           previousPageKeyRef.current = currentPageKey;
           pageObserver.observe(pageContentElement);
-          if (previousPageKey === null) return false;
-          if (previousPageKey === currentPageKey) return false;
+          if (previousPageKey === null || previousPageKey === currentPageKey) return false;
           const previousPage = $getNodeByKey(previousPageKey);
           if (!$isPageNode(previousPage)) return false;
           const previousPageContent = previousPage.getPageContentElement();
-          if (!isHTMLElement(previousPageContent)) return false;
+          if (!previousPageContent) return false;
           pageObserver.unobserve(previousPageContent);
           return false;
         },
@@ -593,31 +689,38 @@ export default function PaginationPlugin() {
         },
         COMMAND_PRIORITY_LOW,
       ),
-      // Page break command
       editor.registerCommand(
         INSERT_PAGE_BREAK,
         () => {
           const selection = $getSelection();
           if (!$isRangeSelection(selection)) return false;
-          const pageNode = $createPageNode();
-          pageNode.getContentNode().append($createParagraphNode());
           const root = $getRoot();
+          const pageCount = root.getChildren().reduce((count, child) => {
+            if ($isPageNode(child)) {
+              return count + 1;
+            }
+            return count;
+          }, 0);
           const focusNode = selection.focus.getNode();
-          if (!focusNode) return !!root.append($createPageBreakNode(), pageNode).selectEnd();
+          if (!focusNode)
+            return !!root
+              .append($createPageBreakNode(), $createPageNode(pageCount + 1))
+              .selectEnd();
           const nearestPage = $getNearestNodeOfType(focusNode, PageNode);
-          if (!nearestPage) return !!root.append($createPageBreakNode(), pageNode).selectEnd();
+          if (!nearestPage)
+            return !!root
+              .append($createPageBreakNode(), $createPageNode(pageCount + 1))
+              .selectEnd();
           const nextPage = nearestPage.getNextPage();
           if (nextPage) {
             nextPage.insertBefore($createPageBreakNode());
           }
-          return !!nearestPage
-            .insertAfter($createPageBreakNode())
-            .insertAfter(pageNode)
-            .selectEnd();
+          const newPage = $createPageNode(nearestPage.getPageNumber() + 1);
+          newPage.getContentNode().append($createParagraphNode());
+          return !!nearestPage.insertAfter($createPageBreakNode()).insertAfter(newPage).selectEnd();
         },
         COMMAND_PRIORITY_EDITOR,
       ),
-      // Page number command
       editor.registerCommand(
         INSERT_PAGE_NUMBER_COMMAND,
         (variant) => {
@@ -636,105 +739,107 @@ export default function PaginationPlugin() {
       ),
     );
 
-    // ==================== MUTATION LISTENERS ====================
     const removeMutationListeners = mergeRegister(
-      // PageSetup mutations -> sync headers and footers
-      editor.registerMutationListener(PageSetupNode, () => {
+      editor.registerMutationListener(PageSetupNode, (mutations) => {
+        updatePageDimensions();
+        const pageSetup = editor.getEditorState().read(() => {
+          const node = $getPageSetupNode();
+          if (!node) return null;
+          return node.getPageSetup();
+        });
+        if (!pageSetup) return;
+        updateEditorStoreState('pageSetup', pageSetup);
         syncHeadersFromPageSetup();
         syncFootersFromPageSetup();
+        const mutation = mutations.values().toArray()[0];
+        if (!pageSetup.isPaged || mutation !== 'updated') return;
+        resizePages();
       }),
-      // PageHeader mutations
-      editor.registerMutationListener(PageHeaderNode, (mutations) => {
-        if (
-          mutations.values().some((mutation) => mutation === 'created' || mutation === 'destroyed')
-        ) {
-          syncHeadersFromPageSetup();
+      editor.registerMutationListener(PageNode, (mutations) => {
+        if (!isTouchedRef.current) return;
+        for (const [key, mutation] of mutations) {
+          if (mutation === 'created' || mutation === 'destroyed') {
+            PageNode.markForMeasurement(key);
+          }
         }
+        syncHeadersFromPageSetup();
+        syncFootersFromPageSetup();
+        schedulePageMeasurement();
       }),
-      // PageFooter mutations
-      editor.registerMutationListener(PageFooterNode, (mutations) => {
-        if (
-          mutations.values().some((mutation) => mutation === 'created' || mutation === 'destroyed')
-        ) {
-          syncFootersFromPageSetup();
-        }
-      }),
-      // PageNumber mutations
       editor.registerMutationListener(PageNumberNode, (mutations) => {
-        if (mutations.values().some((m) => m === 'created' || m === 'destroyed')) {
-          schedulePageNumberUpdate();
+        for (const mutation of mutations.values()) {
+          if (mutation === 'created' || mutation === 'destroyed') {
+            schedulePageNumberUpdate();
+            break;
+          }
         }
       }),
     );
 
-    // ==================== UPDATE LISTENER FOR HEADER/FOOTER SYNC ====================
     const removeUpdateListener = editor.registerUpdateListener(
       ({ editorState, prevEditorState, dirtyElements, dirtyLeaves, tags }) => {
         if (tags.has(HISTORIC_TAG) || tags.has(HISTORY_MERGE_TAG)) return;
+        if (dirtyElements.size === 0) return;
 
-        // Check for header mutations
-        const mutatedHeaders = editorState.read(() =>
-          dirtyElements
-            .keys()
-            .filter((key) => $isPageHeaderNode($getNodeByKey(key)))
-            .toArray(),
-        );
-        if (mutatedHeaders.length > 0) {
-          const isDirtyLeafOutsideHeader =
-            prevEditorState.read(() => {
-              const headerNode = $getNodeByKey<PageHeaderNode>(mutatedHeaders[0]);
-              if (!headerNode) return false;
-              return dirtyLeaves.values().some((key) => {
-                const node = $getNodeByKey(key);
-                if (!node) return false;
-                return !headerNode.isParentOf(node);
-              });
-            }) ||
-            editorState.read(() => {
-              const headerNode = $getNodeByKey<PageHeaderNode>(mutatedHeaders[0]);
-              if (!headerNode) return false;
-              return dirtyLeaves.values().some((key) => {
-                const node = $getNodeByKey(key);
-                if (!node) return false;
-                return !headerNode.isParentOf(node);
-              });
-            });
-          if (!isDirtyLeafOutsideHeader) {
-            mutatedHeaderKeyRef.current = mutatedHeaders[0];
-            syncHeadersToPageSetup(mutatedHeaderKeyRef.current);
+        let mutatedHeaderKey: NodeKey | null = null;
+        let mutatedFooterKey: NodeKey | null = null;
+
+        editorState.read(() => {
+          for (const key of dirtyElements.keys()) {
+            if (mutatedHeaderKey !== null && mutatedFooterKey !== null) break;
+            const node = $getNodeByKey(key);
+            if (mutatedHeaderKey === null && $isPageHeaderNode(node)) {
+              mutatedHeaderKey = key;
+            } else if (mutatedFooterKey === null && $isPageFooterNode(node)) {
+              mutatedFooterKey = key;
+            }
+          }
+        });
+
+        const hasDirtyLeafOutside = (
+          parentKey: NodeKey,
+          isNodeType: (node: ReturnType<typeof $getNodeByKey>) => boolean,
+        ): boolean => {
+          if (dirtyLeaves.size === 0) return false;
+
+          const currentResult = editorState.read(() => {
+            const parentNode = $getNodeByKey(parentKey);
+            if (!parentNode || !isNodeType(parentNode)) return null; // inconclusive
+            for (const leafKey of dirtyLeaves.values()) {
+              const leafNode = $getNodeByKey(leafKey);
+              if (leafNode && !parentNode.isParentOf(leafNode)) {
+                return true;
+              }
+            }
+            return false;
+          });
+
+          if (currentResult !== null) return currentResult;
+
+          return prevEditorState.read(() => {
+            const parentNode = $getNodeByKey(parentKey);
+            if (!parentNode || !isNodeType(parentNode)) return false;
+            for (const leafKey of dirtyLeaves.values()) {
+              const leafNode = $getNodeByKey(leafKey);
+              if (leafNode && !parentNode.isParentOf(leafNode)) {
+                return true;
+              }
+            }
+            return false;
+          });
+        };
+
+        if (mutatedHeaderKey !== null) {
+          if (!hasDirtyLeafOutside(mutatedHeaderKey, $isPageHeaderNode)) {
+            mutatedHeaderKeyRef.current = mutatedHeaderKey;
+            syncHeadersToPageSetup(mutatedHeaderKey);
           }
         }
 
-        // Check for footer mutations
-        const mutatedFooters = editorState.read(() =>
-          dirtyElements
-            .keys()
-            .filter((key) => $isPageFooterNode($getNodeByKey(key)))
-            .toArray(),
-        );
-        if (mutatedFooters.length > 0) {
-          const isDirtyLeafOutsideFooter =
-            prevEditorState.read(() => {
-              const footerNode = $getNodeByKey<PageFooterNode>(mutatedFooters[0]);
-              if (!footerNode) return false;
-              return dirtyLeaves.values().some((key) => {
-                const node = $getNodeByKey(key);
-                if (!node) return false;
-                return !footerNode.isParentOf(node);
-              });
-            }) ||
-            editorState.read(() => {
-              const footerNode = $getNodeByKey<PageFooterNode>(mutatedFooters[0]);
-              if (!footerNode) return false;
-              return dirtyLeaves.values().some((key) => {
-                const node = $getNodeByKey(key);
-                if (!node) return false;
-                return !footerNode.isParentOf(node);
-              });
-            });
-          if (!isDirtyLeafOutsideFooter) {
-            mutatedFooterKeyRef.current = mutatedFooters[0];
-            syncFootersToPageSetup(mutatedFooterKeyRef.current);
+        if (mutatedFooterKey !== null) {
+          if (!hasDirtyLeafOutside(mutatedFooterKey, $isPageFooterNode)) {
+            mutatedFooterKeyRef.current = mutatedFooterKey;
+            syncFootersToPageSetup(mutatedFooterKey);
           }
         }
       },
@@ -742,26 +847,14 @@ export default function PaginationPlugin() {
 
     return () => {
       rootObserver.disconnect();
+      pageObserver.disconnect();
       isTouchedRef.current = false;
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-      if (headerRafIdRef.current !== null) {
-        cancelAnimationFrame(headerRafIdRef.current);
-      }
-      if (footerRafIdRef.current !== null) {
-        cancelAnimationFrame(footerRafIdRef.current);
-      }
-      if (pageNumberRafIdRef.current !== null) {
-        cancelAnimationFrame(pageNumberRafIdRef.current);
-      }
+      cancelAllRaf();
       PageNode.clearMeasurementFlags();
       removeCommandListeners();
       removePageTransform();
       removeRootTransform();
       removePageContentTransform();
-      removePageHeaderTransform();
-      removePageFooterTransform();
       removeMutationListeners();
       removeUpdateListener();
     };
@@ -774,159 +867,8 @@ export default function PaginationPlugin() {
     syncFootersToPageSetup,
     schedulePageNumberUpdate,
     updateZoom,
+    cancelAllRaf,
   ]);
-
-  // ==================== PAGE STRUCTURE FIX ====================
-  const fixPageStructure = useCallback(() => {
-    editor.update(
-      () => {
-        const root = $getRoot();
-        const children = root.getChildren();
-        const pages = [] as Array<PageNode | PageBreakNode | PageSetupNode>;
-        children.forEach((child) => {
-          if ($isPageNode(child)) {
-            pages.push(child);
-          } else if ($isPageBreakNode(child) || $isPageSetupNode(child)) {
-            pages.push(child);
-          } else {
-            const lastPage = pages[pages.length - 1];
-            if ($isPageNode(lastPage)) {
-              lastPage.getContentNode().append(child);
-            } else {
-              const newPage = $createPageNode();
-              newPage.getContentNode().append(child);
-              pages.push(newPage);
-            }
-          }
-        });
-        root.clear();
-        root.append(...pages);
-        pages.forEach((page) => {
-          if (!$isPageNode(page)) return;
-          page.markForMeasurement();
-        });
-        if (!pages.some($isPageNode)) {
-          const newPage = $createPageNode();
-          const paragraph = $createParagraphNode();
-          newPage.getContentNode().append(paragraph);
-          root.append(newPage);
-          paragraph.selectStart();
-          newPage.markForMeasurement();
-        }
-        isTouchedRef.current = true;
-        schedulePageMeasurement();
-      },
-      {
-        discrete: true,
-        tag: HISTORIC_TAG,
-        onUpdate() {
-          setIsPageStructureInvalid(false);
-        },
-      },
-    );
-  }, [editor, schedulePageMeasurement]);
-
-  const resizePages = useCallback(() => {
-    editor.read(() => {
-      const root = $getRoot();
-      const children = root.getChildren();
-      PageNode.clearMeasurementFlags();
-      const pages = children.filter((child) => $isPageNode(child));
-      pages.forEach((page) => page.markForMeasurement());
-      isTouchedRef.current = true;
-      schedulePageMeasurement();
-    });
-  }, [editor, schedulePageMeasurement]);
-
-  useEffect(() => {
-    return editor.registerMutationListener(PageSetupNode, (mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation !== 'updated') return;
-        const isPaged = editor.read(() => {
-          const pageSetupNode = $getPageSetupNode();
-          if (!pageSetupNode) return false;
-          return pageSetupNode.isPaged();
-        });
-        if (!isPaged) return;
-        resizePages();
-      });
-    });
-  }, [editor, resizePages]);
-
-  useEffect(() => {
-    if (!isPageStructureInvalid) return;
-    fixPageStructure();
-  }, [isPageStructureInvalid, fixPageStructure]);
-
-  const [isPageSetupMissing, setIsPageSetupMissing] = useState(false);
-
-  const createPageSetupNode = useCallback(() => {
-    const isEditable = editor.isEditable();
-    if (!isEditable) return;
-    editor.update(
-      () => {
-        const root = $getRoot();
-        const firstChild = root.getFirstChild();
-        if (!firstChild) return;
-        if ($isPageSetupNode(firstChild)) return;
-        const pageSetupNode = $createPageSetupNode();
-        firstChild.insertBefore(pageSetupNode);
-      },
-      {
-        discrete: true,
-        tag: HISTORY_MERGE_TAG,
-        onUpdate() {
-          setIsPageSetupMissing(false);
-        },
-      },
-    );
-  }, [editor]);
-
-  useEffect(() => {
-    if (!isPageSetupMissing) return;
-    createPageSetupNode();
-  }, [isPageSetupMissing, createPageSetupNode]);
-
-  useEffect(() => {
-    return mergeRegister(
-      editor.registerUpdateListener(({ editorState }) => {
-        editorState.read(() => {
-          const root = $getRoot();
-          const firstChild = root.getFirstChild();
-          if (!firstChild) return;
-          if ($isPageSetupNode(firstChild)) return;
-          setIsPageSetupMissing(true);
-        });
-      }),
-      editor.registerMutationListener(PageSetupNode, (mutations) => {
-        mutations.forEach(() => {
-          editor.getEditorState().read(() => {
-            const node = $getPageSetupNode();
-            if (!node) return;
-            const pageSetup = node.getPageSetup();
-            updateEditorStoreState('pageSetup', pageSetup);
-          });
-        });
-      }),
-      editor.registerCommand(
-        SELECTION_CHANGE_COMMAND,
-        () => {
-          const selection = $getSelection();
-          if (!$isRangeSelection(selection)) return false;
-          const anchorNode = selection.anchor.getNode();
-          if (!$isRootNode(anchorNode)) return false;
-          const firstPage = anchorNode.getFirstChild()?.getNextSibling();
-          if (!$isPageNode(firstPage)) return false;
-          const pageContentKey = firstPage.getContentNode().getKey();
-          if (selection.anchor.offset === 0) {
-            selection.anchor.set(pageContentKey, 0, 'element');
-          }
-          return false;
-        },
-        COMMAND_PRIORITY_EDITOR,
-      ),
-    );
-  }, [editor, updateEditorStoreState]);
 
   return null;
 }

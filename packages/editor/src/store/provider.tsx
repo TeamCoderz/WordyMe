@@ -3,7 +3,7 @@ import { EditorStoreContext, createEditorStore } from './store';
 import { Services } from './types';
 
 interface EditorProviderProps {
-  services: Services;
+  services?: Services;
   children: ReactNode;
 }
 

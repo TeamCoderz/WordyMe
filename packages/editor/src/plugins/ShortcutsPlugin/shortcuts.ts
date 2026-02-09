@@ -29,6 +29,8 @@ export const SHORTCUTS = Object.freeze({
   LEFT_ALIGN: IS_APPLE ? '⌘⇧L' : 'Ctrl+⇧+L',
   RIGHT_ALIGN: IS_APPLE ? '⌘⇧R' : 'Ctrl+⇧+R',
   HIGHLIGHT: IS_APPLE ? '⌘⇧H' : 'Ctrl+⇧+H',
+  BOLD: IS_APPLE ? '⌘⇧B' : 'Ctrl+⇧+B',
+  INSERT_LINK: IS_APPLE ? '⌘⇧K' : 'Ctrl+⇧+K',
 
   // (Ctrl|⌘) + <key> shortcuts
   SUBSCRIPT: IS_APPLE ? '⌘,' : 'Ctrl+,',
@@ -38,10 +40,8 @@ export const SHORTCUTS = Object.freeze({
   CLEAR_FORMATTING: IS_APPLE ? '⌘\\' : 'Ctrl+\\',
   REDO: IS_APPLE ? '⌘⇧Z' : 'Ctrl+Y',
   UNDO: IS_APPLE ? '⌘Z' : 'Ctrl+Z',
-  BOLD: IS_APPLE ? '⌘B' : 'Ctrl+B',
   ITALIC: IS_APPLE ? '⌘I' : 'Ctrl+I',
   UNDERLINE: IS_APPLE ? '⌘U' : 'Ctrl+U',
-  INSERT_LINK: IS_APPLE ? '⌘K' : 'Ctrl+K',
   CODE: IS_APPLE ? '⌘E' : 'Ctrl+E',
 
   CUT: IS_APPLE ? '⌘X' : 'Ctrl+X',

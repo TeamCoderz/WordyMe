@@ -13,6 +13,13 @@ export interface Space {
   icon: string;
   parentId?: string | null;
   handle?: string | null;
+  isFavorite: boolean;
+  isContainer: boolean;
+  clientId: string | null;
+  lastViewedAt: string | null;
+  position: string | null;
+  spaceId: string | null;
+  type: 'space' | 'folder' | 'note';
 }
 
 export interface SpaceCreateInput {

@@ -8,6 +8,7 @@ import { HorizontalRuleNode } from '@repo/editor/nodes/HorizontalRuleNode';
 import { MathNode } from '@repo/editor/nodes/MathNode';
 import { $isImageNode, ImageNode } from '@repo/editor/nodes/ImageNode';
 import { SketchNode } from '@repo/editor/nodes/SketchNode';
+import { DiagramNode } from '@repo/editor/nodes/DiagramNode';
 import { ScoreNode } from '@repo/editor/nodes/ScoreNode';
 import { StickyNode } from '@repo/editor/nodes/StickyNode';
 import theme from '@repo/editor/theme';
@@ -168,6 +169,7 @@ export const editorConfig = {
     MathNode,
     ImageNode,
     SketchNode,
+    DiagramNode,
     ScoreNode,
     StickyNode,
     PageBreakNode,

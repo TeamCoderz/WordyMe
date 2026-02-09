@@ -5,6 +5,7 @@ import { $getEditor, ElementNode, isHTMLElement } from 'lexical';
 import { $createPageContentNode, $isPageContentNode, PageContentNode } from './PageContentNode';
 import { $createPageFooterNode, $isPageFooterNode, PageFooterNode } from './PageFooterNode';
 import { $createPageHeaderNode, $isPageHeaderNode, PageHeaderNode } from './PageHeaderNode';
+import { $getPageSetupNode } from './PageSetupNode';
 
 export type SerializedPageNode = SerializedElementNode;
 
@@ -23,6 +24,14 @@ export class PageNode extends ElementNode {
   static clearMeasurementFlags(): void {
     pagesMarkedForMeasurement.clear();
     fixedPageHeights.clear();
+  }
+
+  static clearFixedPages(): void {
+    fixedPageHeights.clear();
+  }
+
+  static markForMeasurement(nodeKey: string): void {
+    pagesMarkedForMeasurement.add(nodeKey);
   }
 
   static clearMeasurementFlag(nodeKey: string): void {
@@ -121,77 +130,79 @@ export class PageNode extends ElementNode {
   measureHeight(): number {
     this.clearMeasurementFlag();
     const element = this.getPageElement();
-    if (!isHTMLElement(element)) return 0;
+    if (!element) return 0;
     element.style.minHeight = 'unset';
     const height = element.scrollHeight;
     element.style.minHeight = '';
     return height;
   }
 
-  getUnderflowingChildren() {
+  getUnderflowingChildren(): LexicalNode[] {
     const editor = $getEditor();
     const rootElement = editor.getRootElement();
-    if (!isHTMLElement(rootElement)) return [];
-    const element = this.getPageElement();
-    if (!isHTMLElement(element)) return [];
-    const pageContent = this.getPageContentElement();
-    if (!isHTMLElement(pageContent)) return [];
+    if (!rootElement) return [];
+    const pageElement = this.getPageElement();
+    if (!pageElement) return [];
+    const contentElement = this.getPageContentElement();
+    if (!contentElement) return [];
     const nextPage = this.getNextSibling();
     if (!$isPageNode(nextPage)) return [];
     const nextPageContentNode = nextPage.getContentNode();
     if (!nextPageContentNode) return [];
-    const nextPageChildren = nextPageContentNode.getChildren();
-    if (!nextPageChildren.length) return [];
-    const nextPageElement = nextPage.getPageElement();
-    if (!isHTMLElement(nextPageElement)) return [];
-    const nextPageContent = nextPage.getPageContentElement();
-    if (!isHTMLElement(nextPageContent)) return [];
-    const nextPageChildNodes = Array.from(nextPageContent.childNodes);
-    element.style.minHeight = 'unset';
+    const nextPageContentChildren = nextPageContentNode.getChildren();
+    if (!nextPageContentChildren.length) return [];
+    const nextPageContentElement = nextPage.getPageContentElement();
+    if (!nextPageContentElement) return [];
+    const nextPageChildNodes = Array.from(nextPageContentElement.childNodes);
+    pageElement.style.minHeight = 'unset';
     const pageHeight = parseInt(document.documentElement.style.getPropertyValue('--page-height'));
     if (!pageHeight) return [];
     let overflowAfterIndex = 0;
-    let currentPageHeight = element.scrollHeight;
+    let currentPageHeight = pageElement.scrollHeight;
     while (currentPageHeight < pageHeight) {
       const nextChild = nextPageChildNodes[overflowAfterIndex]?.cloneNode(true);
       if (!nextChild) break;
-      pageContent.appendChild(nextChild);
-      currentPageHeight = element.scrollHeight;
+      contentElement.appendChild(nextChild);
+      currentPageHeight = pageElement.scrollHeight;
       if (currentPageHeight > pageHeight) break;
       overflowAfterIndex++;
       this.setFixedHeight(currentPageHeight);
     }
-    element.style.minHeight = '';
+    pageElement.style.minHeight = '';
     if (overflowAfterIndex === 0) return [];
-    return nextPageChildren.slice(0, overflowAfterIndex);
+    return nextPageContentChildren.slice(0, overflowAfterIndex);
   }
 
-  getOverflowingChildren() {
+  getOverflowingChildren(): LexicalNode[] {
     const editor = $getEditor();
     const rootElement = editor.getRootElement();
-    if (!isHTMLElement(rootElement)) return [];
-    const element = this.getPageElement();
-    if (!isHTMLElement(element)) return [];
-    const pageContent = this.getPageContentElement();
+    if (!rootElement) return [];
+    const pageElement = this.getPageElement();
+    if (!pageElement) return [];
+    const contentElement = this.getPageContentElement();
     const contentNode = this.getContentNode();
-    if (!isHTMLElement(pageContent) || !contentNode) return [];
+    if (!contentElement || !contentNode) return [];
     const children = contentNode.getChildren();
-    const childNodes = Array.from(pageContent.childNodes);
-    if (children.length !== childNodes.length) return [];
-    element.style.minHeight = 'unset';
+    const childNodes = Array.from(contentElement.childNodes);
+    if (children.length !== childNodes.length) {
+      childNodes.forEach((childNode) => childNode.remove());
+      contentNode.reconcileObservedMutation(contentElement, editor);
+      return this.getOverflowingChildren();
+    }
+    pageElement.style.minHeight = 'unset';
     const pageHeight = parseInt(document.documentElement.style.getPropertyValue('--page-height'));
     if (!pageHeight) return [];
-    let currentPageHeight = element.scrollHeight;
+    let currentPageHeight = pageElement.scrollHeight;
     let overflowAfterIndex = children.length - 1;
     while (currentPageHeight > pageHeight) {
       const lastChild = childNodes[overflowAfterIndex];
       if (lastChild) lastChild.remove();
-      currentPageHeight = element.scrollHeight;
+      currentPageHeight = pageElement.scrollHeight;
       this.setFixedHeight(currentPageHeight);
       if (currentPageHeight < pageHeight) break;
       overflowAfterIndex--;
     }
-    element.style.minHeight = '';
+    pageElement.style.minHeight = '';
     return children.slice(overflowAfterIndex || 1);
   }
 
@@ -244,7 +255,8 @@ export class PageNode extends ElementNode {
         nextPageFirstChild.insertBefore(child);
       });
     } else {
-      const newPage = $createPageNode();
+      const pageNumber = this.getPageNumber();
+      const newPage = $createPageNode(pageNumber + 1);
       newPage.getContentNode().append(...overflowingChildren);
       this.insertAfter(newPage);
     }
@@ -292,11 +304,17 @@ export class PageNode extends ElementNode {
   }
 }
 
-export function $createPageNode(): PageNode {
+export function $createPageNode(pageNumber: number): PageNode {
+  const pageSetupNode = $getPageSetupNode();
+  if (!pageSetupNode) throw new Error('PageNode: Could not find page setup');
+  const headers = pageSetupNode.getHeaders();
+  const footers = pageSetupNode.getFooters();
+  const headerVariant = headers.differentEven && pageNumber % 2 === 0 ? 'even' : 'default';
+  const footerVariant = footers.differentEven && pageNumber % 2 === 0 ? 'even' : 'default';
   return new PageNode().append(
-    $createPageHeaderNode(),
+    $createPageHeaderNode(headerVariant),
     $createPageContentNode(),
-    $createPageFooterNode(),
+    $createPageFooterNode(footerVariant),
   );
 }
 

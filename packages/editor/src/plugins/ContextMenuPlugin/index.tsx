@@ -71,6 +71,7 @@ import {
   TypeIcon,
   UnlinkIcon,
   XCircleIcon,
+  ShapesIcon,
 } from '@repo/ui/components/icons';
 import {
   CellMergeIcon,
@@ -449,6 +450,14 @@ export default function ContextMenuPlugin({ children }: ContextMenuPluginProps):
         value: 'sketch',
         shortcut: '/sketch',
         func: () => updateEditorStoreState('openDialog', 'sketch'),
+      },
+
+      {
+        icon: <ShapesIcon />,
+        label: 'Diagram',
+        value: 'diagram',
+        shortcut: '/diagram',
+        func: () => updateEditorStoreState('openDialog', 'diagram'),
       },
 
       {

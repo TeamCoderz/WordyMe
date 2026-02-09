@@ -314,7 +314,7 @@ function SketchDialog({ node }: { node: ImageNode | null }) {
     if (!src) return;
     try {
       if ($isSketchNode(node)) {
-        const blob = await fetch(src).then((res) => res.blob());
+        const blob = await fetch(src, { credentials: 'include' }).then((res) => res.blob());
         const contents = await loadSceneOrLibraryFromBlob(blob, null, null);
         if (contents.type === MIME_TYPES.excalidraw) {
           excalidrawAPI?.addFiles(Object.values(contents.data.files));

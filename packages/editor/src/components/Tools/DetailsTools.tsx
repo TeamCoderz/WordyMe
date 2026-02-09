@@ -67,6 +67,7 @@ function DetailsTools({ node }: { node: DetailsContainerNode }) {
 
   const updateVariant = useCallback(
     (variant: DetailsVariant) => {
+      if (!variant) return;
       editor.update(() => {
         node.setVariant(variant);
       });

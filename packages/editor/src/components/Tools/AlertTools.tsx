@@ -41,7 +41,7 @@ function AlertTools({ node }: { node: AlertNode }) {
       const variant = node.getVariant();
       updateEditorStoreState('alertVariant', variant);
     }
-  }, [editor, node]);
+  }, [editor, node, updateEditorStoreState]);
 
   useEffect(() => {
     return editor.registerUpdateListener(() => {
@@ -66,6 +66,7 @@ function AlertTools({ node }: { node: AlertNode }) {
 
   const updateVariant = useCallback(
     (variant: AlertVariant) => {
+      if (!variant) return;
       editor.update(() => {
         node.setVariant(variant);
       });

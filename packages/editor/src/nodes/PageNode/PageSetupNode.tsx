@@ -13,6 +13,11 @@ import {
 import { PageSetup, PageSize, Orientation, HeaderConfig, FooterConfig } from './types';
 import { DEFAULT_PAGE_SETUP, EMPTY_PARAGRAPH } from './constants';
 import { computeSha256 } from '@repo/shared/checksum';
+import { HeaderVariant } from './PageHeaderNode';
+import { $generateNodesFromSerializedNodes } from '@lexical/clipboard';
+import { FooterVariant } from './PageFooterNode';
+
+export const PAGE_SETUP_TAG = 'page-setup';
 
 export type SerializedPageSetupNode = Spread<
   {
@@ -34,6 +39,14 @@ export class PageSetupNode extends DecoratorNode<null> {
   };
   __headers: HeaderConfig;
   __footers: FooterConfig;
+  __checksums: {
+    defaultHeader: string | null;
+    defaultFooter: string | null;
+    firstHeader: string | null;
+    firstFooter: string | null;
+    evenHeader: string | null;
+    evenFooter: string | null;
+  };
 
   static getType(): string {
     return 'page-setup';
@@ -47,6 +60,7 @@ export class PageSetupNode extends DecoratorNode<null> {
       node.__margins,
       node.__headers,
       node.__footers,
+      node.__checksums,
       node.__key,
     );
   }
@@ -56,14 +70,14 @@ export class PageSetupNode extends DecoratorNode<null> {
   }
 
   updateFromJSON(serializedNode: LexicalUpdateJSON<SerializedPageSetupNode>): this {
-    const node = super.updateFromJSON(serializedNode);
     const { isPaged, pageSize, orientation, margins, headers, footers } = serializedNode;
-    node.__isPaged = isPaged;
-    node.__pageSize = pageSize;
-    node.__orientation = orientation;
-    node.__margins = margins;
-    node.__headers = headers;
-    node.__footers = footers;
+    const node = super.updateFromJSON(serializedNode);
+    if (isPaged !== undefined) node.setIsPaged(isPaged);
+    if (pageSize !== undefined) node.setPageSize(pageSize);
+    if (orientation !== undefined) node.setOrientation(orientation);
+    if (margins !== undefined) node.setMargins(margins);
+    if (headers !== undefined) node.setHeaders(headers);
+    if (footers !== undefined) node.setFooters(footers);
     return node;
   }
 
@@ -74,6 +88,14 @@ export class PageSetupNode extends DecoratorNode<null> {
     margins: { top: number; right: number; bottom: number; left: number },
     headers: HeaderConfig,
     footers: FooterConfig,
+    checksums: {
+      defaultHeader: string | null;
+      defaultFooter: string | null;
+      firstHeader: string | null;
+      firstFooter: string | null;
+      evenHeader: string | null;
+      evenFooter: string | null;
+    },
     key?: NodeKey,
   ) {
     super(key);
@@ -83,6 +105,7 @@ export class PageSetupNode extends DecoratorNode<null> {
     this.__margins = margins;
     this.__headers = headers;
     this.__footers = footers;
+    this.__checksums = checksums;
   }
 
   createDOM(): HTMLElement {
@@ -185,47 +208,131 @@ export class PageSetupNode extends DecoratorNode<null> {
 
   getMargins(): { top: number; right: number; bottom: number; left: number } {
     const latest = this.getLatest();
-    return latest.__margins ?? DEFAULT_PAGE_SETUP.margins;
+    return latest.__margins ?? structuredClone(DEFAULT_PAGE_SETUP.margins);
   }
 
   getHeaders(): HeaderConfig {
     const latest = this.getLatest();
-    return latest.__headers ?? DEFAULT_PAGE_SETUP.headers;
+    return latest.__headers ?? structuredClone(DEFAULT_PAGE_SETUP.headers);
+  }
+
+  getHeaderNodes(variant: HeaderVariant): LexicalNode[] {
+    const headers = this.getHeaders();
+    const serializedNodes = headers[variant];
+    if (!serializedNodes) return [];
+    return $generateNodesFromSerializedNodes(serializedNodes);
   }
 
   getFooters(): FooterConfig {
     const latest = this.getLatest();
-    return latest.__footers ?? DEFAULT_PAGE_SETUP.footers;
+    return latest.__footers ?? structuredClone(DEFAULT_PAGE_SETUP.footers);
   }
 
-  setIsPaged(isPaged: boolean): void {
+  getFooterNodes(variant: FooterVariant): LexicalNode[] {
+    const footers = this.getFooters();
+    const serializedNodes = footers[variant];
+    if (!serializedNodes) return [];
+    return $generateNodesFromSerializedNodes(serializedNodes);
+  }
+
+  setIsPaged(isPaged: boolean) {
     const writable = this.getWritable();
     writable.__isPaged = isPaged;
+    return this;
   }
 
-  setPageSize(pageSize: PageSize): void {
+  setPageSize(pageSize: PageSize) {
     const writable = this.getWritable();
     writable.__pageSize = pageSize;
+    return this;
   }
 
-  setOrientation(orientation: Orientation): void {
+  setOrientation(orientation: Orientation) {
     const writable = this.getWritable();
     writable.__orientation = orientation;
+    return this;
   }
 
-  setMargins(margins: { top: number; right: number; bottom: number; left: number }): void {
+  setMargins(
+    margins: Partial<{
+      top: number;
+      right: number;
+      bottom: number;
+      left: number;
+    }>,
+  ) {
     const writable = this.getWritable();
-    writable.__margins = margins;
+    if (margins.top !== undefined) {
+      writable.__margins.top = margins.top;
+    }
+    if (margins.right !== undefined) {
+      writable.__margins.right = margins.right;
+    }
+    if (margins.bottom !== undefined) {
+      writable.__margins.bottom = margins.bottom;
+    }
+    if (margins.left !== undefined) {
+      writable.__margins.left = margins.left;
+    }
+    return this;
   }
 
-  setHeaders(headers: HeaderConfig): void {
+  setHeaders(headers: Partial<HeaderConfig>) {
     const writable = this.getWritable();
-    writable.__headers = headers;
+    writable.__headers = { ...this.__headers, ...headers };
+    if (headers.default) {
+      writable.__checksums.defaultHeader = computeSha256(JSON.stringify(headers.default));
+    }
+    if (headers.first) {
+      writable.__checksums.firstHeader = computeSha256(JSON.stringify(headers.first));
+    }
+    if (headers.even) {
+      writable.__checksums.evenHeader = computeSha256(JSON.stringify(headers.even));
+    }
+    if (headers.enabled && !this.__headers.default && !headers.default) {
+      writable.__headers.default = [EMPTY_PARAGRAPH];
+      writable.__checksums.defaultHeader = computeSha256(
+        JSON.stringify(writable.__headers.default),
+      );
+    }
+    if (headers.enabled && !this.__headers.first && !headers.first) {
+      writable.__headers.first = [EMPTY_PARAGRAPH];
+      writable.__checksums.firstHeader = computeSha256(JSON.stringify(writable.__headers.first));
+    }
+    if (headers.enabled && !this.__headers.even && !headers.even) {
+      writable.__headers.even = [EMPTY_PARAGRAPH];
+      writable.__checksums.evenHeader = computeSha256(JSON.stringify(writable.__headers.even));
+    }
+    return this;
   }
 
-  setFooters(footers: FooterConfig): void {
+  setFooters(footers: Partial<FooterConfig>) {
     const writable = this.getWritable();
-    writable.__footers = footers;
+    writable.__footers = { ...this.__footers, ...footers };
+    if (footers.default) {
+      writable.__checksums.defaultFooter = computeSha256(JSON.stringify(footers.default));
+    }
+    if (footers.first) {
+      writable.__checksums.firstFooter = computeSha256(JSON.stringify(footers.first));
+    }
+    if (footers.even) {
+      writable.__checksums.evenFooter = computeSha256(JSON.stringify(footers.even));
+    }
+    if (footers.enabled && !this.__footers.default && !footers.default) {
+      writable.__footers.default = [EMPTY_PARAGRAPH];
+      writable.__checksums.defaultFooter = computeSha256(
+        JSON.stringify(writable.__footers.default),
+      );
+    }
+    if (footers.enabled && !this.__footers.first && !footers.first) {
+      writable.__footers.first = [EMPTY_PARAGRAPH];
+      writable.__checksums.firstFooter = computeSha256(JSON.stringify(writable.__footers.first));
+    }
+    if (footers.enabled && !this.__footers.even && !footers.even) {
+      writable.__footers.even = [EMPTY_PARAGRAPH];
+      writable.__checksums.evenFooter = computeSha256(JSON.stringify(writable.__footers.even));
+    }
+    return this;
   }
 
   resetHeaders(): void {
@@ -238,31 +345,35 @@ export class PageSetupNode extends DecoratorNode<null> {
     writable.__footers = DEFAULT_PAGE_SETUP.footers;
   }
 
-  getHeadersChecksum() {
-    const headers = this.getHeaders();
-    const checksums = {
-      default: computeSha256(JSON.stringify(headers.default ?? [EMPTY_PARAGRAPH])),
-      first: computeSha256(JSON.stringify(headers.first ?? [EMPTY_PARAGRAPH])),
-      even: computeSha256(JSON.stringify(headers.even ?? [EMPTY_PARAGRAPH])),
+  getHeaderChecksums() {
+    return {
+      default: this.__checksums.defaultHeader,
+      first: this.__checksums.firstHeader,
+      even: this.__checksums.evenHeader,
     };
-    return checksums;
   }
 
-  getFootersChecksum() {
-    const footers = this.getFooters();
-    const checksums = {
-      default: computeSha256(JSON.stringify(footers.default ?? [EMPTY_PARAGRAPH])),
-      first: computeSha256(JSON.stringify(footers.first ?? [EMPTY_PARAGRAPH])),
-      even: computeSha256(JSON.stringify(footers.even ?? [EMPTY_PARAGRAPH])),
+  getFooterChecksums() {
+    return {
+      default: this.__checksums.defaultFooter,
+      first: this.__checksums.firstFooter,
+      even: this.__checksums.evenFooter,
     };
-    return checksums;
   }
 }
 
-export function $createPageSetupNode(payload = DEFAULT_PAGE_SETUP): PageSetupNode {
+export function $createPageSetupNode(payload = structuredClone(DEFAULT_PAGE_SETUP)): PageSetupNode {
   const { isPaged, pageSize, orientation, margins, headers, footers } = payload;
+  const checksums = {
+    defaultHeader: null,
+    defaultFooter: null,
+    firstHeader: null,
+    firstFooter: null,
+    evenHeader: null,
+    evenFooter: null,
+  };
   return $applyNodeReplacement(
-    new PageSetupNode(isPaged, pageSize, orientation, margins, headers, footers),
+    new PageSetupNode(isPaged, pageSize, orientation, margins, headers, footers, checksums),
   );
 }
 

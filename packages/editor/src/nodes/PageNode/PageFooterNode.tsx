@@ -1,35 +1,26 @@
-import type {
-  DOMConversionOutput,
-  LexicalNode,
-  SerializedElementNode,
-  SerializedLexicalNode,
-} from 'lexical';
+import type { LexicalNode, NodeKey, SerializedElementNode, SerializedLexicalNode } from 'lexical';
 
-import { $getEditor, ElementNode } from 'lexical';
+import { $getEditor, $getSelection, ElementNode } from 'lexical';
 import { $isPageNode, PageNode } from '@repo/editor/nodes/PageNode';
 import { $getPageSetupNode } from '@repo/editor/nodes/PageNode';
-import { computeSha256 } from '@repo/shared/checksum';
 import { exportNodeToJSON } from '@repo/editor/utils/editorState';
 
 export type SerializedPageFooterNode = SerializedElementNode;
 export type FooterVariant = 'default' | 'first' | 'even';
 
-export function $convertPageFooterElement(): DOMConversionOutput | null {
-  const node = $createPageFooterNode();
-  return { node };
-}
-
 export class PageFooterNode extends ElementNode {
+  __editable = false;
+  __checksum: string | null = null;
   static getType(): string {
     return 'page-footer';
   }
 
   static clone(node: PageFooterNode): PageFooterNode {
-    return new PageFooterNode(node.__key);
+    return new PageFooterNode(node.__editable, node.__checksum, node.__key);
   }
 
   static importJSON(): PageFooterNode {
-    return new PageFooterNode();
+    return new PageFooterNode(false, null);
   }
 
   exportJSON(): SerializedPageFooterNode {
@@ -40,12 +31,20 @@ export class PageFooterNode extends ElementNode {
     };
   }
 
+  constructor(editable: boolean, checksum: string | null, key?: NodeKey) {
+    super(key);
+    this.__editable = editable;
+    this.__checksum = checksum;
+  }
+
   createDOM(): HTMLElement {
     const dom = document.createElement('div');
     dom.className = 'LexicalTheme__pageFooter';
     const childrenSize = this.getChildrenSize();
     dom.classList.toggle('hidden', childrenSize === 0);
-    dom.contentEditable = 'false';
+    const editable = this.getEditable();
+    if (editable) dom.removeAttribute('contentEditable');
+    else dom.setAttribute('contenteditable', 'false');
     dom.onpointerdown = () => {
       dom.removeAttribute('contentEditable');
     };
@@ -55,7 +54,9 @@ export class PageFooterNode extends ElementNode {
   updateDOM(_prevNode: this, dom: HTMLElement): boolean {
     const childrenSize = this.getChildrenSize();
     dom.classList.toggle('hidden', childrenSize === 0);
-    dom.contentEditable = 'false';
+    const editable = this.getEditable();
+    if (editable) dom.removeAttribute('contentEditable');
+    else dom.setAttribute('contenteditable', 'false');
     return false;
   }
 
@@ -67,11 +68,25 @@ export class PageFooterNode extends ElementNode {
     return '';
   }
 
+  getEditable(): boolean {
+    return this.__editable;
+  }
+
   setEditable(editable: boolean): void {
+    const writable = this.getWritable();
+    writable.__editable = editable;
+  }
+
+  show(): void {
     const dom = $getEditor().getElementByKey(this.getKey());
     if (!dom) return;
-    if (editable) dom.removeAttribute('contentEditable');
-    else dom.setAttribute('contenteditable', 'false');
+    dom.style.display = '';
+  }
+
+  hide(): void {
+    const dom = $getEditor().getElementByKey(this.getKey());
+    if (!dom) return;
+    dom.style.display = 'none';
   }
 
   getPageNode(): PageNode {
@@ -91,13 +106,28 @@ export class PageFooterNode extends ElementNode {
     return 'default';
   }
 
+  updateVariant(): void {
+    const variant = this.getVariant();
+    const pageSetupNode = $getPageSetupNode();
+    if (!pageSetupNode) return;
+    const footerNodes = pageSetupNode.getFooterNodes(variant);
+    this.clear();
+    this.append(...footerNodes);
+    const checksum = pageSetupNode.getFooterChecksums()[variant];
+    this.setChecksum(checksum);
+  }
+
   getSerializedChildren(): SerializedLexicalNode[] {
     return exportNodeToJSON<SerializedElementNode>(this).children;
   }
 
-  getChecksum(): string {
-    const serializedNodes = this.getSerializedChildren();
-    return computeSha256(JSON.stringify(serializedNodes));
+  getChecksum(): string | null {
+    return this.__checksum;
+  }
+
+  setChecksum(checksum: string | null): void {
+    const writable = this.getWritable();
+    writable.__checksum = checksum;
   }
 
   isShadowRoot(): boolean {
@@ -114,7 +144,11 @@ export class PageFooterNode extends ElementNode {
   }
 
   excludeChildrenFromCopy(): boolean {
-    return true;
+    const editable = this.getEditable();
+    if (!editable) return true;
+    const selection = $getSelection();
+    if (!selection || selection.isCollapsed()) return true;
+    return false;
   }
 
   canInsertTextBefore(): boolean {
@@ -126,8 +160,14 @@ export class PageFooterNode extends ElementNode {
   }
 }
 
-export function $createPageFooterNode(): PageFooterNode {
-  return new PageFooterNode();
+export function $createPageFooterNode(variant: FooterVariant): PageFooterNode {
+  const pageSetupNode = $getPageSetupNode();
+  if (!pageSetupNode) throw new Error('PageFooterNode: Could not find page setup');
+  const checksum = pageSetupNode.getFooterChecksums()[variant];
+  const pageFooterNode = new PageFooterNode(false, checksum);
+  const footerNodes = pageSetupNode.getFooterNodes(variant);
+  pageFooterNode.append(...footerNodes);
+  return pageFooterNode;
 }
 
 export function $isPageFooterNode(node: LexicalNode | null | undefined): node is PageFooterNode {

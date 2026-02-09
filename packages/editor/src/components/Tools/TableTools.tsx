@@ -221,7 +221,7 @@ function TableTools({ node }: { node: TableNode }) {
       const cellHeaderState = tableCell.getHeaderStyles();
       updateEditorStoreState('tableCellHeaderState', cellHeaderState);
     }
-  }, [editor, node]);
+  }, [editor, node, updateEditorStoreState]);
 
   useEffect(() => {
     return editor.registerUpdateListener(() => {
@@ -271,7 +271,7 @@ function TableTools({ node }: { node: TableNode }) {
     } else {
       mergeTableCellsAtSelection();
     }
-  }, [canMergeTableCells, canUnmergeTableCell]);
+  }, [canUnmergeTableCell, mergeTableCellsAtSelection, unmergeTableCellsAtSelection]);
 
   const insertTableRowAtSelection = useCallback(
     (shouldInsertAfter: boolean) => {
@@ -417,13 +417,13 @@ function TableTools({ node }: { node: TableNode }) {
     (key: string, value: string | null) => {
       applyCellStyle({ [key]: value });
     },
-    [editor],
+    [applyCellStyle],
   );
 
   const toggleCellWritingMode = useCallback(() => {
     const value = tableCellStyle.writingMode === '' ? 'vertical-rl' : '';
     applyCellStyle({ 'writing-mode': value });
-  }, [editor, tableCellStyle.writingMode]);
+  }, [applyCellStyle, tableCellStyle.writingMode]);
 
   function updateFloat(newFloat: 'left' | 'right' | 'none') {
     editor.update(() => {
@@ -433,11 +433,48 @@ function TableTools({ node }: { node: TableNode }) {
   }
 
   function updateFormat(newFormat: ElementFormatType) {
+    if (!newFormat) return;
     editor.update(() => {
       node.setFormat(newFormat);
       $patchStyle(node, { float: 'none' });
     });
   }
+
+  const updateTableBorderStyle = useCallback(
+    (style: string) => {
+      if (!style) return;
+      editor.update(() => {
+        if (!node.isAttached()) return;
+        $patchStyle(node, {
+          'border-style': style,
+        });
+      });
+    },
+    [editor, node],
+  );
+
+  const updateTableBorderWidth = useCallback(
+    (width: string) => {
+      if (!width) return;
+      editor.update(() => {
+        if (!node.isAttached()) return;
+        $patchStyle(node, { 'border-width': width });
+      });
+    },
+    [editor, node],
+  );
+
+  const updateTableColor = useCallback(
+    (key: string, value: string | null) => {
+      editor.update(() => {
+        if (!node.isAttached()) return;
+        $patchStyle(node, {
+          [key]: value,
+        });
+      });
+    },
+    [editor, node],
+  );
 
   useEffect(() => {
     return mergeRegister(
@@ -574,44 +611,13 @@ function TableTools({ node }: { node: TableNode }) {
     updateFormat,
     updateFloat,
     updateCellColor,
+    updateTableColor,
+    updateTableBorderStyle,
+    updateTableBorderWidth,
   ]);
 
   const tableToolbarRef = useRef<HTMLDivElement | null>(null);
   const tableCellToolbarRef = useRef<HTMLDivElement | null>(null);
-
-  const updateTableBorderStyle = useCallback(
-    (style: string) => {
-      editor.update(() => {
-        if (!node.isAttached()) return;
-        $patchStyle(node, {
-          'border-style': style,
-        });
-      });
-    },
-    [editor, node],
-  );
-
-  const updateTableBorderWidth = useCallback(
-    (width: string) => {
-      editor.update(() => {
-        if (!node.isAttached()) return;
-        $patchStyle(node, { 'border-width': width });
-      });
-    },
-    [editor, node],
-  );
-
-  const updateTableColor = useCallback(
-    (key: string, value: string | null) => {
-      editor.update(() => {
-        if (!node.isAttached()) return;
-        $patchStyle(node, {
-          [key]: value,
-        });
-      });
-    },
-    [editor, node],
-  );
 
   useLayoutEffect(() => {
     const tableToolbarElem = tableToolbarRef.current;
@@ -639,6 +645,7 @@ function TableTools({ node }: { node: TableNode }) {
       if (tableCellToolbarElem === null) return false;
 
       const tableCell = selectedCells[selectedCells.length - 1];
+      if (!tableCell) return false;
       const tableCellKey = tableCell.getKey();
       const tableCellElement = editor.getElementByKey(tableCellKey);
       if (tableCellElement === null) return false;
@@ -727,7 +734,7 @@ function TableTools({ node }: { node: TableNode }) {
                 <DropdownMenuSubTrigger>Border Style</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuRadioGroup
-                    onValueChange={(v) => updateTableBorderStyle(v)}
+                    onValueChange={updateTableBorderStyle}
                     value={tableStyle.borderStyle}
                   >
                     <DropdownMenuRadioItem value="none">None</DropdownMenuRadioItem>
@@ -743,7 +750,7 @@ function TableTools({ node }: { node: TableNode }) {
                 <DropdownMenuSubTrigger>Border Width</DropdownMenuSubTrigger>
                 <DropdownMenuSubContent>
                   <DropdownMenuRadioGroup
-                    onValueChange={(v) => updateTableBorderWidth(v)}
+                    onValueChange={updateTableBorderWidth}
                     value={tableStyle.borderWidth}
                   >
                     <DropdownMenuRadioItem value="1px">1 px</DropdownMenuRadioItem>

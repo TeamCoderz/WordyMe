@@ -2,13 +2,17 @@ import { User } from './user';
 import type { SerializedEditorState } from 'lexical';
 
 export interface EditorRevision {
+  checksum: string | null;
+  content_path: string;
+  created_at: string;
+  document_id: string;
+  fts: unknown;
   id: string;
-  documentId: string;
+  profile_id: string;
+  revision_name: string | null;
+  text: string;
+  updated_at: string;
   data: SerializedEditorState;
-  checksum: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  name?: string | null;
 }
 
 export type Revision = Omit<EditorRevision, 'data'> & { author: User };

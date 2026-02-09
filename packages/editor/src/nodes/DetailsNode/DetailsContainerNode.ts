@@ -25,19 +25,22 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { setDomHiddenUntilFound } from './utils';
 
-const detailsVariants = cva('details__container overflow-hidden', {
-  variants: {
-    variant: {
-      sharp: 'rounded-none',
-      rounded: 'rounded-lg',
+const detailsContainerVariants = cva(
+  "LexicalTheme__details flow-root border border-black/12 dark:border-white/12 mb-2 overflow-hidden [&[contenteditable='false']]:select-none [&[contenteditable='false']>*]:**:pointer-events-none",
+  {
+    variants: {
+      variant: {
+        sharp: 'rounded-none',
+        rounded: 'rounded-lg',
+      },
+    },
+    defaultVariants: {
+      variant: 'rounded',
     },
   },
-  defaultVariants: {
-    variant: 'rounded',
-  },
-});
+);
 
-export type DetailsVariant = NonNullable<VariantProps<typeof detailsVariants>['variant']>;
+export type DetailsVariant = NonNullable<VariantProps<typeof detailsContainerVariants>['variant']>;
 
 export type SerializedDetailsContainerNode = Spread<
   {
@@ -107,7 +110,7 @@ export class DetailsContainerNode extends ElementNode {
       });
       dom = detailsDom;
     }
-    dom.className = detailsVariants({ variant: this.__variant });
+    dom.className = detailsContainerVariants({ variant: this.__variant });
     dom.setAttribute('data-variant', this.__variant);
     if (this.__editable === false) dom.setAttribute('contenteditable', 'false');
     return dom;
@@ -120,17 +123,41 @@ export class DetailsContainerNode extends ElementNode {
     if (prevNode.__open !== currentOpen) {
       // details is not well supported in Chrome #5582
       if (IS_CHROME) {
+        const summaryDom = dom.children[0];
         const contentDom = dom.children[1];
         invariant(isHTMLElement(contentDom), 'Expected contentDom to be an HTMLElement');
         if (currentOpen) {
           dom.setAttribute('open', '');
           contentDom.hidden = false;
+          if (isHTMLElement(summaryDom)) {
+            summaryDom.setAttribute('data-open', '');
+          }
         } else {
           dom.removeAttribute('open');
           setDomHiddenUntilFound(contentDom);
+          if (isHTMLElement(summaryDom)) {
+            summaryDom.removeAttribute('data-open');
+          }
         }
       } else {
         dom.open = this.__open;
+        // Update data attributes for summary and content
+        const summaryDom = dom.children[0];
+        const contentDom = dom.children[1];
+        if (isHTMLElement(summaryDom)) {
+          if (currentOpen) {
+            summaryDom.setAttribute('data-open', '');
+          } else {
+            summaryDom.removeAttribute('data-open');
+          }
+        }
+        if (isHTMLElement(contentDom)) {
+          if (currentOpen) {
+            contentDom.removeAttribute('data-hidden');
+          } else {
+            contentDom.setAttribute('data-hidden', '');
+          }
+        }
       }
       shouldUpdate = true;
     }
@@ -145,7 +172,7 @@ export class DetailsContainerNode extends ElementNode {
     }
 
     if (prevNode.__variant !== this.__variant) {
-      dom.className = detailsVariants({ variant: this.__variant });
+      dom.className = detailsContainerVariants({ variant: this.__variant });
       dom.setAttribute('data-variant', this.__variant);
       shouldUpdate = true;
     }
@@ -172,7 +199,7 @@ export class DetailsContainerNode extends ElementNode {
 
   exportDOM(): DOMExportOutput {
     const element = document.createElement('details');
-    element.className = detailsVariants({ variant: this.__variant });
+    element.className = detailsContainerVariants({ variant: this.__variant });
     element.setAttribute('data-variant', this.__variant);
     element.setAttribute('open', '');
     if (!this.__open) element.removeAttribute('open');

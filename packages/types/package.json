@@ -13,8 +13,8 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",
-    "eslint": "^9.39.2",
-    "lexical": "^0.39.0",
+    "eslint": "^10.0.0",
+    "lexical": "^0.40.0",
     "typescript": "5.9.3"
   }
 }

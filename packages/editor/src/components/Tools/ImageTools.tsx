@@ -1,6 +1,7 @@
 'use client';
 import { ImageNode } from '@repo/editor/nodes/ImageNode';
 import { $isSketchNode, SketchNode } from '@repo/editor/nodes/SketchNode';
+import { $isDiagramNode, DiagramNode } from '@repo/editor/nodes/DiagramNode';
 import { $patchStyle, getStyleObjectFromCSS } from '@repo/editor/utils/nodeUtils';
 import { useEffect, useState, useCallback, useLayoutEffect, useRef } from 'react';
 import { FormatImageLeftIcon, FormatImageRightIcon } from '@repo/editor/components/icons';
@@ -39,27 +40,35 @@ const anchorPolyfill = async (elements: HTMLElement[]) => {
   }
 };
 
-function ImageTools({ node }: { node: ImageNode | SketchNode | IFrameNode | ScoreNode }) {
+function ImageTools({
+  node,
+}: {
+  node: ImageNode | SketchNode | DiagramNode | IFrameNode | ScoreNode;
+}) {
   const [editor] = useLexicalComposerContext();
   const { updateEditorStoreState } = useActions();
   const imageToolbarRef = useRef<HTMLDivElement | null>(null);
 
   const openImageDialog = () => updateEditorStoreState('openDialog', 'image');
   const openSketchDialog = () => updateEditorStoreState('openDialog', 'sketch');
+  const openDiagramDialog = () => updateEditorStoreState('openDialog', 'diagram');
   const openIFrameDialog = () => updateEditorStoreState('openDialog', 'iframe');
   const openScoreDialog = () => updateEditorStoreState('openDialog', 'score');
 
   const isSketchNode = $isSketchNode(node);
+  const isDiagramNode = $isDiagramNode(node);
   const isIFrameNode = $isIFrameNode(node);
   const isScoreNode = $isScoreNode(node);
 
   const openDialog = isSketchNode
     ? openSketchDialog
-    : isIFrameNode
-      ? openIFrameDialog
-      : isScoreNode
-        ? openScoreDialog
-        : openImageDialog;
+    : isDiagramNode
+      ? openDiagramDialog
+      : isIFrameNode
+        ? openIFrameDialog
+        : isScoreNode
+          ? openScoreDialog
+          : openImageDialog;
 
   function getNodeStyle(): Record<string, string | null> | null {
     return editor.getEditorState().read(() => {
@@ -195,8 +204,8 @@ function ImageTools({ node }: { node: ImageNode | SketchNode | IFrameNode | Scor
         pressed={false}
         value="edit"
         onClick={openDialog}
-        aria-label={`Edit ${isSketchNode ? 'sketch' : isIFrameNode ? 'iframe' : isScoreNode ? 'score' : 'image'}`}
-        title={`Edit ${isSketchNode ? 'sketch' : isIFrameNode ? 'iframe' : isScoreNode ? 'score' : 'image'}`}
+        aria-label={`Edit ${isSketchNode ? 'sketch' : isDiagramNode ? 'diagram' : isIFrameNode ? 'iframe' : isScoreNode ? 'score' : 'image'}`}
+        title={`Edit ${isSketchNode ? 'sketch' : isDiagramNode ? 'diagram' : isIFrameNode ? 'iframe' : isScoreNode ? 'score' : 'image'}`}
       >
         <EditIcon />
       </Toggle>
@@ -261,7 +270,7 @@ export default function ImageToolbar({
   node,
   anchorElem = document.querySelector('.editor-container') as HTMLElement,
 }: {
-  node: ImageNode | SketchNode | IFrameNode | ScoreNode;
+  node: ImageNode | SketchNode | DiagramNode | IFrameNode | ScoreNode;
   anchorElem?: HTMLElement;
 }) {
   return createPortal(<ImageTools node={node} />, anchorElem);

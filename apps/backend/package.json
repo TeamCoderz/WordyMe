@@ -34,8 +34,8 @@
     "nanoid": "^5.1.6",
     "p-queue": "^9.1.0",
     "socket.io": "^4.8.3",
-    "zod": "^4.2.1",
-    "zod-openapi": "^5.4.5"
+    "zod": "^4.3.6",
+    "zod-openapi": "^5.4.6"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
