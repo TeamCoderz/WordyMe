@@ -1,9 +1,5 @@
-import {
-  useMutation,
-  useQueryClient,
-  UseQueryOptions,
-  UseSuspenseQueryOptions,
-} from '@tanstack/react-query';
+import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
+import type { QueryClient, UseQueryOptions } from '@tanstack/react-query';
 import {
   deleteDocument,
   updateDocument,
@@ -12,6 +8,7 @@ import {
   getUserDocuments,
   getLastViewedDocuments,
   createDocumentWithRevision,
+  getDocumentById,
 } from '@repo/sdk/documents.ts';
 import {
   addDocumentToFavorites,
@@ -77,6 +74,8 @@ export const useRenameDocumentMutation = ({
 }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
+  const { updateTab } = useActions();
+  const tabs = useSelector((state) => state.tabs.tabs);
   const editRouteMatch = useMatch({
     from: '/_authed/edit/$handle',
     shouldThrow: false,
@@ -116,6 +115,7 @@ export const useRenameDocumentMutation = ({
   const updateDocumentName = async (documentId: string, name: string) => {
     const oldName = document.name;
 
+    // Update getAllDocuments cache
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
       (old: ListDocumentResult) => {
@@ -127,10 +127,28 @@ export const useRenameDocumentMutation = ({
         });
       },
     );
+    // Update getDocumentByHandle cache for tab metadata reactivity
+    queryClient.setQueryData(
+      getDocumentByHandleQueryOptions(document.handle).queryKey,
+      (old: any) => (old ? { ...old, name } : old),
+    );
     await mutation.mutateAsync(
       { documentId, name },
       {
         onSuccess: async (data) => {
+          // Update the tab pathname if handle changed
+          const documentTab = tabs.find(
+            (tab) =>
+              tab.pathname === `/edit/${document.handle}` ||
+              tab.pathname === `/view/${document.handle}`,
+          );
+          if (documentTab && data && data.handle !== document.handle) {
+            const newPathname = documentTab.pathname.startsWith('/edit/')
+              ? `/edit/${data.handle}`
+              : `/view/${data.handle}`;
+            updateTab(documentTab.id, { pathname: newPathname });
+          }
+
           if (viewRouteMatch || editRouteMatch) {
             if (
               document.handle === (viewRouteMatch?.params.handle ?? editRouteMatch?.params.handle)
@@ -151,10 +169,14 @@ export const useRenameDocumentMutation = ({
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(document.spaceId!).queryKey,
             (old: ListDocumentResult) => {
-              return old?.map((document) => {
-                return { ...document, name: oldName };
+              return old?.map((doc) => {
+                return { ...doc, name: oldName };
               });
             },
+          );
+          queryClient.setQueryData(
+            getDocumentByHandleQueryOptions(document.handle).queryKey,
+            (old: any) => (old ? { ...old, name: oldName } : old),
           );
         },
       },
@@ -209,6 +231,11 @@ export const useUpdateDocumentIconMutation = ({
         });
       },
     );
+    // Update getDocumentByHandle cache for tab metadata reactivity
+    queryClient.setQueryData(
+      getDocumentByHandleQueryOptions(document.handle).queryKey,
+      (old: any) => (old ? { ...old, icon } : old),
+    );
     mutation.mutateAsync(
       { documentId, icon },
       {
@@ -220,6 +247,10 @@ export const useUpdateDocumentIconMutation = ({
                 return { ...document, icon: oldIcon };
               });
             },
+          );
+          queryClient.setQueryData(
+            getDocumentByHandleQueryOptions(document.handle).queryKey,
+            (old: any) => (old ? { ...old, icon: oldIcon } : old),
           );
         },
       },
@@ -635,6 +666,8 @@ export const useDeleteDocumentMutation = ({
   document: ListDocumentResult[number];
 }) => {
   const invalidate = useAllQueriesInvalidate();
+  const { closeTab } = useActions();
+  const tabs = useSelector((state) => state.tabs.tabs);
   const editRouteMatch = useMatch({
     from: '/_authed/edit/$handle',
     shouldThrow: false,
@@ -666,6 +699,16 @@ export const useDeleteDocumentMutation = ({
       return toast.loading(`Deleting ${label}: ${document.name}`);
     },
     onSuccess: async (_, __, toastId) => {
+      // Close the tab if the deleted document is open
+      const documentTab = tabs.find(
+        (tab) =>
+          tab.pathname === `/edit/${document.handle}` ||
+          tab.pathname === `/view/${document.handle}`,
+      );
+      if (documentTab) {
+        closeTab(documentTab.id);
+      }
+
       if (viewRouteMatch || editRouteMatch) {
         if (document.handle === (viewRouteMatch?.params.handle ?? editRouteMatch?.params.handle)) {
           navigate({
@@ -861,6 +904,32 @@ export function useDuplicateDocumentMutation({
   });
   return mutation;
 }
+
+export const getDocumentByIdQueryOptions = (id: string, queryClient?: QueryClient) => {
+  return {
+    queryKey: ['document', id, { id: true }],
+    queryFn: async () => {
+      const { data: document, error: documentError } = await getDocumentById(id, {
+        updateLastViewed: true,
+      });
+      if (documentError) {
+        toast.error('Document not found');
+        throw notFound();
+      }
+
+      const transformed = transformBackendDocument(document);
+
+      if (queryClient && transformed?.handle) {
+        queryClient.setQueryData(
+          getDocumentByHandleQueryOptions(transformed.handle).queryKey,
+          transformed,
+        );
+      }
+
+      return transformed;
+    },
+  };
+};
 
 export const getDocumentByHandleQueryOptions = (handle: string) => {
   return {

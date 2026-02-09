@@ -184,49 +184,20 @@ function DocumentNameInput({
     }
   }, [isPlaceholder, submitPlaceholder, submitRename]);
 
-  // Focus management
+  // Focus management - only focus if can submit input
   React.useEffect(() => {
     if (isRenaming || isPlaceholder) {
-      setTimeout(() => {
+      // Only focus if can submit input (context menu is closed)
+      const timeout = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
           inputRef.current.select();
         }
       }, 100);
-    }
-  }, [isRenaming, isPlaceholder]);
-
-  // Handle click outside to save
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        (isRenaming || isPlaceholder) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        const target = event.target as Element;
-        const isDocumentItem = target.closest('[data-document-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        if (
-          isNavigationElement ||
-          (isDocumentItem && isDocumentItem.getAttribute('data-document-id') !== document.id)
-        ) {
-          if (isPlaceholder) {
-            submitPlaceholder();
-          } else {
-            submitRename();
-          }
-        }
-      }
-    };
-
-    if (isRenaming || isPlaceholder) {
-      window.document.addEventListener('click', handleClickOutside);
-      return () => window.document.removeEventListener('click', handleClickOutside);
+      return () => clearTimeout(timeout);
     }
     return undefined;
-  }, [isRenaming, isPlaceholder, document.id, submitPlaceholder, submitRename]);
+  }, [isRenaming, isPlaceholder]);
 
   const isPending =
     (isPlaceholder &&
@@ -255,8 +226,9 @@ function DocumentNameInput({
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onKeyUp={(e) => e.stopPropagation()}
-        onKeyPress={(e) => e.stopPropagation()}
-        onBlur={handleBlur}
+        onBlur={() => {
+          handleBlur();
+        }}
         disabled={isPending}
         className="h-6 text-sm"
       />
@@ -266,7 +238,7 @@ function DocumentNameInput({
 
 export { DocumentNameInput };
 
-function DocumentItemComponent({
+export const DocumentItem = React.memo(function DocumentItem({
   document,
   children,
   isExpanded,
@@ -290,8 +262,7 @@ function DocumentItemComponent({
   onRemovePlaceholder?: () => void;
   placeholderClientId?: string | null;
 }) {
-  const isContainer = Boolean(document.isContainer);
-
+  const isContainer = document.isContainer === true;
   if (isContainer) {
     return (
       <ContainerDocumentItem
@@ -314,6 +285,7 @@ function DocumentItemComponent({
               key={childProps.document.id}
               {...childProps}
               onCloseContextMenu={onCloseContextMenu}
+              placeholderClientId={placeholderClientId}
             />
           ))}
       </ContainerDocumentItem>
@@ -333,9 +305,4 @@ function DocumentItemComponent({
       placeholderClientId={placeholderClientId}
     />
   );
-}
-
-// Memoize DocumentItem with custom comparison to prevent unnecessary rerenders
-// Only rerender if this specific item's props changed, ignoring placeholderClientId
-// unless this item is the placeholder
-export const DocumentItem = React.memo(DocumentItemComponent);
+});

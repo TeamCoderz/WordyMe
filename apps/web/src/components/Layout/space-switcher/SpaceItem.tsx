@@ -205,12 +205,13 @@ function SpaceNameInput({
     }
   }, [isPlaceholder, submitPlaceholder, submitRename]);
 
-  // Focus management
+  // Focus management - only focus if can submit input
   React.useEffect(() => {
     if (isRenaming || isPlaceholder) {
       setIsManageDisabled?.(true);
       setCanCloseDropdown?.(false);
-      setTimeout(() => {
+      // Only focus if can submit input (context menu is closed)
+      const timeout = setTimeout(() => {
         if (inputRef.current) {
           inputRef.current.focus();
           inputRef.current.select();
@@ -219,42 +220,13 @@ function SpaceNameInput({
       return () => {
         setIsManageDisabled?.(false);
         setCanCloseDropdown?.(true);
+        clearTimeout(timeout);
       };
     }
     return undefined;
   }, [isRenaming, isPlaceholder, setIsManageDisabled, setCanCloseDropdown]);
 
   // Handle click outside to save
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        (isRenaming || isPlaceholder) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        const target = event.target as Element;
-        const isSpaceItem = target.closest('[data-space-id]');
-        const isNavigationElement = target.closest('button, [role="button"], a, [data-command]');
-
-        if (
-          isNavigationElement ||
-          (isSpaceItem && isSpaceItem.getAttribute('data-space-id') !== space.id)
-        ) {
-          if (isPlaceholder) {
-            submitPlaceholder();
-          } else {
-            submitRename();
-          }
-        }
-      }
-    };
-
-    if (isRenaming || isPlaceholder) {
-      document.addEventListener('click', handleClickOutside);
-      return () => document.removeEventListener('click', handleClickOutside);
-    }
-    return undefined;
-  }, [isRenaming, isPlaceholder, space.id, submitPlaceholder, submitRename]);
 
   const isPending =
     (isPlaceholder &&
@@ -286,8 +258,9 @@ function SpaceNameInput({
         onChange={(e) => setInputValue(e.target.value)}
         onKeyDown={handleKeyDown}
         onKeyUp={(e) => e.stopPropagation()}
-        onKeyPress={(e) => e.stopPropagation()}
-        onBlur={handleBlur}
+        onBlur={() => {
+          handleBlur();
+        }}
         disabled={isPending}
         className="h-6 text-sm"
       />
@@ -295,7 +268,7 @@ function SpaceNameInput({
   );
 }
 
-function SpaceItemComponent({
+export const SpaceItem = React.memo(function SpaceItem({
   space,
   children,
   isExpanded,
@@ -316,7 +289,6 @@ function SpaceItemComponent({
   onCloseSwitcher: () => void;
 }) {
   const isContainer = Boolean(space.isContainer);
-
   if (isContainer) {
     return (
       <ContainerSpaceItem
@@ -354,12 +326,7 @@ function SpaceItemComponent({
       placeholderClientId={placeholderClientId}
     />
   );
-}
-
-// Memoize SpaceItem with custom comparison to prevent unnecessary rerenders
-// Only rerender if this specific item's props changed, ignoring placeholderClientId
-// unless this item is the placeholder
-export const SpaceItem = React.memo(SpaceItemComponent);
+});
 
 function ContainerSpaceItem({
   space,
@@ -613,12 +580,11 @@ function ContainerSpaceItem({
                 data-space-id={space.id}
                 isActive={isActive}
                 className={cn(
-                  'relative py-1.5 text-sm select-none overflow-hidden group-hover/space:!pr-16',
+                  'relative py-1.5 text-sm select-none overflow-hidden group-hover/space:pr-16! max-md:pr-16!',
                   'group-hover/space:bg-sidebar-accent group-hover/space:text-sidebar-accent-foreground',
                   {
                     'bg-muted border border-dashed border-border/60': isCutThisSpace,
-                    '!text-foreground': isActive,
-                    '!pr-16': isActive,
+                    'text-foreground! pr-16!': isActive,
                     'bg-accent/60': highlightAsAncestorCollapsed,
                   },
                 )}
@@ -719,7 +685,9 @@ function ContainerSpaceItem({
                   className="group"
                   onSelect={() => {
                     dispatchEscapeKey();
-                    setTimeout(handleRename, 0);
+                    setTimeout(() => {
+                      handleRename();
+                    }, 0);
                   }}
                 >
                   <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -844,7 +812,7 @@ function ContainerSpaceItem({
                     });
                   }}
                 >
-                  <Trash2 className="mr-2 h-4 w-4 group-focus:!text-destructive" />
+                  <Trash2 className="mr-2 h-4 w-4 group-focus:text-destructive!" />
                   Delete
                 </ContextMenuItem>
               </>
@@ -1043,7 +1011,7 @@ function RegularSpaceItem({
             data-space-id={space.id}
             isActive={isActive}
             className={cn(
-              'relative flex w-full items-center gap-2 cursor-pointer !py-0 text-sm select-none overflow-hidden rounded-sm',
+              'relative flex w-full items-center gap-2 cursor-pointer py-0! text-sm select-none overflow-hidden rounded-sm',
               'hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
               {
                 'bg-muted border border-dashed border-border/60': isCutThisSpaceRegular,
@@ -1088,11 +1056,14 @@ function RegularSpaceItem({
             </>
           ) : (
             <>
+              {' '}
               <ContextMenuItem
                 className="group"
                 onSelect={() => {
                   dispatchEscapeKey();
-                  setTimeout(handleRename, 0);
+                  setTimeout(() => {
+                    handleRename();
+                  }, 0);
                 }}
               >
                 <PencilLine className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -1186,7 +1157,7 @@ function RegularSpaceItem({
                   });
                 }}
               >
-                <Trash2 className="mr-2 h-4 w-4 group-focus:!text-destructive" />
+                <Trash2 className="mr-2 h-4 w-4 group-focus:text-destructive!" />
                 Delete
               </ContextMenuItem>
             </>

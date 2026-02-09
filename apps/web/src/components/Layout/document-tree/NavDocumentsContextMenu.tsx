@@ -21,6 +21,7 @@ import {
   useImportDocumentMutation,
 } from '@/queries/documents';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
+import { dispatchEscapeKey } from '@/utils/keyboard';
 
 type NavDocumentsContextMenuProps = {
   children: React.ReactNode;
@@ -45,11 +46,17 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
   const importDocumentMutation = useImportDocumentMutation(null, activeSpace?.id ?? '');
 
   const handleCreateNote = () => {
-    setInlineCreate({ parentId: null, type: 'note', name: 'New Document' });
+    dispatchEscapeKey();
+    setTimeout(() => {
+      setInlineCreate({ parentId: null, type: 'note', name: 'New Document' });
+    }, 0);
   };
 
   const handleCreateFolder = () => {
-    setInlineCreate({ parentId: null, type: 'folder', name: 'New Folder' });
+    dispatchEscapeKey();
+    setTimeout(() => {
+      setInlineCreate({ parentId: null, type: 'folder', name: 'New Folder' });
+    }, 0);
   };
 
   const handleManage = () => {
@@ -112,7 +119,7 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
 
   const canPaste =
     !!clipboardDocument && (clipboardDocument.type === 'copy' || clipboardDocument.type === 'move');
-  if (!activeSpace?.id) return <>{children}</>;
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>

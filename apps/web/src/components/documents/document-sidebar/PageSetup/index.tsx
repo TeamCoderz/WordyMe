@@ -11,7 +11,10 @@ import {
   SelectValue,
 } from '@repo/ui/components/select';
 import { Input } from '@repo/ui/components/input';
-import { useSelector as useEditorSelector } from '@repo/editor/store';
+import {
+  useSelector as useEditorSelector,
+  useActions as useEditorActions,
+} from '@repo/editor/store';
 
 import {
   $getPageSetupNode,
@@ -21,39 +24,68 @@ import {
   PageSize,
   Orientation,
   PAGE_SIZES,
+  PAGE_SETUP_TAG,
 } from '@repo/editor/nodes/PageNode';
 import { useLexicalComposerContext } from '@repo/editor/lexical';
 
 export function PageSetup() {
   const [editor] = useLexicalComposerContext();
+  const { updateEditorStoreState } = useEditorActions();
   const pageSetup = useEditorSelector((state) => state.pageSetup);
-  const isEditable = editor.isEditable();
   if (pageSetup === null) return null;
   const { isPaged, pageSize, orientation, margins, headers, footers } = pageSetup;
-  const updatePageSetup = (pageSetup: Partial<PageSetup>) => {
-    const { isPaged, pageSize, orientation, margins, headers, footers } = pageSetup;
-    editor.update(() => {
-      const pageSetupNode = $getPageSetupNode();
-      if (!pageSetupNode) return;
-      if (isPaged !== undefined) {
-        pageSetupNode.setIsPaged(isPaged);
-      }
-      if (pageSize !== undefined) {
-        pageSetupNode.setPageSize(pageSize);
-      }
-      if (orientation !== undefined) {
-        pageSetupNode.setOrientation(orientation);
-      }
-      if (margins !== undefined) {
-        pageSetupNode.setMargins(margins);
-      }
-      if (headers !== undefined) {
-        pageSetupNode.setHeaders(headers);
-      }
-      if (footers !== undefined) {
-        pageSetupNode.setFooters(footers);
-      }
+
+  const updatePageSetup = ({
+    isPaged,
+    pageSize,
+    orientation,
+    margins,
+    headers,
+    footers,
+  }: {
+    isPaged?: boolean;
+    pageSize?: PageSize;
+    orientation?: Orientation;
+    margins?: Partial<PageSetup['margins']>;
+    headers?: Partial<HeaderConfig>;
+    footers?: Partial<FooterConfig>;
+  }) => {
+    updateEditorStoreState('pageSetup', {
+      isPaged: isPaged ?? pageSetup.isPaged,
+      pageSize: pageSize ?? pageSetup.pageSize,
+      orientation: orientation ?? pageSetup.orientation,
+      margins: margins ? { ...pageSetup.margins, ...margins } : pageSetup.margins,
+      headers: headers ? { ...pageSetup.headers, ...headers } : pageSetup.headers,
+      footers: footers ? { ...pageSetup.footers, ...footers } : pageSetup.footers,
     });
+    editor.update(
+      () => {
+        const pageSetupNode = $getPageSetupNode();
+        if (!pageSetupNode) return;
+        if (isPaged !== undefined) {
+          pageSetupNode.setIsPaged(isPaged);
+        }
+        if (pageSize !== undefined) {
+          pageSetupNode.setPageSize(pageSize);
+        }
+        if (orientation !== undefined) {
+          pageSetupNode.setOrientation(orientation);
+        }
+        if (margins !== undefined) {
+          pageSetupNode.setMargins(margins);
+        }
+        if (headers !== undefined) {
+          pageSetupNode.setHeaders(headers);
+        }
+        if (footers !== undefined) {
+          pageSetupNode.setFooters(footers);
+        }
+      },
+      {
+        discrete: true,
+        tag: PAGE_SETUP_TAG,
+      },
+    );
   };
 
   const handlePagedChange = (isPaged: boolean) => {
@@ -71,19 +103,19 @@ export function PageSetup() {
   const handleMarginChange = (side: keyof PageSetup['margins'], value: string) => {
     const numValue = parseFloat(value) || 0;
     updatePageSetup({
-      margins: { ...margins, [side]: numValue },
+      margins: { [side]: numValue },
     });
   };
 
-  const handleHeadersChange = (next: Partial<HeaderConfig>) => {
+  const handleHeadersChange = (headers: Partial<HeaderConfig>) => {
     updatePageSetup({
-      headers: { ...headers, ...next },
+      headers,
     });
   };
 
-  const handleFootersChange = (next: Partial<FooterConfig>) => {
+  const handleFootersChange = (footers: Partial<FooterConfig>) => {
     updatePageSetup({
-      footers: { ...footers, ...next },
+      footers,
     });
   };
 
@@ -94,12 +126,7 @@ export function PageSetup() {
           <Label htmlFor="paged-toggle" className="text-sm font-medium">
             Paged
           </Label>
-          <Switch
-            id="paged-toggle"
-            checked={isPaged}
-            onCheckedChange={handlePagedChange}
-            disabled={!isEditable}
-          />
+          <Switch id="paged-toggle" checked={isPaged} onCheckedChange={handlePagedChange} />
         </div>
         <p className="text-xs text-muted-foreground">
           {isPaged
@@ -115,7 +142,7 @@ export function PageSetup() {
               Page Size
             </Label>
             <Select value={pageSize} onValueChange={handlePageSizeChange}>
-              <SelectTrigger id="page-size" className="w-full" disabled={!isEditable}>
+              <SelectTrigger id="page-size" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -133,7 +160,7 @@ export function PageSetup() {
               Orientation
             </Label>
             <Select value={orientation} onValueChange={handleOrientationChange}>
-              <SelectTrigger id="orientation" className="w-full" disabled={!isEditable}>
+              <SelectTrigger id="orientation" className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -158,7 +185,6 @@ export function PageSetup() {
                   value={margins.top}
                   onChange={(e) => handleMarginChange('top', e.target.value)}
                   className="h-8"
-                  disabled={!isEditable}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -173,7 +199,6 @@ export function PageSetup() {
                   value={margins.right}
                   onChange={(e) => handleMarginChange('right', e.target.value)}
                   className="h-8"
-                  disabled={!isEditable}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -188,7 +213,6 @@ export function PageSetup() {
                   value={margins.bottom}
                   onChange={(e) => handleMarginChange('bottom', e.target.value)}
                   className="h-8"
-                  disabled={!isEditable}
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -203,7 +227,6 @@ export function PageSetup() {
                   value={margins.left}
                   onChange={(e) => handleMarginChange('left', e.target.value)}
                   className="h-8"
-                  disabled={!isEditable}
                 />
               </div>
             </div>
@@ -225,7 +248,6 @@ export function PageSetup() {
                     enabled,
                   })
                 }
-                disabled={!isEditable}
               />
             </div>
 
@@ -241,7 +263,6 @@ export function PageSetup() {
                   <Switch
                     checked={headers.differentFirst}
                     onCheckedChange={(differentFirst) => handleHeadersChange({ differentFirst })}
-                    disabled={!isEditable}
                   />
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -254,7 +275,6 @@ export function PageSetup() {
                   <Switch
                     checked={headers.differentEven}
                     onCheckedChange={(differentEven) => handleHeadersChange({ differentEven })}
-                    disabled={!isEditable}
                   />
                 </div>
               </div>
@@ -277,7 +297,6 @@ export function PageSetup() {
                     enabled,
                   })
                 }
-                disabled={!isEditable}
               />
             </div>
 
@@ -293,7 +312,6 @@ export function PageSetup() {
                   <Switch
                     checked={footers.differentFirst}
                     onCheckedChange={(differentFirst) => handleFootersChange({ differentFirst })}
-                    disabled={!isEditable}
                   />
                 </div>
                 <div className="flex items-center justify-between gap-2">
@@ -306,7 +324,6 @@ export function PageSetup() {
                   <Switch
                     checked={footers.differentEven}
                     onCheckedChange={(differentEven) => handleFootersChange({ differentEven })}
-                    disabled={!isEditable}
                   />
                 </div>
               </div>

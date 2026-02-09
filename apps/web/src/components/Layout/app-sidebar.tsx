@@ -26,14 +26,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <NavDocumentsContextMenu>
         <SidebarContent className="overflow-hidden">
           <NavDocuments className="flex-1" />
-
-          {/* <NavMain items={navigation.main} />
-        <NavSecondary items={navigation.secondary} /> */}
         </SidebarContent>
       </NavDocumentsContextMenu>
-      {/* <SidebarFooter>
-        <NavUser user={user} />
-      </SidebarFooter> */}
     </Sidebar>
   );
 }

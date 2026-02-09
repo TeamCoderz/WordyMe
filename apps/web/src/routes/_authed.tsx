@@ -12,7 +12,7 @@ import {
   redirect,
   useNavigate,
 } from '@tanstack/react-router';
-import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
 
 import AppSidebarProvider from '@/providers/AppSidebarProvider';
 import { AppHeader } from '@/components/Layout/app-header';
@@ -213,57 +213,28 @@ function ActiveSpaceLoader() {
   const { setActiveSpace } = useActions();
   const activeSpace = useSelector((state) => state.activeSpace);
 
-  // Convert spaces array to Space[] for calculateSpacePath
-  const spacesAsSpaceArray: Space[] = useMemo(() => {
-    if (!spaces) return [];
-    return spaces.map(
-      (item): Space => ({
-        id: item.id,
-        name: item.name,
-        description: null,
-        createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : item.createdAt,
-        updatedAt:
-          item.updatedAt instanceof Date ? item.updatedAt.toISOString() : (item.updatedAt ?? null),
-        icon: item.icon ?? '',
-        parentId: item.parentId ?? null,
-        handle: item.handle ?? null,
-      }),
-    );
-  }, [spaces]);
-
-  // Helper to convert ListSpaceResultItem to Space format
-  const convertToSpace = (item: NonNullable<typeof spaces>[number]): Space => ({
-    id: item.id,
-    name: item.name,
-    description: null,
-    createdAt: item.createdAt instanceof Date ? item.createdAt.toISOString() : item.createdAt,
-    updatedAt:
-      item.updatedAt instanceof Date ? item.updatedAt.toISOString() : (item.updatedAt ?? null),
-    icon: item.icon ?? '',
-    parentId: item.parentId ?? null,
-    handle: item.handle ?? null,
-  });
-
   useEffect(() => {
     if (!isLoading && spaces) {
       const freshActiveSpace = spaces?.find((space) => space.id === activeSpace?.id);
       if (freshActiveSpace && Boolean(freshActiveSpace.isContainer) == false) {
-        const path = calculateSpacePath(freshActiveSpace.id, spacesAsSpaceArray);
+        const path = calculateSpacePath(freshActiveSpace.id, spaces as Space[]);
         setActiveSpace({
-          ...convertToSpace(freshActiveSpace),
+          ...freshActiveSpace,
+          icon: freshActiveSpace.icon || 'briefcase',
           path,
         });
       } else {
         const space = spaces.find((s) => Boolean(s.isContainer) == false);
         if (!space) return setActiveSpace(null);
-        const path = calculateSpacePath(space.id, spacesAsSpaceArray);
+        const path = calculateSpacePath(space.id, spaces as Space[]);
         setActiveSpace({
-          ...convertToSpace(space),
+          ...space,
+          icon: space.icon || 'briefcase',
           path,
         });
       }
     }
-  }, [spaces, isLoading, spacesAsSpaceArray]);
+  }, [spaces, isLoading]);
   useEffect(() => {
     if (spaces && !isLoading) {
       if (activeSpace) {
@@ -271,15 +242,16 @@ function ActiveSpaceLoader() {
         if (activeSpaceFullData && activeSpaceFullData.isContainer) {
           const space = spaces.find((s) => Boolean(s.isContainer) == false);
           if (!space) return;
-          const path = calculateSpacePath(space.id, spacesAsSpaceArray);
+          const path = calculateSpacePath(space.id, spaces as Space[]);
           setActiveSpace({
-            ...convertToSpace(space),
+            ...space,
+            icon: space.icon || 'briefcase',
             path,
           });
         }
       }
     }
-  }, [activeSpace, spaces, isLoading, spacesAsSpaceArray]);
+  }, [activeSpace, spaces, isLoading]);
   return null;
 }
 

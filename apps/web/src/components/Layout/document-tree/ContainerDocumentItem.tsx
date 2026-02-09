@@ -32,7 +32,7 @@ import {
   SidebarMenuSub,
   useSidebar,
 } from '@repo/ui/components/sidebar';
-import { useNavigate } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
 import {
   useUpdateDocumentIconMutation,
   useDeleteDocumentMutation,
@@ -87,11 +87,12 @@ export function ContainerDocumentItem({
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = React.useState(false);
-
   // Note: container items are not links; click toggles expand/collapse
   const isCreating = document.id === document.clientId;
   const { isMobile: isMobileSidebar, setOpenMobile } = useSidebar();
-  const isActive = useSelector((state) => state.activeDocument?.id === document.id);
+  const { pathname } = useLocation();
+  const activeDocumentHandle = decodeURIComponent(pathname.split('/').pop() ?? '');
+  const isActive = activeDocumentHandle === document.handle;
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
   const highlightAsAncestorCollapsed = !!isAncestor && !isExpanded;
 
@@ -374,13 +375,13 @@ export function ContainerDocumentItem({
                 data-document-id={document.id}
                 isActive={isActive}
                 className={cn(
-                  'relative py-1.5 text-sm select-none overflow-hidden group-hover/document:!pr-16',
-                  'group-hover/document:!bg-sidebar-accent/50 group-hover/document:text-sidebar-accent-foreground',
+                  'relative py-1.5 text-sm select-none overflow-hidden group-hover/document:pr-16! max-md:pr-16!',
+                  'group-hover/document:bg-sidebar-accent/50! group-hover/document:text-sidebar-accent-foreground!',
                   {
                     'bg-muted border border-dashed border-border/60': isCutThisItem,
-                    '!text-foreground': isActive,
-                    '!pr-16': isActive,
-                    ' !text-foreground !pr-16 !bg-sidebar-accent group-hover/document:!bg-sidebar-accent':
+                    'text-foreground!': isActive,
+                    'pr-16!': isActive,
+                    'text-foreground! pr-16! bg-sidebar-accent! group-hover/document:bg-sidebar-accent!':
                       highlightAsAncestorCollapsed,
                   },
                 )}
@@ -550,7 +551,7 @@ export function ContainerDocumentItem({
                   className="group focus:bg-destructive/10 text-destructive hover:text-destructive focus:text-destructive"
                   onSelect={handleDelete}
                 >
-                  <Trash2 className="mr-2 h-4 w-4 group-focus:!text-destructive" />
+                  <Trash2 className="mr-2 h-4 w-4 group-focus:text-destructive!" />
                   Delete
                 </ContextMenuItem>
               </>

@@ -1,34 +1,61 @@
 import { EditDocument } from '@/components/documents/edit-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { DOCUMENTS_QUERY_KEYS } from '@/queries/query-keys';
 import { useAllQueriesInvalidate } from '@/queries/utils';
 import { useQuery } from '@tanstack/react-query';
-import { getDocumentByHandleQueryOptions } from '@/queries/documents';
+import { getDocumentByHandleQueryOptions, getDocumentByIdQueryOptions } from '@/queries/documents';
 import { getLocalRevisionByDocumentIdQueryOptions } from '@/queries/revisions';
 import { EditDocumentLoading } from '@/components/documents/edit-document-loading';
+import z from 'zod';
+
+const searchParamsSchema = z.object({
+  search: z.string().optional(),
+  id: z.coerce.boolean().optional(),
+});
 
 export const Route = createFileRoute('/_authed/edit/$handle')({
   component: RouteComponent,
-
+  beforeLoad: async ({ params, search, cause, context: { queryClient } }) => {
+    const { handle } = params;
+    if (search.id) {
+      const document = await queryClient.ensureQueryData(
+        getDocumentByIdQueryOptions(handle, queryClient),
+      );
+      if (cause !== 'preload') {
+        throw redirect({
+          to: '/edit/$handle',
+          params: { handle: document.handle },
+        });
+      }
+    }
+  },
+  loader: async ({ params, context: { queryClient } }) => {
+    const { handle } = params;
+    await queryClient.ensureQueryData(getDocumentByHandleQueryOptions(handle));
+  },
   notFoundComponent: () => <SplashScreen className="absolute" title="Document not found" />,
   pendingComponent: () => <SplashScreen className="absolute" title="Loading Editor" />,
+  validateSearch: searchParamsSchema,
 });
 
 function RouteComponent() {
-  const { setActiveDocument, setActiveSpaceBySpaceId } = useActions();
+  const { setActiveSpaceBySpaceId } = useActions();
   const user = useSelector((state) => state.user);
   const { handle } = Route.useParams();
   const { data: document, isSuccess } = useQuery(getDocumentByHandleQueryOptions(handle));
   const { data: revision, isLoading } = useQuery(
-    getLocalRevisionByDocumentIdQueryOptions(document?.id, document?.head, isSuccess),
+    getLocalRevisionByDocumentIdQueryOptions(
+      document?.id,
+      document?.currentRevisionId ?? null,
+      isSuccess,
+    ),
   );
 
   const invalidate = useAllQueriesInvalidate();
   useEffect(() => {
-    setActiveDocument(document ?? null);
     setActiveSpaceBySpaceId(document?.spaceId ?? '');
     if (document) {
       invalidate([
@@ -37,9 +64,6 @@ function RouteComponent() {
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
       ]);
     }
-    return () => {
-      setActiveDocument(null);
-    };
   }, [document]);
 
   if (isLoading || !document || !user || !revision) {
@@ -48,17 +72,5 @@ function RouteComponent() {
 
   const initialState = 'data' in revision ? JSON.stringify(revision.data) : undefined;
 
-  return (
-    <EditDocument
-      user={{
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        image: user.avatar_image?.calculatedImage,
-        handle: user.username ?? '',
-      }}
-      document={document}
-      initialState={initialState}
-    />
-  );
+  return <EditDocument user={user} document={document} initialState={initialState} />;
 }

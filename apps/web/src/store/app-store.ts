@@ -6,7 +6,16 @@ import { createContext } from 'react';
 import type { ListDocumentResult } from '@/queries/documents';
 import type { ListSpaceResult } from '@/queries/spaces';
 import type { TopBarFormValues } from '@/schemas/top-bar-form.schema';
-import type { Space, Document, Revision, NavigationConfig, ActiveSpace } from '@repo/types';
+import type {
+  Space,
+  Document,
+  Revision,
+  ActiveSpace,
+  TabsState,
+  Tab,
+  OpenTabInput,
+  TabsActions,
+} from '@repo/types';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
 import { EditorSettings } from '@repo/backend/editor-settings.js';
 import { SessionData } from '@repo/sdk/auth';
@@ -55,10 +64,8 @@ export interface StoreState {
     type: 'copy' | 'move';
   } | null;
   activeSpace: ActiveSpace | null;
-  activeDocument: Document | null;
   topBarSettings: any; // TODO: Add proper type
   instanceSettings: TopBarFormValues | null;
-  navigation: NavigationConfig;
   sidebar: 'expanded' | 'collapsed' | 'remember';
   inlineCreate: {
     parentId: string | null;
@@ -67,17 +74,16 @@ export interface StoreState {
   } | null;
   version: string | null;
   deployment_id: string | null;
+  tabs: TabsState;
 }
 
 export interface StoreActions {
   setUser: (user: StoreState['user']) => void;
   setAvatarImage: (avatarImage: NonNullable<StoreState['user']>['avatar_image']) => void;
   setCoverImage: (coverImage: NonNullable<StoreState['user']>['cover_image']) => void;
-  setNavigation: (navigation: NavigationConfig) => void;
   setTopBarSettings: (settings: any) => void;
   setActiveSpace: (space: ActiveSpace | null) => void;
   setActiveSpaceBySpaceId: (spaceId: string) => void;
-  setActiveDocument: (document: Document | null) => void;
   setDocumentsClipboard: (document: ListDocumentResult[number], type: 'copy' | 'move') => void;
   clearDocumentsClipboard: () => void;
   setSpacesClipboard: (space: ListSpaceResult[number], type: 'copy' | 'move') => void;
@@ -106,6 +112,16 @@ export interface StoreActions {
   clearInlineCreate: () => void;
   setVersion: (version: string) => void;
   setDeploymentId: (deploymentId: string) => void;
+  // Tab actions
+  openTab: TabsActions['openTab'];
+  closeTab: TabsActions['closeTab'];
+  closeOtherTabs: TabsActions['closeOtherTabs'];
+  closeAllTabs: TabsActions['closeAllTabs'];
+  setActiveTab: TabsActions['setActiveTab'];
+  reorderTabs: TabsActions['reorderTabs'];
+  setTabDirty: TabsActions['setTabDirty'];
+  updateTab: TabsActions['updateTab'];
+  resetTabs: TabsActions['resetTabs'];
 }
 
 export type AppStore = StoreState & { actions: StoreActions };
@@ -116,17 +132,24 @@ const defaultInitState: StoreState = {
   documents: [],
   revisions: [],
   activeSpace: null,
-  activeDocument: null,
   topBarSettings: null,
   instanceSettings: null,
-  navigation: { secondary: [] },
   documentsClipboard: null,
   spacesClipboard: null,
   sidebar: 'expanded' as StoreState['sidebar'],
   inlineCreate: null,
   version: null,
   deployment_id: null,
+  tabs: {
+    tabs: [],
+    activeTabId: null,
+  },
 };
+
+// Helper to generate unique tab IDs
+function generateTabId(): string {
+  return `tab_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
 
 export const createAppStore = (initState = defaultInitState) => {
   return createStore<AppStore>()(
@@ -164,7 +187,6 @@ export const createAppStore = (initState = defaultInitState) => {
                   },
                 };
               }),
-            setNavigation: (navigation) => set({ navigation }),
             setTopBarSettings: (settings) => set({ topBarSettings: settings }),
             setActiveSpace: (space) => set({ activeSpace: space }),
             setActiveSpaceBySpaceId: async (spaceId) => {
@@ -172,52 +194,16 @@ export const createAppStore = (initState = defaultInitState) => {
               if (!spaces) return;
               const space = spaces.find((space) => space.id === spaceId);
               if (space) {
-                // Convert spaces array to Space[] format for calculateSpacePath
-                const spacesAsSpaceArray: Space[] = spaces.map(
-                  (item): Space => ({
-                    id: item.id,
-                    name: item.name,
-                    description: null,
-                    createdAt:
-                      item.createdAt instanceof Date
-                        ? item.createdAt.toISOString()
-                        : item.createdAt,
-                    updatedAt:
-                      item.updatedAt instanceof Date
-                        ? item.updatedAt.toISOString()
-                        : (item.updatedAt ?? null),
-                    icon: item.icon ?? '',
-                    parentId: item.parentId ?? null,
-                    handle: item.handle ?? null,
-                  }),
-                );
-                const path = calculateSpacePath(spaceId, spacesAsSpaceArray);
-                // Convert space to Space format
-                const convertedSpace: Space = {
-                  id: space.id,
-                  name: space.name,
-                  description: null,
-                  createdAt:
-                    space.createdAt instanceof Date
-                      ? space.createdAt.toISOString()
-                      : space.createdAt,
-                  updatedAt:
-                    space.updatedAt instanceof Date
-                      ? space.updatedAt.toISOString()
-                      : (space.updatedAt ?? null),
-                  icon: space.icon || 'briefcase',
-                  parentId: space.parentId ?? null,
-                  handle: space.handle ?? null,
-                };
+                const path = calculateSpacePath(spaceId, spaces as Space[]);
                 set({
                   activeSpace: {
-                    ...convertedSpace,
+                    ...space,
+                    icon: space.icon || 'briefcase',
                     path,
                   },
                 });
               }
             },
-            setActiveDocument: (document) => set({ activeDocument: document }),
             // Async actions
 
             // createSpace: async (space: CreateSpaceInput) => {
@@ -390,12 +376,225 @@ export const createAppStore = (initState = defaultInitState) => {
             },
             setVersion: (version) => set({ version }),
             setDeploymentId: (deploymentId) => set({ deployment_id: deploymentId }),
+
+            // Tab actions
+            openTab: (input: OpenTabInput) => {
+              let tabId = '';
+              set((state) => {
+                // Helper to extract document handle from /edit/{handle} or /view/{handle}
+                const getDocumentHandle = (pathname: string) => {
+                  const match = pathname.match(/^\/(edit|view)\/(.+)$/);
+                  return match ? match[2] : null;
+                };
+
+                // Check if tab already exists by pathname
+                // Special cases:
+                // - All /settings/* routes are the same tab
+                // - /edit/{handle} and /view/{handle} for same document are the same tab
+                const isSettingsRoute = input.pathname.startsWith('/settings');
+                const documentHandle = getDocumentHandle(input.pathname);
+
+                const existingTab = state.tabs.tabs.find((tab) => {
+                  if (isSettingsRoute) {
+                    return tab.pathname.startsWith('/settings');
+                  }
+                  if (documentHandle) {
+                    const tabHandle = getDocumentHandle(tab.pathname);
+                    return tabHandle === documentHandle;
+                  }
+                  return tab.pathname === input.pathname;
+                });
+
+                if (existingTab) {
+                  tabId = existingTab.id;
+                  // Update pathname, search params, hash and activate
+                  const updatedTabs = state.tabs.tabs.map((tab) =>
+                    tab.id === existingTab.id
+                      ? {
+                          ...tab,
+                          pathname: input.pathname,
+                          search: input.search,
+                          hash: input.hash,
+                        }
+                      : tab,
+                  );
+
+                  if (!input.background) {
+                    return {
+                      tabs: {
+                        tabs: updatedTabs,
+                        activeTabId: existingTab.id,
+                      },
+                    };
+                  }
+                  return {
+                    tabs: {
+                      ...state.tabs,
+                      tabs: updatedTabs,
+                    },
+                  };
+                }
+
+                // Create new tab
+                const newTab: Tab = {
+                  id: generateTabId(),
+                  pathname: input.pathname,
+                  search: input.search,
+                  hash: input.hash,
+                  isDirty: false,
+                };
+
+                tabId = newTab.id;
+
+                return {
+                  tabs: {
+                    tabs: [...state.tabs.tabs, newTab],
+                    activeTabId: input.background ? state.tabs.activeTabId : newTab.id,
+                  },
+                };
+              });
+              return tabId;
+            },
+
+            closeTab: (tabId: string) => {
+              set((state) => {
+                const tabIndex = state.tabs.tabs.findIndex((t) => t.id === tabId);
+                if (tabIndex === -1) return state;
+
+                const newTabs = state.tabs.tabs.filter((t) => t.id !== tabId);
+
+                // Determine new active tab
+                let newActiveTabId = state.tabs.activeTabId;
+                if (state.tabs.activeTabId === tabId) {
+                  if (newTabs.length === 0) {
+                    newActiveTabId = null;
+                  } else if (tabIndex >= newTabs.length) {
+                    newActiveTabId = newTabs[newTabs.length - 1].id;
+                  } else {
+                    newActiveTabId = newTabs[tabIndex].id;
+                  }
+                }
+
+                return {
+                  tabs: {
+                    tabs: newTabs,
+                    activeTabId: newActiveTabId,
+                  },
+                };
+              });
+            },
+
+            closeOtherTabs: (tabId: string) => {
+              set((state) => {
+                const tabToKeep = state.tabs.tabs.find((t) => t.id === tabId);
+                if (!tabToKeep) return state;
+
+                return {
+                  tabs: {
+                    tabs: [tabToKeep],
+                    activeTabId: tabId,
+                  },
+                };
+              });
+            },
+
+            closeAllTabs: () => {
+              set(() => ({
+                tabs: {
+                  tabs: [],
+                  activeTabId: null,
+                },
+              }));
+            },
+
+            setActiveTab: (tabId: string | null) => {
+              set((state) => {
+                return {
+                  tabs: {
+                    ...state.tabs,
+                    activeTabId: tabId,
+                  },
+                };
+              });
+            },
+
+            reorderTabs: (fromIndex: number, toIndex: number) => {
+              set((state) => {
+                if (fromIndex === toIndex) return state;
+                if (
+                  fromIndex < 0 ||
+                  fromIndex >= state.tabs.tabs.length ||
+                  toIndex < 0 ||
+                  toIndex >= state.tabs.tabs.length
+                ) {
+                  return state;
+                }
+
+                const newTabs = [...state.tabs.tabs];
+                const [movedTab] = newTabs.splice(fromIndex, 1);
+                newTabs.splice(toIndex, 0, movedTab);
+
+                return {
+                  tabs: {
+                    ...state.tabs,
+                    tabs: newTabs,
+                  },
+                };
+              });
+            },
+
+            setTabDirty: (tabId: string, isDirty: boolean) => {
+              set((state) => {
+                const tabIndex = state.tabs.tabs.findIndex((t) => t.id === tabId);
+                if (tabIndex === -1) return state;
+
+                const newTabs = [...state.tabs.tabs];
+                newTabs[tabIndex] = { ...newTabs[tabIndex], isDirty };
+
+                return {
+                  tabs: {
+                    ...state.tabs,
+                    tabs: newTabs,
+                  },
+                };
+              });
+            },
+
+            updateTab: (
+              tabId: string,
+              updates: Partial<Pick<Tab, 'pathname' | 'search' | 'hash'>>,
+            ) => {
+              set((state) => {
+                const tabIndex = state.tabs.tabs.findIndex((t) => t.id === tabId);
+                if (tabIndex === -1) return state;
+
+                const newTabs = [...state.tabs.tabs];
+                newTabs[tabIndex] = { ...newTabs[tabIndex], ...updates };
+
+                return {
+                  tabs: {
+                    ...state.tabs,
+                    tabs: newTabs,
+                  },
+                };
+              });
+            },
+
+            resetTabs: () => {
+              set(() => ({
+                tabs: {
+                  tabs: [],
+                  activeTabId: null,
+                },
+              }));
+            },
           },
         }),
         {
           partialize: (state) => ({
             activeSpace: state.activeSpace,
             sidebar: state.sidebar,
+            tabs: state.tabs,
           }),
           name: 'Wordy',
         },

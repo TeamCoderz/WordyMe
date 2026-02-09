@@ -65,12 +65,6 @@ header {
   background-color: rgb(95 183 255 / 50%);
 }
 
-@media screen {
-  .selected,
-  .selection-highlight {
-    background-color: rgb(95 183 255 / 50%);
-  }
-}
 
 .viewer-container :is([id], [target="_self"], h1, h2, h3, h4, h5, h6) {
   scroll-margin-top: calc(var(--spacing) * 20);

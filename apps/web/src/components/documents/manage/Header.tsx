@@ -76,7 +76,12 @@ export function ManageDocumentsHeader() {
                     <DropdownMenuTrigger className="outline-none">
                       <BreadcrumbEllipsis className="text-xs overflow-hidden" />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="p-2" align="start" sideOffset={6}>
+                    <DropdownMenuContent
+                      onCloseAutoFocus={(e) => e.preventDefault()}
+                      className="p-2"
+                      align="start"
+                      sideOffset={6}
+                    >
                       {ancestors.slice(2).map((hidden: any) => (
                         <DropdownMenuItem key={hidden.id} className="text-sm hover:font-medium">
                           {hidden.name}

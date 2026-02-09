@@ -99,7 +99,7 @@ export function LoadingTable<TData, TValue>({
                   <TableCell key={i}>
                     <Skeleton
                       className={cn('w-full h-[32px]', {
-                        'size-8': columns[i]?.id === 'actions',
+                        'size-8': columns[i].id === 'actions',
                       })}
                     />
                   </TableCell>

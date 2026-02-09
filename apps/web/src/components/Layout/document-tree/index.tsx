@@ -9,20 +9,17 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
-import { FolderOpen, FileText } from '@repo/ui/components/icons';
 
 export function DocumentTree() {
   const activeSpace = useSelector((s) => s.activeSpace);
   const spaceId = activeSpace?.id ?? '';
-  const { data: documentsData, isLoading: isLoadingDocuments } = useQuery(
-    getAllDocumentsQueryOptions(spaceId!),
-  );
+  const { data: documentsData } = useQuery(getAllDocumentsQueryOptions(spaceId!));
 
   const [placeholder, setPlaceholder] = React.useState<ListDocumentResult[number] | null>(null);
 
   // Merge placeholder with documents data
   const documentsWithPlaceholder = React.useMemo(() => {
-    if (!documentsData) return [];
+    if (!documentsData) return documentsData;
     if (!placeholder) return documentsData;
     return [...documentsData, placeholder];
   }, [documentsData, placeholder]);
@@ -35,9 +32,9 @@ export function DocumentTree() {
     handleSelectDocument,
     toggleExpanded,
     setOpenMenuDocumentId,
-    isLoading: isLoadingDocumentsTree,
+    isLoading,
   } = useDocumentTree(documentsWithPlaceholder);
-  const isLoading = isLoadingDocuments || isLoadingDocumentsTree;
+
   const rootDocuments = documentsTree?.children ?? [];
   const inlineCreate = useSelector((s) => s.inlineCreate);
   const { clearInlineCreate } = useActions();
@@ -84,6 +81,20 @@ export function DocumentTree() {
     setPlaceholder(null);
   }, []);
 
+  // Memoize callback to prevent recreation on every render
+  const handleCloseContextMenu = React.useCallback(() => {
+    setOpenMenuDocumentId(null);
+  }, [setOpenMenuDocumentId]);
+
+  // Memoize activeId to prevent recalculation
+  const activeId = React.useMemo(() => activeDocument?.id, [activeDocument?.id]);
+
+  // Memoize placeholderClientId to prevent unnecessary renderDocumentItem recreation
+  const placeholderClientId = React.useMemo(
+    () => placeholder?.clientId as string | undefined,
+    [placeholder?.clientId],
+  );
+
   // Intercept root inline create to insert placeholder item directly into the tree
   React.useEffect(() => {
     if (!inlineCreate) return;
@@ -97,21 +108,17 @@ export function DocumentTree() {
     }
   }, [inlineCreate, insertPlaceholder, clearInlineCreate]);
 
-  // Memoize stable callbacks to prevent unnecessary rerenders
-  const handleCloseContextMenu = React.useCallback(() => {
-    setOpenMenuDocumentId(null);
-  }, [setOpenMenuDocumentId]);
-
+  // Memoize renderDocumentItem to prevent recreation on every render
   const renderDocumentItem = React.useCallback(
     ({ data: document, children }: Pick<{ data: any; children: any[] }, 'data' | 'children'>) => {
-      const activeId = activeDocument?.id;
-
       const mapNode = (node: any, depth: number): any => {
         const mappedChildren = node.children.map((child: any) => mapNode(child, depth + 1));
         const hasActiveInChildren = mappedChildren.some((c: any) => c.isActive || c.isAncestor);
         const isNodeActive = node.data.id === activeId;
         const isNodeAncestor = !isNodeActive && hasActiveInChildren;
-        return {
+        // Only include placeholderClientId for the root level, not in children
+        // This prevents unnecessary prop object recreation for all children
+        const nodeProps: any = {
           document: node.data,
           children: mappedChildren,
           isActive: isNodeActive,
@@ -124,12 +131,17 @@ export function DocumentTree() {
           onOpenContextMenu: setOpenMenuDocumentId,
           onInsertPlaceholder: insertPlaceholder,
           onRemovePlaceholder: removePlaceholder,
-          placeholderClientId: placeholder?.clientId as string | undefined,
         };
+        // Only add placeholderClientId at root level (depth 0)
+        if (depth === 0) {
+          nodeProps.placeholderClientId = placeholderClientId;
+        }
+        return nodeProps;
       };
 
       return (
         <DocumentItem
+          key={(document as any).clientId ?? document.id}
           {...mapNode({ data: document, children }, 0)}
           openMenuDocumentId={openMenuDocumentId}
           onSelectDocument={handleSelectDocument}
@@ -138,57 +150,34 @@ export function DocumentTree() {
           onCloseContextMenu={handleCloseContextMenu}
           onInsertPlaceholder={insertPlaceholder}
           onRemovePlaceholder={removePlaceholder}
-          placeholderClientId={placeholder?.clientId as string | undefined}
+          placeholderClientId={placeholderClientId}
         />
       );
     },
     [
-      activeDocument,
+      activeId,
       isExpanded,
       openMenuDocumentId,
       handleSelectDocument,
       toggleExpanded,
       setOpenMenuDocumentId,
+      handleCloseContextMenu,
       insertPlaceholder,
       removePlaceholder,
-      placeholder?.clientId,
-      handleCloseContextMenu,
+      placeholderClientId,
     ],
-  );
-
-  // Memoize the rendered document items to prevent unnecessary rerenders
-  const renderedDocumentItems = React.useMemo(
-    () =>
-      rootDocuments.map((document: any) => (
-        <React.Fragment key={document.data?.clientId ?? document.data?.id}>
-          {renderDocumentItem(document)}
-        </React.Fragment>
-      )),
-    [rootDocuments, renderDocumentItem],
   );
 
   return (
     <>
-      <SidebarMenu className="min-h-0 overflow-x-hidden overflow-y-auto scrollbar-thin max-w-full gap-0.5">
+      <SidebarMenu className="min-h-0 overflow-x-hidden overflow-y-auto scrollbar-thin max-w-full gap-0.5 pr-0.5">
         {isLoading ? (
           <SidebarMenuSkeleton showIcon />
-        ) : !spaceId ? (
-          <div className="flex flex-col items-center justify-center px-3 py-8 text-sm text-muted-foreground gap-2">
-            <FolderOpen className="h-8 w-8 opacity-50" />
-            <p className="text-center">Please select a space to view documents</p>
-          </div>
-        ) : rootDocuments.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-3 py-8 text-sm text-muted-foreground gap-2">
-            <FileText className="h-8 w-8 opacity-50" />
-            <p className="text-center">
-              No documents yet. Create your first document to get started.
-            </p>
-          </div>
         ) : (
-          <>{renderedDocumentItems}</>
+          rootDocuments.map((document: any) => renderDocumentItem(document))
         )}
       </SidebarMenu>
-      {!isLoading && spaceId && <CreateDocumentSection />}
+      {!isLoading && <CreateDocumentSection />}
     </>
   );
 }

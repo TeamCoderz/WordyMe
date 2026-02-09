@@ -59,7 +59,7 @@ export function TableOfContentsList({
         });
 
       if (visibleEntries.length > 0) {
-        const target = visibleEntries[0]?.target;
+        const target = visibleEntries[0].target;
         const key = headingElements.find(({ element }) => element === target)?.key;
         if (key) setSelectedKey(key);
       }
@@ -116,13 +116,17 @@ export function TableOfContentsList({
     if (key) setSelectedKey(key);
     const scrollIntoView = () => {
       const target = document.getElementById(decodedId);
-      if (target) return target.scrollIntoView({ block: 'start' });
-      const anchor = Array.from(document.getElementsByTagName('a')).find(
-        (a) => a.getAttribute('href') === `#${decodedId}` && a.getAttribute('target') === '_self',
-      );
-      anchor?.scrollIntoView({ block: 'start' });
+      if (target) target.scrollIntoView({ block: 'start' });
+      else
+        Array.from(document.getElementsByTagName('a'))
+          .find(
+            (a) =>
+              a.getAttribute('href') === `#${decodedId}` && a.getAttribute('target') === '_self',
+          )
+          ?.scrollIntoView({ block: 'start' });
     };
     scrollIntoView();
+    setTimeout(scrollIntoView, 0);
     setTimeout(() => {
       shouldObserveRef.current = true;
     }, 1000);

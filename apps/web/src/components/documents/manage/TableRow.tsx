@@ -22,7 +22,6 @@ import {
   FolderOutput,
   FolderInput,
 } from '@repo/ui/components/icons';
-import FocusLock from 'react-focus-lock';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
 import {
@@ -84,7 +83,7 @@ export interface ManageDocumentsTableRowProps {
   placeholderClientId?: string;
 }
 
-function ManageDocumentsTableRowComponent({
+export function ManageDocumentsTableRow({
   item,
   isLast,
   draggingId,
@@ -96,22 +95,12 @@ function ManageDocumentsTableRowComponent({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageDocumentsTableRowProps) {
-  const itemData = item.getItemData() as DocumentTreeNode | null;
-
-  const doc = itemData?.data as
-    | (ListDocumentResultItem & {
-        clientId?: string | null;
-      })
-    | undefined;
-
-  // Guard clause: component cannot function without a document
-  if (!doc) {
-    return null;
-  }
-
-  const isCreating = doc.id === doc.clientId || doc.id === 'new-doc';
-  const isPlaceholder = doc.id === 'new-doc';
-  const [placeholderName, setPlaceholderName] = React.useState<string>(doc.name ?? '');
+  const doc = item.getItemData()?.data as ListDocumentResult[number] & {
+    clientId: string | null;
+  };
+  const isCreating = doc?.id === doc?.clientId || doc?.id === 'new-doc';
+  const isPlaceholder = doc?.id === 'new-doc';
+  const [placeholderName, setPlaceholderName] = React.useState<string>(doc?.name ?? '');
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
@@ -648,51 +637,53 @@ function ManageDocumentsTableRowComponent({
                   </button>
                 </IconPicker>
                 {isPlaceholder ? (
-                  <FocusLock>
-                    <Input
-                      ref={placeholderInputRef}
-                      data-rename-input="true"
-                      value={placeholderName}
-                      onChange={(e) => setPlaceholderName(e.target.value)}
-                      onContextMenu={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          submitPlaceholder();
-                        } else if (e.key === 'Escape') {
-                          e.preventDefault();
-                          cancelPlaceholder();
-                        }
-                      }}
-                      onBlur={submitPlaceholder}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    />
-                  </FocusLock>
+                  <Input
+                    ref={placeholderInputRef}
+                    data-rename-input="true"
+                    value={placeholderName}
+                    onChange={(e) => setPlaceholderName(e.target.value)}
+                    onContextMenu={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        submitPlaceholder();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        cancelPlaceholder();
+                      }
+                    }}
+                    onBlur={() => {
+                      submitPlaceholder();
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
+                    autoFocus
+                  />
                 ) : isRenaming ? (
-                  <FocusLock>
-                    <Input
-                      ref={renameInputRef}
-                      data-rename-input="true"
-                      value={renameName}
-                      onContextMenu={(e) => e.stopPropagation()}
-                      onChange={(e) => setRenameName(e.target.value)}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleRenameSubmit();
-                        } else if (e.key === 'Escape') {
-                          e.preventDefault();
-                          handleRenameCancel();
-                        }
-                      }}
-                      onBlur={handleRenameSubmit}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    />
-                  </FocusLock>
+                  <Input
+                    ref={renameInputRef}
+                    data-rename-input="true"
+                    onContextMenu={(e) => e.stopPropagation()}
+                    value={renameName}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleRenameSubmit();
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        handleRenameCancel();
+                      }
+                    }}
+                    onBlur={() => {
+                      handleRenameSubmit();
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
+                    autoFocus
+                  />
                 ) : (
                   (() => {
                     const isContainer = (item.getItemData()?.data as any)?.isContainer === true;
@@ -1076,8 +1067,3 @@ function ManageDocumentsTableRowComponent({
     </ContextMenu>
   );
 }
-
-// Memoize ManageDocumentsTableRow with custom comparison to prevent unnecessary rerenders
-// Only rerender if this specific item's props changed, ignoring placeholderClientId
-// unless this item is the placeholder
-export const ManageDocumentsTableRow = React.memo(ManageDocumentsTableRowComponent);

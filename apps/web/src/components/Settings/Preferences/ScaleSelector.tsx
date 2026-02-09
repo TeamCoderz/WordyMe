@@ -28,7 +28,10 @@ function ScaleSelector() {
             <span className="sr-only">{scale}</span>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="grid grid-cols-5 items-center gap-2">
+        <DropdownMenuContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          className="grid grid-cols-5 items-center gap-2"
+        >
           {SCALE_OPTIONS.map((option) => (
             <Button
               key={option.value}

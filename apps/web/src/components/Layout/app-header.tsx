@@ -5,6 +5,7 @@ import { ThemeCustomizer } from '@repo/ui/theme/theme-customizer';
 import { NavUser } from './nav-user';
 import { cn } from '@repo/ui/lib/utils';
 import { Link } from '@tanstack/react-router';
+import { TabBar } from './tabs';
 
 export const AppHeader = () => {
   const handleResize = () => {
@@ -47,11 +48,8 @@ export const AppHeader = () => {
             </Link>
             <SidebarTrigger variant="outline" className="size-9 !p-2" />
           </div>
-          <div className="flex flex-1 items-center gap-2 px-4 h-full max-md:pl-0 justify-end bg-top-bar-secondary md:bg-background">
-            <div
-              id="app-toolbar"
-              className="flex flex-1 w-0 justify-between items-center gap-2 overflow-auto scrollbar-hide"
-            />
+          <TabBar className="flex-1 min-w-0 h-full" />
+          <div className="flex items-center gap-2 px-4">
             <ThemeCustomizer />
             <NavUser variant="avatar" dropdownMenuSide="bottom" className="w-auto size-8" />
           </div>

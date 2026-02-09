@@ -20,11 +20,18 @@ export function RevisionHistory({ handle }: { handle: string }) {
           handle={handle}
           revision={{
             id: revision.id,
-            documentId: revision.documentId,
+            document_id: revision.documentId,
             checksum: revision.checksum!,
-            createdAt: revision.createdAt,
-            updatedAt: revision.updatedAt,
-            name: revision.revisionName,
+            created_at:
+              revision.createdAt instanceof Date
+                ? revision.createdAt.toISOString()
+                : revision.createdAt,
+            updated_at:
+              revision.updatedAt instanceof Date
+                ? revision.updatedAt.toISOString()
+                : revision.updatedAt,
+            revision_name: revision.revisionName,
+            text: revision.text,
             author: {
               id: user!.id,
               email: user!.email,

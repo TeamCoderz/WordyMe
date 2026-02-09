@@ -24,7 +24,6 @@ import {
   FolderInput,
 } from '@repo/ui/components/icons';
 
-import FocusLock from 'react-focus-lock';
 // no-op import from headless-tree used elsewhere
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -66,26 +65,23 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { isSpaceCached } from '@/queries/caches/spaces';
-import { ItemInstance } from '@headless-tree/core';
-import { TreeNode } from '@repo/lib/data/tree';
 
-type SpaceTreeNode = TreeNode<ListSpaceResultItem>;
-type SpaceTreeItem = ItemInstance<SpaceTreeNode | null>;
+type AnyItem = any;
 
 export interface ManageSpacesTableRowProps {
-  item: SpaceTreeItem;
+  item: AnyItem;
   index: number; // kept for future use if needed
   isLast: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  tree: ReturnType<typeof import('@headless-tree/react').useTree<SpaceTreeNode | null>>;
+  tree: any;
   getDescendantIds: (nodeId: string) => string[];
   onBeginInlineCreate?: (type: 'space' | 'folder') => void;
   onRemovePlaceholder?: () => void;
   placeholderClientId?: string;
 }
 
-function ManageSpacesTableRowComponent({
+export function ManageSpacesTableRow({
   item,
   isLast,
   draggingId,
@@ -96,21 +92,10 @@ function ManageSpacesTableRowComponent({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageSpacesTableRowProps) {
-  const itemData = item.getItemData() as SpaceTreeNode | null;
-  const space = itemData?.data as
-    | (ListSpaceResultItem & {
-        clientId?: string | null;
-      })
-    | undefined;
-
-  // Guard clause: component cannot function without a space
-  if (!space) {
-    return null;
-  }
-
-  const isCreating = space.id === space.clientId || space.id === 'new-space';
-  const isPlaceholder = space.id === 'new-space';
-  const [placeholderName, setPlaceholderName] = React.useState<string>(space.name ?? '');
+  const space = item.getItemData()?.data as ListSpaceResultItem;
+  const isCreating = space?.id === space?.clientId || space?.id === 'new-space';
+  const isPlaceholder = space?.id === 'new-space';
+  const [placeholderName, setPlaceholderName] = React.useState<string>(space?.name ?? '');
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
@@ -603,11 +588,10 @@ function ManageSpacesTableRowComponent({
                   <Input
                     ref={placeholderInputRef}
                     data-placeholder-input="true"
-                    value={placeholderName}
                     onContextMenu={(e) => e.stopPropagation()}
+                    value={placeholderName}
                     onChange={(e) => setPlaceholderName(e.target.value)}
                     onBlur={() => {
-                      // Trigger placeholder submit on blur
                       submitPlaceholder();
                     }}
                     onKeyDown={(e) => {
@@ -625,31 +609,28 @@ function ManageSpacesTableRowComponent({
                     placeholder={space.isContainer === true ? 'New Folder' : 'New Space'}
                   />
                 ) : isRenaming ? (
-                  <FocusLock>
-                    <Input
-                      ref={renameInputRef}
-                      data-rename-input="true"
-                      value={renameName}
-                      onChange={(e) => setRenameName(e.target.value)}
-                      onContextMenu={(e) => e.stopPropagation()}
-                      onBlur={() => {
-                        // Trigger rename on blur to save changes when input loses focus
+                  <Input
+                    ref={renameInputRef}
+                    data-rename-input="true"
+                    value={renameName}
+                    onContextMenu={(e) => e.stopPropagation()}
+                    onChange={(e) => setRenameName(e.target.value)}
+                    onBlur={() => {
+                      handleRenameSubmit();
+                    }}
+                    onKeyDown={(e) => {
+                      e.stopPropagation();
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
                         handleRenameSubmit();
-                      }}
-                      onKeyDown={(e) => {
-                        e.stopPropagation();
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleRenameSubmit();
-                        } else if (e.key === 'Escape') {
-                          e.preventDefault();
-                          handleRenameCancel();
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
-                    />
-                  </FocusLock>
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        handleRenameCancel();
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0 [&:focus]:border-0 [&:focus]:ring-0 [&:focus]:outline-none"
+                  />
                 ) : (
                   (() => {
                     const isContainer =
@@ -699,38 +680,31 @@ function ManageSpacesTableRowComponent({
                 ? space.isContainer === true
                   ? 'folder'
                   : 'space'
-                : (() => {
-                    const itemData = item.getItemData() as SpaceTreeNode | null;
-                    return itemData?.data?.isContainer === true ? 'folder' : 'space';
-                  })()}
+                : (item.getItemData()?.data as any)?.isContainer === true
+                  ? 'folder'
+                  : item.getItemData()?.data.type}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : (() => {
-                    const itemData = item.getItemData() as SpaceTreeNode | null;
-                    return itemData?.data?.createdAt
-                      ? format(new Date(itemData.data.createdAt), 'MMMM d, yyyy')
-                      : '—';
-                  })()}
+                : item.getItemData()?.data.createdAt
+                  ? format(new Date(item.getItemData().data.createdAt), 'MMMM d, yyyy')
+                  : '—'}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : (() => {
-                    const itemData = item.getItemData() as SpaceTreeNode | null;
-                    return itemData?.data?.updatedAt
-                      ? (() => {
-                          const date = new Date(itemData.data.updatedAt);
-                          const now = new Date();
-                          const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-                          if (diffInSeconds < 60) {
-                            return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
-                          }
-                          return formatDistanceToNow(date, { addSuffix: true });
-                        })()
-                      : '—';
-                  })()}
+                : item.getItemData()?.data.updatedAt
+                  ? (() => {
+                      const date = new Date(item.getItemData().data.updatedAt);
+                      const now = new Date();
+                      const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+                      if (diffInSeconds < 60) {
+                        return diffInSeconds <= 5 ? 'JUST NOW' : `${diffInSeconds} seconds ago`;
+                      }
+                      return formatDistanceToNow(date, { addSuffix: true });
+                    })()
+                  : '—'}
             </div>
             <div className="flex justify-end px-2 h-10 relative">
               {!isPlaceholder && (
@@ -1025,8 +999,3 @@ function ManageSpacesTableRowComponent({
     </ContextMenu>
   );
 }
-
-// Memoize ManageSpacesTableRow with custom comparison to prevent unnecessary rerenders
-// Only rerender if this specific item's props changed, ignoring placeholderClientId
-// unless this item is the placeholder
-export const ManageSpacesTableRow = React.memo(ManageSpacesTableRowComponent);

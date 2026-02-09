@@ -8,6 +8,7 @@ export const DOCUMENTS_QUERY_KEYS = {
     RECENT_VIEWS: ['home', 'docs', 'recent-views'],
   },
   RECENT_VIEWS: ['docs', 'recent-viewed'],
+  SEARCH_DOCUMENTS: (search: string) => ['docs', 'search', { search }],
 };
 
 //spaces query keys

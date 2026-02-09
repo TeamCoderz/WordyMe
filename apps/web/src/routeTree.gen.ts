@@ -118,10 +118,10 @@ const AuthedDocsFavoritesRoute = AuthedDocsFavoritesRouteImport.update({
 } as any);
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthedIndexRoute;
   '/settings': typeof AuthedSettingsRouteRouteWithChildren;
   '/login': typeof UnauthedLoginRoute;
   '/signup': typeof UnauthedSignupRoute;
-  '/': typeof AuthedIndexRoute;
   '/docs/favorites': typeof AuthedDocsFavoritesRoute;
   '/docs/manage': typeof AuthedDocsManageRoute;
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute;
@@ -131,14 +131,14 @@ export interface FileRoutesByFullPath {
   '/spaces/favorites': typeof AuthedSpacesFavoritesRoute;
   '/spaces/manage': typeof AuthedSpacesManageRoute;
   '/view/$handle': typeof AuthedViewHandleRoute;
-  '/docs': typeof AuthedDocsIndexRoute;
+  '/docs/': typeof AuthedDocsIndexRoute;
   '/settings/': typeof AuthedSettingsIndexRoute;
-  '/spaces': typeof AuthedSpacesIndexRoute;
+  '/spaces/': typeof AuthedSpacesIndexRoute;
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthedIndexRoute;
   '/login': typeof UnauthedLoginRoute;
   '/signup': typeof UnauthedSignupRoute;
-  '/': typeof AuthedIndexRoute;
   '/docs/favorites': typeof AuthedDocsFavoritesRoute;
   '/docs/manage': typeof AuthedDocsManageRoute;
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute;
@@ -176,10 +176,10 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
+    | '/'
     | '/settings'
     | '/login'
     | '/signup'
-    | '/'
     | '/docs/favorites'
     | '/docs/manage'
     | '/docs/recent-viewed'
@@ -189,14 +189,14 @@ export interface FileRouteTypes {
     | '/spaces/favorites'
     | '/spaces/manage'
     | '/view/$handle'
-    | '/docs'
+    | '/docs/'
     | '/settings/'
-    | '/spaces';
+    | '/spaces/';
   fileRoutesByTo: FileRoutesByTo;
   to:
+    | '/'
     | '/login'
     | '/signup'
-    | '/'
     | '/docs/favorites'
     | '/docs/manage'
     | '/docs/recent-viewed'
@@ -241,14 +241,14 @@ declare module '@tanstack/react-router' {
     '/_unauthed': {
       id: '/_unauthed';
       path: '';
-      fullPath: '';
+      fullPath: '/';
       preLoaderRoute: typeof UnauthedRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/_authed': {
       id: '/_authed';
       path: '';
-      fullPath: '';
+      fullPath: '/';
       preLoaderRoute: typeof AuthedRouteImport;
       parentRoute: typeof rootRouteImport;
     };
@@ -283,7 +283,7 @@ declare module '@tanstack/react-router' {
     '/_authed/spaces/': {
       id: '/_authed/spaces/';
       path: '/spaces';
-      fullPath: '/spaces';
+      fullPath: '/spaces/';
       preLoaderRoute: typeof AuthedSpacesIndexRouteImport;
       parentRoute: typeof AuthedRoute;
     };
@@ -297,7 +297,7 @@ declare module '@tanstack/react-router' {
     '/_authed/docs/': {
       id: '/_authed/docs/';
       path: '/docs';
-      fullPath: '/docs';
+      fullPath: '/docs/';
       preLoaderRoute: typeof AuthedDocsIndexRouteImport;
       parentRoute: typeof AuthedRoute;
     };

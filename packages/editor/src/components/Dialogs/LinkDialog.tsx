@@ -158,7 +158,8 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
   }, [selectedDocumentId, getRevisionsByDocumentId]);
 
   useEffect(() => {
-    const head = documents.find((document) => document.id === selectedDocumentId)?.head ?? '';
+    const head =
+      documents.find((document) => document.id === selectedDocumentId)?.currentRevisionId ?? '';
     if (selectedRevisionId) {
       getRevisionById(selectedRevisionId).then((revision) => {
         setTocEntries(revision ? generateToc(revision.data) : []);

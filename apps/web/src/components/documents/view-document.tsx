@@ -1,6 +1,4 @@
 import { ImageZoom } from './image-zoom';
-import { ViewDocumentActions } from './view-document-actions';
-import type { Document, User } from '@repo/types';
 import { useMemo, useRef, useState } from 'react';
 import { useCallback } from 'react';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
@@ -9,18 +7,44 @@ import { cn } from '@repo/ui/lib/utils';
 import type { LexicalEditor } from '@repo/editor/types';
 import { DocumentSidebar } from './document-sidebar';
 import { EditorComposer } from '@repo/editor/EditorComposer';
-import { getServices } from './services';
+import { useServices } from './useServices';
 import { Viewer } from '@repo/editor/Viewer';
+import { useSelector } from '@/store';
 
 interface ViewDocumentProps {
-  user: User;
-  document: Document;
+  userId: string;
+  documentId: string;
+  documentHandle: string;
+  revisionId?: string;
   initialState?: string;
 }
 
-export function ViewDocument({ document, initialState }: ViewDocumentProps) {
+export function ViewDocument({
+  userId,
+  documentId,
+  documentHandle,
+  revisionId,
+  initialState,
+}: ViewDocumentProps) {
+  const sidebar = useSelector((state) => state.sidebar);
+
+  const defaultOpen = useMemo(() => {
+    if (sidebar === 'expanded') return true;
+    if (sidebar === 'collapsed') return false;
+
+    if (typeof document === 'undefined') return true;
+
+    const match = window.document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
+    if (!match) return true;
+    try {
+      return decodeURIComponent(match[1]) === 'true';
+    } catch {
+      return match[1] === 'true';
+    }
+  }, [sidebar]);
+
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const [openDesktop, setOpenDesktop] = useState(true);
+  const [openDesktop, setOpenDesktop] = useState(defaultOpen);
   const [openMobile, setOpenMobile] = useState(false);
 
   const toggleSidebar = useCallback(
@@ -31,14 +55,13 @@ export function ViewDocument({ document, initialState }: ViewDocumentProps) {
   );
 
   const editorRef = useRef<LexicalEditor>(null);
-
-  const services = useMemo(() => getServices(document.id), [document.id]);
+  const services = useServices(documentId, userId);
 
   return (
     <SidebarProvider
       className={cn(
         'group/editor-sidebar relative flex flex-1 flex-col items-center min-h-auto',
-        '**:data-[collapsible]:sticky **:data-[collapsible]:top-[calc(--spacing(14)+1px)]',
+        '**:data-collapsible:sticky **:data-collapsible:top-[calc(--spacing(14)+1px)]',
       )}
       style={
         {
@@ -50,17 +73,16 @@ export function ViewDocument({ document, initialState }: ViewDocumentProps) {
       onOpenChange={toggleSidebar}
     >
       <EditorComposer
-        key={document.id}
+        key={revisionId ?? documentId}
         initialState={initialState ?? null}
         editable={false}
         services={services}
         editorRef={editorRef}
       >
-        <ViewDocumentActions handle={document.handle} />
         <div className="flex flex-1 justify-center w-full h-full items-start relative">
           <ImageZoom />
           <Viewer />
-          <DocumentSidebar handle={document?.handle} />
+          <DocumentSidebar handle={documentHandle} />
         </div>
       </EditorComposer>
     </SidebarProvider>
