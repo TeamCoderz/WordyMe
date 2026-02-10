@@ -20,7 +20,7 @@ import {
   updateUserImage,
 } from '../services/images.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(requireAuth);
 

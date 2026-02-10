@@ -12,7 +12,7 @@ import { HttpNotFound } from '@httpx/exception';
 import { documentFiltersSchema } from '../schemas/documents.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
-const router = Router();
+const router: Router = Router();
 
 router.use(requireAuth);
 
