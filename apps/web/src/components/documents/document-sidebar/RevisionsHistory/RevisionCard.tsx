@@ -56,8 +56,8 @@ import { getLocalRevisionByDocumentIdQueryOptions } from '@/queries/revisions';
 
 const formatRevisionLabel = (revision: Revision) => {
   return (
-    revision.revision_name ??
-    new Date(revision.created_at).toLocaleString(undefined, {
+    revision.revisionName ??
+    new Date(revision.createdAt).toLocaleString(undefined, {
       dateStyle: 'medium',
       timeStyle: 'short',
     })
@@ -68,7 +68,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
   const queryClient = useQueryClient();
   const { data: document } = useQuery(getDocumentByHandleQueryOptions(handle));
 
-  const { data: revisions } = useQuery(getRevisionsByDocumentIdQueryOptions(revision.document_id));
+  const { data: revisions } = useQuery(getRevisionsByDocumentIdQueryOptions(revision.documentId));
   const { mutateAsync: createRevision } = useCreateRevisionMutation({
     docHandle: document?.handle ?? '',
     documentId: document?.id ?? '',
@@ -108,7 +108,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
     const text = generateText(serializedEditorState);
     const checksum = computeChecksum(serializedEditorState);
     await createRevision({
-      documentId: revision.document_id,
+      documentId: revision.documentId,
       content: data,
       text: text,
       checksum: checksum,
@@ -195,15 +195,14 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
       if (!document) throw new Error('Document not found');
       if (!isCloudHead) {
         await updateDocumentData({
-          id: revision.document_id,
+          id: revision.documentId,
           head: revision.id,
         });
       }
       const cloudRevision = await queryClient.ensureQueryData(
         getRevisionByIdQueryOptions(revision.id, true),
       );
-      const serializedData =
-        cloudRevision && 'content' in cloudRevision ? JSON.parse(cloudRevision.content) : null;
+      const serializedData = JSON.parse(cloudRevision.content);
       const editorState = editor.parseEditorState(serializedData);
       editor.update(
         () => {
@@ -221,7 +220,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
       if (pathname.startsWith('/view/')) {
         queryClient.setQueryData(
           getLocalRevisionByDocumentIdQueryOptions(document?.id ?? '').queryKey,
-          { data: JSON.parse(cloudRevision.content) },
+          { content: JSON.parse(cloudRevision.content) },
         );
         navigate({
           to: '/view/$handle',
@@ -274,7 +273,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
             <AvatarFallback>{revision.author.name?.charAt(0) ?? '?'}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1 w-full truncate">
-            <span className="text-sm font-medium pr-6 truncate" title={revision.created_at}>
+            <span className="text-sm font-medium pr-6 truncate" title={revision.createdAt}>
               {formatRevisionLabel(revision)}
             </span>
             <span className="text-xs text-muted-foreground truncate">{revision.author.name}</span>
@@ -388,7 +387,7 @@ function RevisionRenameDialog({
   });
   // const queryClient = useQueryClient();
   const form = useForm<ChangeRevisionNameType>({
-    defaultValues: { name: revision.revision_name || '' },
+    defaultValues: { name: revision.revisionName || '' },
     resolver: zodResolver(changeRevisionNameSchema),
   });
   const {
@@ -399,9 +398,9 @@ function RevisionRenameDialog({
 
   useEffect(() => {
     if (open) {
-      reset({ name: revision.revision_name || '' });
+      reset({ name: revision.revisionName || '' });
     }
-  }, [open, revision.revision_name, reset]);
+  }, [open, revision.revisionName, reset]);
 
   const onSubmit = async (data: ChangeRevisionNameType) => {
     try {

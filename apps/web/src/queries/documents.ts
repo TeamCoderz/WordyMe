@@ -36,7 +36,6 @@ import {
 import { notFound, useMatch, useNavigate } from '@tanstack/react-router';
 // import { revisions } from "@repo/backend/sdk";
 import { getInitialEditorState } from '@repo/editor/utils/getInitialEditorState';
-import { transformBackendDocument } from '@/utils/transformBackendDocument';
 import { useActions, useSelector } from '@/store';
 import { getRevisionsByDocumentIdQueryOptions } from './revisions';
 import { addDocumentToCache, isDocumentCached, removeDocumentFromCache } from './caches/documents';
@@ -917,16 +916,14 @@ export const getDocumentByIdQueryOptions = (id: string, queryClient?: QueryClien
         throw notFound();
       }
 
-      const transformed = transformBackendDocument(document);
-
-      if (queryClient && transformed?.handle) {
+      if (queryClient && document?.handle) {
         queryClient.setQueryData(
-          getDocumentByHandleQueryOptions(transformed.handle).queryKey,
-          transformed,
+          getDocumentByHandleQueryOptions(document.handle).queryKey,
+          document,
         );
       }
 
-      return transformed;
+      return document;
     },
   };
 };
@@ -943,7 +940,7 @@ export const getDocumentByHandleQueryOptions = (handle: string) => {
         throw notFound();
       }
 
-      return transformBackendDocument(document);
+      return document;
     },
   };
 };

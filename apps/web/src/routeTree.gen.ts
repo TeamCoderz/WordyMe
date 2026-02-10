@@ -8,173 +8,174 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as UnauthedRouteImport } from './routes/_unauthed';
-import { Route as AuthedRouteImport } from './routes/_authed';
-import { Route as AuthedIndexRouteImport } from './routes/_authed/index';
-import { Route as UnauthedSignupRouteImport } from './routes/_unauthed/signup';
-import { Route as UnauthedLoginRouteImport } from './routes/_unauthed/login';
-import { Route as AuthedSettingsRouteRouteImport } from './routes/_authed/settings/route';
-import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index';
-import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index';
-import { Route as AuthedDocsIndexRouteImport } from './routes/_authed/docs/index';
-import { Route as AuthedViewHandleRouteImport } from './routes/_authed/view/$handle';
-import { Route as AuthedSpacesManageRouteImport } from './routes/_authed/spaces/manage';
-import { Route as AuthedSpacesFavoritesRouteImport } from './routes/_authed/spaces/favorites';
-import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile';
-import { Route as AuthedSettingsPreferencesRouteImport } from './routes/_authed/settings/preferences';
-import { Route as AuthedEditHandleRouteImport } from './routes/_authed/edit/$handle';
-import { Route as AuthedDocsRecentViewedRouteImport } from './routes/_authed/docs/recent-viewed';
-import { Route as AuthedDocsManageRouteImport } from './routes/_authed/docs/manage';
-import { Route as AuthedDocsFavoritesRouteImport } from './routes/_authed/docs/favorites';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnauthedRouteImport } from './routes/_unauthed'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as UnauthedSignupRouteImport } from './routes/_unauthed/signup'
+import { Route as UnauthedLoginRouteImport } from './routes/_unauthed/login'
+import { Route as AuthedSettingsRouteRouteImport } from './routes/_authed/settings/route'
+import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index'
+import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedDocsIndexRouteImport } from './routes/_authed/docs/index'
+import { Route as AuthedViewHandleRouteImport } from './routes/_authed/view/$handle'
+import { Route as AuthedSpacesManageRouteImport } from './routes/_authed/spaces/manage'
+import { Route as AuthedSpacesFavoritesRouteImport } from './routes/_authed/spaces/favorites'
+import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile'
+import { Route as AuthedSettingsPreferencesRouteImport } from './routes/_authed/settings/preferences'
+import { Route as AuthedEditHandleRouteImport } from './routes/_authed/edit/$handle'
+import { Route as AuthedDocsRecentViewedRouteImport } from './routes/_authed/docs/recent-viewed'
+import { Route as AuthedDocsManageRouteImport } from './routes/_authed/docs/manage'
+import { Route as AuthedDocsFavoritesRouteImport } from './routes/_authed/docs/favorites'
 
 const UnauthedRoute = UnauthedRouteImport.update({
   id: '/_unauthed',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const UnauthedSignupRoute = UnauthedSignupRouteImport.update({
   id: '/signup',
   path: '/signup',
   getParentRoute: () => UnauthedRoute,
-} as any);
+} as any)
 const UnauthedLoginRoute = UnauthedLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => UnauthedRoute,
-} as any);
+} as any)
 const AuthedSettingsRouteRoute = AuthedSettingsRouteRouteImport.update({
   id: '/settings',
   path: '/settings',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedSpacesIndexRoute = AuthedSpacesIndexRouteImport.update({
   id: '/spaces/',
   path: '/spaces/',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedSettingsRouteRoute,
-} as any);
+} as any)
 const AuthedDocsIndexRoute = AuthedDocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedViewHandleRoute = AuthedViewHandleRouteImport.update({
   id: '/view/$handle',
   path: '/view/$handle',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedSpacesManageRoute = AuthedSpacesManageRouteImport.update({
   id: '/spaces/manage',
   path: '/spaces/manage',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedSpacesFavoritesRoute = AuthedSpacesFavoritesRouteImport.update({
   id: '/spaces/favorites',
   path: '/spaces/favorites',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedSettingsProfileRoute = AuthedSettingsProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
   getParentRoute: () => AuthedSettingsRouteRoute,
-} as any);
-const AuthedSettingsPreferencesRoute = AuthedSettingsPreferencesRouteImport.update({
-  id: '/preferences',
-  path: '/preferences',
-  getParentRoute: () => AuthedSettingsRouteRoute,
-} as any);
+} as any)
+const AuthedSettingsPreferencesRoute =
+  AuthedSettingsPreferencesRouteImport.update({
+    id: '/preferences',
+    path: '/preferences',
+    getParentRoute: () => AuthedSettingsRouteRoute,
+  } as any)
 const AuthedEditHandleRoute = AuthedEditHandleRouteImport.update({
   id: '/edit/$handle',
   path: '/edit/$handle',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedDocsRecentViewedRoute = AuthedDocsRecentViewedRouteImport.update({
   id: '/docs/recent-viewed',
   path: '/docs/recent-viewed',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedDocsManageRoute = AuthedDocsManageRouteImport.update({
   id: '/docs/manage',
   path: '/docs/manage',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 const AuthedDocsFavoritesRoute = AuthedDocsFavoritesRouteImport.update({
   id: '/docs/favorites',
   path: '/docs/favorites',
   getParentRoute: () => AuthedRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthedIndexRoute;
-  '/settings': typeof AuthedSettingsRouteRouteWithChildren;
-  '/login': typeof UnauthedLoginRoute;
-  '/signup': typeof UnauthedSignupRoute;
-  '/docs/favorites': typeof AuthedDocsFavoritesRoute;
-  '/docs/manage': typeof AuthedDocsManageRoute;
-  '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute;
-  '/edit/$handle': typeof AuthedEditHandleRoute;
-  '/settings/preferences': typeof AuthedSettingsPreferencesRoute;
-  '/settings/profile': typeof AuthedSettingsProfileRoute;
-  '/spaces/favorites': typeof AuthedSpacesFavoritesRoute;
-  '/spaces/manage': typeof AuthedSpacesManageRoute;
-  '/view/$handle': typeof AuthedViewHandleRoute;
-  '/docs/': typeof AuthedDocsIndexRoute;
-  '/settings/': typeof AuthedSettingsIndexRoute;
-  '/spaces/': typeof AuthedSpacesIndexRoute;
+  '/': typeof AuthedIndexRoute
+  '/settings': typeof AuthedSettingsRouteRouteWithChildren
+  '/login': typeof UnauthedLoginRoute
+  '/signup': typeof UnauthedSignupRoute
+  '/docs/favorites': typeof AuthedDocsFavoritesRoute
+  '/docs/manage': typeof AuthedDocsManageRoute
+  '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
+  '/edit/$handle': typeof AuthedEditHandleRoute
+  '/settings/preferences': typeof AuthedSettingsPreferencesRoute
+  '/settings/profile': typeof AuthedSettingsProfileRoute
+  '/spaces/favorites': typeof AuthedSpacesFavoritesRoute
+  '/spaces/manage': typeof AuthedSpacesManageRoute
+  '/view/$handle': typeof AuthedViewHandleRoute
+  '/docs/': typeof AuthedDocsIndexRoute
+  '/settings/': typeof AuthedSettingsIndexRoute
+  '/spaces/': typeof AuthedSpacesIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof AuthedIndexRoute;
-  '/login': typeof UnauthedLoginRoute;
-  '/signup': typeof UnauthedSignupRoute;
-  '/docs/favorites': typeof AuthedDocsFavoritesRoute;
-  '/docs/manage': typeof AuthedDocsManageRoute;
-  '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute;
-  '/edit/$handle': typeof AuthedEditHandleRoute;
-  '/settings/preferences': typeof AuthedSettingsPreferencesRoute;
-  '/settings/profile': typeof AuthedSettingsProfileRoute;
-  '/spaces/favorites': typeof AuthedSpacesFavoritesRoute;
-  '/spaces/manage': typeof AuthedSpacesManageRoute;
-  '/view/$handle': typeof AuthedViewHandleRoute;
-  '/docs': typeof AuthedDocsIndexRoute;
-  '/settings': typeof AuthedSettingsIndexRoute;
-  '/spaces': typeof AuthedSpacesIndexRoute;
+  '/': typeof AuthedIndexRoute
+  '/login': typeof UnauthedLoginRoute
+  '/signup': typeof UnauthedSignupRoute
+  '/docs/favorites': typeof AuthedDocsFavoritesRoute
+  '/docs/manage': typeof AuthedDocsManageRoute
+  '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
+  '/edit/$handle': typeof AuthedEditHandleRoute
+  '/settings/preferences': typeof AuthedSettingsPreferencesRoute
+  '/settings/profile': typeof AuthedSettingsProfileRoute
+  '/spaces/favorites': typeof AuthedSpacesFavoritesRoute
+  '/spaces/manage': typeof AuthedSpacesManageRoute
+  '/view/$handle': typeof AuthedViewHandleRoute
+  '/docs': typeof AuthedDocsIndexRoute
+  '/settings': typeof AuthedSettingsIndexRoute
+  '/spaces': typeof AuthedSpacesIndexRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/_authed': typeof AuthedRouteWithChildren;
-  '/_unauthed': typeof UnauthedRouteWithChildren;
-  '/_authed/settings': typeof AuthedSettingsRouteRouteWithChildren;
-  '/_unauthed/login': typeof UnauthedLoginRoute;
-  '/_unauthed/signup': typeof UnauthedSignupRoute;
-  '/_authed/': typeof AuthedIndexRoute;
-  '/_authed/docs/favorites': typeof AuthedDocsFavoritesRoute;
-  '/_authed/docs/manage': typeof AuthedDocsManageRoute;
-  '/_authed/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute;
-  '/_authed/edit/$handle': typeof AuthedEditHandleRoute;
-  '/_authed/settings/preferences': typeof AuthedSettingsPreferencesRoute;
-  '/_authed/settings/profile': typeof AuthedSettingsProfileRoute;
-  '/_authed/spaces/favorites': typeof AuthedSpacesFavoritesRoute;
-  '/_authed/spaces/manage': typeof AuthedSpacesManageRoute;
-  '/_authed/view/$handle': typeof AuthedViewHandleRoute;
-  '/_authed/docs/': typeof AuthedDocsIndexRoute;
-  '/_authed/settings/': typeof AuthedSettingsIndexRoute;
-  '/_authed/spaces/': typeof AuthedSpacesIndexRoute;
+  __root__: typeof rootRouteImport
+  '/_authed': typeof AuthedRouteWithChildren
+  '/_unauthed': typeof UnauthedRouteWithChildren
+  '/_authed/settings': typeof AuthedSettingsRouteRouteWithChildren
+  '/_unauthed/login': typeof UnauthedLoginRoute
+  '/_unauthed/signup': typeof UnauthedSignupRoute
+  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/docs/favorites': typeof AuthedDocsFavoritesRoute
+  '/_authed/docs/manage': typeof AuthedDocsManageRoute
+  '/_authed/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
+  '/_authed/edit/$handle': typeof AuthedEditHandleRoute
+  '/_authed/settings/preferences': typeof AuthedSettingsPreferencesRoute
+  '/_authed/settings/profile': typeof AuthedSettingsProfileRoute
+  '/_authed/spaces/favorites': typeof AuthedSpacesFavoritesRoute
+  '/_authed/spaces/manage': typeof AuthedSpacesManageRoute
+  '/_authed/view/$handle': typeof AuthedViewHandleRoute
+  '/_authed/docs/': typeof AuthedDocsIndexRoute
+  '/_authed/settings/': typeof AuthedSettingsIndexRoute
+  '/_authed/spaces/': typeof AuthedSpacesIndexRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/settings'
@@ -191,8 +192,8 @@ export interface FileRouteTypes {
     | '/view/$handle'
     | '/docs/'
     | '/settings/'
-    | '/spaces/';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/spaces/'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
@@ -208,7 +209,7 @@ export interface FileRouteTypes {
     | '/view/$handle'
     | '/docs'
     | '/settings'
-    | '/spaces';
+    | '/spaces'
   id:
     | '__root__'
     | '/_authed'
@@ -228,173 +229,172 @@ export interface FileRouteTypes {
     | '/_authed/view/$handle'
     | '/_authed/docs/'
     | '/_authed/settings/'
-    | '/_authed/spaces/';
-  fileRoutesById: FileRoutesById;
+    | '/_authed/spaces/'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthedRoute: typeof AuthedRouteWithChildren;
-  UnauthedRoute: typeof UnauthedRouteWithChildren;
+  AuthedRoute: typeof AuthedRouteWithChildren
+  UnauthedRoute: typeof UnauthedRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/_unauthed': {
-      id: '/_unauthed';
-      path: '';
-      fullPath: '/';
-      preLoaderRoute: typeof UnauthedRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_unauthed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof UnauthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed': {
-      id: '/_authed';
-      path: '';
-      fullPath: '/';
-      preLoaderRoute: typeof AuthedRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/': {
-      id: '/_authed/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof AuthedIndexRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_unauthed/signup': {
-      id: '/_unauthed/signup';
-      path: '/signup';
-      fullPath: '/signup';
-      preLoaderRoute: typeof UnauthedSignupRouteImport;
-      parentRoute: typeof UnauthedRoute;
-    };
+      id: '/_unauthed/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof UnauthedSignupRouteImport
+      parentRoute: typeof UnauthedRoute
+    }
     '/_unauthed/login': {
-      id: '/_unauthed/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof UnauthedLoginRouteImport;
-      parentRoute: typeof UnauthedRoute;
-    };
+      id: '/_unauthed/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof UnauthedLoginRouteImport
+      parentRoute: typeof UnauthedRoute
+    }
     '/_authed/settings': {
-      id: '/_authed/settings';
-      path: '/settings';
-      fullPath: '/settings';
-      preLoaderRoute: typeof AuthedSettingsRouteRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthedSettingsRouteRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/spaces/': {
-      id: '/_authed/spaces/';
-      path: '/spaces';
-      fullPath: '/spaces/';
-      preLoaderRoute: typeof AuthedSpacesIndexRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/spaces/'
+      path: '/spaces'
+      fullPath: '/spaces/'
+      preLoaderRoute: typeof AuthedSpacesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/': {
-      id: '/_authed/settings/';
-      path: '/';
-      fullPath: '/settings/';
-      preLoaderRoute: typeof AuthedSettingsIndexRouteImport;
-      parentRoute: typeof AuthedSettingsRouteRoute;
-    };
+      id: '/_authed/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthedSettingsIndexRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
     '/_authed/docs/': {
-      id: '/_authed/docs/';
-      path: '/docs';
-      fullPath: '/docs/';
-      preLoaderRoute: typeof AuthedDocsIndexRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/docs/'
+      path: '/docs'
+      fullPath: '/docs/'
+      preLoaderRoute: typeof AuthedDocsIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/view/$handle': {
-      id: '/_authed/view/$handle';
-      path: '/view/$handle';
-      fullPath: '/view/$handle';
-      preLoaderRoute: typeof AuthedViewHandleRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/view/$handle'
+      path: '/view/$handle'
+      fullPath: '/view/$handle'
+      preLoaderRoute: typeof AuthedViewHandleRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/spaces/manage': {
-      id: '/_authed/spaces/manage';
-      path: '/spaces/manage';
-      fullPath: '/spaces/manage';
-      preLoaderRoute: typeof AuthedSpacesManageRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/spaces/manage'
+      path: '/spaces/manage'
+      fullPath: '/spaces/manage'
+      preLoaderRoute: typeof AuthedSpacesManageRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/spaces/favorites': {
-      id: '/_authed/spaces/favorites';
-      path: '/spaces/favorites';
-      fullPath: '/spaces/favorites';
-      preLoaderRoute: typeof AuthedSpacesFavoritesRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/spaces/favorites'
+      path: '/spaces/favorites'
+      fullPath: '/spaces/favorites'
+      preLoaderRoute: typeof AuthedSpacesFavoritesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings/profile': {
-      id: '/_authed/settings/profile';
-      path: '/profile';
-      fullPath: '/settings/profile';
-      preLoaderRoute: typeof AuthedSettingsProfileRouteImport;
-      parentRoute: typeof AuthedSettingsRouteRoute;
-    };
+      id: '/_authed/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AuthedSettingsProfileRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
     '/_authed/settings/preferences': {
-      id: '/_authed/settings/preferences';
-      path: '/preferences';
-      fullPath: '/settings/preferences';
-      preLoaderRoute: typeof AuthedSettingsPreferencesRouteImport;
-      parentRoute: typeof AuthedSettingsRouteRoute;
-    };
+      id: '/_authed/settings/preferences'
+      path: '/preferences'
+      fullPath: '/settings/preferences'
+      preLoaderRoute: typeof AuthedSettingsPreferencesRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
     '/_authed/edit/$handle': {
-      id: '/_authed/edit/$handle';
-      path: '/edit/$handle';
-      fullPath: '/edit/$handle';
-      preLoaderRoute: typeof AuthedEditHandleRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/edit/$handle'
+      path: '/edit/$handle'
+      fullPath: '/edit/$handle'
+      preLoaderRoute: typeof AuthedEditHandleRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/docs/recent-viewed': {
-      id: '/_authed/docs/recent-viewed';
-      path: '/docs/recent-viewed';
-      fullPath: '/docs/recent-viewed';
-      preLoaderRoute: typeof AuthedDocsRecentViewedRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/docs/recent-viewed'
+      path: '/docs/recent-viewed'
+      fullPath: '/docs/recent-viewed'
+      preLoaderRoute: typeof AuthedDocsRecentViewedRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/docs/manage': {
-      id: '/_authed/docs/manage';
-      path: '/docs/manage';
-      fullPath: '/docs/manage';
-      preLoaderRoute: typeof AuthedDocsManageRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/docs/manage'
+      path: '/docs/manage'
+      fullPath: '/docs/manage'
+      preLoaderRoute: typeof AuthedDocsManageRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/docs/favorites': {
-      id: '/_authed/docs/favorites';
-      path: '/docs/favorites';
-      fullPath: '/docs/favorites';
-      preLoaderRoute: typeof AuthedDocsFavoritesRouteImport;
-      parentRoute: typeof AuthedRoute;
-    };
+      id: '/_authed/docs/favorites'
+      path: '/docs/favorites'
+      fullPath: '/docs/favorites'
+      preLoaderRoute: typeof AuthedDocsFavoritesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
 interface AuthedSettingsRouteRouteChildren {
-  AuthedSettingsPreferencesRoute: typeof AuthedSettingsPreferencesRoute;
-  AuthedSettingsProfileRoute: typeof AuthedSettingsProfileRoute;
-  AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute;
+  AuthedSettingsPreferencesRoute: typeof AuthedSettingsPreferencesRoute
+  AuthedSettingsProfileRoute: typeof AuthedSettingsProfileRoute
+  AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
 const AuthedSettingsRouteRouteChildren: AuthedSettingsRouteRouteChildren = {
   AuthedSettingsPreferencesRoute: AuthedSettingsPreferencesRoute,
   AuthedSettingsProfileRoute: AuthedSettingsProfileRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,
-};
+}
 
-const AuthedSettingsRouteRouteWithChildren = AuthedSettingsRouteRoute._addFileChildren(
-  AuthedSettingsRouteRouteChildren,
-);
+const AuthedSettingsRouteRouteWithChildren =
+  AuthedSettingsRouteRoute._addFileChildren(AuthedSettingsRouteRouteChildren)
 
 interface AuthedRouteChildren {
-  AuthedSettingsRouteRoute: typeof AuthedSettingsRouteRouteWithChildren;
-  AuthedIndexRoute: typeof AuthedIndexRoute;
-  AuthedDocsFavoritesRoute: typeof AuthedDocsFavoritesRoute;
-  AuthedDocsManageRoute: typeof AuthedDocsManageRoute;
-  AuthedDocsRecentViewedRoute: typeof AuthedDocsRecentViewedRoute;
-  AuthedEditHandleRoute: typeof AuthedEditHandleRoute;
-  AuthedSpacesFavoritesRoute: typeof AuthedSpacesFavoritesRoute;
-  AuthedSpacesManageRoute: typeof AuthedSpacesManageRoute;
-  AuthedViewHandleRoute: typeof AuthedViewHandleRoute;
-  AuthedDocsIndexRoute: typeof AuthedDocsIndexRoute;
-  AuthedSpacesIndexRoute: typeof AuthedSpacesIndexRoute;
+  AuthedSettingsRouteRoute: typeof AuthedSettingsRouteRouteWithChildren
+  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedDocsFavoritesRoute: typeof AuthedDocsFavoritesRoute
+  AuthedDocsManageRoute: typeof AuthedDocsManageRoute
+  AuthedDocsRecentViewedRoute: typeof AuthedDocsRecentViewedRoute
+  AuthedEditHandleRoute: typeof AuthedEditHandleRoute
+  AuthedSpacesFavoritesRoute: typeof AuthedSpacesFavoritesRoute
+  AuthedSpacesManageRoute: typeof AuthedSpacesManageRoute
+  AuthedViewHandleRoute: typeof AuthedViewHandleRoute
+  AuthedDocsIndexRoute: typeof AuthedDocsIndexRoute
+  AuthedSpacesIndexRoute: typeof AuthedSpacesIndexRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
@@ -409,26 +409,29 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedViewHandleRoute: AuthedViewHandleRoute,
   AuthedDocsIndexRoute: AuthedDocsIndexRoute,
   AuthedSpacesIndexRoute: AuthedSpacesIndexRoute,
-};
+}
 
-const AuthedRouteWithChildren = AuthedRoute._addFileChildren(AuthedRouteChildren);
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 interface UnauthedRouteChildren {
-  UnauthedLoginRoute: typeof UnauthedLoginRoute;
-  UnauthedSignupRoute: typeof UnauthedSignupRoute;
+  UnauthedLoginRoute: typeof UnauthedLoginRoute
+  UnauthedSignupRoute: typeof UnauthedSignupRoute
 }
 
 const UnauthedRouteChildren: UnauthedRouteChildren = {
   UnauthedLoginRoute: UnauthedLoginRoute,
   UnauthedSignupRoute: UnauthedSignupRoute,
-};
+}
 
-const UnauthedRouteWithChildren = UnauthedRoute._addFileChildren(UnauthedRouteChildren);
+const UnauthedRouteWithChildren = UnauthedRoute._addFileChildren(
+  UnauthedRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   UnauthedRoute: UnauthedRouteWithChildren,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

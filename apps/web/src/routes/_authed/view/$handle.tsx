@@ -87,15 +87,13 @@ function RouteComponent() {
     return <ViewDocumentLoading handle={handle} />;
   }
 
-  const initialState = revision && 'data' in revision ? JSON.stringify(revision.data) : undefined;
-
   return (
     <ViewDocument
       userId={user.id}
       documentId={document.id}
       documentHandle={document.handle}
       revisionId={search.v ? cloudRevision?.id : undefined}
-      initialState={initialState}
+      initialState={revision.content}
     />
   );
 }

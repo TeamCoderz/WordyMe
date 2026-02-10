@@ -70,7 +70,5 @@ function RouteComponent() {
     return <EditDocumentLoading handle={handle} />;
   }
 
-  const initialState = 'data' in revision ? JSON.stringify(revision.data) : undefined;
-
-  return <EditDocument user={user} document={document} initialState={initialState} />;
+  return <EditDocument user={user} document={document} initialState={revision.content} />;
 }

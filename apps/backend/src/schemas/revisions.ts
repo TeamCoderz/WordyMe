@@ -37,14 +37,22 @@ export const updateRevisionContentSchema = createUpdateSchema(revisionsTable)
 
 export const updateRevisionSchema = updateRevisionNameSchema.or(updateRevisionContentSchema);
 
-export const plainRevisionSchema = createSelectSchema(revisionsTable).extend({
-  url: z.string().min(1, 'Revision URL is required'),
-});
+export const plainRevisionSchema = createSelectSchema(revisionsTable)
+  .omit({ createdAt: true, updatedAt: true })
+  .extend({
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    url: z.string().min(1, 'Revision URL is required'),
+  });
 
-export const revisionDetailsSchema = createSelectSchema(revisionsTable).extend({
-  url: z.string().min(1, 'Revision URL is required'),
-  content: z.string().min(1, 'Revision Content is required'),
-});
+export const revisionDetailsSchema = createSelectSchema(revisionsTable)
+  .omit({ createdAt: true, updatedAt: true })
+  .extend({
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime(),
+    url: z.string().min(1, 'Revision URL is required'),
+    content: z.string().min(1, 'Revision Content is required'),
+  });
 
 export type CreateRevisionInput = z.output<typeof createRevisionSchema>;
 export type UpdateRevisionNameInput = z.output<typeof updateRevisionNameSchema>;

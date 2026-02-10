@@ -109,8 +109,8 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
   const formatRevisionLabel = (revision?: Revision) => {
     if (!revision) return 'Revision not found';
     return (
-      revision.revision_name ??
-      new Date(revision.created_at).toLocaleString(undefined, {
+      revision.revisionName ??
+      new Date(revision.createdAt).toLocaleString(undefined, {
         dateStyle: 'medium',
         timeStyle: 'short',
       })
@@ -162,11 +162,11 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
       documents.find((document) => document.id === selectedDocumentId)?.currentRevisionId ?? '';
     if (selectedRevisionId) {
       getRevisionById(selectedRevisionId).then((revision) => {
-        setTocEntries(revision ? generateToc(revision.data) : []);
+        setTocEntries(revision ? generateToc(JSON.parse(revision.content)) : []);
       });
     } else if (selectedDocumentId && head) {
       getLocalRevisionByDocumentId(selectedDocumentId, head).then((revision) => {
-        setTocEntries(revision ? generateToc(revision.data) : []);
+        setTocEntries(revision ? generateToc(JSON.parse(revision.content)) : []);
       });
     }
   }, [

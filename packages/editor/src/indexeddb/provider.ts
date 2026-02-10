@@ -37,14 +37,13 @@ export async function getDocument(id: string) {
   const encryptionKey = await getOrCreateKey();
   const objectStore = db.transaction(OBJECT_STORE_NAME).objectStore(OBJECT_STORE_NAME);
   const request = objectStore.get(0);
-  return await new Promise<SerializedEditorState | null>((resolve, reject) => {
+  return await new Promise<string | null>((resolve, reject) => {
     request.onsuccess = async () => {
       if (!request.result) return resolve(null);
 
       try {
         const stringifiedEditorState = await decryptData(request.result, encryptionKey);
-        const editorState = JSON.parse(stringifiedEditorState) as SerializedEditorState;
-        return resolve(editorState);
+        return resolve(stringifiedEditorState);
       } catch (error) {
         console.error('Error parsing editor state JSON:', error);
         return resolve(null);
