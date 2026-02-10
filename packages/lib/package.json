@@ -16,7 +16,7 @@
     "@repo/typescript-config": "workspace:*",
     "eslint": "^10.0.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.55.0"
   },
   "dependencies": {
     "fractional-indexing": "^3.2.0"

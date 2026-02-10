@@ -27,9 +27,9 @@
     "@radix-ui/react-use-controllable-state": "^1.2.2",
     "@tanstack/react-router": "^1.159.5",
     "@tanstack/react-virtual": "^3.13.18",
-    "@uiw/color-convert": "^2.9.4",
-    "@uiw/react-color-hue": "^2.9.4",
-    "@uiw/react-color-saturation": "^2.9.4",
+    "@uiw/color-convert": "^2.9.5",
+    "@uiw/react-color-hue": "^2.9.5",
+    "@uiw/react-color-saturation": "^2.9.5",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -39,7 +39,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-dropzone": "^14.4.0",
+    "react-dropzone": "^14.4.1",
     "react-hook-form": "^7.71.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
@@ -60,7 +60,7 @@
     "eslint": "^10.0.0",
     "tailwindcss": "^4.1.18",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
+    "typescript-eslint": "^8.55.0"
   },
   "exports": {
     "./globals.css": "./src/styles/globals.css",
