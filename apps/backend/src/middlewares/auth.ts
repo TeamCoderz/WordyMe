@@ -2,22 +2,23 @@ import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { auth } from '../lib/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { HttpUnauthorized } from '@httpx/exception';
-import { InferSession, InferUser } from 'better-auth';
 import { ExtendedError, Socket } from 'socket.io';
+
+type Session = typeof auth.$Infer.Session;
 
 declare global {
   namespace Express {
     interface Request {
-      user?: InferUser<typeof auth>;
-      session?: InferSession<typeof auth>;
+      user?: Session['user'];
+      session?: Session['session'];
     }
   }
 }
 
 declare module 'socket.io' {
   interface Socket {
-    user: InferUser<typeof auth>;
-    session: InferSession<typeof auth>;
+    user: Session['user'];
+    session: Session['session'];
   }
 }
 
