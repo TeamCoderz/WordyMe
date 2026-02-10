@@ -6,13 +6,21 @@ export type SpaceVisibility = 'private' | 'shared' | 'public';
 
 export interface Space {
   id: string;
+  createdAt: Date;
+  updatedAt: Date;
   name: string;
-  description?: string | null;
-  createdAt: string | Date;
-  updatedAt: string | null;
-  icon: string;
-  parentId?: string | null;
-  handle?: string | null;
+  handle: string;
+  icon: string | null;
+  position: string | null;
+  currentRevisionId: string | null;
+  userId: string;
+  parentId: string | null;
+  documentType: 'space' | 'folder' | 'note';
+  spaceId: string | null;
+  isContainer: boolean;
+  clientId: string | null;
+  isFavorite: boolean;
+  lastViewedAt: Date | null;
 }
 
 export interface SpaceCreateInput {

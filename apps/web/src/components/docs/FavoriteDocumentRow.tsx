@@ -26,7 +26,6 @@ import {
   useDeleteDocumentMutation,
 } from '../../queries/documents';
 import { useEffect, useRef, useState } from 'react';
-import FocusLock from 'react-focus-lock';
 import { alert } from '../Layout/alert';
 import { Link } from '@tanstack/react-router';
 
@@ -214,26 +213,24 @@ export function FavoriteDocumentRow({
               </button>
             </IconPicker>
             {renamingDocumentId === document.id ? (
-              <FocusLock>
-                <Input
-                  ref={(el) => {
-                    renameInputRef.current = el;
-                    if (el && !el.dataset.focused) {
-                      el.dataset.focused = 'true';
-                      setTimeout(() => {
-                        el.focus();
-                        el.select();
-                      }, 0);
-                    }
-                  }}
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => handleRenameKeyDown(e, document.id)}
-                  className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
-                  onClick={(e) => e.stopPropagation()}
-                  autoFocus
-                />
-              </FocusLock>
+              <Input
+                ref={(el) => {
+                  renameInputRef.current = el;
+                  if (el && !el.dataset.focused) {
+                    el.dataset.focused = 'true';
+                    setTimeout(() => {
+                      el.focus();
+                      el.select();
+                    }, 0);
+                  }
+                }}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => handleRenameKeyDown(e, document.id)}
+                className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
             ) : (
               <Link
                 to="/view/$handle"
@@ -276,7 +273,7 @@ export function FavoriteDocumentRow({
                   <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" onCloseAutoFocus={(e) => e.preventDefault()}>
                 <DropdownMenuItem onClick={() => handleRename(document)}>
                   <PencilLine className="mr-2 h-4 w-4" />
                   Change Name

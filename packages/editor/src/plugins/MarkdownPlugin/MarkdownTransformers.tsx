@@ -628,6 +628,7 @@ import {
 import { $createMathNode, $isMathNode, MathNode } from '@repo/editor/nodes/MathNode';
 import { $createImageNode, $isImageNode, ImageNode } from '@repo/editor/nodes/ImageNode';
 import { $createSketchNode, $isSketchNode, SketchNode } from '@repo/editor/nodes/SketchNode';
+import { $createDiagramNode, $isDiagramNode, DiagramNode } from '@repo/editor/nodes/DiagramNode';
 import { $createStickyNode, $isStickyNode, StickyNode } from '@repo/editor/nodes/StickyNode';
 import { $isParagraphNode, $isTextNode, LexicalEditor } from 'lexical';
 import { $wrapNodeInElement } from '@lexical/utils';
@@ -703,6 +704,33 @@ export const SKETCH: TextMatchTransformer = {
       style: '',
     });
     textNode.replace(sketchNode);
+  },
+  trigger: '>',
+  type: 'text-match',
+};
+
+export const DIAGRAM: TextMatchTransformer = {
+  dependencies: [DiagramNode],
+  export: (node) => {
+    if (!$isDiagramNode(node)) {
+      return null;
+    }
+    const src = node.getSrc();
+    const altText = node.getAltText();
+    return `![${altText}](${src})`;
+  },
+  importRegExp: /<diagram src="([^"]+?)"\s?\/>\s?/,
+  regExp: /<diagram src="([^"]+?)"\s?\/>\s?$/,
+  replace: (textNode, match) => {
+    const [, src] = match;
+    const diagramNode = $createDiagramNode({
+      src,
+      width: 0,
+      height: 0,
+      id: '',
+      style: '',
+    });
+    textNode.replace(diagramNode);
   },
   trigger: '>',
   type: 'text-match',
@@ -994,6 +1022,7 @@ export const TRANSFORMERS: Array<Transformer> = [
   IMAGE,
   CHECK_LIST,
   SKETCH,
+  DIAGRAM,
   MATH,
   STICKY,
   ...ELEMENT_TRANSFORMERS,
@@ -1016,6 +1045,7 @@ export function createTransformers(editor: LexicalEditor): Array<Transformer> {
   if (editor.hasNode(TableNode)) TRANSFORMERS.unshift(TABLE);
   if (editor.hasNode(ImageNode)) TRANSFORMERS.unshift(IMAGE);
   if (editor.hasNode(SketchNode)) TRANSFORMERS.unshift(SKETCH);
+  if (editor.hasNode(DiagramNode)) TRANSFORMERS.unshift(DIAGRAM);
   if (editor.hasNode(StickyNode)) TRANSFORMERS.unshift(STICKY);
   return TRANSFORMERS;
 }

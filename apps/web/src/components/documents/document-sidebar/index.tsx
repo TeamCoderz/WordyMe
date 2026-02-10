@@ -21,7 +21,6 @@ import { Button } from '@repo/ui/components/button';
 import { Attachments, AttachmentsHeader } from './Attachments';
 import { RevisionHistory, RevisionHistoryHeader } from './RevisionsHistory';
 import { PageSetup, PageSetupHeader } from './PageSetup';
-import { useLexicalEditable } from '@repo/editor/lexical';
 import { useLocalStorage } from '@repo/ui/hooks/use-local-storage';
 
 const tabs = [
@@ -40,6 +39,11 @@ const tabs = [
     title: 'Revisions',
     icon: HistoryIcon,
   },
+  {
+    id: 'page-setup',
+    title: 'Page Setup',
+    icon: Settings,
+  },
 ];
 
 export function DocumentSidebar({
@@ -51,7 +55,6 @@ export function DocumentSidebar({
     'table-of-contents',
   );
   const { open, openMobile, setOpen } = useSidebar();
-  const isEditable = useLexicalEditable();
 
   return (
     <Sidebar
@@ -71,14 +74,14 @@ export function DocumentSidebar({
         className="overflow-hidden w-[calc(var(--sidebar-width-icon)+1px)] bg-background text-foreground h-14 shrink-0 md:h-full items-center border-b md:border-b-0 md:border-l p-0 md:justify-center"
       >
         <SidebarHeader className="p-0 h-14 border-b hidden md:flex w-full justify-center items-center">
-          <SidebarTrigger variant="outline" className="size-9 !p-2 [&>svg]:rotate-180" />
+          <SidebarTrigger variant="outline" className="size-9 p-2! [&>svg]:rotate-180" />
         </SidebarHeader>
         <SidebarContent className="justify-center md:justify-start p-0 md:py-3 overflow-hidden">
           <SidebarGroup className="p-0">
             <SidebarGroupContent>
               <SidebarMenu className="flex flex-row justify-center md:flex-col scrollbar-thin w-full m-0 gap-2">
                 {tabs.map((item) => (
-                  <SidebarMenuItem key={item.id} className="!h-9 flex justify-center items-center">
+                  <SidebarMenuItem key={item.id} className="h-9! flex justify-center items-center">
                     <Button
                       onClick={() => {
                         setActiveTab(item.id);
@@ -95,23 +98,6 @@ export function DocumentSidebar({
                     </Button>
                   </SidebarMenuItem>
                 ))}
-                <SidebarMenuItem className="!h-9 flex justify-center items-center">
-                  <Button
-                    onClick={() => {
-                      setActiveTab('page-setup');
-                      setOpen(!open || activeTab !== 'settings');
-                    }}
-                    className={cn('size-9 justify-center items-center', {
-                      'bg-accent text-accent-foreground':
-                        (open || openMobile) && activeTab === 'page-setup',
-                    })}
-                    variant="outline"
-                    disabled={!isEditable}
-                  >
-                    <Settings />
-                    <span className="sr-only">Settings</span>
-                  </Button>
-                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

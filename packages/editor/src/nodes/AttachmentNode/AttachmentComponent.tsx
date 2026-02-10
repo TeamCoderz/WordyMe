@@ -15,6 +15,7 @@ import { restoreFocus } from '@repo/editor/utils/restoreFocus';
 import { handleDeleteNode } from '@repo/editor/utils/clipboard';
 import { useActions } from '@repo/editor/store';
 import { AttachmentCard } from '@repo/editor/components/AttachmentCard';
+import { useLexicalEditable } from '@lexical/react/useLexicalEditable';
 
 type AttachmentComponentProps = {
   nodeKey: NodeKey;
@@ -29,6 +30,7 @@ export default function AttachmentComponent(props: AttachmentComponentProps) {
   const [editor] = useLexicalComposerContext();
   const [isSelected, setSelected] = useLexicalNodeSelection(nodeKey);
   const { updateEditorStoreState } = useActions();
+  const isEditable = useLexicalEditable();
 
   useEffect(() => {
     return mergeRegister(
@@ -63,6 +65,10 @@ export default function AttachmentComponent(props: AttachmentComponentProps) {
   const handleEditNodeCallback = useCallback(() => {
     updateEditorStoreState('openDialog', 'attachment');
   }, [updateEditorStoreState]);
+
+  if (!isEditable) {
+    return <AttachmentCard name={name} size={size} url={url} signedUrl={signedUrl} />;
+  }
 
   return (
     <ContextMenu>

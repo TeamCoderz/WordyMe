@@ -65,6 +65,7 @@ export function DocumentContextMenu({
           onContextMenu={(e) => {
             e.stopPropagation();
           }}
+          onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <DropdownMenuItem className="group" onClick={onRename}>
             <FilePlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -109,6 +110,7 @@ export function DocumentContextMenu({
         alignOffset={-4}
         collisionPadding={8}
         className="p-2"
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         {onCreateChildNote && (
           <DropdownMenuItem className="group" onClick={onCreateChildNote}>

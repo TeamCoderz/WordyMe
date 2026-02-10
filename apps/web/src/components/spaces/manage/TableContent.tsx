@@ -81,23 +81,19 @@ export const ManageSpacesTableContent = React.forwardRef<
     return arrayToTree(normalized);
   }, [spaces, rootSpaceId]);
 
-  const tree = useTree<SpaceTreeNode | null>({
+  const tree = useTree<any | null>({
     initialState: {
       expandedItems: [],
       selectedItems: [],
     },
     indent: 4,
     rootItemId: 'root',
-    getItemName: (item) => {
-      const itemData = item.getItemData();
-      return itemData?.data?.name ?? '';
-    },
+    getItemName: (item) => item.getItemData()?.data.name ?? '',
     isItemFolder: (item) => {
       try {
-        const data = item.getItemData() as SpaceTreeNode | null;
-        if (!data) return false;
-        const hasChildren = Array.isArray(data.children) && data.children.length > 0;
-        const isContainer = data.data?.isContainer === true;
+        const data = item.getItemData();
+        const hasChildren = Array.isArray(data?.children) && data.children.length > 0;
+        const isContainer = (data?.data as any)?.isContainer === true;
         return isContainer || hasChildren;
       } catch {
         return false;
@@ -115,12 +111,12 @@ export const ManageSpacesTableContent = React.forwardRef<
           if (targetId === 'root') return false;
         }
         // Disallow dropping inside non-container spaces (except implicit root handling above)
-        const parentItem = target.item.getItemData() as SpaceTreeNode | null;
-        if (!parentItem) return true;
+        const parentItem = target.item.getItemData?.();
+        const parentData = parentItem?.data ?? parentItem;
         const isContainer =
-          parentItem.data?.isContainer === true ||
-          (Array.isArray(parentItem.children) && parentItem.children.length > 0);
-        if (parentItem.id !== 'root' && !isContainer) {
+          parentData?.isContainer === true ||
+          (Array.isArray(parentItem?.children) && parentItem.children.length > 0);
+        if (parentItem && parentItem.id !== 'root' && !isContainer) {
           return false;
         }
         return true;
@@ -129,35 +125,33 @@ export const ManageSpacesTableContent = React.forwardRef<
       }
     },
     onDrop: async (items, target) => {
-      const parentItem = target.item.getItemData() as SpaceTreeNode | null;
-      if (!parentItem) return;
+      const parentItem = target.item.getItemData();
       // Guard again at runtime: prevent drop into non-container spaces
       try {
+        const parentData = parentItem?.data ?? parentItem;
         const isContainer =
-          parentItem.data?.isContainer === true ||
-          (Array.isArray(parentItem.children) && parentItem.children.length > 0);
-        if (parentItem.id !== 'root' && !isContainer) {
+          parentData?.isContainer === true ||
+          (Array.isArray(parentItem?.children) && parentItem.children.length > 0);
+        if (parentItem && parentItem.id !== 'root' && !isContainer) {
           return;
         }
       } catch {
         // no-op
       }
-      const parentId = parentItem.id === 'root' ? null : parentItem.id;
+      const parentId = parentItem?.id === 'root' ? null : parentItem?.id;
       // If we're scoped to a particular rootSpaceId, prevent dropping directly under the tree root
       // which represents the parent's level outside of the scoped subtree.
-      if (rootSpaceId && parentItem.id === 'root') {
+      if (rootSpaceId && parentItem?.id === 'root') {
         return;
       }
-      const children = parentItem.children ?? [];
-      const childIndex = (target as { childIndex?: number }).childIndex ?? children.length;
+      const children = parentItem?.children ?? [];
+      const childIndex = (target as any).childIndex ?? children.length;
 
       const prevKey = children[childIndex - 1]?.data.position;
       const nextKey = children[childIndex]?.data.position;
       const positionKeys = generatePositionKeysBetween(prevKey, nextKey, items.length);
       for (const [index, item] of items.entries()) {
-        const itemData = item.getItemData() as SpaceTreeNode | null;
-        if (!itemData) continue;
-        const child = itemData.data;
+        const child = item.getItemData()?.data;
         if (!child) continue;
         const newPosition = positionKeys[index];
         if (child.parentId !== parentId || child.position !== newPosition) {
@@ -288,7 +282,7 @@ export const ManageSpacesTableContent = React.forwardRef<
       const ids: string[] = [];
       const node = spacesTree.findNodeById(nodeId);
       if (!node) return ids;
-      const walk = (n: SpaceTreeNode) => {
+      const walk = (n: any) => {
         const children = n.children ?? [];
         for (const child of children) {
           if (!child?.id) continue;
@@ -303,62 +297,6 @@ export const ManageSpacesTableContent = React.forwardRef<
   );
 
   const itemsToRender = tree.getItems().filter((item) => item.getId() !== 'root');
-
-  // Memoize the rendered rows to prevent unnecessary rerenders
-  // Create a stable key based on item IDs to track changes
-  const itemsToRenderIds = React.useMemo(
-    () => itemsToRender.map((item) => item.getId()).join(','),
-    [itemsToRender],
-  );
-
-  const renderedRows = React.useMemo(
-    () =>
-      itemsToRender.map((item, index) => {
-        try {
-          const itemData = item.getItemData() as SpaceTreeNode | null;
-          if (!itemData) {
-            console.warn(`Item data not found for: ${item.getId()}`);
-            return null;
-          }
-          const nodeId = item.getId();
-          return (
-            <ManageSpacesTableRow
-              key={item.getId()}
-              item={item}
-              index={index}
-              isLast={index === itemsToRender.length - 1}
-              draggingId={draggingId}
-              setDraggingId={setDraggingId}
-              tree={tree}
-              getDescendantIds={getDescendantIds}
-              onBeginInlineCreate={(type) =>
-                insertPlaceholderHandler({
-                  parentId: nodeId,
-                  type,
-                })
-              }
-              onRemovePlaceholder={onRemovePlaceholder}
-              placeholderClientId={placeholderClientId}
-            />
-          );
-        } catch (error) {
-          console.error(`Error rendering item ${item.getId()}:`, error);
-          return null;
-        }
-      }),
-    [
-      itemsToRender,
-      itemsToRenderIds,
-      itemsToRender.length,
-      draggingId,
-      setDraggingId,
-      tree,
-      getDescendantIds,
-      insertPlaceholderHandler,
-      onRemovePlaceholder,
-      placeholderClientId,
-    ],
-  );
 
   return (
     <div className="min-w-fit w-full select-none">
@@ -380,7 +318,39 @@ export const ManageSpacesTableContent = React.forwardRef<
 
       <Tree indent={16} tree={tree} onDragEnd={() => setDraggingId(null)}>
         <AssistiveTreeDescription tree={tree} />
-        {renderedRows}
+        {itemsToRender.map((item, index) => {
+          try {
+            const itemData = item?.getItemData?.();
+            if (!itemData) {
+              console.warn(`Item data not found for: ${item.getId()}`);
+              return null;
+            }
+            const nodeId = item.getId();
+            return (
+              <ManageSpacesTableRow
+                key={item.getId()}
+                item={item}
+                index={index}
+                isLast={index === itemsToRender.length - 1}
+                draggingId={draggingId}
+                setDraggingId={setDraggingId}
+                tree={tree}
+                getDescendantIds={getDescendantIds}
+                onBeginInlineCreate={(type) =>
+                  insertPlaceholderHandler({
+                    parentId: nodeId,
+                    type,
+                  })
+                }
+                onRemovePlaceholder={onRemovePlaceholder}
+                placeholderClientId={placeholderClientId}
+              />
+            );
+          } catch (error) {
+            console.error(`Error rendering item ${item.getId()}:`, error);
+            return null;
+          }
+        })}
         <TreeDragLine />
       </Tree>
     </div>

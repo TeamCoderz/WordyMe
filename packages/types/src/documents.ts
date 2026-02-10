@@ -1,23 +1,22 @@
-import { User } from './user';
 import { EditorRevision } from './revisions';
 
 export interface EditorDocument {
   id: string;
-  handle: string;
+  createdAt: Date;
+  updatedAt: Date;
   name: string;
-  head: string | null;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  spaceId: string | null;
-  type: 'space' | 'folder' | 'note';
-  documentViews: {
-    lastViewedAt: string;
-  }[];
-  // baseId?: string | null;
-  parentId: string | null;
-  position: string | null;
+  handle: string;
   icon: string | null;
-  author: User;
+  position: string | null;
+  currentRevisionId: string | null;
+  userId: string;
+  parentId: string | null;
+  documentType: 'space' | 'folder' | 'note';
+  spaceId: string | null;
+  isContainer: boolean;
+  clientId: string | null;
+  isFavorite: boolean;
+  lastViewedAt: Date | null;
   revision: EditorRevision;
 }
 

@@ -167,7 +167,6 @@ export class AttachmentNode extends DecoratorNode<JSX.Element> {
   }
 
   update(payload: AttachmentPayload): void {
-    debugger;
     const writable = this.getWritable();
     writable.__name = payload.name;
     writable.__size = payload.size;
@@ -177,6 +176,7 @@ export class AttachmentNode extends DecoratorNode<JSX.Element> {
 
   createDOM(): HTMLElement {
     const element = document.createElement('div');
+    element.className = 'LexicalTheme__attachment';
     element.style.display = 'inline-flex ';
     element.setAttribute('data-lexical-attachment', '');
     return element;

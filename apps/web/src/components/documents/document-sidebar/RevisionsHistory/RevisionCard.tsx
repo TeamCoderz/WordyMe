@@ -32,7 +32,7 @@ import {
   FormMessage,
 } from '@repo/ui/components/form';
 import { getDocumentByHandleQueryOptions } from '@/queries/documents';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getRevisionByIdQueryOptions,
   getRevisionsByDocumentIdQueryOptions,
@@ -50,8 +50,22 @@ import {
   useSelector as useEditorSelector,
   useActions as useEditorActions,
 } from '@repo/editor/store';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { cn } from '@repo/ui/lib/utils';
+import { getLocalRevisionByDocumentIdQueryOptions } from '@/queries/revisions';
+
+const formatRevisionLabel = (revision: Revision) => {
+  return (
+    revision.revisionName ??
+    new Date(revision.createdAt).toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+  );
+};
 
 export function RevisionCard({ handle, revision }: { handle: string; revision: Revision }) {
+  const queryClient = useQueryClient();
   const { data: document } = useQuery(getDocumentByHandleQueryOptions(handle));
 
   const { data: revisions } = useQuery(getRevisionsByDocumentIdQueryOptions(revision.documentId));
@@ -72,12 +86,20 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
   const isCloudRevision = !!revisions?.find((r) => r.id === revision.id);
   const hasLocalChanges = !revisions?.find((r) => r.checksum === checksum);
   const isLocalHead = revision.checksum === checksum;
-  const isCloudHead = revision.id === document?.head;
+  const isCloudHead = revision.id === document?.currentRevisionId;
+  const [viewStatus, setViewStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [restoreStatus, setRestoreStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
+    'idle',
+  );
+  const [deleteStatus, setDeleteStatus] = useState<'idle' | 'loading' | 'success' | 'error'>(
+    'idle',
+  );
   const { mutateAsync: saveLocalRevision } = useSaveLocalRevisionMutation({
     documentId: document?.id ?? '',
   });
   const { updateEditorStoreState } = useEditorActions();
-
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const saveLocalChanges = async (makeCurrentRevision: boolean) => {
     if (!hasLocalChanges) return;
     const editorState = editor.getEditorState();
@@ -95,6 +117,29 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
   };
 
   const viewRevision = async () => {
+    setViewStatus('loading');
+    if (pathname.startsWith('/view/')) {
+      try {
+        await queryClient.ensureQueryData(getRevisionByIdQueryOptions(revision.id, true));
+        setViewStatus('success');
+        setTimeout(() => {
+          navigate({
+            to: '/view/$handle',
+            params: { handle },
+            search: (prev) => ({
+              ...prev,
+              v: revision.id,
+            }),
+          });
+        }, 300);
+      } catch (error) {
+        console.error(error);
+        setViewStatus('error');
+      } finally {
+        setTimeout(() => setViewStatus('idle'), 300);
+      }
+      return;
+    }
     if (hasLocalChanges) {
       await alert({
         title: 'Save Local Changes',
@@ -106,10 +151,12 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         },
       });
     }
-    const toastId = toast.loading('Loading revision');
     try {
-      const cloudRevision = await getRevisionByIdQueryOptions(revision.id, true).queryFn();
-      const serializedData = cloudRevision.content;
+      const cloudRevision = await queryClient.ensureQueryData(
+        getRevisionByIdQueryOptions(revision.id, true),
+      );
+      const serializedData =
+        cloudRevision && 'content' in cloudRevision ? JSON.parse(cloudRevision.content) : null;
       const editorState = editor.parseEditorState(serializedData);
       editor.update(
         () => {
@@ -118,17 +165,21 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         { discrete: true, tag: 'revision' },
       );
       updateEditorStoreState('checksum', cloudRevision.checksum);
-      toast.success('Revision loaded successfully', {
-        id: toastId,
+      // Dispatch custom event with checksum
+      const event = new CustomEvent('checksum-change', {
+        detail: { checksum: cloudRevision.checksum },
       });
+      window.dispatchEvent(event);
+      setViewStatus('success');
     } catch (error) {
       console.error(error);
-      toast.error('Failed to load revision', {
-        id: toastId,
-      });
+      setViewStatus('error');
+    } finally {
+      setTimeout(() => setViewStatus('idle'), 300);
     }
   };
   const restoreRevision = async () => {
+    setRestoreStatus('loading');
     if (hasLocalChanges) {
       await alert({
         title: 'Save Local Changes',
@@ -140,7 +191,6 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         },
       });
     }
-    const toastId = toast.loading('Restoring revision');
     try {
       if (!document) throw new Error('Document not found');
       if (!isCloudHead) {
@@ -149,8 +199,10 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
           head: revision.id,
         });
       }
-      const cloudRevision = await getRevisionByIdQueryOptions(revision.id, true).queryFn();
-      const serializedData = cloudRevision.content;
+      const cloudRevision = await queryClient.ensureQueryData(
+        getRevisionByIdQueryOptions(revision.id, true),
+      );
+      const serializedData = JSON.parse(cloudRevision.content);
       const editorState = editor.parseEditorState(serializedData);
       editor.update(
         () => {
@@ -159,38 +211,51 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         { discrete: true, tag: 'revision' },
       );
       updateEditorStoreState('checksum', cloudRevision.checksum);
-      await saveLocalRevision({ editorState });
-      toast.success('Revision restored successfully', {
-        id: toastId,
+      // Dispatch custom event with checksum
+      const event = new CustomEvent('checksum-change', {
+        detail: { checksum: cloudRevision.checksum },
       });
+      window.dispatchEvent(event);
+      await saveLocalRevision({ serializedEditorState: serializedData });
+      if (pathname.startsWith('/view/')) {
+        queryClient.setQueryData(
+          getLocalRevisionByDocumentIdQueryOptions(document?.id ?? '').queryKey,
+          { content: JSON.parse(cloudRevision.content) },
+        );
+        navigate({
+          to: '/view/$handle',
+          params: { handle },
+          search: (prev) => ({
+            ...prev,
+            v: undefined,
+          }),
+        });
+      }
     } catch (error) {
       console.error(error);
-      toast.error('Failed to restore revision', {
-        id: toastId,
-        description: error instanceof Error ? error.message : undefined,
-      });
+      setRestoreStatus('error');
+    } finally {
+      setTimeout(() => setRestoreStatus('idle'), 300);
     }
   };
 
   const handleDelete = async () => {
+    setDeleteStatus('loading');
     alert({
       title: 'Delete Revision',
-      description: `Are you sure you want to delete the revision ${
-        revision.name ??
-        new Date(revision.createdAt).toLocaleString(undefined, {
-          dateStyle: 'medium',
-          timeStyle: 'short',
-        })
-      }? This action cannot be undone.`,
+      description: `Are you sure you want to delete the revision ${formatRevisionLabel(
+        revision,
+      )}? This action cannot be undone.`,
       cancelText: 'Cancel',
       confirmText: 'Delete',
       onConfirm: async () => {
         try {
           await deleteRevisionData(revision.id);
+          setDeleteStatus('success');
         } catch {
-          toast('Error deleting revision', {
-            description: 'An error occurred while deleting the revision.',
-          });
+          setDeleteStatus('error');
+        } finally {
+          setTimeout(() => setDeleteStatus('idle'), 300);
         }
       },
       buttonVariant: 'destructive',
@@ -208,15 +273,8 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
             <AvatarFallback>{revision.author.name?.charAt(0) ?? '?'}</AvatarFallback>
           </Avatar>
           <div className="flex flex-col gap-1 w-full truncate">
-            <span
-              className="text-sm font-medium pr-6 truncate"
-              title={new Date(revision.createdAt).toISOString()}
-            >
-              {revision.name ??
-                new Date(revision.createdAt).toLocaleString(undefined, {
-                  dateStyle: 'medium',
-                  timeStyle: 'short',
-                })}
+            <span className="text-sm font-medium pr-6 truncate" title={revision.createdAt}>
+              {formatRevisionLabel(revision)}
             </span>
             <span className="text-xs text-muted-foreground truncate">{revision.author.name}</span>
           </div>
@@ -229,22 +287,44 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
               <Button
                 variant="outline"
                 onClick={viewRevision}
-                disabled={isLocalHead && !hasLocalChanges}
+                disabled={(isLocalHead && !hasLocalChanges) || viewStatus !== 'idle'}
+                className={cn('transition-colors', {
+                  'ring ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]':
+                    viewStatus === 'loading',
+                  'ring ring-green-400 shadow-[0_0_10px_rgba(34,197,94,0.8)]':
+                    viewStatus === 'success',
+                  'ring ring-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]': viewStatus === 'error',
+                })}
               >
                 View
               </Button>
               <Button
                 variant="outline"
-                disabled={isCloudHead && !hasLocalChanges}
+                disabled={(isCloudHead && !hasLocalChanges) || restoreStatus !== 'idle'}
                 onClick={restoreRevision}
+                className={cn('transition-colors', {
+                  'ring ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]':
+                    restoreStatus === 'loading',
+                  'ring ring-green-400 shadow-[0_0_10px_rgba(34,197,94,0.8)]':
+                    restoreStatus === 'success',
+                  'ring ring-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]':
+                    restoreStatus === 'error',
+                })}
               >
                 Restore
               </Button>
               <Button
-                className="ml-auto"
+                className={cn('ml-auto transition-colors', {
+                  'ring ring-yellow-400 shadow-[0_0_10px_rgba(250,204,21,0.8)]':
+                    deleteStatus === 'loading',
+                  'ring ring-green-400 shadow-[0_0_10px_rgba(34,197,94,0.8)]':
+                    deleteStatus === 'success',
+                  'ring ring-red-400 shadow-[0_0_10px_rgba(239,68,68,0.8)]':
+                    deleteStatus === 'error',
+                })}
                 variant="destructive"
                 size="icon"
-                disabled={isCloudHead}
+                disabled={isCloudHead || deleteStatus !== 'idle'}
                 onClick={handleDelete}
               >
                 <Trash />
@@ -263,7 +343,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
             <MoreVertical />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent>
+        <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()}>
           <DropdownMenuItem asChild>
             <Button
               className="w-full justify-start"
@@ -307,7 +387,7 @@ function RevisionRenameDialog({
   });
   // const queryClient = useQueryClient();
   const form = useForm<ChangeRevisionNameType>({
-    defaultValues: { name: revision.name || '' },
+    defaultValues: { name: revision.revisionName || '' },
     resolver: zodResolver(changeRevisionNameSchema),
   });
   const {
@@ -318,9 +398,9 @@ function RevisionRenameDialog({
 
   useEffect(() => {
     if (open) {
-      reset({ name: revision.name || '' });
+      reset({ name: revision.revisionName || '' });
     }
-  }, [open, revision.name, reset]);
+  }, [open, revision.revisionName, reset]);
 
   const onSubmit = async (data: ChangeRevisionNameType) => {
     try {

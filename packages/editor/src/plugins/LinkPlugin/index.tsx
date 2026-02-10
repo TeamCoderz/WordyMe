@@ -2,11 +2,12 @@ import type { ChangeHandler, LinkMatcher } from '@lexical/link';
 import type { LexicalEditor } from 'lexical';
 import type { JSX } from 'react';
 
-import { AutoLinkNode, createLinkMatcherWithRegExp } from '@lexical/link';
+import { AutoLinkNode, LinkNode } from '@lexical/link';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useEffect } from 'react';
 import invariant from '@repo/shared/invariant';
-import { registerAutoLink } from './LexicalAutoLinkExtension';
+import { registerAutoLink, createLinkMatcherWithRegExp } from './LexicalAutoLinkExtension';
+import { useActions } from '@repo/editor/store';
 
 function useAutoLink(
   editor: LexicalEditor,
@@ -65,6 +66,33 @@ const MATCHERS = [
   }),
 ];
 
-export default function AutoLinkPlugin() {
+export function AutoLinkPlugin() {
   return <LexicalAutoLinkPlugin matchers={MATCHERS} />;
+}
+
+export function LinkNavigatePlugin() {
+  const [editor] = useLexicalComposerContext();
+  const { navigate } = useActions();
+
+  useEffect(() => {
+    return editor.registerMutationListener(LinkNode, (mutations) => {
+      for (const [key, mutation] of mutations) {
+        if (mutation === 'created') {
+          const element = editor.getElementByKey(key);
+          if (element) {
+            const href = element.getAttribute('href');
+            if (href?.startsWith(location.origin) || href?.startsWith('/')) {
+              element.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                navigate(href.replace(location.origin, ''));
+              });
+            }
+          }
+        }
+      }
+    });
+  }, []);
+
+  return null;
 }

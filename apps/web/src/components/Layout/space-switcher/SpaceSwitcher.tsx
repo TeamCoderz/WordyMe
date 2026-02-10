@@ -59,7 +59,6 @@ import {
 } from '@/queries/spaces';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { toast } from 'sonner';
-import { dispatchEscapeKey } from '@/utils/keyboard';
 
 export function SpaceSwitcher() {
   const { isMobile } = useSidebar();
@@ -133,7 +132,7 @@ export function SpaceSwitcher() {
     if (sortedSiblings.length === 0) {
       position = 'a0';
     } else {
-      const lastPosition = sortedSiblings[sortedSiblings.length - 1]?.position || 'a0';
+      const lastPosition = sortedSiblings[sortedSiblings.length - 1].position || 'a0';
       position = generatePositionKeyBetween(lastPosition, null);
     }
 
@@ -200,7 +199,7 @@ export function SpaceSwitcher() {
     });
   };
 
-  // Memoize stable callbacks to prevent unnecessary rerenders
+  // Memoize callbacks to prevent recreation on every render
   const handleCloseContextMenu = React.useCallback(() => {
     setOpenMenuSpaceId(null);
   }, [setOpenMenuSpaceId]);
@@ -209,39 +208,50 @@ export function SpaceSwitcher() {
     setIsSwitcherOpen(false);
   }, []);
 
+  // Memoize ancestorIds calculation - only recalculate when activeSpace changes
+  const ancestorIds = React.useMemo(
+    () => activeSpace?.path?.map((p) => p.id) ?? [],
+    [activeSpace?.path],
+  );
+
+  // Memoize allParentsExpandedForActive calculation
+  const allParentsExpandedForActive = React.useMemo(
+    () => ancestorIds.every((id) => isExpanded(id)),
+    [ancestorIds, isExpanded],
+  );
+
+  // Recursive function to map children to props
+  // This creates new objects, but React.memo will prevent rerenders when values haven't changed
+  const mapChildToSpaceItemProps = (
+    child: TreeNode<SpaceData>,
+    depth: number = 0,
+  ): SpaceItemProps => ({
+    space: child.data,
+    children: child.children.map((grandChild) => mapChildToSpaceItemProps(grandChild, depth + 1)),
+    isActive: child.data.id === activeSpace?.id,
+    isExpanded: isExpanded(child.data.id),
+    isAncestor: ancestorIds.includes(child.data.id),
+    depth,
+    allParentsExpandedForActive,
+    openMenuSpaceId,
+    onSelectSpace: handleSelectSpace,
+    onToggleExpanded: toggleExpanded,
+    onOpenContextMenu: setOpenMenuSpaceId,
+    setIsManageDisabled,
+    setCanCloseDropdown,
+    onInsertPlaceholder: insertPlaceholder,
+    onRemovePlaceholder: removePlaceholder,
+    placeholderClientId: placeholder?.clientId as string | undefined,
+  });
+
+  // Memoize renderSpaceItem to prevent recreation on every render
   const renderSpaceItem = React.useCallback(
-    ({ data: space, children }: Pick<TreeNode<SpaceData>, 'data' | 'children'>) => {
-      const ancestorIds = activeSpace?.path?.map((p) => p.id) ?? [];
-      const allParentsExpandedForActive = ancestorIds.every((id) => isExpanded(id));
-
-      const mapChildToSpaceItemProps = (
-        child: TreeNode<SpaceData>,
-        depth: number = 0,
-      ): SpaceItemProps => ({
-        space: child.data,
-        children: child.children.map((grandChild) =>
-          mapChildToSpaceItemProps(grandChild, depth + 1),
-        ),
-        isActive: child.data.id === activeSpace?.id,
-        isExpanded: isExpanded(child.data.id),
-        isAncestor: ancestorIds.includes(child.data.id),
-        depth,
-        allParentsExpandedForActive,
-        openMenuSpaceId,
-        onSelectSpace: handleSelectSpace,
-        onToggleExpanded: toggleExpanded,
-        onOpenContextMenu: setOpenMenuSpaceId,
-        setIsManageDisabled,
-        setCanCloseDropdown,
-        onInsertPlaceholder: insertPlaceholder,
-        onRemovePlaceholder: removePlaceholder,
-        placeholderClientId: placeholder?.clientId as string | undefined,
-      });
-
+    ({ data: space, children: spaceChildren }: Pick<TreeNode<SpaceData>, 'data' | 'children'>) => {
       return (
         <SpaceItem
+          key={space.clientId ?? space.id}
           space={space}
-          children={children.map((child) => mapChildToSpaceItemProps(child, 0))}
+          children={spaceChildren.map((child) => mapChildToSpaceItemProps(child, 0))}
           isExpanded={isExpanded(space.id)}
           depth={0}
           allParentsExpandedForActive={allParentsExpandedForActive}
@@ -260,32 +270,23 @@ export function SpaceSwitcher() {
       );
     },
     [
-      activeSpace,
+      mapChildToSpaceItemProps,
+      ancestorIds,
+      allParentsExpandedForActive,
       isExpanded,
+      activeSpace?.id,
       openMenuSpaceId,
       handleSelectSpace,
       toggleExpanded,
       setOpenMenuSpaceId,
+      handleCloseContextMenu,
+      handleCloseSwitcher,
       setIsManageDisabled,
       setCanCloseDropdown,
       insertPlaceholder,
       removePlaceholder,
       placeholder?.clientId,
-      handleCloseContextMenu,
-      handleCloseSwitcher,
     ],
-  );
-
-  // Memoize the rendered space items to prevent unnecessary rerenders
-  // Only recalculate when rootSpaces structure changes or placeholder clientId changes
-  const renderedSpaceItems = React.useMemo(
-    () =>
-      rootSpaces.map((space: TreeNode<SpaceData>) => (
-        <React.Fragment key={space.data.clientId ?? space.data.id}>
-          {renderSpaceItem(space)}
-        </React.Fragment>
-      )),
-    [rootSpaces, renderSpaceItem],
   );
 
   return (
@@ -329,7 +330,7 @@ export function SpaceSwitcher() {
                               <>
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs font-medium truncate">
-                                    {activeSpace.path[0]?.name}
+                                    {activeSpace.path[0].name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                               </>
@@ -360,7 +361,7 @@ export function SpaceSwitcher() {
                               <>
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
-                                    {activeSpace.path[0]?.name}
+                                    {activeSpace.path[0].name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator className="text-foreground" />
@@ -370,7 +371,7 @@ export function SpaceSwitcher() {
                                 <BreadcrumbSeparator className="text-foreground" />
                                 <BreadcrumbItem>
                                   <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
-                                    {activeSpace.path[activeSpace.path.length - 1]?.name}
+                                    {activeSpace.path[activeSpace.path.length - 1].name}
                                   </BreadcrumbPage>
                                 </BreadcrumbItem>
                               </>
@@ -394,6 +395,7 @@ export function SpaceSwitcher() {
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
+              onCloseAutoFocus={(e) => e.preventDefault()}
               className="w-[--radix-dropdown-menu-trigger-width] max-w-[280px] md:max-w-[360px] min-w-56 max-h-80 rounded-lg p-1 flex flex-col overflow-hidden"
               align="start"
               side={isMobile ? 'bottom' : 'right'}
@@ -433,7 +435,7 @@ export function SpaceSwitcher() {
                     <SidebarMenuSkeleton key={index} showIcon />
                   ))
                 ) : (
-                  <>{renderedSpaceItems}</>
+                  <>{rootSpaces.map((space: TreeNode<SpaceData>) => renderSpaceItem(space))}</>
                 )}
               </SidebarMenu>
 
@@ -466,10 +468,7 @@ export function SpaceSwitcher() {
                     <ContextMenuItem
                       className="group"
                       onSelect={() => {
-                        dispatchEscapeKey();
-                        setTimeout(() => {
-                          insertPlaceholder({ parentId: null, type: 'space' });
-                        }, 0);
+                        insertPlaceholder({ parentId: null, type: 'space' });
                       }}
                     >
                       <BriefcaseMedical className="mr-2 h-4 w-4" />
@@ -478,10 +477,7 @@ export function SpaceSwitcher() {
                     <ContextMenuItem
                       className="group"
                       onSelect={() => {
-                        dispatchEscapeKey();
-                        setTimeout(() => {
-                          insertPlaceholder({ parentId: null, type: 'folder' });
-                        }, 0);
+                        insertPlaceholder({ parentId: null, type: 'folder' });
                       }}
                     >
                       <FolderClosed className="mr-2 h-4 w-4" />

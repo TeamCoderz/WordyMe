@@ -47,6 +47,7 @@ import {
 import { getSelectedNode } from '@repo/editor/utils/getSelectedNode';
 import { SketchNode } from '@repo/editor/nodes/SketchNode';
 import { ScoreNode } from '@repo/editor/nodes/ScoreNode';
+import { DiagramNode } from '@repo/editor/nodes/DiagramNode';
 import { useActions } from '@repo/editor/store';
 import { ANNOUNCE_COMMAND } from '@repo/editor/commands';
 import './index.css';
@@ -159,7 +160,9 @@ export function ImagesPlugin() {
     };
 
     const uploadDataUrl = async (dataUrl: string, filename: string, mimeType: string) => {
-      const blob = await fetch(dataUrl).then((response) => response.blob());
+      const blob = await fetch(dataUrl, { credentials: 'include' }).then((response) =>
+        response.blob(),
+      );
       const file = new File([blob], filename, { type: mimeType });
       const { data: uploadData, error: uploadError } = await uploadImage(file);
       if (uploadError) throw uploadError;
@@ -311,26 +314,9 @@ export function ImagesPlugin() {
       editor.registerMutationListener(ImageNode, imageMutationListener),
       editor.registerMutationListener(SketchNode, imageMutationListener),
       editor.registerMutationListener(ScoreNode, imageMutationListener),
+      editor.registerMutationListener(DiagramNode, imageMutationListener),
     );
   }, [editor]);
-
-  useEffect(() => {
-    const handleSelectionChange = () => {
-      const domSelection = document.getSelection();
-      if (!domSelection) return false;
-      const figures = document.querySelectorAll('figure');
-      figures.forEach((figure) => {
-        const isSelected = domSelection.containsNode(figure);
-        figure.classList.toggle('selection-highlight', isSelected);
-      });
-      return false;
-    };
-
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-    };
-  }, []);
 
   return null;
 }

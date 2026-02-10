@@ -24,6 +24,7 @@ import {
   AlertCircleIcon,
   MusicIcon,
   HashIcon,
+  ShapesIcon,
 } from '@repo/ui/components/icons';
 import { YoutubeIcon } from '@repo/editor/components/icons';
 import { INSERT_ALERT_COMMAND } from '@repo/editor/plugins/AlertPlugin';
@@ -40,6 +41,7 @@ export default function InsertToolMenu() {
   const openAttachmentDialog = () => updateEditorStoreState('openDialog', 'attachment');
   const openTableDialog = () => updateEditorStoreState('openDialog', 'table');
   const openSketchDialog = () => updateEditorStoreState('openDialog', 'sketch');
+  const openDiagramDialog = () => updateEditorStoreState('openDialog', 'diagram');
   const openScoreDialog = () => updateEditorStoreState('openDialog', 'score');
   const openIFrameDialog = () => updateEditorStoreState('openDialog', 'iframe');
   const openLayoutDialog = () => updateEditorStoreState('openDialog', 'layout');
@@ -118,6 +120,15 @@ export default function InsertToolMenu() {
       value: 'sketch',
       shortcut: '/sketch',
       func: openSketchDialog,
+    },
+
+    {
+      icon: <ShapesIcon className="text-white" />,
+      iconContainerClassName: 'bg-[#7C3AED]!',
+      label: 'Diagram',
+      value: 'diagram',
+      shortcut: '/diagram',
+      func: openDiagramDialog,
     },
 
     {

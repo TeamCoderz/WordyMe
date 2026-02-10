@@ -61,6 +61,7 @@ import {
   isUppercase,
   isCode,
   isHighlight,
+  isBold,
 } from './utils';
 
 export * from './shortcuts';
@@ -91,6 +92,8 @@ export default function ShortcutsPlugin({ editor }: { editor: LexicalEditor }): 
         formatCode(editor, blockType);
       } else if (isFormatQuote(event)) {
         formatQuote(editor, blockType);
+      } else if (isBold(event)) {
+        editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'bold');
       } else if (isStrikeThrough(event)) {
         editor.dispatchCommand(FORMAT_TEXT_COMMAND, 'strikethrough');
       } else if (isLowercase(event)) {

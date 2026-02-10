@@ -20,7 +20,6 @@ import {
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { format, differenceInSeconds, formatDistanceToNowStrict } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
-import FocusLock from 'react-focus-lock';
 import { alert } from '../Layout/alert';
 import { ListSpaceResult, useDeleteSpaceMutation } from '@/queries/spaces';
 import { useActions } from '@/store';
@@ -210,26 +209,24 @@ export function SpaceRow({
               </button>
             </IconPicker>
             {renamingSpaceId === space.id ? (
-              <FocusLock>
-                <Input
-                  ref={(el) => {
-                    renameInputRef.current = el;
-                    if (el && !el.dataset.focused) {
-                      el.dataset.focused = 'true';
-                      setTimeout(() => {
-                        el.focus();
-                        el.select();
-                      }, 0);
-                    }
-                  }}
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  onKeyDown={(e) => handleRenameKeyDown(e, space.id)}
-                  className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
-                  onClick={(e) => e.stopPropagation()}
-                  autoFocus
-                />
-              </FocusLock>
+              <Input
+                ref={(el) => {
+                  renameInputRef.current = el;
+                  if (el && !el.dataset.focused) {
+                    el.dataset.focused = 'true';
+                    setTimeout(() => {
+                      el.focus();
+                      el.select();
+                    }, 0);
+                  }
+                }}
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyDown={(e) => handleRenameKeyDown(e, space.id)}
+                className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
+                onClick={(e) => e.stopPropagation()}
+                autoFocus
+              />
             ) : (
               <button
                 type="button"
@@ -272,7 +269,7 @@ export function SpaceRow({
                   <MoreHorizontal className="size-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent onCloseAutoFocus={(e) => e.preventDefault()} align="end">
                 <DropdownMenuItem onClick={() => handleRename(space)}>
                   <PencilLine className="mr-2 h-4 w-4" />
                   Change Name

@@ -22,6 +22,7 @@ export type BlockType = keyof typeof blockTypeToBlockName;
 export const DIALOG_TYPES = {
   image: 'image',
   sketch: 'sketch',
+  diagram: 'diagram',
   score: 'score',
   table: 'table',
   iframe: 'iframe',

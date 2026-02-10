@@ -105,7 +105,7 @@ function ManageSpacesPage() {
     if (sortedSiblings.length === 0) {
       position = 'a0';
     } else {
-      const lastPosition = sortedSiblings[sortedSiblings.length - 1]?.position || 'a0';
+      const lastPosition = sortedSiblings[sortedSiblings.length - 1].position || 'a0';
       position = generatePositionKeyBetween(lastPosition, null);
     }
 

@@ -1,5 +1,4 @@
 import type { Document } from '@repo/types/documents';
-import EditDocumentActions from './edit-document-actions';
 import type { User } from '@repo/types/user';
 import { useCallback, useMemo, useState } from 'react';
 import { SidebarProvider } from '@repo/ui/components/sidebar';
@@ -13,18 +12,38 @@ import { ANNOUNCE_COMMAND, ALERT_COMMAND, COMMAND_PRIORITY_LOW } from '@repo/edi
 import { mergeRegister } from '@repo/editor/utils';
 import { toast } from 'sonner';
 import { alert } from '../Layout/alert';
-import { getServices } from './services';
+import { useServices } from './useServices';
 import { useSaveLocalRevisionMutation } from '@/queries/revisions';
 import { useDebouncedCallback } from '@repo/ui/hooks/use-debounce';
+import { useSelector } from '@/store';
+import { serializeEditorState } from '@repo/editor/utils/editorState';
+
 interface EditDocumentProps {
   user: User;
   document: Document;
   initialState?: string;
 }
 
-export function EditDocument({ document, initialState }: EditDocumentProps) {
+export function EditDocument({ document, user, initialState }: EditDocumentProps) {
+  const sidebar = useSelector((state) => state.sidebar);
+
+  const defaultOpen = useMemo(() => {
+    if (sidebar === 'expanded') return true;
+    if (sidebar === 'collapsed') return false;
+
+    if (typeof document === 'undefined') return true;
+
+    const match = window.document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
+    if (!match) return true;
+    try {
+      return decodeURIComponent(match[1]) === 'true';
+    } catch {
+      return match[1] === 'true';
+    }
+  }, [sidebar]);
+
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const [openDesktop, setOpenDesktop] = useState(true);
+  const [openDesktop, setOpenDesktop] = useState(defaultOpen);
   const [openMobile, setOpenMobile] = useState(false);
   const { mutateAsync: saveLocalRevision } = useSaveLocalRevisionMutation({
     documentId: document.id,
@@ -83,16 +102,18 @@ export function EditDocument({ document, initialState }: EditDocumentProps) {
   };
 
   const onChange = useDebouncedCallback((editorState: EditorState) => {
-    saveLocalRevision({ editorState });
+    saveLocalRevision({
+      serializedEditorState: serializeEditorState(editorState),
+    });
   }, 300);
 
-  const services = useMemo(() => getServices(document.id), [document.id]);
+  const services = useServices(document.id, user.id);
 
   return (
     <SidebarProvider
       className={cn(
         'group/editor-sidebar relative flex flex-1 flex-col items-center min-h-auto',
-        '**:data-[collapsible]:sticky **:data-[collapsible]:top-[calc(--spacing(14)+1px)]',
+        '**:data-collapsible:sticky **:data-collapsible:top-[calc(--spacing(14)+1px)]',
       )}
       style={
         {
@@ -100,6 +121,7 @@ export function EditDocument({ document, initialState }: EditDocumentProps) {
           '--sidebar-width-icon': 'calc(var(--spacing) * 14)',
         } as React.CSSProperties
       }
+      defaultOpen={defaultOpen}
       open={isDesktop ? openDesktop : openMobile}
       onOpenChange={toggleSidebar}
     >
@@ -110,7 +132,6 @@ export function EditDocument({ document, initialState }: EditDocumentProps) {
         editable={true}
         editorRef={editorRefCallback}
       >
-        <EditDocumentActions handle={document.handle} />
         <div className="flex flex-1 justify-center w-full h-full items-start relative">
           <Editor onChange={onChange} />
           <DocumentSidebar handle={document.handle} />

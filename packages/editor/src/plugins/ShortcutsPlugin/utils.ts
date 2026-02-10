@@ -165,9 +165,14 @@ export function isClearFormatting(event: KeyboardEvent): boolean {
   return code === 'Backslash' && isModifierMatch(event, CONTROL_OR_META);
 }
 
+export function isBold(event: KeyboardEvent): boolean {
+  const { code } = event;
+  return code === 'KeyB' && isModifierMatch(event, { ...CONTROL_OR_META, shiftKey: true });
+}
+
 export function isInsertLink(event: KeyboardEvent): boolean {
   const { code } = event;
-  return code === 'KeyK' && isModifierMatch(event, CONTROL_OR_META);
+  return code === 'KeyK' && isModifierMatch(event, { ...CONTROL_OR_META, shiftKey: true });
 }
 
 export function isHighlight(event: KeyboardEvent): boolean {

@@ -55,7 +55,7 @@ export const setSrcToDataUrl = async (
     await Promise.all([
       ...storedImageNodes.map(async (node: ImageNode) => {
         const signedUrl = signedUrlMap.get(node.__src);
-        const dataUrl: string = await fetch(signedUrl ?? node.__src)
+        const dataUrl: string = await fetch(signedUrl ?? node.__src, { credentials: 'include' })
           .then((response) => response.blob())
           .then((blob) => {
             const reader = new FileReader();
@@ -75,7 +75,7 @@ export const setSrcToDataUrl = async (
       }),
       ...storedAttachmentNodes.map(async (node: AttachmentNode) => {
         const signedUrl = node.getSignedUrl();
-        const dataUrl: string = await fetch(signedUrl ?? node.__url)
+        const dataUrl: string = await fetch(signedUrl ?? node.__url, { credentials: 'include' })
           .then((response) => response.blob())
           .then((blob) => {
             const reader = new FileReader();

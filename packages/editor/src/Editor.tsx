@@ -16,11 +16,12 @@ import ListMaxIndentLevelPlugin from '@repo/editor/plugins/ListPlugin';
 import { TabIndentationPlugin } from '@lexical/react/LexicalTabIndentationPlugin';
 import { MarkdownShortcutPlugin } from '@repo/editor/plugins/MarkdownPlugin';
 import CodeHighlightPlugin from '@repo/editor/plugins/CodePlugin';
-import AutoLinkPlugin from '@repo/editor/plugins/LinkPlugin';
+import { AutoLinkPlugin } from '@repo/editor/plugins/LinkPlugin';
 import { HorizontalRulePlugin } from '@repo/editor/plugins/HorizontalRulePlugin';
 import MathPlugin from '@repo/editor/plugins/MathPlugin';
 import { ImagesPlugin, ImageResizerPlugin } from '@repo/editor/plugins/ImagePlugin';
 import SketchPlugin from '@repo/editor/plugins/SketchPlugin';
+import DiagramPlugin from '@repo/editor/plugins/DiagramPlugin';
 import ScorePlugin from '@repo/editor/plugins/ScorePlugin';
 import StickyPlugin from '@repo/editor/plugins/StickyPlugin';
 import ComponentPickerMenuPlugin from '@repo/editor/plugins/ComponentPickerPlugin';
@@ -41,20 +42,27 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import ShortcutsPlugin from '@repo/editor/plugins/ShortcutsPlugin';
 import FloatingToolbarPlugin from '@repo/editor/plugins/FloatingToolbar';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-import { useActions } from '@repo/editor/store';
+import { useActions, useSelector } from '@repo/editor/store';
 import { useCallback, useEffect } from 'react';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import { serializeEditorState } from '@repo/editor/utils/editorState';
+import SelectionHighlightPlugin from '@repo/editor/plugins/SelectionHighlightPlugin';
 
 export const Editor: React.FC<{
   onChange?: (editorState: EditorState, editor: LexicalEditor, tags: Set<string>) => void;
 }> = ({ onChange }) => {
   const [editor] = useLexicalComposerContext();
+  const isPaged = useSelector((state) => state.pageSetup?.isPaged);
   const { updateEditorStoreState } = useActions();
   const updateChecksum = useCallback(
     (serializedEditorState: SerializedEditorState) => {
       const checksum = computeChecksum(serializedEditorState);
       updateEditorStoreState('checksum', checksum);
+      // Dispatch custom event with checksum
+      const event = new CustomEvent('checksum-change', {
+        detail: { checksum },
+      });
+      window.dispatchEvent(event);
     },
     [updateEditorStoreState],
   );
@@ -79,7 +87,11 @@ export const Editor: React.FC<{
   );
 
   return (
-    <div className={cn('editor-container flex flex-col w-0 flex-1 h-full relative')}>
+    <div
+      className={cn('editor-container flex flex-col w-0 flex-1 h-full relative text-base', {
+        'scale-medium': isPaged,
+      })}
+    >
       <ToolbarPlugin />
       <RichTextPlugin
         contentEditable={
@@ -117,9 +129,10 @@ export const Editor: React.FC<{
       <TableCellResizerPlugin />
       <ImagesPlugin />
       <SketchPlugin />
+      <DiagramPlugin />
       <ScorePlugin />
       <StickyPlugin />
-
+      <SelectionHighlightPlugin />
       <IFramePlugin />
       <LayoutPlugin />
       <DetailsPlugin />

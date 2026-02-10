@@ -10,14 +10,13 @@ import {
   getRevisionsByDocumentId,
 } from '@repo/sdk/revisions.ts';
 import { updateDocument } from '@repo/sdk/documents.ts';
-import { useMutation } from '@tanstack/react-query';
+import { keepPreviousData, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAllQueriesInvalidate } from './utils';
 import { getDocumentByHandleQueryOptions } from './documents';
 import type { Document } from '@repo/types';
-import type { EditorState } from '@repo/editor/types';
+import type { SerializedEditorState } from '@repo/editor/types';
 import { getLocalDocument, saveLocalDocument } from '@repo/editor/indexeddb';
-import { serializeEditorState } from '@repo/editor/utils/editorState';
 
 export const getRevisionsByDocumentIdQueryOptions = (documentId: string) => {
   return {
@@ -141,10 +140,10 @@ export function useUpdateRevisionNameMutation({
         id: toastId ?? undefined,
       });
       invalidate([getRevisionsByDocumentIdQueryOptions(document?.id ?? '').queryKey]);
-      if (document?.head === revisionId) {
+      if (document?.currentRevisionId === revisionId) {
         invalidate([
           getDocumentByHandleQueryOptions(document?.handle ?? '').queryKey,
-          getLocalRevisionByDocumentIdQueryOptions(document?.id, document?.head, true)
+          getLocalRevisionByDocumentIdQueryOptions(document?.id, document?.currentRevisionId, true)
             .queryKey as string[],
         ]);
       }
@@ -169,14 +168,14 @@ export function useSaveDocumentMutation({
     mutationKey: ['updateDocument', documentId],
     mutationFn: async ({
       document,
-      editorState,
+      serializedEditorState,
       checksum,
       revisionName,
       keepPreviousRevision,
       isAutosave: _ = false,
     }: {
       document: Document;
-      editorState: EditorState;
+      serializedEditorState: SerializedEditorState;
       checksum: string;
       revisionName?: string;
       keepPreviousRevision: boolean | undefined;
@@ -185,7 +184,6 @@ export function useSaveDocumentMutation({
       if (!document) {
         throw new Error('Could not find a document');
       }
-      const serializedEditorState = serializeEditorState(editorState);
       const generateText = await import('@repo/editor/utils/generateText').then(
         (module) => module.generateText,
       );
@@ -207,7 +205,7 @@ export function useSaveDocumentMutation({
         throw new Error(updateError.message || 'Failed to update document head');
       }
       if (!keepPreviousRevision) {
-        const { error: deleteError } = await deleteRevision(document.head ?? '');
+        const { error: deleteError } = await deleteRevision(document.currentRevisionId!);
         if (deleteError) {
           throw new Error(deleteError.message || 'Failed to delete previous revision');
         }
@@ -249,6 +247,7 @@ export function getRevisionByIdQueryOptions(revisionId: string, enabled: boolean
       return revision;
     },
     enabled,
+    placeholderData: keepPreviousData,
   };
 }
 
@@ -265,7 +264,7 @@ export function getLocalRevisionByDocumentIdQueryOptions(
         const localDocument = await getLocalDocument(documentId);
         if (!localDocument) throw new Error('No local document found');
         return {
-          data: localDocument,
+          content: localDocument,
         };
       } catch (error) {
         const revision = await getRevisionByIdQueryOptions(head, true).queryFn();
@@ -282,8 +281,11 @@ export function useSaveLocalRevisionMutation({ documentId }: { documentId: strin
   const invalidate = useAllQueriesInvalidate();
   return useMutation({
     mutationKey: ['saveLocalDocumentRevision', documentId],
-    mutationFn: async ({ editorState }: { editorState: EditorState }) => {
-      const serializedEditorState = serializeEditorState(editorState);
+    mutationFn: async ({
+      serializedEditorState,
+    }: {
+      serializedEditorState: SerializedEditorState;
+    }) => {
       await saveLocalDocument(documentId, serializedEditorState);
       return true;
     },

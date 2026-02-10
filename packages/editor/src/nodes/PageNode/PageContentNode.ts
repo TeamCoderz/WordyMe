@@ -1,22 +1,9 @@
-import type {
-  DOMConversionOutput,
-  DOMExportOutput,
-  LexicalNode,
-  SerializedElementNode,
-} from 'lexical';
+import type { LexicalNode, SerializedElementNode } from 'lexical';
 
 import { $getEditor, ElementNode } from 'lexical';
 import { $isPageNode, PageNode } from './PageNode';
 
 export type SerializedPageContentNode = SerializedElementNode;
-
-export function $convertPageContentElement(): DOMConversionOutput | null {
-  const node = $createPageContentNode();
-  return {
-    node,
-  };
-}
-
 export class PageContentNode extends ElementNode {
   static getType(): string {
     return 'page-content';
@@ -34,13 +21,6 @@ export class PageContentNode extends ElementNode {
 
   updateDOM(): boolean {
     return false;
-  }
-
-  exportDOM(): DOMExportOutput {
-    const element = document.createElement('div');
-    element.className = 'LexicalTheme__pageContent';
-    element.setAttribute('data-lexical-page-content', 'true');
-    return { element };
   }
 
   static importJSON(): PageContentNode {

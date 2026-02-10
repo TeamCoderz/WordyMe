@@ -9,7 +9,7 @@ export const EditorComposer: React.FC<
   React.PropsWithChildren<{
     initialState?: InitialEditorStateType;
     editable: boolean;
-    services: Services;
+    services?: Services;
     editorRef?: React.ComponentProps<typeof EditorRefPlugin>['editorRef'];
   }>
 > = ({ initialState, services, editorRef, children, editable }) => {

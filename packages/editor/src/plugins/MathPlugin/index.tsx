@@ -90,24 +90,6 @@ export default function MathPlugin() {
   }, [editor]);
 
   useEffect(() => {
-    const handleSelectionChange = () => {
-      const domSelection = document.getSelection();
-      if (!domSelection) return false;
-      const mathfields = document.querySelectorAll('math-field');
-      mathfields.forEach((mathfield) => {
-        const isSelected = domSelection.containsNode(mathfield);
-        mathfield.classList.toggle('selection-highlight', isSelected);
-      });
-      return false;
-    };
-
-    document.addEventListener('selectionchange', handleSelectionChange);
-    return () => {
-      document.removeEventListener('selectionchange', handleSelectionChange);
-    };
-  }, []);
-
-  useEffect(() => {
     const handleOpenChange = () => {
       const mathVirtualKeyboard = window.mathVirtualKeyboard;
       setShouldBlockNavigation(mathVirtualKeyboard.visible);

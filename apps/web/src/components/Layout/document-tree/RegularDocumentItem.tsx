@@ -14,7 +14,7 @@ import {
   useExportDocumentMutation,
 } from '@/queries/documents';
 import { alert } from '../alert';
-import { Link, useNavigate } from '@tanstack/react-router';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import {
   PencilLine,
   Repeat2,
@@ -67,7 +67,9 @@ export function RegularDocumentItem({
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const navigate = useNavigate();
-  const isActive = useSelector((state) => state.activeDocument?.id === document.id);
+  const { pathname } = useLocation();
+  const activeDocumentHandle = decodeURIComponent(pathname.split('/').pop() ?? '');
+  const isActive = activeDocumentHandle === document.handle;
   const clipboardDocument = useSelector((state) => state.documentsClipboard);
   const isCutThisItem =
     clipboardDocument?.type === 'move' && clipboardDocument.document.id === document.id;
@@ -262,11 +264,11 @@ export function RegularDocumentItem({
             data-document-id={document.id}
             isActive={isActive}
             className={cn(
-              'relative flex w-full items-center gap-2 cursor-pointer !py-0 text-sm select-none overflow-hidden rounded-sm',
-              'group-hover/document:!bg-sidebar-accent/50 group-hover/document:text-sidebar-accent-foreground group-hover/document:!pr-8',
+              'relative flex w-full items-center gap-2 cursor-pointer py-0! text-sm select-none overflow-hidden rounded-sm',
+              'group-hover/document:bg-sidebar-accent/50! group-hover/document:text-sidebar-accent-foreground group-hover/document:pr-8! max-md:pr-8!',
               {
                 'bg-muted border border-dashed border-border/60': isCutThisItem,
-                '!text-foreground !pr-8 !bg-sidebar-accent group-hover/document:!bg-sidebar-accent':
+                'text-foreground! pr-8! bg-sidebar-accent! group-hover/document:bg-sidebar-accent!':
                   isActive,
               },
             )}
@@ -434,7 +436,7 @@ export function RegularDocumentItem({
                 className="group focus:bg-destructive/10 text-destructive hover:text-destructive focus:text-destructive"
                 onSelect={handleDelete}
               >
-                <Trash2 className="mr-2 h-4 w-4 group-focus:!text-destructive" />
+                <Trash2 className="mr-2 h-4 w-4 group-focus:text-destructive!" />
                 Delete
               </ContextMenuItem>
             </>

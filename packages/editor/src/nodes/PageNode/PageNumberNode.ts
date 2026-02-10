@@ -94,18 +94,6 @@ export class PageNumberNode extends TextNode {
   exportDOM(): DOMExportOutput {
     const element = document.createElement('span');
     element.setAttribute('data-lexical-page-number', this.__variant);
-    const variant = this.getVariant();
-    if (variant === 'total') {
-      const root = $getRoot();
-      const pages = root.getChildren().filter($isPageNode);
-      const totalPages = pages.length;
-      element.textContent = String(totalPages);
-    } else {
-      const pageNode = $getNearestNodeOfType(this, PageNode);
-      if (!pageNode) return { element };
-      const pageNumber = pageNode.getPageNumber();
-      element.textContent = String(pageNumber);
-    }
     return { element };
   }
 

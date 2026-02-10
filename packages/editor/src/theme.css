@@ -1,3 +1,5 @@
+@import "mathlive/static.css";
+
 [dir="ltr"] {
   text-align: left;
 }
@@ -10,6 +12,10 @@
   margin: 0;
   margin-bottom: 8px;
   position: relative;
+}
+
+:not(.LexicalTheme__pageContent) > .LexicalTheme__paragraph:last-child {
+  margin-bottom: 0;
 }
 
 .LexicalTheme__quote {
@@ -84,7 +90,7 @@
 }
 
 .LexicalTheme__blockCursor:after {
-  content: '';
+  content: "";
   display: block;
   position: absolute;
   top: -2px;
@@ -234,7 +240,12 @@
   caret-color: transparent;
 }
 
-.LexicalTheme__tableCellSelected::after {
+.selected {
+  position: relative;
+}
+
+.LexicalTheme__tableCellSelected::after,
+:not(.selected)>.selected::after {
   position: absolute;
   left: 0;
   right: 0;
@@ -473,7 +484,8 @@ iframe {
   min-height: 44px;
 }
 
-.sticky-note {
+.LexicalTheme__sticky {
+  position: relative;
   min-width: 200px;
   max-width: 300px;
   min-height: 160px;
@@ -567,65 +579,6 @@ iframe {
   margin-inline-end: 0.5rem;
 }
 
-.details__container {
-  display: flow-root;
-  border: 1px solid;
-  margin-bottom: 8px;
-}
-
-[contenteditable="true"] .details__container[contenteditable="false"],
-[contenteditable="true"] .details__summary[contenteditable="false"] {
-  user-select: none;
-}
-
-.details__container[contenteditable="false"] .details__summary *,
-.details__container[contenteditable="false"] .details__content *,
-.details__summary[contenteditable="false"] * {
-  pointer-events: none;
-}
-
-.details__summary {
-  cursor: pointer;
-  padding: 12px 32px 12px 16px;
-  position: relative;
-  list-style: none;
-  outline: none;
-}
-
-.details__summary::marker,
-.details__summary::-webkit-details-marker {
-  display: none;
-}
-
-.details__summary:before {
-  content: "";
-  display: block;
-  box-sizing: border-box;
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border-bottom: 2px solid;
-  border-right: 2px solid;
-  right: 16px;
-  top: 50%;
-  translate: 0 -75%;
-  rotate: 45deg;
-}
-
-.details__container[open] > .details__summary:before {
-  translate: 0 -25%;
-  rotate: -135deg;
-}
-
-.details__content {
-  padding: 8px 16px;
-}
-
-.details__container:not([open]) > .details__content {
-  display: none;
-  user-select: none;
-}
-
 @media screen {
   [data-placeholder]:has(br):not(:has(br + br)):not(:has(span))::after {
     position: absolute;
@@ -653,13 +606,26 @@ iframe {
   display: none;
 }
 
-:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable="false"],
-:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable="false"] * {
+:is(
+  .LexicalTheme__pageHeader,
+  .LexicalTheme__pageFooter
+)[contenteditable="false"],
+:is(
+    .LexicalTheme__pageHeader,
+    .LexicalTheme__pageFooter
+  )[contenteditable="false"]
+  * {
   user-select: none;
 }
 
-:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable="false"] :is(.selected,.selection-highlight),
-:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable="false"] .LexicalTheme__tableCellSelected::after {
+:is(
+    .LexicalTheme__pageHeader,
+    .LexicalTheme__pageFooter
+  )[contenteditable="false"]
+ :is(
+    .selected,
+.LexicalTheme__tableCellSelected
+  )::after {
   background-color: transparent;
 }
 
@@ -760,16 +726,6 @@ iframe {
   border-right-width: 4px;
 }
 
-.details__summary[dir="rtl"] {
-  padding-left: 32px;
-  padding-right: 16px;
-}
-
-.details__summary[dir="rtl"]:before {
-  right: auto;
-  left: 16px;
-}
-
 /* color theme */
 
 .LexicalTheme__textCode,
@@ -837,21 +793,6 @@ iframe {
   }
 }
 
-.details__container,
-.light .details__container,
-.dark .light .details__container {
-  border-color: rgba(0, 0, 0, 0.12);
-}
-
-.details__summary:hover,
-.details__container[open] > .details__summary,
-.light .details__summary:hover,
-.light .details__container[open] > .details__summary,
-.dark .light .details__summary:hover,
-.dark .light .details__container[open] > .details__summary {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-
 .light .LexicalTheme__image.LexicalTheme__darkModeFilter img,
 .dark .light .LexicalTheme__image.LexicalTheme__darkModeFilter img {
   filter: none !important;
@@ -897,15 +838,6 @@ iframe {
 
   .dark [contenteditable="true"] .LexicalTheme__layoutItem {
     border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .dark .details__container {
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .dark .details__summary:hover,
-  .dark .details__container[open] > .details__summary {
-    background-color: rgba(255, 255, 255, 0.08);
   }
 
   .dark .LexicalTheme__image.LexicalTheme__darkModeFilter img {

@@ -60,6 +60,7 @@ function HrTools({ node }: { node: HorizontalRuleNode }) {
 
   const updateVariant = useCallback(
     (variant: HorizontalRuleVariant) => {
+      if (!variant) return;
       editor.update(() => {
         node.setVariant(variant);
       });

@@ -4,19 +4,35 @@ import { SidebarProvider } from '@repo/ui/components/sidebar';
 import { cn } from '@repo/ui/lib/utils';
 import { DocumentSidebar } from './document-sidebar';
 import { EditorComposer } from '@repo/editor/EditorComposer';
-import { getServices } from './services';
-import { EditDocumentActions } from './edit-document-actions';
 import ToolbarPlugin from '@repo/editor/plugins/ToolbarPlugin';
+import { useMemo } from 'react';
+import { useSelector } from '@/store';
 
 export function EditDocumentLoading({ handle }: { handle: string }) {
+  const sidebar = useSelector((state) => state.sidebar);
+
+  const defaultOpen = useMemo(() => {
+    if (sidebar === 'expanded') return true;
+    if (sidebar === 'collapsed') return false;
+
+    if (typeof document === 'undefined') return true;
+
+    const match = window.document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
+    if (!match) return true;
+    try {
+      return decodeURIComponent(match[1]) === 'true';
+    } catch {
+      return match[1] === 'true';
+    }
+  }, [sidebar]);
+
   const isDesktop = useMediaQuery('(min-width: 1024px)');
-  const services = getServices();
 
   return (
     <SidebarProvider
       className={cn(
         'group/editor-sidebar relative flex flex-1 flex-col items-center min-h-auto',
-        '**:data-[collapsible]:sticky **:data-[collapsible]:top-[calc(--spacing(14)+1px)]',
+        '**:data-collapsible:sticky **:data-collapsible:top-[calc(--spacing(14)+1px)]',
       )}
       style={
         {
@@ -24,10 +40,9 @@ export function EditDocumentLoading({ handle }: { handle: string }) {
           '--sidebar-width-icon': 'calc(var(--spacing) * 14)',
         } as React.CSSProperties
       }
-      open={isDesktop}
+      open={isDesktop && defaultOpen}
     >
-      <EditorComposer initialState={null} services={services} editable={false}>
-        <EditDocumentActions handle={handle} />
+      <EditorComposer initialState={null} editable={false}>
         <div className="flex flex-1 justify-center w-full items-start relative">
           <div className="editor-container flex flex-col w-0 flex-1 h-full relative">
             <ToolbarPlugin />

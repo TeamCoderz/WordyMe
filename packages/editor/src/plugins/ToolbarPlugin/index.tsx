@@ -21,6 +21,7 @@ import { $isImageNode } from '@repo/editor/nodes/ImageNode';
 import ImageDialog from '@repo/editor/components/Dialogs/ImageDialog';
 import AttachmentDialog from '@repo/editor/components/Dialogs/AttachmentDialog';
 import SketchDialog from '@repo/editor/components/Dialogs/SketchDialog';
+import DiagramDialog from '@repo/editor/components/Dialogs/DiagramDialog';
 import ScoreDialog from '@repo/editor/components/Dialogs/ScoreDialog';
 import TableDialog from '@repo/editor/components/Dialogs/TableDialog';
 import IFrameDialog from '@repo/editor/components/Dialogs/IFrameDialog';
@@ -311,6 +312,9 @@ function ToolbarPlugin() {
       )}
       {openDialog === 'sketch' && (
         <SketchDialog node={$isImageNode(selectedNode) ? selectedNode : null} />
+      )}
+      {openDialog === 'diagram' && (
+        <DiagramDialog node={$isImageNode(selectedNode) ? selectedNode : null} />
       )}
       {openDialog === 'score' && (
         <ScoreDialog node={$isScoreNode(selectedNode) ? selectedNode : null} />

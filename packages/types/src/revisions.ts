@@ -1,17 +1,18 @@
 import { User } from './user';
-import type { SerializedEditorState } from 'lexical';
-
 export interface EditorRevision {
   id: string;
+  createdAt: string;
+  updatedAt: string;
   documentId: string;
-  data: SerializedEditorState;
-  checksum: string;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-  name?: string | null;
+  userId: string;
+  revisionName: string | null;
+  text: string;
+  checksum: string | null;
+  url: string;
+  content: string;
 }
 
-export type Revision = Omit<EditorRevision, 'data'> & { author: User };
+export type Revision = Omit<EditorRevision, 'content'> & { author: User };
 
 export type RevisionCreateInput = Omit<EditorRevision, 'author'>;
 
