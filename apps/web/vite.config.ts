@@ -9,9 +9,10 @@ export default defineConfig(({ mode }) => {
   // Load env vars (loadEnv with prefix removes the prefix from keys)
   const env = loadEnv(mode, process.cwd(), '');
 
-  // Default values for environment variables
+  // In dev, use empty URL so API goes through the proxy (works for both localhost and wordyme.test). For builds, use env or default.
   const defaultEnv = {
-    VITE_BACKEND_URL: env.VITE_BACKEND_URL ?? 'http://localhost:3000',
+    VITE_BACKEND_URL:
+      mode === 'development' ? '' : (env.VITE_BACKEND_URL ?? 'http://localhost:3000'),
     BUILD_OUT_DIR: env.BUILD_OUT_DIR || './dist',
     SERVER_ORIGIN: env.SERVER_ORIGIN || 'http://localhost:5173',
     ANALAYZE_BUNDLE: env.ANALAYZE_BUNDLE || false,
@@ -100,6 +101,11 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: true,
+      allowedHosts: ['wordyme.test'],
+      proxy: {
+        '/api': { target: 'http://localhost:3000', changeOrigin: true },
+        '/storage': { target: 'http://localhost:3000', changeOrigin: true },
+      },
     },
     preview: {
       port: 5173,

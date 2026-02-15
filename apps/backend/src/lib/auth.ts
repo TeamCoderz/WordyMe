@@ -17,7 +17,7 @@ export const options = {
   emailAndPassword: {
     enabled: true,
   },
-  trustedOrigins: [env.CLIENT_URL],
+  trustedOrigins: env.CLIENT_URL,
   user: {
     additionalFields: {
       cover: {
