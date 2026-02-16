@@ -1,7 +1,9 @@
 {
   "extends": "@repo/typescript-config/node.json",
   "compilerOptions": {
-    "outDir": "./dist"
+    "outDir": "./dist",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["./src/**/*"]
 }

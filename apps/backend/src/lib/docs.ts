@@ -718,6 +718,22 @@ export const openApiDocument = createDocument({
         },
       },
     },
+    // Health Check Endpoint
+    '/api/health/db': {
+      get: {
+        summary: 'Database health check',
+        tags: ['Health'],
+        security: [],
+        responses: {
+          200: {
+            description: 'DB is up',
+          },
+          503: {
+            description: 'DB is down',
+          },
+        },
+      },
+    },
   },
   security: [{ apiKeyCookie: [], bearerAuth: [] }],
 });
