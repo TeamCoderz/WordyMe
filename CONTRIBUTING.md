@@ -169,9 +169,21 @@ pnpm drizzle-kit migrate   # Apply migration
    git push origin feature/your-feature-name
    ```
 
+### PR Template
+
+**A template will auto-load when you open a PR on GitHub.**
+
+Just fill it out — don't leave sections empty. Use this title format (follow [Commit Convention](#commit-convention)):
+
+```
+<type>(<scope>): <clear description>
+```
+
+Examples: `feat(editor): add keyboard shortcuts`, `fix(auth): resolve session on custom domain`
+
 ### PR Guidelines
 
-- Fill out the PR description completely
+- **Fill out every section** of the auto-loaded template
 - Link related issues (e.g., `Fixes #123`)
 - Include screenshots for UI changes
 - Keep PRs focused — one feature or fix per PR
