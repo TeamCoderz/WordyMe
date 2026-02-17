@@ -3,47 +3,37 @@
 <!-- Briefly describe what this PR does and why it's needed. -->
 
 
-
 ## Related Issues
 
-<!-- Link any related issues. Use "Fixes #123" to auto-close on merge. -->
+<!-- Link related issues. Use "Fixes #123" to auto-close issues when merged. -->
 
 Fixes #
 
 ## Type of Change
 
-<!-- Check one. -->
+<!-- Examples: Bug fix, New feature, Breaking change, Refactor, Documentation, Performance improvement -->
 
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Refactor
-- [ ] Documentation
-- [ ] Other (describe):
 
 ## Changes
 
-<!-- List what you changed. Keep it concise. -->
+<!-- List key changes in bullet points. Be specific. -->
 
--
--
+- 
+- 
 
 ## How to Test
 
-<!-- Describe how a reviewer can verify your changes. -->
+<!-- Provide clear steps for reviewers to verify your changes work as expected. -->
 
-1.
-2.
+1. 
+2. 
+3. 
+
+**Expected result:**
+
 
 ## Screenshots
 
-<!-- Attach screenshots or videos for any UI change. Remove this section if not applicable. -->
+<!-- Required for UI changes. Include before/after screenshots or videos. Remove this section if not a UI change. -->
 
 
-## Pre-submit Checklist
-
-- [ ] Ran `pnpm lint && pnpm check-types && pnpm build` with no errors
-- [ ] Self-reviewed the diff for mistakes
-- [ ] Tested manually in the browser
-- [ ] Updated relevant documentation (if applicable)
-- [ ] PR title follows commit convention: `type(scope): description`
