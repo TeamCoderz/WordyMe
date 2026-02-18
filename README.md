@@ -1,10 +1,20 @@
-# WordyMe
+**WordyMe™**
+<p align="center">
+<img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
+<img src="https://img.shields.io/badge/Maintained%20by-TeamCoderz%20Ltd-orange" alt="Maintained by TeamCoderz Ltd">
+<img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome">
+</p>
 
-**WordyMe** is a centralized platform for students to manage educational information. It provides a rich note-taking experience with support for documents, spaces, and a powerful editor with diagram and math support.
+WordyMe™ is a centralized platform for students to manage educational information. It provides a rich note-taking experience with support for documents, spaces, and a powerful editor with diagram and math support.
 
-## Overview
+🏛 Open Core & Mission  
+WordyMe™ is built and maintained by TeamCoderz Ltd with a mission to keep powerful educational tools accessible.
 
-WordyMe is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions.
+The Core: This repository contains the open-source core of WordyMe™, licensed under AGPL-3.0.  
+The Enterprise: We will offer a PRO version for institutions requiring Service Documentation Management, permission control, advanced SSO, audit logs, managed compliance and more. All of this will be available in our Next Generation ERP Solution: [ReactSuite](https://www.linkedin.com/showcase/reactsuite)
+
+🚀 Overview  
+WordyMe™ is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions. 
 
 ## Architecture
 
@@ -133,7 +143,7 @@ WordyMe/
 
 ## Running with Docker
 
-WordyMe can be run using Docker and Docker Compose for easy deployment. See [DOCKER.md](DOCKER.md) for complete Docker documentation, including:
+WordyMe™ can be run using Docker and Docker Compose for easy deployment. See [DOCKER.md](DOCKER.md) for complete Docker documentation, including:
 
 - Quick start guide
 - Common commands
@@ -246,10 +256,6 @@ The backend API includes OpenAPI documentation. When running the backend, visit 
 4. Format code: `pnpm format`
 5. Run tests: `pnpm test` (where applicable)
 
-## License
-
-See [LICENSE](LICENSE) file for details.
-
 ## Useful Links
 
 - [Turborepo Documentation](https://turborepo.com/docs)
@@ -257,3 +263,7 @@ See [LICENSE](LICENSE) file for details.
 - [Lexical Editor](https://lexical.dev)
 - [Drizzle ORM](https://orm.drizzle.team)
 - [Better Auth](https://www.better-auth.com)
+
+## License
+
+See [LICENSE](LICENSE) and [NOTICE](NOTICE) files for details.
