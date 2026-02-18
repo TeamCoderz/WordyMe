@@ -718,7 +718,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-    // Health Check Endpoint
     '/api/health/db': {
       get: {
         summary: 'Database health check',

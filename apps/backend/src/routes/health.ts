@@ -1,4 +1,3 @@
-//contribution: @yousef-v7
 import { Router } from 'express';
 import { db } from '../lib/db.js';
 
@@ -11,6 +10,7 @@ healthRouter.get('/db', async (_req, res) => {
     await db.run('select 1');
 
     const latencyMs = Date.now() - start;
+    res.setHeader('Cache-Control', 'no-store');
 
     return res.status(200).json({
       status: 'ok',
@@ -18,8 +18,9 @@ healthRouter.get('/db', async (_req, res) => {
       latencyMs,
       timestamp: new Date().toISOString(),
     });
-  } catch {
+  } catch (_err) {
     const latencyMs = Date.now() - start;
+    res.setHeader('Cache-Control', 'no-store');
 
     return res.status(503).json({
       status: 'error',
