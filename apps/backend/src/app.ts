@@ -18,6 +18,7 @@ import { revisionsRouter } from './routes/revisions.js';
 import { editorSettingsRouter } from './routes/editor-settings.js';
 import { favoritesRouter } from './routes/favorites.js';
 import { storageRouter } from './routes/storage.js';
+import { healthRouter } from './routes/health.js';
 
 const app: Express = express();
 const server = createServer(app);
@@ -40,6 +41,7 @@ app.use('/api/documents', documentsRouter);
 app.use('/api/revisions', revisionsRouter);
 app.use('/api/editor-settings', editorSettingsRouter);
 app.use('/api/favorites', favoritesRouter);
+app.use('/api/health', healthRouter);
 
 app.use('/storage', storageRouter);
 
