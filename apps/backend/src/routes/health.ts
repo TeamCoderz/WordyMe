@@ -13,8 +13,8 @@ healthRouter.get('/db', async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
     return res.status(200).json({
-      status: 'ok',
-      db: 'up',
+      status: 'healthy',
+      db: 'connected',
       latencyMs,
       timestamp: new Date().toISOString(),
     });
@@ -23,8 +23,8 @@ healthRouter.get('/db', async (_req, res) => {
     res.setHeader('Cache-Control', 'no-store');
 
     return res.status(503).json({
-      status: 'error',
-      db: 'down',
+      status: 'unhealthy',
+      db: 'disconnected',
       latencyMs,
       timestamp: new Date().toISOString(),
     });

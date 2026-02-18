@@ -721,14 +721,38 @@ export const openApiDocument = createDocument({
     '/api/health/db': {
       get: {
         summary: 'Database health check',
+        description:
+          'Pings the database with a lightweight query and returns connection status with latency metrics. This endpoint requires no authentication and is suitable for use by external uptime monitors and load balancers.',
         tags: ['Health'],
         security: [],
         responses: {
           200: {
-            description: 'DB is up',
+            description: 'Database is up and reachable.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  status: z.literal('healthy').describe('Overall health status'),
+                  db: z.literal('connected').describe('Database connection status'),
+                  latencyMs: z.number().describe('Round-trip time to the database in milliseconds'),
+                  timestamp: z.string().describe('ISO 8601 timestamp of the check'),
+                }),
+              },
+            },
           },
           503: {
-            description: 'DB is down',
+            description: 'Database is down or unreachable.',
+            content: {
+              'application/json': {
+                schema: z.object({
+                  status: z.literal('unhealthy').describe('Overall health status'),
+                  db: z.literal('disconnected').describe('Database connection status'),
+                  latencyMs: z
+                    .number()
+                    .describe('Time elapsed before the connection failed in milliseconds'),
+                  timestamp: z.string().describe('ISO 8601 timestamp of the check'),
+                }),
+              },
+            },
           },
         },
       },
