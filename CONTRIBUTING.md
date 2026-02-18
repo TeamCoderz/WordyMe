@@ -1,4 +1,4 @@
-# Contributing to WordyMe
+# Contributing to WordyMe™
 
 **Welcome, and thank you for your interest in contributing to WordyMe!**
 
@@ -19,6 +19,9 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 
 ## Table of Contents
 
+- [Contributor Licence Agreement (CLA)](#contributor-license-agreement-cla)
+- [Legal Headers (SPDX)](#legal-headers-spdx)
+- [Commercial Features](#commercial-features)
 - [Code of Conduct](#code-of-conduct)
 - [Questions](#questions)
 - [How to Contribute](#how-to-contribute)
@@ -31,6 +34,35 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 
 ---
 
+## Contributor License Agreement (CLA)
+
+To protect the project's future and allow us to offer an Enterprise version to sustain development, we require all contributors to agree to our Contributor License Agreement (CLA).
+
+By submitting a Pull Request to this repository, you agree to the following:
+ - You grant TeamCoderz Ltd a perpetual, worldwide, irrevocable license to use, modify, and distribute your contribution.
+ - You represent that you own the rights to the code you are submitting.
+ - You understand that your contribution will be licensed under AGPL-3.0 in this repository, but TeamCoderz Ltd may also use it in commercial or proprietary versions of the software.
+
+Note: For large contributions, our automated assistant will prompt you to digitally sign the full CLA before your code can be merged.
+
+---
+
+## Legal Headers (SPDX)
+
+To ensure the license stays with the code, every new source file must include this 4-line header at the very top:
+
+```bash
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+```
+---
+
+## Commercial Features
+WordyMe™ follows an Open Core model. If you are interested in developing features intended for large institutions (e.g., SAML/SSO, advanced audit logging), please contact us first. These features often belong in our Enterprise version, and we can discuss how to best collaborate.
+
+---
 ## Code of Conduct
 
 Be **welcoming, inclusive, and respectful**. We don't tolerate harassment or exclusionary behavior. Report violations to maintainers.
@@ -263,7 +295,7 @@ Use descriptive prefixes: `feature/`, `fix/`, `docs/`, `refactor/`
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the [Apache License 2.0](LICENSE).
+By contributing, you agree that your contributions will be licensed under the [AGPL-3.0](LICENSE).
 
 ---
 
