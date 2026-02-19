@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { eq, and, count, getTableColumns, gt, max } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { favoritesTable } from '../models/favorites.js';

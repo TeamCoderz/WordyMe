@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useDebouncedCallback } from 'use-debounce';

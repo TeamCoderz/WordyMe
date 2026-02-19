@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { roleColumns } from './columns';
 import DataTable from '@/components/DataTable';
 // import { getRoles } from "@/actions/roles.actions";

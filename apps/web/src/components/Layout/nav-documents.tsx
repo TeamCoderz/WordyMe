@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { SidebarGroup, SidebarGroupLabel } from '@repo/ui/components/sidebar';
 import { DocumentTree } from './document-tree';
 import { cn } from '@repo/ui/lib/utils';

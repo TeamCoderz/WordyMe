@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { Document, DocumentStorageUsage, EditorDocument } from './documents';
 import type { Revision, EditorRevision } from './revisions';
 import type { User } from './user';

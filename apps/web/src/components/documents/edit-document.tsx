@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { Document } from '@repo/types/documents';
 import type { User } from '@repo/types/user';
 import { useCallback, useMemo, useState } from 'react';

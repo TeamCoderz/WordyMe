@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { InitialEditorStateType, NodeKey } from 'lexical';
 import { editorConfig } from '@repo/editor/config';
 import { $getNodeByKey, createEditor } from 'lexical';

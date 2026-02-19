@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Link, useLocation } from '@tanstack/react-router';
 import { Palette, UserRound } from '@repo/ui/components/icons';
 import { cn } from '@repo/ui/lib/utils';

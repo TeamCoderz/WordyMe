@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { cn } from '@repo/ui/lib/utils';
 import { DotIcon, XIcon, Loader2Icon, CheckCheckIcon, SaveIcon } from '@repo/ui/components/icons';
 import { Button } from '@repo/ui/components/button';

@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { useQueryClient } from '@tanstack/react-query';
 
 export function getDescendants<T extends { id: string; parentId?: string | null }>(

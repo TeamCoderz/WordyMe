@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 'use client';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { ModeValue, ScaleValue, THEME_BY_VALUE, ThemeValue } from './themes';

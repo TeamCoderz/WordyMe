@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Router } from 'express';
 import { validate } from '../middlewares/validate.js';
 import { requireAuth } from '../middlewares/auth.js';

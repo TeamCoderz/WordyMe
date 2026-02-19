@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { useActions, useSelector } from '@/store';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/card';
 import { Label } from '@repo/ui/components/label';

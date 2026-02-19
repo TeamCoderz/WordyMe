@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Avatar, AvatarFallback, AvatarImage } from '@repo/ui/components/avatar';
 import { PencilLine } from '@repo/ui/components/icons';
 import { useSelector } from '@/store';

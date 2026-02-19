@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 export const cachedDocuments = new Map<string, 'sidebar' | 'manage' | 'real-time'>([]);
 
 export function isDocumentCached(documentId: string | null) {

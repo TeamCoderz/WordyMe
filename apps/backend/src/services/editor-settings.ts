@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { eq } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { editorSettingsTable } from '../models/editor-settings.js';

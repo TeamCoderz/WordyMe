@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import ThemeCustomizer from '@/components/Settings/Preferences/ThemeCustomizer';
 import InterfacePreferencesSettings from '@/components/Settings/Preferences/InterfacePreferencesSettings';
 import EditorPreferencesSettings from '@/components/Settings/Preferences/EditorPreferencesSettings';

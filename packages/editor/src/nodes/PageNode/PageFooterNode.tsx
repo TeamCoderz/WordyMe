@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { LexicalNode, NodeKey, SerializedElementNode, SerializedLexicalNode } from 'lexical';
 
 import { $getEditor, $getSelection, ElementNode } from 'lexical';

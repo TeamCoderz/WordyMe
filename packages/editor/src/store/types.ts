@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Document, Revision, EditorRevision, Space } from '@repo/types';
 export type Services = {
   uploadImage: (file: File) => Promise<{

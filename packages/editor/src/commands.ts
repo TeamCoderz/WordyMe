@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Alert, Announcement } from '@repo/types/ui';
 import { ElementFormatType, LexicalCommand, createCommand } from 'lexical';
 import { AlertVariant } from '@repo/editor/nodes/AlertNode';

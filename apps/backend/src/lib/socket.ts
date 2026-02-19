@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Server } from 'socket.io';
 import { type Server as HttpServer } from 'node:http';
 import { ioRequireAuth } from '../middlewares/auth.js';

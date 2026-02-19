@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { ChangeHandler, LinkMatcher } from '@lexical/link';
 import type { LexicalEditor } from 'lexical';
 import type { JSX } from 'react';

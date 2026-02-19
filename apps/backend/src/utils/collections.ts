@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { and, asc, desc, eq, gte, isNotNull, like, SQL } from 'drizzle-orm';
 import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
 import { PaginationQuery } from '../schemas/pagination.js';

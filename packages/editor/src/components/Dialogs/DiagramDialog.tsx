@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { INSERT_DIAGRAM_COMMAND, InsertDiagramPayload } from '@repo/editor/plugins/DiagramPlugin';
 import { useEffect, useState, memo, useCallback, useRef } from 'react';
 import { $isDiagramNode } from '@repo/editor/nodes/DiagramNode';

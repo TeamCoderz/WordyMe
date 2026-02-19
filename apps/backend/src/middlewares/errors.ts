@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { ErrorRequestHandler, RequestHandler } from 'express';
 import { toHttpException } from '../utils/errors.js';
 import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';

@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { NextFunction, Request, RequestHandler, Response } from 'express';
 import { auth } from '../lib/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';

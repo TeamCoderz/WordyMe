@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { DownloadIcon, Trash2Icon, EditIcon } from '@repo/ui/components/icons';
 import { useLexicalNodeSelection } from '@lexical/react/useLexicalNodeSelection';
 import { CLICK_COMMAND, COMMAND_PRIORITY_LOW, NodeKey } from 'lexical';

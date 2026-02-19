@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Button } from '@repo/ui/components/button';
 import Cropper from 'react-easy-crop';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

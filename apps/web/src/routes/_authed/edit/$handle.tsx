@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { EditDocument } from '@/components/documents/edit-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';

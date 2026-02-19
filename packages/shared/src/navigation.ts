@@ -1,4 +1,9 @@
 /**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+/**
  * Navigation utilities
  * Provides a global flag-based system for blocking navigation attempts
  */

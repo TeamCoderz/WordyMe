@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import PersonalInformation from '@/components/Settings/Profile/PersonalInformation';
 import DeleteAccount from '@/components/Settings/Profile/DeleteAccount';
 import AccountInformation from '@/components/Settings/Profile/AccountInformation';

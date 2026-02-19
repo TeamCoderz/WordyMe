@@ -1,4 +1,9 @@
 /**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+/**
  * Dispatches an Escape key event to close open menus, dialogs, or other components
  * @param target - The element to dispatch the event to (defaults to document.body)
  */

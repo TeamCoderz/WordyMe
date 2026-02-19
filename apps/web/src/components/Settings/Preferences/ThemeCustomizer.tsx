@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Separator } from '@repo/ui/components/separator';
 import ThemeSelect from './ThemeSelect';
 import ColorThemeSelector from './ColorThemeSelector';

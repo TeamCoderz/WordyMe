@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { Skeleton } from '@repo/ui/components/skeleton';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 import { SidebarProvider } from '@repo/ui/components/sidebar';

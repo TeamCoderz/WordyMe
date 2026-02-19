@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import crypto from 'node:crypto';
 import { SQLiteColumn, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { enumType } from '../utils/drizzle.js';

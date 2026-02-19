@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import type { Favorite } from '@repo/backend/favorites.js';
 import type { PaginatedResult } from '@repo/backend/pagination.js';
 import { post, del, get } from './client.js';

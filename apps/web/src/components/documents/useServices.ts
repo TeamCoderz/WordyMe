@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { uploadAttachment } from '@repo/sdk/storage.ts';
 import type { Services } from '@repo/editor/store';
 import { useNavigate } from '@tanstack/react-router';

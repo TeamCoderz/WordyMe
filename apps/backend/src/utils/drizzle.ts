@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { customType } from 'drizzle-orm/sqlite-core';
 
 export const enumType = <T extends readonly string[]>(values: T, name?: string) => {

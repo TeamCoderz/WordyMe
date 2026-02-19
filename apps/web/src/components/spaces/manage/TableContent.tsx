@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import * as React from 'react';
 import { toast } from 'sonner';
 import { useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
