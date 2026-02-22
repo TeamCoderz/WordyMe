@@ -1,0 +1,31 @@
+{
+  "git": {
+    "commit": false,
+    "tag": false,
+    "push": false,
+    "tagName": "v${version}",
+    "requireCleanWorkingDir": false,
+    "requireUpstream": false
+  },
+  "npm": {
+    "publish": false,
+    "allowSameVersion": true,
+    "skipChecks": true
+  },
+  "github": {
+    "release": true,
+    "releaseName": "v${version}"
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits"
+      },
+      "infile": "CHANGELOG.md",
+      "header": "# Changelog"
+    }
+  },
+  "hooks": {
+    "after:bump": "echo Successfully bumped version to ${version}"
+  }
+}
