@@ -22,10 +22,10 @@
   "dependencies": {
     "@httpx/exception": "^3.1.8",
     "@libsql/client": "^0.17.0",
-    "@scalar/express-api-reference": "^0.8.40",
+    "@scalar/express-api-reference": "^0.8.44",
     "better-auth": "^1.4.18",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.4",
+    "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.8.3",
     "express": "^5.2.1",
@@ -45,10 +45,10 @@
     "@types/formidable": "^3.4.6",
     "@types/http-errors": "^2.0.5",
     "@types/morgan": "^1.9.10",
-    "@types/node": "^25.2.2",
+    "@types/node": "^25.3.0",
     "bun": "^1.3.9",
     "drizzle-kit": "^0.31.9",
-    "eslint": "^10.0.0",
+    "eslint": "^10.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
