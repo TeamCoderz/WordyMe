@@ -1,0 +1,88 @@
+name: Manual Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      preid:
+        description: 'Pre-release identifier (only used with pre* increments)'
+        required: false
+        type: choice
+        default: 'none'
+        options:
+          - none
+          - alpha
+          - beta
+          - rc
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.27.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run release (standard version)
+        if: inputs.preid == 'none' || inputs.preid == ''
+        run: |
+          npm version ${{ inputs.increment }} --no-git-tag-version
+          VERSION=$(node -pe "require('./package.json').version")
+          pnpm run release
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release v$VERSION"
+          git tag "v$VERSION"
+          git push --follow-tags
+          pnpm exec release-it --ci --no-increment --no-git --no-changelog
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run release (pre-release version)
+        if: inputs.preid != 'none' && inputs.preid != ''
+        run: |
+          npm version ${{ inputs.increment }} --preid=${{ inputs.preid }} --no-git-tag-version
+          VERSION=$(node -pe "require('./package.json').version")
+          pnpm run release
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release v$VERSION"
+          git tag "v$VERSION"
+          git push --follow-tags
+          pnpm exec release-it --ci --no-increment --no-git --no-changelog --github.preRelease=true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
