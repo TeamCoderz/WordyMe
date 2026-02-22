@@ -1,7 +1,7 @@
 {
   "name": "oss",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.0.0",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -9,7 +9,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "start": "turbo start",
-    "release": "release-it --ci --no-increment --github.release=false"
+    "release": "release-it --ci --no-increment"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.5",
