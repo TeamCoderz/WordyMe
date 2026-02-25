@@ -27,6 +27,7 @@ import {
 } from '@/queries/documents';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import ImportPdfItem from './import-pdf-item';
 
 type NavDocumentsContextMenuProps = {
   children: React.ReactNode;
@@ -152,6 +153,8 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
           <FolderInput className="mr-2 h-4 w-4" />
           Import Document
         </ContextMenuItem>
+
+        <ImportPdfItem />
 
         <ContextMenuSeparator />
         <ContextMenuItem onSelect={handleManage}>
