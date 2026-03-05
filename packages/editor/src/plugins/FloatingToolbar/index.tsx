@@ -143,7 +143,7 @@ function FloatingToolbar({
   return (
     <div
       ref={popupCharStylesEditorRef}
-      className="floating-toolbar hidden sm:flex absolute top-0 left-0 z-30 will-change-transform print:hidden"
+      className="floating-toolbar @max-md:hidden absolute top-0 left-0 z-30 will-change-transform print:hidden"
     >
       <TextFormatToggles />
     </div>

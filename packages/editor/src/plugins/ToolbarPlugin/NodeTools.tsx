@@ -79,8 +79,8 @@ export default function NodeTools() {
       {showTextFormatTools && (
         <TextFormatToggles
           className={cn(
-            'flex sm:hidden md:hidden xl:flex bottom-[calc(var(--keyboard-inset-height)+4px)] z-50',
-            'fixed inset-x-0 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:static justify-center sm:justify-start',
+            'flex @md:hidden @3xl:flex bottom-[calc(var(--keyboard-inset-height)+4px)] z-50',
+            'fixed inset-x-0 left-1/2 -translate-x-1/2 @md:translate-x-0 @md:static justify-center @md:justify-start',
           )}
         />
       )}

@@ -186,7 +186,7 @@ export function BlockFormatSelect({ className }: { className?: string }) {
       label={
         <>
           {currentBlock.icon}
-          <span className="max-sm:hidden">{blockName}</span>
+          <span className="@max-md:hidden">{blockName}</span>
         </>
       }
       options={Object.values(Blocks)}

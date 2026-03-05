@@ -12,10 +12,39 @@ import {
   FileTextIcon,
   FileVideoIcon,
   DownloadIcon,
+  EyeIcon,
 } from '@repo/ui/components/icons';
 import { NodeKey } from 'lexical';
 import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/button';
+
+const VIEWABLE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+  'mp4',
+  'webm',
+  'ogg',
+  'mov',
+  'avi',
+  'mkv',
+  'mp3',
+  'wav',
+  'm4a',
+  'aac',
+  'flac',
+  'pdf',
+];
+
+function isViewable(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return VIEWABLE_EXTENSIONS.includes(ext);
+}
 
 type AttachmentComponentProps = {
   nodeKey: NodeKey;
@@ -82,7 +111,26 @@ export const AttachmentCard = (
   props: Omit<AttachmentComponentProps, 'nodeKey'> & React.HTMLAttributes<HTMLDivElement>,
 ) => {
   const { name, size, url, signedUrl, className, ...rest } = props;
-  const href = url.startsWith('data:') ? url : (signedUrl ?? '#');
+  const href = signedUrl ?? url;
+  const canView = href && href !== '#' && isViewable(name);
+
+  const handleDownload = async () => {
+    try {
+      const res = await fetch(href);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(href, '_blank');
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -103,12 +151,37 @@ export const AttachmentCard = (
       </div>
 
       <div className="flex items-center gap-1.5">
-        <Button variant="outline" className="bg-transparent" size="icon" asChild>
-          <a href={href} download={name} aria-label={`Download ${name}`}>
+        {canView ? (
+          <Button
+            variant="outline"
+            className="bg-transparent"
+            size="icon"
+            disabled={!canView}
+            aria-label={`View ${name}`}
+            title="View"
+            asChild
+          >
+            <a
+              href={`/attachment?${new URLSearchParams({ url: href, name }).toString()}`}
+              data-new-split-tab="true"
+            >
+              <EyeIcon />
+              <span className="sr-only">View</span>
+            </a>
+          </Button>
+        ) : (
+          <Button
+            variant="outline"
+            className="bg-transparent"
+            size="icon"
+            onClick={handleDownload}
+            aria-label={`Download ${name}`}
+            title="Download"
+          >
             <DownloadIcon />
             <span className="sr-only">Download</span>
-          </a>
-        </Button>
+          </Button>
+        )}
       </div>
     </div>
   );

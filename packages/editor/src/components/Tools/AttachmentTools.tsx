@@ -6,7 +6,7 @@
 'use client';
 import { AttachmentNode } from '@repo/editor/nodes/AttachmentNode';
 import { useCallback, useLayoutEffect, useRef } from 'react';
-import { EditIcon, Trash2Icon, DownloadIcon } from '@repo/ui/components/icons';
+import { EditIcon, Trash2Icon, DownloadIcon, EyeIcon } from '@repo/ui/components/icons';
 import { Toggle } from '@repo/ui/components/toggle';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { useActions } from '@repo/editor/store';
@@ -23,6 +23,34 @@ const anchorPolyfill = async (elements: HTMLElement[]) => {
     });
   }
 };
+
+const VIEWABLE_EXTENSIONS = [
+  'jpg',
+  'jpeg',
+  'png',
+  'gif',
+  'webp',
+  'svg',
+  'bmp',
+  'ico',
+  'mp4',
+  'webm',
+  'ogg',
+  'mov',
+  'avi',
+  'mkv',
+  'mp3',
+  'wav',
+  'm4a',
+  'aac',
+  'flac',
+  'pdf',
+];
+
+function isViewable(filename: string): boolean {
+  const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+  return VIEWABLE_EXTENSIONS.includes(ext);
+}
 
 function AttachmentTools({ node }: { node: AttachmentNode }) {
   const [editor] = useLexicalComposerContext();
@@ -53,6 +81,26 @@ function AttachmentTools({ node }: { node: AttachmentNode }) {
     anchorPolyfill([attachmentElement, attachmentToolbarElem]);
   }, [node, editor]);
 
+  const handleDownload = async () => {
+    const href = node.getSignedUrl() ?? node.getUrl() ?? '';
+    const name = node.getName();
+    try {
+      const res = await fetch(href);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      window.open(href, '_blank');
+    }
+  };
+
+  const canView = isViewable(node.getName());
   return (
     <div
       ref={attachmentToolbarRef}
@@ -71,14 +119,36 @@ function AttachmentTools({ node }: { node: AttachmentNode }) {
       <Toggle
         variant="outline"
         className="bg-background"
+        value="view"
+        aria-label="View attachment"
+        title="View attachment"
+        disabled={!canView}
+        asChild={canView}
+      >
+        {canView ? (
+          <a
+            href={`/attachment?${new URLSearchParams({ url: node.getSignedUrl() ?? node.getUrl() ?? '', name: node.getName() }).toString()}`}
+            data-new-split-tab="true"
+          >
+            <EyeIcon />
+            <span className="sr-only">View</span>
+          </a>
+        ) : (
+          <>
+            <EyeIcon />
+            <span className="sr-only">View</span>
+          </>
+        )}
+      </Toggle>
+      <Toggle
+        variant="outline"
+        className="bg-background"
         value="download"
         aria-label="Download attachment"
         title="Download attachment"
-        asChild
+        onClick={handleDownload}
       >
-        <a href={node.getSignedUrl() ?? node.getUrl()} download={node.getName()}>
-          <DownloadIcon />
-        </a>
+        <DownloadIcon />
       </Toggle>
       <Toggle
         variant="outline"

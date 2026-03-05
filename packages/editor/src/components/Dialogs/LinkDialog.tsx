@@ -202,8 +202,8 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
         if (pathname.startsWith('/view/') || pathname.startsWith('/edit/')) {
           setRel('bookmark');
           setInternalLinkType('document');
-          setSelectedHeadingId(hash ? hash.slice(1) : '');
-          const handle = pathname.split('/').pop() ?? '';
+          setSelectedHeadingId(decodeURIComponent(hash.slice(1) ?? ''));
+          const handle = decodeURIComponent(pathname.split('/').pop() ?? '');
           const isId = searchParams.get('id') === 'true';
           const getDocumentPromise = isId ? getDocumentById(handle) : getDocumentByHandle(handle);
           getDocumentPromise.then((document) => {
@@ -526,6 +526,12 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
     }
   }, []);
 
+  const selectedHeadingText = useMemo(() => {
+    if (!selectedHeadingId) return null;
+    const heading = tocEntries.find(([, , , id]) => id === selectedHeadingId);
+    return heading ? decodeURIComponent(heading[1]) : null;
+  }, [tocEntries, selectedHeadingId]);
+
   return (
     <Dialog open onOpenChange={(open) => !open && handleClose()}>
       <DialogContent>
@@ -600,7 +606,7 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                         {figure === 'self' ? (
                           'Self'
                         ) : figure === 'none' ? (
-                          'Select a figure...'
+                          'Select a figure'
                         ) : figures.has(figure) ? (
                           <div
                             className="w-full [&_img]:w-20 max-h-24 overflow-hidden"
@@ -609,13 +615,14 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                             }}
                           />
                         ) : (
-                          'Select a figure...'
+                          'Select a figure'
                         )}
                         <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                       <Command
+                        value={figure}
                         filter={(value, search) => {
                           const figureText =
                             value === 'self' ? 'Self' : figures.get(value)?.textContent;
@@ -624,7 +631,7 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                           return textMatch ? 1 : 0;
                         }}
                       >
-                        <CommandInput placeholder="Search figure..." className="h-9" />
+                        <CommandInput placeholder="Search figures" className="h-9" />
                         <CommandList>
                           <CommandEmpty>No figure found.</CommandEmpty>
                           <CommandGroup>
@@ -703,20 +710,21 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                                   ))}
                               </>
                             ) : (
-                              'Select a space...'
+                              'Select a space'
                             )}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                           <Command
+                            value={selectedSpaceId}
                             filter={(value, search) => {
                               if (!search.trim()) return 1;
                               return spaceOrDescendantMatches(value, search) ? 1 : 0;
                             }}
                           >
                             <CommandInput
-                              placeholder="Search space..."
+                              placeholder="Search spaces"
                               className="h-9"
                               value={spaceSearch}
                               onValueChange={setSpaceSearch}
@@ -843,20 +851,21 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                                   ))}
                               </>
                             ) : (
-                              'Select a document...'
+                              'Select a document'
                             )}
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
                           <Command
+                            value={selectedDocumentId}
                             filter={(value, search) => {
                               if (!search.trim()) return 1;
                               return documentOrDescendantMatches(value, search) ? 1 : 0;
                             }}
                           >
                             <CommandInput
-                              placeholder="Search document..."
+                              placeholder="Search documents"
                               className="h-9"
                               value={documentSearch}
                               onValueChange={setDocumentSearch}
@@ -972,17 +981,21 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                             className="w-full justify-between mb-0 min-h-9"
                             disabled={!selectedDocumentId || revisions.length === 0}
                           >
-                            {selectedRevisionId
-                              ? formatRevisionLabel(
-                                  revisions.find((revision) => revision.id === selectedRevisionId),
-                                )
-                              : 'Latest'}
+                            <span className="truncate">
+                              {selectedRevisionId
+                                ? formatRevisionLabel(
+                                    revisions.find(
+                                      (revision) => revision.id === selectedRevisionId,
+                                    ),
+                                  )
+                                : 'Latest'}
+                            </span>
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-                          <Command>
-                            <CommandInput placeholder="Search revision..." className="h-9" />
+                          <Command value={selectedRevisionId || 'latest'}>
+                            <CommandInput placeholder="Search revisions" className="h-9" />
                             <CommandList>
                               <CommandEmpty>No revision found.</CommandEmpty>
                               <CommandGroup>
@@ -1032,18 +1045,25 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                             className="w-full justify-between mb-0 min-h-9"
                             disabled={tocEntries.length === 0}
                           >
-                            {selectedHeadingId
-                              ? (tocEntries.find(([, , , id]) => id === selectedHeadingId)?.[1] ??
-                                selectedHeadingId)
-                              : tocEntries.length > 0
-                                ? 'None'
-                                : 'No headings in revision'}
+                            <span className="truncate">
+                              {selectedHeadingText
+                                ? selectedHeadingText
+                                : tocEntries.length > 0
+                                  ? 'None'
+                                  : 'No headings in revision'}
+                            </span>
                             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                           </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-(--radix-popover-trigger-width) p-0">
-                          <Command>
-                            <CommandInput placeholder="Search heading..." className="h-9" />
+                          <Command
+                            value={
+                              selectedHeadingId && selectedHeadingText
+                                ? `${selectedHeadingId} ${selectedHeadingText}`
+                                : 'none'
+                            }
+                          >
+                            <CommandInput placeholder="Search headings" className="h-9" />
                             <CommandList>
                               <CommandEmpty>No heading found.</CommandEmpty>
                               <CommandGroup>

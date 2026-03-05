@@ -74,6 +74,7 @@ export class PageContentNode extends ElementNode {
   getTextStyle(): string {
     return '';
   }
+
   canBeEmpty(): boolean {
     return false;
   }

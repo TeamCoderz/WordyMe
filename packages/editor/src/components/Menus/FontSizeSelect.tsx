@@ -58,12 +58,12 @@ export const FontSizeSelect = ({
   return (
     <DropDown
       label={
-        <span className="flex items-center gap-1 md:gap-2">
+        <span className="flex items-center gap-1 @md:gap-2">
           <TypeIcon className="h-4 w-4" />
           <span className="menuitem-text">{currentSizePx}</span>
         </span>
       }
-      className={cn('[&_.menuitem-text]:hidden [&_.menuitem-text]:sm:block', className)}
+      className={cn('[&_.menuitem-text]:hidden [&_.menuitem-text]:@md:block', className)}
       contentClassName="w-20"
       value={String(currentSizePx)}
       options={sizeOptions}

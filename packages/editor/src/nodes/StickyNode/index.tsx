@@ -44,8 +44,8 @@ export class StickyNode extends ElementNode {
     const color = style.color;
     const backgroundColor = style['background-color'];
     const float = style.float;
-    dom.style.color = color ?? '';
-    dom.style.backgroundColor = backgroundColor ?? '';
+    dom.style.color = color;
+    dom.style.backgroundColor = backgroundColor;
     floatWrapperElement(dom, config, float);
 
     if (editor.isEditable()) {
