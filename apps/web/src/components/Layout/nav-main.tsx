@@ -68,7 +68,7 @@ export function NavMain({ items }: NavMainProps) {
                           return (
                             <SidebarMenuSubItem key={subItem.id}>
                               <SidebarMenuSubButton asChild isActive={isSubActive}>
-                                <Link to={subItem.url}>
+                                <Link to={subItem.url} data-new-tab="true">
                                   <span>{subItem.title}</span>
                                 </Link>
                               </SidebarMenuSubButton>

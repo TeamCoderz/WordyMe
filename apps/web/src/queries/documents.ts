@@ -79,7 +79,7 @@ export const useRenameDocumentMutation = ({
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const { updateTab } = useActions();
-  const tabs = useSelector((state) => state.tabs.tabs);
+  const tabs = useSelector((state) => state.tabs.tabList);
   const editRouteMatch = useMatch({
     from: '/_authed/edit/$handle',
     shouldThrow: false,
@@ -671,7 +671,7 @@ export const useDeleteDocumentMutation = ({
 }) => {
   const invalidate = useAllQueriesInvalidate();
   const { closeTab } = useActions();
-  const tabs = useSelector((state) => state.tabs.tabs);
+  const tabs = useSelector((state) => state.tabs.tabList);
   const editRouteMatch = useMatch({
     from: '/_authed/edit/$handle',
     shouldThrow: false,

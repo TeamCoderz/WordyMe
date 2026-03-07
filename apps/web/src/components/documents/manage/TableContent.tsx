@@ -25,6 +25,7 @@ import {
 } from '@/queries/documents';
 import { updateDocument } from '@repo/sdk/documents.ts';
 import { useSelector } from '@/store';
+import { useRouteContext } from '@tanstack/react-router';
 // no-op
 // Create mutations not used directly here; placeholder rows handle submit
 
@@ -57,7 +58,9 @@ export const ManageDocumentsTableContent = React.forwardRef<
   ref,
 ) {
   const queryClient = useQueryClient();
-  const spaceID = useSelector((state: any) => state.activeSpace?.id);
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
+  const spaceID = activeSpace?.id ?? '';
   const queryOptions = React.useMemo(() => {
     const options = getAllDocumentsQueryOptions(spaceID!);
     delete options.enabled;

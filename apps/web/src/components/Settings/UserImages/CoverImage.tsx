@@ -270,7 +270,7 @@ export default function CoverImage() {
               step={0.01}
               value={zoom}
               onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="hidden md:inline"
+              className="hidden @md:inline"
             />
           </div>
           <Button variant="outline" onClick={handleCancel} size="sm" className="h-8 px-2 text-xs">

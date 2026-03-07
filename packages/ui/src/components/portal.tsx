@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 
 interface PortalProps {
   children: React.ReactNode;
-  container: string | HTMLElement | (() => HTMLElement);
+  container: string | HTMLElement | (() => HTMLElement) | null;
   disablePortal?: boolean;
 }
 

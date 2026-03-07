@@ -125,7 +125,7 @@ export function PageSetup() {
   };
 
   return (
-    <div className="flex flex-col text-sm p-3 gap-2 h-full overflow-x-hidden overflow-y-auto scrollbar-thin">
+    <div className="flex flex-col text-sm p-3 gap-2 h-full">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
           <Label htmlFor="paged-toggle" className="text-sm font-medium">

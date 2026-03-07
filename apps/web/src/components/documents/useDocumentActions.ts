@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDebouncedCallback } from 'use-debounce';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import {
   getDocumentByHandleQueryOptions,
@@ -20,16 +19,9 @@ import {
   useSaveLocalRevisionMutation,
 } from '@/queries/revisions';
 import { useActions, useSelector } from '@/store';
-import { useNavigate } from '@tanstack/react-router';
 
 export function useDocumentActions(handle: string | null) {
   const queryClient = useQueryClient();
-  const tabId = useSelector(
-    (state) => state.tabs.tabs.find((tab) => tab.pathname.split('/').pop() === handle)?.id,
-  );
-  const activeTabId = useSelector((state) => state.tabs.activeTabId);
-  const isActiveRef = useRef(activeTabId === tabId);
-
   // Queries
   const documentQueryOptions = getDocumentByHandleQueryOptions(handle ?? '');
   const { data: document } = useQuery({
@@ -65,7 +57,9 @@ export function useDocumentActions(handle: string | null) {
   const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;
 
   const documentTab = useSelector((state) =>
-    state.tabs.tabs.find((tab) => tab.pathname.split('/').pop() === handle),
+    state.tabs.tabList.find(
+      (tab) => decodeURIComponent(tab.pathname.split('/').pop() ?? '') === handle,
+    ),
   );
   const isViewTab = documentTab?.pathname.startsWith('/view/');
   const { setTabDirty } = useActions();
@@ -86,8 +80,6 @@ export function useDocumentActions(handle: string | null) {
   });
 
   const exportDocumentMutation = useExportDocumentMutation(docId, document?.name);
-
-  const navigate = useNavigate();
 
   const handleSaveSuccess = async () => {
     if (documentTab) {
@@ -119,15 +111,6 @@ export function useDocumentActions(handle: string | null) {
             { data: JSON.parse(revision?.content) },
           );
           await saveLocalRevision({ serializedEditorState: JSON.parse(revision?.content) });
-          if (isActiveRef.current)
-            navigate({
-              to: '/view/$handle',
-              params: { handle: document?.handle ?? '' },
-              search: (prev) => ({
-                ...prev,
-                v: undefined,
-              }),
-            });
         }
       } else {
         const serializedEditorState = await queryClient
@@ -153,8 +136,6 @@ export function useDocumentActions(handle: string | null) {
       setIsSaving(false);
     }
   };
-
-  const handleDebouncedUpdate = useDebouncedCallback(handleUpdate, 3000);
 
   const handleSaveAsNewRevision = async () => {
     if (!document || !handle) return;
@@ -207,15 +188,12 @@ export function useDocumentActions(handle: string | null) {
   };
 
   useEffect(() => {
-    const isActive = activeTabId === tabId;
-    isActiveRef.current = isActive;
-  }, [activeTabId, tabId]);
-
-  useEffect(() => {
     const handleChecksumChange = (event: Event) => {
-      if (!isActiveRef.current) return;
-      const customEvent = event as CustomEvent<{ checksum: string }>;
-      if (customEvent.detail?.checksum) {
+      const customEvent = event as CustomEvent<{
+        documentId: string;
+        checksum: string;
+      }>;
+      if (customEvent.detail.documentId === docId) {
         setChecksum(customEvent.detail.checksum);
       }
     };
@@ -225,12 +203,6 @@ export function useDocumentActions(handle: string | null) {
       window.removeEventListener('checksum-change', handleChecksumChange);
     };
   }, []);
-
-  useEffect(() => {
-    if (editorSettings?.autosave && handle) {
-      handleDebouncedUpdate(true);
-    }
-  }, [checksum, editorSettings?.autosave, handle, handleDebouncedUpdate]);
 
   useEffect(() => {
     if (isLoading) return;

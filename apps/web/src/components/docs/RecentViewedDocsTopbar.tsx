@@ -29,11 +29,9 @@ export function RecentViewedDocsTopbar() {
   }, 800);
 
   return (
-    <div className="px-4 min-h-14 border-b-1 flex items-center justify-between flex-wrap gap-2 p-2">
-      <h2 className="lg:text-lg md:text-base text-sm  font-bold truncate">
-        Recently Viewed Documents
-      </h2>
-      <div className="flex items-center gap-2 flex-wrap justify-center">
+    <div className="p-4 gap-4 min-h-14 border-b flex items-center flex-wrap">
+      <h2 className="font-bold truncate">Recently Viewed Documents</h2>
+      <div className="flex items-center gap-2 flex-wrap justify-end ml-auto">
         <div className="border py-2 px-3 rounded-md bg-input flex items-center gap-2">
           <label htmlFor="search">
             <Search className="size-4 text-muted-foreground" />
@@ -55,7 +53,7 @@ export function RecentViewedDocsTopbar() {
             })
           }
         >
-          <SelectTrigger className="rounded-md px-3 py-2 !h-auto">
+          <SelectTrigger className="rounded-md px-3 py-2 h-auto!">
             <ListFilter className="size-4 text-foreground" />
             <SelectValue className="text-sm" />
           </SelectTrigger>
@@ -77,7 +75,7 @@ export function RecentViewedDocsTopbar() {
             })
           }
         >
-          <SelectTrigger className="rounded-md px-3 py-2 !h-auto">
+          <SelectTrigger className="rounded-md px-3 py-2 h-auto!">
             <ListFilter className="size-4 text-foreground" />
             <SelectValue className="text-sm" />
           </SelectTrigger>

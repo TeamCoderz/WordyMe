@@ -15,7 +15,11 @@ export const roleColumns: ColumnDef<SettingsRole>[] = [
     cell: ({ row }) => {
       const role = row.original;
       return (
-        <Link to={`/settings/roles/${role.id}` as any} className="flex items-center gap-3 group">
+        <Link
+          to={`/settings/roles/${role.id}` as any}
+          data-new-tab="true"
+          className="flex items-center gap-3 group"
+        >
           <div className="flex flex-col">
             <span className="text-blue-400 group-hover:underline decoration-blue-400 font-medium">
               {role.name}

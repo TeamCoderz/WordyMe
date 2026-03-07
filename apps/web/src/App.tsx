@@ -7,10 +7,10 @@ import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { ThemeProvider } from '@repo/ui/theme/theme-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 // Import the generated route tree
-import { routeTree } from './routeTree.gen.ts';
+import { routeTree } from './routeTree.gen';
 import { authClient } from '@repo/sdk/auth';
 
-import { useAppStore } from './store';
+import { store } from './store';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
 import '@fontsource/roboto/300.css';
@@ -33,6 +33,7 @@ const router = createRouter({
   context: {
     store: undefined!,
     queryClient: queryClient,
+    isSplitPane: false,
     session: { data: null, isLoading: true },
   },
   defaultPreload: 'intent',
@@ -51,7 +52,6 @@ declare module '@tanstack/react-router' {
 // eslint-disable-next-line react-refresh/only-export-components
 
 export const App = () => {
-  const store = useAppStore();
   const { data: session, isPending, isRefetching } = authClient.useSession();
   return (
     <QueryClientProvider client={queryClient}>

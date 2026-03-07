@@ -249,6 +249,7 @@ export function DocumentRow({
                   e.stopPropagation();
                 }}
                 className="truncate hover:underline"
+                data-new-tab="true"
               >
                 {document.name}
               </Link>

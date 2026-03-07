@@ -29,6 +29,7 @@ export function FavoriteDocumentItem({ document }: FavoriteDocumentItemProps) {
       to="/view/$handle"
       params={{ handle: document.handle ?? document.id }}
       className="p-4 flex gap-3 items-center bg-home-card rounded-md"
+      data-new-tab="true"
     >
       <div className="bg-muted p-2 rounded-md">
         <DynamicIcon name={document.icon || 'file'} className="size-4" />

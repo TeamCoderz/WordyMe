@@ -19,10 +19,6 @@ import {
 } from '@tanstack/react-router';
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from 'react';
 
-import AppSidebarProvider from '@/providers/AppSidebarProvider';
-import { AppHeader } from '@/components/Layout/app-header';
-import { AppSidebar } from '@/components/Layout/app-sidebar';
-import { SidebarInset } from '@repo/ui/components/sidebar';
 import { getSession, useSession } from '@repo/sdk/auth';
 import { RealtimeProvider } from '@/providers/RealtimeProvider';
 
@@ -131,15 +127,7 @@ function NotFoundComponent() {
 function RouteComponent() {
   return (
     <RealtimeProvider>
-      <AppSidebarProvider>
-        <AppHeader />
-        <div className="relative flex flex-1">
-          <AppSidebar />
-          <SidebarInset className="w-0 flex-1">
-            <Outlet />
-          </SidebarInset>
-        </div>
-      </AppSidebarProvider>
+      <Outlet />
       <ActiveSpaceLoader />
       <UserImagesLoader />
       <UserSync />
@@ -216,8 +204,7 @@ function UserSync() {
 function ActiveSpaceLoader() {
   const { data: spaces, isLoading } = useQuery(getAllSpacesQueryOptions);
   const { setActiveSpace } = useActions();
-  const activeSpace = useSelector((state) => state.activeSpace);
-
+  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
   useEffect(() => {
     if (!isLoading && spaces) {
       const freshActiveSpace = spaces?.find((space) => space.id === activeSpace?.id);
@@ -230,7 +217,7 @@ function ActiveSpaceLoader() {
         });
       } else {
         const space = spaces.find((s) => Boolean(s.isContainer) == false);
-        if (!space) return setActiveSpace(null);
+        if (!space) return;
         const path = calculateSpacePath(space.id, spaces as Space[]);
         setActiveSpace({
           ...space,
@@ -256,7 +243,7 @@ function ActiveSpaceLoader() {
         }
       }
     }
-  }, [activeSpace, spaces, isLoading]);
+  }, [activeSpace]);
   return null;
 }
 

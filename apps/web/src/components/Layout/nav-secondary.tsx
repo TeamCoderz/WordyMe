@@ -40,7 +40,7 @@ export function NavSecondary({
             return (
               <SidebarMenuItem key={item.id}>
                 <SidebarMenuButton asChild size="sm" isActive={isActive}>
-                  <Link to={item.url}>
+                  <Link to={item.url} data-new-tab="true">
                     {item.icon && <DynamicIcon name={item.icon} fallback={() => <LoaderIcon />} />}
                     <span>{item.title}</span>
                   </Link>

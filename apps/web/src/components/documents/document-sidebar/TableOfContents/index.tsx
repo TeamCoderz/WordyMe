@@ -143,7 +143,7 @@ export function TableOfContentsList({
   );
 
   return (
-    <div className="flex flex-col text-sm text-muted-foreground p-3 h-full overflow-x-hidden overflow-y-auto scrollbar-thin">
+    <div className="flex flex-col text-sm text-muted-foreground p-3 h-full">
       {tableOfContents.map((item, index) => {
         const [key, text, tag, id] = item;
         const active = selectedKey === key;

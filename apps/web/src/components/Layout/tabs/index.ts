@@ -4,9 +4,15 @@
  */
 
 export { Tab } from './Tab';
-export { TabBar } from './TabBar';
+export { TabSync } from './TabSync';
+export { TabDndProvider } from './TabDndProvider';
+export { TabDropSlot, tabSlotId, parseTabSlotId } from './TabDropSlot';
 export { TabContextMenu } from './TabContextMenu';
+export { PaneTabBar } from './PaneTabBar';
+export { PaneContent } from './PaneContent';
 export { useTabMetadata } from './useTabMetadata';
+export { resolveTabMetadata } from './resolveTabMetadata';
 export type { TabProps } from './Tab';
-export type { TabBarProps } from './TabBar';
 export type { TabContextMenuProps } from './TabContextMenu';
+export type { PaneTabBarProps } from './PaneTabBar';
+export type { ResolvedTabMetadata, TabMetadataQueryOption } from './resolveTabMetadata';

@@ -16,10 +16,12 @@ export const HomeRecentViewsDocuments = () => {
   return (
     <div className="flex flex-col gap-4 @container">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="md:text-xl text-base font-medium">Recent Views</h2>
+        <h2 className="font-medium">Recent Views</h2>
         <div className="flex gap-2">
           <Button variant="outline" asChild>
-            <Link to="/docs/recent-viewed">View more</Link>
+            <Link to="/docs/recent-viewed" data-new-tab="true">
+              View more
+            </Link>
           </Button>
         </div>
       </div>

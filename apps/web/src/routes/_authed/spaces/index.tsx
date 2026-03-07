@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { createFileRoute, Navigate } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 export const Route = createFileRoute('/_authed/spaces/')({
-  component: RouteComponent,
+  beforeLoad: ({ cause }) => {
+    if (cause !== 'preload') {
+      throw redirect({ to: '/spaces/manage' });
+    }
+  },
 });
-
-function RouteComponent() {
-  return <Navigate to="/spaces/manage" />;
-}

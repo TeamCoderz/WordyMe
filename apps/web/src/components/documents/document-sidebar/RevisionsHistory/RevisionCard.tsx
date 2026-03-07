@@ -55,9 +55,10 @@ import {
   useSelector as useEditorSelector,
   useActions as useEditorActions,
 } from '@repo/editor/store';
-import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useLocation } from '@tanstack/react-router';
 import { cn } from '@repo/ui/lib/utils';
 import { getLocalRevisionByDocumentIdQueryOptions } from '@/queries/revisions';
+import { useActions, useSelector } from '@/store';
 
 const formatRevisionLabel = (revision: Revision) => {
   return (
@@ -104,7 +105,9 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
   });
   const { updateEditorStoreState } = useEditorActions();
   const { pathname } = useLocation();
-  const navigate = useNavigate();
+  const activeTabId = useSelector((state) => state.tabs.activeTabId[state.tabs.activePane]);
+  const { updateTab } = useActions();
+
   const saveLocalChanges = async (makeCurrentRevision: boolean) => {
     if (!hasLocalChanges) return;
     const editorState = editor.getEditorState();
@@ -125,16 +128,22 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
     setViewStatus('loading');
     if (pathname.startsWith('/view/')) {
       try {
-        await queryClient.ensureQueryData(getRevisionByIdQueryOptions(revision.id, true));
+        const cloudRevision = await queryClient.ensureQueryData(
+          getRevisionByIdQueryOptions(revision.id, true),
+        );
         setViewStatus('success');
+        if (!activeTabId) return;
+        const event = new CustomEvent('checksum-change', {
+          detail: {
+            documentId: cloudRevision.documentId,
+            checksum: cloudRevision.checksum,
+          },
+        });
         setTimeout(() => {
-          navigate({
-            to: '/view/$handle',
-            params: { handle },
-            search: (prev) => ({
-              ...prev,
-              v: revision.id,
-            }),
+          window.dispatchEvent(event);
+          updateTab(activeTabId, {
+            pathname: `/view/${handle}`,
+            search: { v: revision.id },
           });
         }, 300);
       } catch (error) {
@@ -172,7 +181,10 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
       updateEditorStoreState('checksum', cloudRevision.checksum);
       // Dispatch custom event with checksum
       const event = new CustomEvent('checksum-change', {
-        detail: { checksum: cloudRevision.checksum },
+        detail: {
+          documentId: document?.id ?? '',
+          checksum: cloudRevision.checksum,
+        },
       });
       window.dispatchEvent(event);
       setViewStatus('success');
@@ -218,7 +230,10 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
       updateEditorStoreState('checksum', cloudRevision.checksum);
       // Dispatch custom event with checksum
       const event = new CustomEvent('checksum-change', {
-        detail: { checksum: cloudRevision.checksum },
+        detail: {
+          documentId: document?.id ?? '',
+          checksum: cloudRevision.checksum,
+        },
       });
       window.dispatchEvent(event);
       await saveLocalRevision({ serializedEditorState: serializedData });
@@ -227,14 +242,13 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
           getLocalRevisionByDocumentIdQueryOptions(document?.id ?? '').queryKey,
           { content: JSON.parse(cloudRevision.content) },
         );
-        navigate({
-          to: '/view/$handle',
-          params: { handle },
-          search: (prev) => ({
-            ...prev,
-            v: undefined,
-          }),
-        });
+        if (!activeTabId) return;
+        setTimeout(() => {
+          updateTab(activeTabId, {
+            pathname: `/view/${handle}`,
+            search: { v: undefined },
+          });
+        }, 300);
       }
     } catch (error) {
       console.error(error);

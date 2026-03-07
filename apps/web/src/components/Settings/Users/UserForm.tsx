@@ -140,7 +140,7 @@ function UserForm({ roles, user }: UserFormProps) {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 @md:grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="name"
@@ -190,7 +190,7 @@ function UserForm({ roles, user }: UserFormProps) {
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    className="grid grid-cols-1 @md:grid-cols-2 gap-4"
                   >
                     {roles.map((role) => (
                       <div key={role.id} className="flex items-center space-x-2">
@@ -239,7 +239,7 @@ function UserForm({ roles, user }: UserFormProps) {
                 long.
               </p>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 @md:grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="password"

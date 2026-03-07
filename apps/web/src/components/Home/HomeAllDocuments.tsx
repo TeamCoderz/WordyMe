@@ -63,7 +63,7 @@ export const HomeAllDocuments = ({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-medium">All Documents</h2>
+        <h2 className="font-medium">All Documents</h2>
         <Select
           value={allDocumentsSort}
           onValueChange={(value: SortOptions) => {

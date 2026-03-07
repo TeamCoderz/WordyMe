@@ -40,7 +40,7 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
   const { setInlineCreate } = useActions();
   const { isMobile: isMobileSidebar, setOpenMobile } = useSidebar();
   const clipboardDocument = useSelector((state) => state.documentsClipboard);
-  const activeSpace = useSelector((state) => state.activeSpace);
+  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
   // Mutations for paste functionality
   const copyDocumentMutation = useCopyDocumentMutation({
     spaceId: activeSpace?.id ?? '',

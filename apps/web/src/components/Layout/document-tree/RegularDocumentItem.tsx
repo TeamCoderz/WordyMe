@@ -295,6 +295,7 @@ export function RegularDocumentItem({
                 to="/view/$handle"
                 params={{ handle: document.handle ?? document.id }}
                 data-document-id={document.id}
+                data-new-tab={isActive ? undefined : 'true'}
                 onClick={() => {
                   if (isMobileSidebar) {
                     setOpenMobile(false);
@@ -322,6 +323,7 @@ export function RegularDocumentItem({
                 className="p-2 text-muted-foreground hovert:text-foreground group/control-item"
                 to="/edit/$handle"
                 params={{ handle: document.handle ?? document.id }}
+                data-new-tab={isActive ? undefined : 'true'}
               >
                 <SquarePen className="size-4 group-hover/control-item:text-foreground" />
               </Link>

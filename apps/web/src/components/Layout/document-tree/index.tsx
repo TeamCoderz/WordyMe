@@ -14,9 +14,10 @@ import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
+import { ScrollArea } from '@repo/ui/components/scroll-area';
 
 export function DocumentTree() {
-  const activeSpace = useSelector((s) => s.activeSpace);
+  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
   const spaceId = activeSpace?.id ?? '';
   const { data: documentsData } = useQuery(getAllDocumentsQueryOptions(spaceId!));
 
@@ -174,8 +175,8 @@ export function DocumentTree() {
   );
 
   return (
-    <>
-      <SidebarMenu className="min-h-0 overflow-x-hidden overflow-y-auto scrollbar-thin max-w-full gap-0.5 pr-0.5">
+    <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]>div[style]]:block!">
+      <SidebarMenu className="min-h-0 max-w-full gap-0.5 pr-0.5">
         {isLoading ? (
           <SidebarMenuSkeleton showIcon />
         ) : (
@@ -183,6 +184,6 @@ export function DocumentTree() {
         )}
       </SidebarMenu>
       {!isLoading && <CreateDocumentSection />}
-    </>
+    </ScrollArea>
   );
 }

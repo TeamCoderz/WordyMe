@@ -36,6 +36,7 @@ type NavUserProps = {
 export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: NavUserProps) {
   const { isMobile } = useSidebar();
   const user = useSelector((state) => state.user);
+
   if (variant === 'sidebar') {
     return (
       <SidebarMenu {...props}>
@@ -125,9 +126,10 @@ function MenuContent({
         side={dropdownMenuSide || (isMobile ? 'bottom' : 'right')}
         align="end"
         sideOffset={4}
+        onCloseAutoFocus={(e) => e.preventDefault()}
       >
         <DropdownMenuLabel className="p-0 font-normal" asChild>
-          <Link to="/settings/profile" className="cursor-pointer">
+          <Link to="/settings/profile" className="cursor-pointer" data-new-tab="true">
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar>
                 <AvatarImage
@@ -148,7 +150,7 @@ function MenuContent({
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem className="group" asChild>
-            <Link to="/settings/profile">
+            <Link to="/settings/profile" data-new-tab="true">
               <Settings className="mr-2 group-hover:text-accent-foreground" />
               Settings
             </Link>

@@ -16,7 +16,11 @@ export const userColumns: ColumnDef<SettingsUser>[] = [
     cell: ({ row }) => {
       const user = row.original;
       return (
-        <Link to={`/settings/users/${user.id}` as any} className="flex items-center gap-3 group">
+        <Link
+          to={`/settings/users/${user.id}` as any}
+          data-new-tab="true"
+          className="flex items-center gap-3 group"
+        >
           <Avatar className="h-10 w-10">
             <AvatarImage src={user.avatar || '/placeholder.svg'} alt={user.name} />
             <AvatarFallback className="bg-gray-700 text-gray-300">
@@ -47,6 +51,7 @@ export const userColumns: ColumnDef<SettingsUser>[] = [
       return (
         <Link
           to={`/settings/roles/${role.id}` as any}
+          data-new-tab="true"
           className="text-blue-400 hover:underline decoration-blue-400 font-medium"
         >
           {role.name}

@@ -16,9 +16,9 @@ import {
 } from '@headless-tree/core';
 import { Tree, TreeDragLine } from '@repo/ui/components/tree';
 import { ManageSpacesTableRow } from './TableRow';
-import { arrayToTree, TreeNode } from '@repo/lib/data/tree';
+import { arrayToTree } from '@repo/lib/data/tree';
 import { generatePositionKeysBetween } from '@repo/lib/utils/position';
-import { getAllSpacesQueryOptions, ListSpaceResult, ListSpaceResultItem } from '@/queries/spaces';
+import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
 import { updateDocument } from '@repo/sdk/documents.ts';
 
 export type ManageSpacesTableContentHandle = {
@@ -63,8 +63,7 @@ export const ManageSpacesTableContent = React.forwardRef<
     [onInsertPlaceholder],
   );
 
-  type SpaceTreeNode = TreeNode<ListSpaceResultItem>;
-  const spacesTree = React.useMemo<SpaceTreeNode>(() => {
+  const spacesTree = React.useMemo(() => {
     const filteredSpaces = spaces.filter((s) => !(s.from === 'sidebar' && s.id === 'new-space'));
     if (!rootSpaceId) return arrayToTree(filteredSpaces);
     // Build a subtree starting from rootSpaceId
@@ -180,7 +179,7 @@ export const ManageSpacesTableContent = React.forwardRef<
             queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
               return old?.map((s) => {
                 if (s.id === child.id) {
-                  return data as ListSpaceResultItem;
+                  return data;
                 }
                 return s;
               });
@@ -231,8 +230,8 @@ export const ManageSpacesTableContent = React.forwardRef<
           }
           return (
             node.children
-              ?.filter((child: SpaceTreeNode) => child.id !== 'new')
-              ?.map((child: SpaceTreeNode) => child.id) ?? []
+              ?.filter((child: any) => child.id !== 'new')
+              ?.map((child: any) => child.id) ?? []
           );
         } catch (error) {
           console.error(`Error getting children for ${itemId}:`, error);

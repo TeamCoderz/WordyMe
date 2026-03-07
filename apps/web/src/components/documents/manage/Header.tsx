@@ -21,15 +21,17 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/components/dropdown-menu';
+import { useRouteContext } from '@tanstack/react-router';
 
 export function ManageDocumentsHeader() {
-  const activeSpace = useSelector((state: any) => state.activeSpace);
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
 
   if (!activeSpace) return null;
 
   return (
     <div className="mb-4 flex items-center gap-2">
-      <DynamicIcon name={activeSpace.icon} className="size-4 text-muted-foreground" />
+      <DynamicIcon name={activeSpace.icon ?? undefined} className="size-4 text-muted-foreground" />
       <Breadcrumb>
         <BreadcrumbList>
           {(() => {
