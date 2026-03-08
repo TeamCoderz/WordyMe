@@ -6,6 +6,7 @@
 import { useCallback, useState } from 'react';
 import { PANE_CONTENT_SPLIT_PRIMARY } from './PaneContent';
 import { useActions } from '@/store';
+import { hasUrlInDataTransfer } from './utils';
 
 export interface UseUrlDropOnPaneContentOptions {
   /** Called when a drop is successfully handled; use to reset parent state. */
@@ -29,7 +30,7 @@ export function useUrlDropOnPaneContent(
   const [isDragging, setIsDragging] = useState(false);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    const hasLink = e.dataTransfer.types.includes('text/uri-list');
+    const hasLink = hasUrlInDataTransfer(e.dataTransfer);
     if (!hasLink) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';

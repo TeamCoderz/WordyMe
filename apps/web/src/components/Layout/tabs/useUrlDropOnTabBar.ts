@@ -5,6 +5,7 @@
 
 import { useCallback, useState } from 'react';
 import { useActions } from '@/store';
+import { hasUrlInDataTransfer } from './utils';
 
 /**
  * VSCode-like: open tabs when dropping external URLs (e.g. from address bar,
@@ -24,14 +25,10 @@ export function useUrlDropOnTabBar(
   const { openTab } = useActions();
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
-      const hasLink =
-        e.dataTransfer.types.includes('text/uri-list') ||
-        e.dataTransfer.types.includes('text/plain');
+      const hasLink = hasUrlInDataTransfer(e.dataTransfer);
       if (!hasLink) return;
 
-      const uriList = e.dataTransfer.getData('text/uri-list')?.split('\n')[0]?.trim();
-      const plainText = e.dataTransfer.getData('text/plain')?.trim();
-      const url = uriList || (plainText?.startsWith('http') ? plainText : null);
+      const url = e.dataTransfer.getData('text/uri-list')?.split('\n')[0]?.trim();
       if (url) {
         try {
           if (new URL(url).origin !== window.location.origin) return;
@@ -41,7 +38,7 @@ export function useUrlDropOnTabBar(
       }
 
       e.preventDefault();
-      e.dataTransfer.dropEffect = 'link';
+      e.dataTransfer.dropEffect = 'copy';
       const container = containerRef.current;
       if (container) {
         const tabElements = container.querySelectorAll('[data-tab-id]');

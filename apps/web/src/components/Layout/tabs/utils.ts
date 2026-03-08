@@ -20,3 +20,8 @@ export const matchTabLocation = (
     (tab.hash ?? '') === (hash ?? '')
   );
 };
+
+export const hasUrlInDataTransfer = (dataTransfer: DataTransfer | null) => {
+  if (!dataTransfer) return false;
+  return dataTransfer.types.includes('text/uri-list') || dataTransfer.types.length === 0;
+};

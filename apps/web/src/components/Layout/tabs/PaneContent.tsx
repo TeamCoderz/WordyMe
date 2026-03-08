@@ -10,6 +10,7 @@ import { useUrlDropOnPaneContent } from './useUrlDropOnPaneContent';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
+import { hasUrlInDataTransfer } from './utils';
 
 export const PANE_CONTENT_SPLIT_PRIMARY = 'pane-content-split-primary';
 export const PANE_CONTENT_SPLIT_SECONDARY = 'pane-content-split-secondary';
@@ -50,7 +51,7 @@ export function PaneContent({ pane, children, className }: PaneContentProps) {
   const [isLinkDragging, setIsLinkDragging] = useState(false);
   const [isShiftHeld, setIsShiftHeld] = useState(false);
   const handleDrag = useCallback((e: DragEvent) => {
-    const hasLink = e.dataTransfer?.types.includes('text/uri-list') ?? false;
+    const hasLink = hasUrlInDataTransfer(e.dataTransfer);
     setIsLinkDragging(hasLink);
     setIsShiftHeld(e.shiftKey);
   }, []);
