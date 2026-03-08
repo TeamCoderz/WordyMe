@@ -19,7 +19,7 @@ export default function SettingsNav() {
   const activeSublinkClass = 'text-foreground rounded-md bg-accent/50';
 
   return (
-    <nav className="lg:sticky lg:top-20 h-fit space-y-6">
+    <nav className="@lg:sticky @lg:top-20 h-fit space-y-6">
       <div>
         <Link
           to="/settings/profile"

@@ -269,9 +269,9 @@ function ToolbarPlugin() {
 
   return (
     <>
-      <div className="sticky z-50 w-full overflow-hidden print:hidden border-b top-[calc(--spacing(14)+1px)] h-14 flex items-center">
-        <div className="editor-toolbar w-full h-full px-4 py-2 bg-background print:hidden flex justify-between gap-2 sm:gap-6">
-          <div className="flex flex-1 justify-between items-center gap-2 sm:gap-6 max-w-250 mx-auto">
+      <div className="sticky z-50 w-full print:hidden border-b top-0 h-14 flex items-center">
+        <div className="editor-toolbar w-full h-full px-4 py-2 bg-background print:hidden flex justify-between gap-2 @md:gap-6">
+          <div className="flex flex-1 justify-between items-center gap-2 @md:gap-6 max-w-250 mx-auto">
             <div className="flex self-start gap-2">
               <ToggleGroup type="single" variant="outline" value="" className="bg-background">
                 <ToggleGroupItem

@@ -12,7 +12,6 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import { useEffect } from 'react';
 import invariant from '@repo/shared/invariant';
 import { registerAutoLink, createLinkMatcherWithRegExp } from './LexicalAutoLinkExtension';
-import { useActions } from '@repo/editor/store';
 
 function useAutoLink(
   editor: LexicalEditor,
@@ -77,8 +76,6 @@ export function AutoLinkPlugin() {
 
 export function LinkNavigatePlugin() {
   const [editor] = useLexicalComposerContext();
-  const { navigate } = useActions();
-
   useEffect(() => {
     return editor.registerMutationListener(LinkNode, (mutations) => {
       for (const [key, mutation] of mutations) {
@@ -87,11 +84,7 @@ export function LinkNavigatePlugin() {
           if (element) {
             const href = element.getAttribute('href');
             if (href?.startsWith(location.origin) || href?.startsWith('/')) {
-              element.addEventListener('click', (event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                navigate(href.replace(location.origin, ''));
-              });
+              element.dataset.newTab = 'true';
             }
           }
         }

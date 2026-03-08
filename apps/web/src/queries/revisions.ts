@@ -269,7 +269,7 @@ export function getLocalRevisionByDocumentIdQueryOptions(
         const localDocument = await getLocalDocument(documentId);
         if (!localDocument) throw new Error('No local document found');
         return {
-          content: localDocument,
+          content: JSON.stringify(localDocument),
         };
       } catch (error) {
         const revision = await getRevisionByIdQueryOptions(head, true).queryFn();

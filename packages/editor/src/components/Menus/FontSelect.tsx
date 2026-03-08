@@ -164,12 +164,12 @@ export default function FontSelect() {
     <div className="flex gap-2">
       <DropDown
         label={
-          <span className="flex items-center gap-1 md:gap-2">
+          <span className="flex items-center gap-1 @md:gap-2">
             <span style={{ fontFamily }}>Aa</span>
             <span className="menuitem-text">{currentFontFamily?.label}</span>
           </span>
         }
-        className="[&_.menuitem-text]:hidden [&_.menuitem-text]:sm:block"
+        className="[&_.menuitem-text]:hidden [&_.menuitem-text]:@md:block"
         contentClassName="w-50"
         value={fontFamily}
         options={fontFamilyOptions}

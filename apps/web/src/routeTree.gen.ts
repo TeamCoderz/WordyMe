@@ -14,6 +14,7 @@ import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as UnauthedSignupRouteImport } from './routes/_unauthed/signup'
 import { Route as UnauthedLoginRouteImport } from './routes/_unauthed/login'
+import { Route as AuthedAttachmentRouteImport } from './routes/_authed/attachment'
 import { Route as AuthedSettingsRouteRouteImport } from './routes/_authed/settings/route'
 import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index'
 import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
@@ -50,6 +51,11 @@ const UnauthedLoginRoute = UnauthedLoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => UnauthedRoute,
+} as any)
+const AuthedAttachmentRoute = AuthedAttachmentRouteImport.update({
+  id: '/attachment',
+  path: '/attachment',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedSettingsRouteRoute = AuthedSettingsRouteRouteImport.update({
   id: '/settings',
@@ -119,10 +125,11 @@ const AuthedDocsFavoritesRoute = AuthedDocsFavoritesRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/': typeof AuthedIndexRoute
   '/settings': typeof AuthedSettingsRouteRouteWithChildren
+  '/attachment': typeof AuthedAttachmentRoute
   '/login': typeof UnauthedLoginRoute
   '/signup': typeof UnauthedSignupRoute
-  '/': typeof AuthedIndexRoute
   '/docs/favorites': typeof AuthedDocsFavoritesRoute
   '/docs/manage': typeof AuthedDocsManageRoute
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
@@ -132,14 +139,15 @@ export interface FileRoutesByFullPath {
   '/spaces/favorites': typeof AuthedSpacesFavoritesRoute
   '/spaces/manage': typeof AuthedSpacesManageRoute
   '/view/$handle': typeof AuthedViewHandleRoute
-  '/docs': typeof AuthedDocsIndexRoute
+  '/docs/': typeof AuthedDocsIndexRoute
   '/settings/': typeof AuthedSettingsIndexRoute
-  '/spaces': typeof AuthedSpacesIndexRoute
+  '/spaces/': typeof AuthedSpacesIndexRoute
 }
 export interface FileRoutesByTo {
+  '/': typeof AuthedIndexRoute
+  '/attachment': typeof AuthedAttachmentRoute
   '/login': typeof UnauthedLoginRoute
   '/signup': typeof UnauthedSignupRoute
-  '/': typeof AuthedIndexRoute
   '/docs/favorites': typeof AuthedDocsFavoritesRoute
   '/docs/manage': typeof AuthedDocsManageRoute
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/_unauthed': typeof UnauthedRouteWithChildren
   '/_authed/settings': typeof AuthedSettingsRouteRouteWithChildren
+  '/_authed/attachment': typeof AuthedAttachmentRoute
   '/_unauthed/login': typeof UnauthedLoginRoute
   '/_unauthed/signup': typeof UnauthedSignupRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -177,10 +186,11 @@ export interface FileRoutesById {
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
+    | '/'
     | '/settings'
+    | '/attachment'
     | '/login'
     | '/signup'
-    | '/'
     | '/docs/favorites'
     | '/docs/manage'
     | '/docs/recent-viewed'
@@ -190,14 +200,15 @@ export interface FileRouteTypes {
     | '/spaces/favorites'
     | '/spaces/manage'
     | '/view/$handle'
-    | '/docs'
+    | '/docs/'
     | '/settings/'
-    | '/spaces'
+    | '/spaces/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/'
+    | '/attachment'
     | '/login'
     | '/signup'
-    | '/'
     | '/docs/favorites'
     | '/docs/manage'
     | '/docs/recent-viewed'
@@ -215,6 +226,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/_unauthed'
     | '/_authed/settings'
+    | '/_authed/attachment'
     | '/_unauthed/login'
     | '/_unauthed/signup'
     | '/_authed/'
@@ -242,14 +254,14 @@ declare module '@tanstack/react-router' {
     '/_unauthed': {
       id: '/_unauthed'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof UnauthedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed': {
       id: '/_authed'
       path: ''
-      fullPath: ''
+      fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -274,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UnauthedLoginRouteImport
       parentRoute: typeof UnauthedRoute
     }
+    '/_authed/attachment': {
+      id: '/_authed/attachment'
+      path: '/attachment'
+      fullPath: '/attachment'
+      preLoaderRoute: typeof AuthedAttachmentRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/settings': {
       id: '/_authed/settings'
       path: '/settings'
@@ -284,7 +303,7 @@ declare module '@tanstack/react-router' {
     '/_authed/spaces/': {
       id: '/_authed/spaces/'
       path: '/spaces'
-      fullPath: '/spaces'
+      fullPath: '/spaces/'
       preLoaderRoute: typeof AuthedSpacesIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -298,7 +317,7 @@ declare module '@tanstack/react-router' {
     '/_authed/docs/': {
       id: '/_authed/docs/'
       path: '/docs'
-      fullPath: '/docs'
+      fullPath: '/docs/'
       preLoaderRoute: typeof AuthedDocsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
@@ -385,6 +404,7 @@ const AuthedSettingsRouteRouteWithChildren =
 
 interface AuthedRouteChildren {
   AuthedSettingsRouteRoute: typeof AuthedSettingsRouteRouteWithChildren
+  AuthedAttachmentRoute: typeof AuthedAttachmentRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedDocsFavoritesRoute: typeof AuthedDocsFavoritesRoute
   AuthedDocsManageRoute: typeof AuthedDocsManageRoute
@@ -399,6 +419,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedSettingsRouteRoute: AuthedSettingsRouteRouteWithChildren,
+  AuthedAttachmentRoute: AuthedAttachmentRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedDocsFavoritesRoute: AuthedDocsFavoritesRoute,
   AuthedDocsManageRoute: AuthedDocsManageRoute,

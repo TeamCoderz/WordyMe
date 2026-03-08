@@ -3,42 +3,63 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useMemo, type PropsWithChildren } from 'react';
+import { useCallback, useMemo, useState, type PropsWithChildren } from 'react';
 import { SidebarProvider } from '@repo/ui/components/sidebar';
 import { cn } from '@repo/ui/lib/utils';
-import { useSelector } from '@/store';
+import { useSelector, useActions } from '@/store';
 
 type SidebarProviderProps = React.ComponentProps<typeof SidebarProvider>;
+
+function AppSidebarInner({
+  defaultOpen,
+  children,
+  className,
+  ...rest
+}: PropsWithChildren<SidebarProviderProps & { defaultOpen: boolean }>) {
+  const appSidebar = useSelector((state) => state.appSidebar);
+  const { setAppSidebarOpen } = useActions();
+  const [open, setOpen] = useState(defaultOpen);
+
+  const handleOpenChange = useCallback(
+    (newOpen: boolean) => {
+      setOpen(newOpen);
+      if (appSidebar === 'remember') setAppSidebarOpen(newOpen);
+    },
+    [appSidebar, setAppSidebarOpen],
+  );
+
+  return (
+    <SidebarProvider
+      className={cn('group/app-sidebar flex flex-col', className)}
+      defaultOpen={defaultOpen}
+      {...rest}
+      open={open}
+      onOpenChange={handleOpenChange}
+    >
+      {children}
+    </SidebarProvider>
+  );
+}
 
 export function AppSidebarProvider({
   children,
   className,
   ...rest
 }: PropsWithChildren<SidebarProviderProps>) {
-  const sidebar = useSelector((state) => state.sidebar);
+  const appSidebar = useSelector((state) => state.appSidebar);
+  const appSidebarOpen = useSelector((state) => state.appSidebarOpen);
 
   const defaultOpen = useMemo(() => {
-    if (sidebar === 'expanded') return true;
-    if (sidebar === 'collapsed') return false;
+    if (appSidebar === 'expanded') return true;
+    if (appSidebar === 'collapsed') return false;
+    if (appSidebar === 'remember') return appSidebarOpen;
+    return true;
+  }, [appSidebar, appSidebarOpen]);
 
-    if (typeof document === 'undefined') return true;
-
-    const match = document.cookie.match(/(?:^|; )sidebar_state=([^;]*)/);
-    if (!match) return true;
-    try {
-      return decodeURIComponent(match[1]) === 'true';
-    } catch {
-      return match[1] === 'true';
-    }
-  }, [sidebar]);
   return (
-    <SidebarProvider
-      className={cn('group/app-sidebar flex flex-col', className)}
-      defaultOpen={defaultOpen}
-      {...rest}
-    >
+    <AppSidebarInner key={appSidebar} defaultOpen={defaultOpen} className={className} {...rest}>
       {children}
-    </SidebarProvider>
+    </AppSidebarInner>
   );
 }
 

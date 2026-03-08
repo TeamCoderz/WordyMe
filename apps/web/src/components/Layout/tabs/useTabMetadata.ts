@@ -1,72 +1,43 @@
-/**
- * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
- * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { getDocumentByHandleQueryOptions } from '@/queries/documents';
-import type { TabMetadata } from '@repo/types';
+import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query';
+import type { Tab, TabMetadata } from '@repo/types';
+import { useEffect } from 'react';
+import { useSelector } from '@/store';
+import { resolveTabMetadata } from './resolveTabMetadata';
 
 /**
- * Static metadata map for fixed routes
+ * Hook to get resolved metadata for a tab.
+ *
+ * If a dynamic query option was registered for this tab (via
+ * `registerTabMetadataQuery`), the query runs reactively and its result
+ * overrides the stored metadata. Otherwise, the stored metadata on the tab
+ * is returned as-is.
+ *
+ * If the metadata query fails (e.g. entity was deleted), the tab is
+ * automatically closed.
+ *
+ * @example
+ * // Inside the <Tab /> component:
+ * const { title, icon } = useTabMetadata(tab);
  */
-const STATIC_TAB_METADATA: Record<string, TabMetadata> = {
-  '/': { title: 'Home', icon: 'home' },
-  '/docs/manage': { title: 'Manage Docs', icon: 'folder-open' },
-  '/docs/favorites': { title: 'Favorite Docs', icon: 'star' },
-  '/docs/recent-viewed': { title: 'Recent Docs', icon: 'clock' },
-  '/spaces/manage': { title: 'Manage Spaces', icon: 'briefcase' },
-  '/spaces/favorites': { title: 'Favorite Spaces', icon: 'star' },
-};
+export function useTabMetadata(tab: Tab): TabMetadata {
+  const resolved = resolveTabMetadata(tab.pathname, tab.search);
+  const { closeTab } = useSelector((state) => state.tabsActions);
 
-/**
- * Get static metadata for settings routes
- */
-function getSettingsMetadata(_pathname: string): TabMetadata {
-  return { title: 'Settings', icon: 'settings' };
-}
-
-/**
- * Extract document handle from /edit/{handle} or /view/{handle} pathname
- */
-function getDocumentHandle(pathname: string): string | null {
-  const match = pathname.match(/^\/(edit|view)\/(.+)$/);
-  return match ? decodeURIComponent(match[2]) : null;
-}
-
-/**
- * Hook to get computed metadata for a tab based on its pathname
- */
-export function useTabMetadata(pathname: string): TabMetadata {
-  const documentHandle = getDocumentHandle(pathname);
-
-  const { data: document } = useQuery({
-    ...getDocumentByHandleQueryOptions(documentHandle ?? ''),
+  const { data, isError } = useQuery({
+    ...resolved.queryOption,
+    queryKey: resolved.queryOption?.queryKey ?? ['tab-metadata-noop', tab.id],
+    queryFn: resolved.queryOption?.queryFn ?? skipToken,
     placeholderData: keepPreviousData,
-    enabled: !!documentHandle,
+    retry: 1,
   });
 
-  // Check static routes first
-  if (STATIC_TAB_METADATA[pathname]) {
-    return STATIC_TAB_METADATA[pathname];
-  }
-
-  // Check settings routes
-  if (pathname.startsWith('/settings')) {
-    return getSettingsMetadata(pathname);
-  }
-
-  // Check document routes
-  if (documentHandle) {
-    return {
-      title: document?.name ?? '',
-      icon: document?.icon ?? null,
-    };
-  }
-
-  // Default fallback
-  return {
-    title: '',
-    icon: null,
-  };
+  // Auto-close the tab when the backing entity no longer exists / query errors
+  useEffect(() => {
+    if (isError && resolved.queryOption) {
+      closeTab(tab.id);
+    }
+  }, [isError, resolved.queryOption, tab.id]);
+  return resolved.queryOption
+    ? ((data as TabMetadata | undefined) ?? resolved.metadata)
+    : resolved.metadata;
 }

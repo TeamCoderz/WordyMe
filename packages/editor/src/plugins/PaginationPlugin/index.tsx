@@ -14,6 +14,7 @@ import {
   $getRoot,
   $getSelection,
   $insertNodes,
+  $isLeafNode,
   $isRangeSelection,
   $isRootNode,
   COMMAND_PRIORITY_EDITOR,
@@ -106,7 +107,7 @@ export default function PaginationPlugin() {
   const updateZoom = useCallback(() => {
     const rootElement = editor.getRootElement();
     if (!rootElement) return;
-    const PAGE_WIDTH = parseInt(document.documentElement.style.getPropertyValue('--page-width'));
+    const PAGE_WIDTH = parseInt(rootElement.style.getPropertyValue('--page-width'));
     if (!PAGE_WIDTH) return;
     const prevZoom = rootElement.style.zoom || '1';
     const rootWidth = rootElement.getBoundingClientRect().width;
@@ -122,34 +123,33 @@ export default function PaginationPlugin() {
       if (!pageSetupNode) return;
       const pageSetup = pageSetupNode.getPageSetup();
       const { isPaged, pageSize, orientation, margins } = pageSetup;
-      const documentElement = document.documentElement;
+      const rootElement = editor.getRootElement();
+      if (!rootElement) return;
       if (isPaged) {
-        documentElement.dataset.paged = 'true';
+        rootElement.dataset.paged = 'true';
         const pageWidth =
           PAGE_SIZES[pageSize][orientation === 'portrait' ? 'width' : 'height'] + 'px';
         const pageHeight =
           PAGE_SIZES[pageSize][orientation === 'portrait' ? 'height' : 'width'] + 'px';
-        documentElement.style.setProperty('--page-width', pageWidth);
-        documentElement.style.setProperty('--page-height', pageHeight);
+        rootElement.style.setProperty('--page-width', pageWidth);
+        rootElement.style.setProperty('--page-height', pageHeight);
         const marginTop = (margins.top * 96).toFixed(1) + 'px';
         const marginRight = (margins.right * 96).toFixed(1) + 'px';
         const marginBottom = (margins.bottom * 96).toFixed(1) + 'px';
         const marginLeft = (margins.left * 96).toFixed(1) + 'px';
-        documentElement.style.setProperty('--page-margin-top', marginTop);
-        documentElement.style.setProperty('--page-margin-right', marginRight);
-        documentElement.style.setProperty('--page-margin-bottom', marginBottom);
-        documentElement.style.setProperty('--page-margin-left', marginLeft);
+        rootElement.style.setProperty('--page-margin-top', marginTop);
+        rootElement.style.setProperty('--page-margin-right', marginRight);
+        rootElement.style.setProperty('--page-margin-bottom', marginBottom);
+        rootElement.style.setProperty('--page-margin-left', marginLeft);
         updateZoom();
       } else {
-        documentElement.dataset.paged = 'false';
-        documentElement.style.removeProperty('--page-width');
-        documentElement.style.removeProperty('--page-height');
-        documentElement.style.removeProperty('--page-margin-top');
-        documentElement.style.removeProperty('--page-margin-right');
-        documentElement.style.removeProperty('--page-margin-bottom');
-        documentElement.style.removeProperty('--page-margin-left');
-        const rootElement = editor.getRootElement();
-        if (!rootElement) return;
+        rootElement.dataset.paged = 'false';
+        rootElement.style.removeProperty('--page-width');
+        rootElement.style.removeProperty('--page-height');
+        rootElement.style.removeProperty('--page-margin-top');
+        rootElement.style.removeProperty('--page-margin-right');
+        rootElement.style.removeProperty('--page-margin-bottom');
+        rootElement.style.removeProperty('--page-margin-left');
         rootElement.style.zoom = '';
       }
     });
@@ -423,7 +423,7 @@ export default function PaginationPlugin() {
 
     const pageObserver = new ResizeObserver((entries) => {
       const pageContent = entries[0].target as HTMLElement;
-      const isPaged = document.documentElement.dataset.paged === 'true';
+      const isPaged = rootElement.dataset.paged === 'true';
       if (!isPaged) return;
       editor.read(() => {
         const pageContentNode = $getNearestNodeFromDOMNode(pageContent);
@@ -472,7 +472,11 @@ export default function PaginationPlugin() {
         } else if ($isPageFooterNode(child)) {
           footer = child;
         } else {
-          strayChildren.push(child);
+          if ($isLeafNode(child)) {
+            strayChildren.push($wrapNodeInElement(child, $createParagraphNode));
+          } else {
+            strayChildren.push(child);
+          }
         }
       }
 
@@ -490,6 +494,8 @@ export default function PaginationPlugin() {
       }
       if (strayChildren.length > 0) {
         content.append(...strayChildren);
+      } else {
+        content.append($createParagraphNode());
       }
       if (!footer) {
         const footerVariant =
@@ -850,6 +856,37 @@ export default function PaginationPlugin() {
       },
     );
 
+    // Copy page properties to :root before printing so @page can use them
+    const PAGE_PROPS = [
+      '--page-width',
+      '--page-height',
+      '--page-margin-top',
+      '--page-margin-right',
+      '--page-margin-bottom',
+      '--page-margin-left',
+    ];
+
+    const handleBeforePrint = () => {
+      if (rootElement.dataset.paged !== 'true') return;
+      // Skip if this editor is inside a print-hidden container (e.g. the secondary split pane).
+      // Only the visible (primary) pane should set @page properties on :root.
+      const hiddenAncestor = rootElement.closest(`.${CSS.escape('print:hidden!')}`);
+      if (hiddenAncestor) return;
+      for (const prop of PAGE_PROPS) {
+        const val = rootElement.style.getPropertyValue(prop);
+        if (val) document.documentElement.style.setProperty(prop, val);
+      }
+    };
+
+    const handleAfterPrint = () => {
+      for (const prop of PAGE_PROPS) {
+        document.documentElement.style.removeProperty(prop);
+      }
+    };
+
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+
     return () => {
       rootObserver.disconnect();
       pageObserver.disconnect();
@@ -862,6 +899,8 @@ export default function PaginationPlugin() {
       removePageContentTransform();
       removeMutationListeners();
       removeUpdateListener();
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
     };
   }, [
     editor,

@@ -33,7 +33,7 @@ export const HomeFavoriteDocuments = ({
   return (
     <div className="flex flex-col gap-4 @container">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="md:text-xl text-base font-medium">Favorite Documents</h2>
+        <h2 className="font-medium">Favorite Documents</h2>
         <div className="flex gap-2">
           <Select
             value={favoriteDocumentsSort}
@@ -53,7 +53,9 @@ export const HomeFavoriteDocuments = ({
             </SelectContent>
           </Select>
           <Button variant="outline" asChild>
-            <Link to="/docs/favorites">View more</Link>
+            <Link to="/docs/favorites" data-new-tab="true">
+              View more
+            </Link>
           </Button>
         </div>
       </div>

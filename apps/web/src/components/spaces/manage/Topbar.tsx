@@ -19,9 +19,9 @@ export function ManageSpacesTopbar({
 }: ManageSpacesTopbarProps) {
   return (
     <>
-      <div className="px-4 min-h-14 border-b flex items-center justify-between flex-wrap py-1">
-        <h2 className="text-lg font-bold">Manage Spaces</h2>
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="p-4 gap-2 min-h-14 border-b flex items-center justify-between flex-wrap">
+        <h2 className="font-bold truncate">Manage Spaces</h2>
+        <div className="flex items-center justify-end ml-auto gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"

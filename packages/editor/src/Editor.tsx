@@ -54,8 +54,9 @@ import { serializeEditorState } from '@repo/editor/utils/editorState';
 import SelectionHighlightPlugin from '@repo/editor/plugins/SelectionHighlightPlugin';
 
 export const Editor: React.FC<{
+  documentId?: string;
   onChange?: (editorState: EditorState, editor: LexicalEditor, tags: Set<string>) => void;
-}> = ({ onChange }) => {
+}> = ({ documentId, onChange }) => {
   const [editor] = useLexicalComposerContext();
   const isPaged = useSelector((state) => state.pageSetup?.isPaged);
   const { updateEditorStoreState } = useActions();
@@ -63,11 +64,13 @@ export const Editor: React.FC<{
     (serializedEditorState: SerializedEditorState) => {
       const checksum = computeChecksum(serializedEditorState);
       updateEditorStoreState('checksum', checksum);
-      // Dispatch custom event with checksum
-      const event = new CustomEvent('checksum-change', {
-        detail: { checksum },
-      });
-      window.dispatchEvent(event);
+      if (documentId) {
+        // Dispatch custom event with checksum
+        const event = new CustomEvent('checksum-change', {
+          detail: { documentId: documentId, checksum },
+        });
+        window.dispatchEvent(event);
+      }
     },
     [updateEditorStoreState],
   );
@@ -93,16 +96,19 @@ export const Editor: React.FC<{
 
   return (
     <div
-      className={cn('editor-container flex flex-col w-0 flex-1 h-full relative text-base', {
-        'scale-medium': isPaged,
-      })}
+      className={cn(
+        'editor-container @container flex flex-col w-0 flex-1 h-full min-h-[stretch] relative text-base',
+        {
+          'scale-medium': isPaged,
+        },
+      )}
     >
       <ToolbarPlugin />
       <RichTextPlugin
         contentEditable={
           <ContextMenuPlugin>
             <ContentEditable
-              className="editor-input p-6 md:p-8 w-full flex-1 self-stretch"
+              className="editor-input p-6 @md:p-8 w-full flex-1 self-stretch"
               ariaLabel="editor input"
             />
           </ContextMenuPlugin>

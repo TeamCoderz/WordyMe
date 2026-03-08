@@ -8,10 +8,12 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
 import { useActions, useSelector } from '@/store';
 import { useCallback, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import type { Tab } from '@repo/types';
 import {
   X,
@@ -22,26 +24,51 @@ import {
   FileOutputIcon,
   EyeIcon,
   PencilIcon,
+  PanelRightIcon,
+  PanelRightCloseIcon,
+  DownloadIcon,
+  SquareSplitVerticalIcon,
+  SquareSplitHorizontalIcon,
+  PanelBottomIcon,
+  PanelTopIcon,
+  PanelLeftIcon,
+  PanelTopCloseIcon,
 } from '@repo/ui/components/icons';
-import { useDocumentActions } from './useDocumentActions';
+import { useDocumentActions } from '@/components/documents/useDocumentActions';
+import { IS_APPLE } from '@repo/shared/environment';
+import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 import { useNavigate } from '@tanstack/react-router';
+
+const SHORTCUTS = {
+  close: IS_APPLE ? '⌘⌥W' : 'Ctrl+Alt+W',
+  save: IS_APPLE ? '⌘S' : 'Ctrl+S',
+  saveAlt: IS_APPLE ? '⌘⇧S' : 'Ctrl+Shift+S',
+} as const;
 
 export interface TabContextMenuProps {
   tab: Tab;
+  pane: 'primary' | 'secondary';
   children: ReactNode;
 }
 
-export function TabContextMenu({ tab, children }: TabContextMenuProps) {
-  const { closeTab, closeOtherTabs, closeAllTabs } = useActions();
+export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
+  const { openTab, closeTab, closeOtherTabs, closeAllTabs, moveTabToPane, closeSplit } =
+    useActions();
   const navigate = useNavigate();
-  const isActive = useSelector((state) => state.tabs.activeTabId === tab.id);
-  const tabs = useSelector((state) => state.tabs);
-  const hasMultipleTabs = tabs.tabs.length > 1;
+  const isActive = useSelector((state) => state.tabs.activeTabId[pane] === tab.id);
+  const hasMultipleTabs = useSelector((state) => state.tabs.primaryTabIds.length > 1);
+  const hasSplit = useSelector((state) => state.tabs.secondaryTabIds.length > 0);
+  const isLastTab = useSelector((state) => state.tabs.tabList.length === 1);
 
+  const isPortrait = useMediaQuery('(orientation: portrait)');
+  const isHomeTab = tab.pathname === '/';
   const isEditTab = tab.pathname.startsWith('/edit/');
   const isViewTab = tab.pathname.startsWith('/view/');
   const isDocumentTab = isEditTab || isViewTab;
-  const documentHandle = isDocumentTab ? tab.pathname.split('/').pop()! : null;
+  const isAttachmentTab = tab.pathname === '/attachment';
+  const documentHandle = isDocumentTab
+    ? decodeURIComponent(tab.pathname.split('/').pop() ?? '')
+    : null;
 
   const {
     isDisabled: isSaveDisabled,
@@ -57,19 +84,56 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
   // Close this tab
   const handleClose = useCallback(() => {
     closeTab(tab.id);
-    // Navigation is handled by TabBar effect on activeTabId change
   }, [tab.id, closeTab]);
 
-  // Close other tabs
+  // Close other tabs in the same pane
   const handleCloseOthers = useCallback(() => {
     closeOtherTabs(tab.id);
   }, [tab.id, closeOtherTabs]);
 
-  // Close all tabs
+  // Close all tabs in all panes
   const handleCloseAll = useCallback(() => {
     closeAllTabs();
-    // Navigation is handled by TabBar effect on activeTabId change
   }, [closeAllTabs]);
+
+  const targetPane = pane === 'primary' ? 'secondary' : 'primary';
+  const splitLabel =
+    pane === 'primary'
+      ? isPortrait
+        ? 'Split Bottom'
+        : 'Split Right'
+      : isPortrait
+        ? 'Split Top'
+        : 'Split Left';
+
+  const handleOpenInSplit = useCallback(() => {
+    openTab({
+      pathname: tab.pathname,
+      search: tab.search,
+      hash: tab.hash,
+      pane: targetPane,
+    });
+  }, [tab, openTab, targetPane]);
+
+  const moveLabel =
+    pane === 'primary'
+      ? isPortrait
+        ? 'Move to Bottom'
+        : 'Move to Right'
+      : isPortrait
+        ? 'Move to Top'
+        : 'Move to Left';
+
+  // Move to the other pane
+  const handleMoveToOtherPane = useCallback(() => {
+    const targetPane = pane === 'primary' ? 'secondary' : 'primary';
+    moveTabToPane(tab.id, targetPane);
+  }, [tab.id, pane, moveTabToPane]);
+
+  // Close the split (merge secondary tabs into primary)
+  const handleCloseSplit = useCallback(() => {
+    closeSplit();
+  }, [closeSplit]);
 
   // Copy link with search params and hash
   const handleCopyPath = useCallback(() => {
@@ -82,28 +146,49 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
 
   const handleView = useCallback(() => {
     if (!isEditTab || !documentHandle) return;
-    navigate({
-      to: '/view/$handle',
-      params: { handle: documentHandle },
-    });
+    navigate({ to: '/view/$handle', params: { handle: documentHandle } });
   }, [isEditTab, documentHandle, navigate]);
 
   const handleEdit = useCallback(() => {
     if (!isViewTab || !documentHandle) return;
-    navigate({
-      to: '/edit/$handle',
-      params: { handle: documentHandle },
-    });
+    navigate({ to: '/edit/$handle', params: { handle: documentHandle } });
   }, [isViewTab, documentHandle, navigate]);
+
+  const handleAttachmentDownload = useCallback(async () => {
+    const url = tab.search?.url as string | undefined;
+    const name = (tab.search?.name as string) ?? 'attachment';
+    if (!url) {
+      toast.error('Unable to download: No URL available');
+      return;
+    }
+    const toastId = toast.loading(`Downloading ${name}...`);
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch file');
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+      toast.success('Download started!', { id: toastId });
+    } catch {
+      toast.error('Failed to download attachment', { id: toastId });
+    }
+  }, [tab.search?.url, tab.search?.name]);
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-56">
         {/* Close actions */}
-        <ContextMenuItem onClick={handleClose}>
+        <ContextMenuItem onClick={handleClose} disabled={isHomeTab && isLastTab}>
           <X className="mr-2 size-4" />
           Close
+          <ContextMenuShortcut>{SHORTCUTS.close}</ContextMenuShortcut>
         </ContextMenuItem>
         {hasMultipleTabs && (
           <ContextMenuItem onClick={handleCloseOthers}>
@@ -111,7 +196,7 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
             Close Others
           </ContextMenuItem>
         )}
-        <ContextMenuItem onClick={handleCloseAll}>
+        <ContextMenuItem onClick={handleCloseAll} disabled={isHomeTab && isLastTab}>
           <XCircle className="mr-2 size-4" />
           Close All
         </ContextMenuItem>
@@ -124,6 +209,42 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
           Copy Link
         </ContextMenuItem>
 
+        <ContextMenuSeparator />
+
+        {/* Pane actions */}
+        <ContextMenuItem onClick={handleOpenInSplit}>
+          {isPortrait ? (
+            <SquareSplitVerticalIcon className="mr-2 size-4" />
+          ) : (
+            <SquareSplitHorizontalIcon className="mr-2 size-4" />
+          )}
+          {splitLabel}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleMoveToOtherPane}>
+          {isPortrait ? (
+            pane === 'primary' ? (
+              <PanelBottomIcon className="mr-2 size-4" />
+            ) : (
+              <PanelTopIcon className="mr-2 size-4" />
+            )
+          ) : pane === 'primary' ? (
+            <PanelRightIcon className="mr-2 size-4" />
+          ) : (
+            <PanelLeftIcon className="mr-2 size-4" />
+          )}
+          {moveLabel}
+        </ContextMenuItem>
+        {hasSplit && (
+          <ContextMenuItem onClick={handleCloseSplit}>
+            {isPortrait ? (
+              <PanelTopCloseIcon className="mr-2 size-4" />
+            ) : (
+              <PanelRightCloseIcon className="mr-2 size-4" />
+            )}
+            Close Split View
+          </ContextMenuItem>
+        )}
+
         {isDocumentTab && (
           <>
             <ContextMenuSeparator />
@@ -133,6 +254,7 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
             >
               <SaveIcon className="mr-2 size-4" />
               Save
+              <ContextMenuShortcut>{SHORTCUTS.save}</ContextMenuShortcut>
             </ContextMenuItem>
 
             {editorSettings?.keepPreviousRevision && !editorSettings?.autosave && (
@@ -141,7 +263,8 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
                 onClick={handleSaveAndOverwrite}
               >
                 <SaveIcon className="mr-2 size-4" />
-                Save and overwrite
+                Overwrite
+                <ContextMenuShortcut>{SHORTCUTS.saveAlt}</ContextMenuShortcut>
               </ContextMenuItem>
             )}
 
@@ -151,7 +274,8 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
                 onClick={handleSaveAsNewRevision}
               >
                 <SaveIcon className="mr-2 size-4" />
-                Save as new revision
+                New Revision
+                <ContextMenuShortcut>{SHORTCUTS.saveAlt}</ContextMenuShortcut>
               </ContextMenuItem>
             )}
 
@@ -181,6 +305,12 @@ export function TabContextMenu({ tab, children }: TabContextMenuProps) {
               Print
             </ContextMenuItem>
           </>
+        )}
+        {isAttachmentTab && (
+          <ContextMenuItem onClick={handleAttachmentDownload}>
+            <DownloadIcon className="mr-2 size-4" />
+            Download
+          </ContextMenuItem>
         )}
       </ContextMenuContent>
     </ContextMenu>

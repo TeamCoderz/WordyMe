@@ -4,7 +4,7 @@
  */
 
 import * as React from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouteContext } from '@tanstack/react-router';
 import z from 'zod';
 import { ManageDocumentsTopbar } from '@/components/documents/manage/Topbar';
 import { ManageDocumentsTable } from '@/components/documents/manage/Table';
@@ -27,7 +27,9 @@ function ManageDocumentsPage() {
   const searchParams = Route.useSearch();
   const rootDocumentId = searchParams.item;
   const navigate = useNavigate();
-  const spaceID = useSelector((state: any) => state.activeSpace?.id);
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
+  const spaceID = activeSpace?.id ?? '';
 
   const { data: documentsData, isLoading } = useQuery({
     ...getAllDocumentsQueryOptions(spaceID!),
@@ -137,7 +139,7 @@ function ManageDocumentsPage() {
     }
   }, [rootDocumentId, documentsWithPlaceholder, navigate, isLoading]);
   return (
-    <div className="min-h-[calc(100vh-var(--spacing)*14-1px)] flex flex-col pb-6">
+    <div className="flex flex-col h-full pb-6">
       <ManageDocumentsTopbar
         onCreateNote={handleCreateNote}
         onCreateFolder={handleCreateFolder}

@@ -6,9 +6,10 @@
 'use client';
 
 import * as React from 'react';
-import { useLocation } from '@tanstack/react-router';
+import { useRouteContext } from '@tanstack/react-router';
 import { arrayToTree } from '@repo/lib/data/tree';
 import { ListDocumentResult } from '@/queries/documents';
+import { useSelector } from '@/store';
 
 export function useDocumentTree(documents?: ListDocumentResult) {
   const isLoading = !documents;
@@ -21,8 +22,11 @@ export function useDocumentTree(documents?: ListDocumentResult) {
     () => arrayToTree(filteredDocuments ?? []),
     [filteredDocuments],
   );
-  const { pathname } = useLocation();
-  const activeDocumentHandle = decodeURIComponent(pathname.split('/').pop() ?? '');
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeTab = useSelector((state) =>
+    state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId[splitPaneType ?? 'primary']),
+  );
+  const activeDocumentHandle = decodeURIComponent(activeTab?.pathname.split('/').pop() ?? '');
   const activeDocument = filteredDocuments?.find((d) => d.handle === activeDocumentHandle);
   const [expandedDocuments, setExpandedDocuments] = React.useState<Set<string>>(new Set([]));
   const [openMenuDocumentId, setOpenMenuDocumentId] = React.useState<string | null>(null);

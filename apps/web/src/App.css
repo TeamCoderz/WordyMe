@@ -42,7 +42,6 @@
 
 html {
   position: relative;
-  scrollbar-gutter: stable;
   overscroll-behavior-y: none;
 }
 body {
@@ -53,7 +52,8 @@ body {
   width: 100%;
   min-height: 100vh;
   font-family: "Roboto", "Helvetica", "Arial", sans-serif;
-  overscroll-behavior-y: none;
+  overflow: hidden;
+  container-type: inline-size;
 }
 
 header {
@@ -150,11 +150,6 @@ html > body.fullscreen {
 }
 
 @font-face {
-  font-family: Poppins;
-  src: url(/fonts/Poppins-Regular.woff2);
-}
-
-@font-face {
   font-family: Gyrochrome;
   src: url(/fonts/GyrochromeVF.ttf) format("truetype");
   font-weight: 100 900;
@@ -176,4 +171,8 @@ html > body.fullscreen {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+.scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
 }

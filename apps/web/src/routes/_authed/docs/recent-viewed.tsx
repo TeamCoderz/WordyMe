@@ -22,7 +22,7 @@ export const Route = createFileRoute('/_authed/docs/recent-viewed')({
 
 function RouteComponent() {
   return (
-    <div className="min-h-[calc(100vh-var(--spacing)*14-1px)] flex flex-col pb-6">
+    <div className="flex flex-col h-full pb-6">
       <RecentViewedDocsTopbar />
       <RecentViewedDocsTable />
     </div>

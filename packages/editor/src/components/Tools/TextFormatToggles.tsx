@@ -107,7 +107,7 @@ export default function TextFormatToggles({ className }: { className?: string })
     <ToggleGroup
       type="multiple"
       variant="outline"
-      className={cn('bg-background max-sm:gap-1', className)}
+      className={cn('bg-background @max-sm:gap-1', className)}
       value={formatKeys}
     >
       <ToggleGroupItem
@@ -115,7 +115,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('bold')}
         title={`Bold (${SHORTCUTS.BOLD})`}
         aria-label={`Format text as bold. Shortcut: ${SHORTCUTS.BOLD}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <BoldIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -124,7 +124,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('italic')}
         title={`Italic (${SHORTCUTS.ITALIC})`}
         aria-label={`Format text as italics. Shortcut: ${SHORTCUTS.ITALIC}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <ItalicIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -133,7 +133,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('underline')}
         title={`Underline (${SHORTCUTS.UNDERLINE})`}
         aria-label={`Format text to underlined. Shortcut: ${SHORTCUTS.UNDERLINE}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <UnderlineIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -142,7 +142,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('highlight')}
         title={`Highlight (${SHORTCUTS.HIGHLIGHT})`}
         aria-label={`Format text as highlight. Shortcut: ${SHORTCUTS.HIGHLIGHT}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <HighlighterIcon />
       </ToggleGroupItem>
@@ -151,7 +151,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('code')}
         title={`Inline code (${SHORTCUTS.CODE})`}
         aria-label={`Format text as Inline code. Shortcut: ${SHORTCUTS.CODE}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <CodeIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -160,7 +160,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('strikethrough')}
         title={`Strikethrough (${SHORTCUTS.STRIKETHROUGH})`}
         aria-label={`Format text as strikethrough. Shortcut: ${SHORTCUTS.STRIKETHROUGH}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <StrikethroughIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -169,7 +169,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('subscript')}
         title={`Subscript (${SHORTCUTS.SUBSCRIPT})`}
         aria-label={`Format text with subscript. Shortcut: ${SHORTCUTS.SUBSCRIPT}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <SubscriptIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -178,7 +178,7 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={() => formatText('superscript')}
         title={`Superscript (${SHORTCUTS.SUPERSCRIPT})`}
         aria-label={`Format text with superscript. Shortcut: ${SHORTCUTS.SUPERSCRIPT}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <SuperscriptIcon className="h-4 w-4" />
       </ToggleGroupItem>
@@ -187,12 +187,12 @@ export default function TextFormatToggles({ className }: { className?: string })
         onClick={openLinkDialog}
         title={`Insert Link (${SHORTCUTS.INSERT_LINK})`}
         aria-label={`Insert a link. Shortcut: ${SHORTCUTS.INSERT_LINK}`}
-        className="max-sm:!rounded-md max-sm:!border-l"
+        className="@max-sm:rounded-md! @max-sm:border-l!"
       >
         <LinkIcon className="h-4 w-4" />
       </ToggleGroupItem>
       <ColorPicker
-        className="min-w-0 flex-1 shrink-0 rounded-none shadow-none first:rounded-l-md last:rounded-r-md focus:z-10 focus-visible:z-10 data-[variant=outline]:border-l-0 data-[variant=outline]:first:border-l max-sm:!rounded-md max-sm:!border-l sm:rounded-l-none sm:border-l-0"
+        className="min-w-0 flex-1 shrink-0 rounded-none shadow-none first:rounded-l-md last:rounded-r-md focus:z-10 focus-visible:z-10 data-[variant=outline]:border-l-0 data-[variant=outline]:first:border-l @max-sm:rounded-md! @max-sm:border-l! @md:rounded-l-none @md:border-l-0"
         onColorChange={onColorChange}
         textColor={fontColor}
         backgroundColor={bgColor}

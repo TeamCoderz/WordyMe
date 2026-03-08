@@ -172,7 +172,7 @@ function ManageSpacesPage() {
   }, [rootSpaceId]);
 
   return (
-    <div className="min-h-[calc(100vh-var(--spacing)*14-1px)] flex flex-col pb-6">
+    <div className="flex flex-col h-full pb-6">
       <ManageSpacesTopbar
         onCreateSpace={handleCreateSpace}
         onCreateFolder={handleCreateFolder}

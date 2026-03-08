@@ -160,7 +160,7 @@ export class PageNode extends ElementNode {
     if (!nextPageContentElement) return [];
     const nextPageChildNodes = Array.from(nextPageContentElement.childNodes);
     pageElement.style.minHeight = 'unset';
-    const pageHeight = parseInt(document.documentElement.style.getPropertyValue('--page-height'));
+    const pageHeight = parseInt(rootElement.style.getPropertyValue('--page-height'));
     if (!pageHeight) return [];
     let overflowAfterIndex = 0;
     let currentPageHeight = pageElement.scrollHeight;
@@ -195,7 +195,7 @@ export class PageNode extends ElementNode {
       return this.getOverflowingChildren();
     }
     pageElement.style.minHeight = 'unset';
-    const pageHeight = parseInt(document.documentElement.style.getPropertyValue('--page-height'));
+    const pageHeight = parseInt(rootElement.style.getPropertyValue('--page-height'));
     if (!pageHeight) return [];
     let currentPageHeight = pageElement.scrollHeight;
     let overflowAfterIndex = children.length - 1;
@@ -234,7 +234,7 @@ export class PageNode extends ElementNode {
     const editor = $getEditor();
     const rootElement = editor.getRootElement();
     if (!isHTMLElement(rootElement)) return;
-    const pageHeight = parseInt(document.documentElement.style.getPropertyValue('--page-height'));
+    const pageHeight = parseInt(rootElement.style.getPropertyValue('--page-height'));
     const fixedPageHeight = this.getFixedHeight();
     const currentPageHeight = this.measureHeight();
     if (currentPageHeight === fixedPageHeight) return;

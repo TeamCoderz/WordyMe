@@ -27,6 +27,7 @@ import {
 import { FilePlus, FolderPlus, Clipboard, FolderInput } from '@repo/ui/components/icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
+import { useRouteContext } from '@tanstack/react-router';
 
 export const ManageDocumentsTable = React.forwardRef<
   {
@@ -49,7 +50,8 @@ export const ManageDocumentsTable = React.forwardRef<
   { rootDocumentId, documents, onInsertPlaceholder, onRemovePlaceholder, placeholderClientId },
   ref,
 ) {
-  const activeSpace = useSelector((state: any) => state.activeSpace);
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
   const clipboardDocument = useSelector((state) => state.documentsClipboard);
   const tableRef = useRef<ManageDocumentsTableContentHandle | null>(null);
   const queryClient = useQueryClient();

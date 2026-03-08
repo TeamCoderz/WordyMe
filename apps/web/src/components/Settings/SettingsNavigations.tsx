@@ -34,7 +34,7 @@ function SettingsNavigations() {
   }
   return (
     <Tabs value={tabValue}>
-      <TabsList className="flex gap-2 h-fit *:!w-full">
+      <TabsList className="flex gap-2 h-fit *:w-full!">
         {SETTINGS_NAVIGATIONS.map(({ label, value }) => (
           <TabsTrigger
             key={value}

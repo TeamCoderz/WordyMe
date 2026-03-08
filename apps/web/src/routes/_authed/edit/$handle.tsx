@@ -6,7 +6,7 @@
 import { EditDocument } from '@/components/documents/edit-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, useRouteContext } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { DOCUMENTS_QUERY_KEYS } from '@/queries/query-keys';
 import { useAllQueriesInvalidate } from '@/queries/utils';
@@ -48,6 +48,7 @@ export const Route = createFileRoute('/_authed/edit/$handle')({
 
 function RouteComponent() {
   const { setActiveSpaceBySpaceId } = useActions();
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
   const user = useSelector((state) => state.user);
   const { handle } = Route.useParams();
   const { data: document, isSuccess } = useQuery(getDocumentByHandleQueryOptions(handle));
@@ -61,7 +62,7 @@ function RouteComponent() {
 
   const invalidate = useAllQueriesInvalidate();
   useEffect(() => {
-    setActiveSpaceBySpaceId(document?.spaceId ?? '');
+    setActiveSpaceBySpaceId(document?.spaceId ?? '', splitPaneType);
     if (document) {
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,

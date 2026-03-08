@@ -3,40 +3,54 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { Link, Outlet, createRootRouteWithContext, useBlocker } from '@tanstack/react-router';
+import { Outlet, createRootRouteWithContext, useBlocker } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { Toaster } from '@repo/ui/components/sonner';
 import { Alert } from '@/components/Layout/alert';
-import { useSelector } from '@/store';
+import { SidebarInset } from '@repo/ui/components/sidebar';
+import { AppSidebarProvider } from '@/providers/AppSidebarProvider';
+import { AppHeader } from '@/components/Layout/app-header';
+import { AppSidebar } from '@/components/Layout/app-sidebar';
+import { store, useSelector } from '@/store';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { Activity, useCallback, useEffect } from 'react';
 import SplashScreen from '@/components/splash-screen';
-import type { AppStoreApi } from '@/store/app-store';
-import { Button } from '@repo/ui/components/button';
 import {
   getShouldBlockNavigation,
   setShouldBlockNavigation,
   dispatchNavigationBlockedEvent,
 } from '@repo/shared/navigation';
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from '@repo/ui/components/resizable';
+import { SplitPaneRouter } from '@/components/Layout/SplitPaneRouter';
+import { useActions } from '@/store';
+import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
+import { TabSync, PaneTabBar, TabDndProvider, PaneContent } from '@/components/Layout/tabs';
+import { cn } from '@repo/ui/lib/utils';
 import { SessionData } from '@repo/sdk/auth';
 
 export const Route = createRootRouteWithContext<{
-  store: AppStoreApi;
+  store: typeof store;
   queryClient: QueryClient;
   session: {
     data: SessionData;
     isLoading: boolean;
   };
+  isSplitPane?: boolean;
+  splitPaneType?: 'primary' | 'secondary' | null;
 }>()({
   component: Root,
   pendingComponent: () => <SplashScreen className="absolute" />,
-  notFoundComponent: () => (
-    <div className="w-full flex-1 flex items-center justify-center p-4 flex-col gap-4">
-      <h1 className="text-2xl font-bold mb-4">404 - Page Not Found</h1>
-      <Button variant="outline" asChild>
-        <Link to="/">Go to Home Page</Link>
-      </Button>
-    </div>
+  notFoundComponent: () => <SplashScreen className="absolute" title="Page not found" />,
+  errorComponent: () => (
+    <SplashScreen
+      className="absolute"
+      title="An unexpected error occurred"
+      subtitle="Please refresh the page"
+    />
   ),
   wrapInSuspense: true,
 });
@@ -57,8 +71,34 @@ function NavigationBlocker() {
 }
 
 function Root() {
+  const { isSplitPane } = Route.useRouteContext();
+  if (isSplitPane) return <Outlet />;
+  return <RootLayout />;
+}
+
+function RootLayout() {
   const user = useSelector((state) => state.user);
   const queryClient = useQueryClient();
+  const activePane = useSelector((state) => state.tabs.activePane);
+  const splitRatio = useSelector((state) => state.tabs.splitRatio);
+  const { setSplitRatio, setActivePane } = useActions();
+  const primaryActiveTab = useSelector((state) =>
+    state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId.primary),
+  );
+  const secondaryActiveTab = useSelector(
+    (state) => state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId.secondary) ?? null,
+  );
+  const hasSplit = !!primaryActiveTab && !!secondaryActiveTab;
+
+  const isPortrait = useMediaQuery('(orientation: portrait)');
+  const splitDirection = isPortrait ? 'vertical' : 'horizontal';
+
+  const handleLayoutChanged = useCallback(
+    (layout: Record<string, number>) => {
+      setSplitRatio(layout.primary);
+    },
+    [setSplitRatio],
+  );
 
   useEffect(() => {
     if (!user) {
@@ -66,11 +106,89 @@ function Root() {
     }
   }, [user]);
 
+  if (!user)
+    return (
+      <>
+        <NavigationBlocker />
+        <Alert />
+        <Outlet />
+        <TanStackRouterDevtools />
+        <Toaster />
+      </>
+    );
+
   return (
     <>
       <NavigationBlocker />
+      <TabSync />
       <Alert />
-      <Outlet />
+      <AppSidebarProvider>
+        <AppHeader />
+        <div className="relative flex flex-1 h-[calc(100svh---spacing(14)-1px)]! max-h-[calc(100svh---spacing(14)-1px)]! print:h-auto print:max-h-none!">
+          <AppSidebar />
+          <SidebarInset className="w-0 flex-1">
+            <TabDndProvider>
+              <ResizablePanelGroup
+                onLayoutChanged={handleLayoutChanged}
+                orientation={splitDirection as 'horizontal' | 'vertical'}
+                className={cn(
+                  'flex-1 print:flex-row! print:*:h-auto! print:*:max-h-none! print:*:hidden!',
+                  {
+                    'print:*:first:flex!': activePane === 'primary',
+                    'print:*:last:flex!': activePane === 'secondary',
+                  },
+                )}
+              >
+                <ResizablePanel
+                  id="primary"
+                  defaultSize={hasSplit ? splitRatio : 100}
+                  minSize={412}
+                  className={cn({
+                    'print:hidden!': activePane === 'secondary',
+                  })}
+                  onMouseDown={() => setActivePane('primary')}
+                >
+                  <div
+                    className="@container relative flex flex-col h-full overflow-hidden"
+                    onMouseDown={() => setActivePane('primary')}
+                  >
+                    <PaneTabBar pane="primary" />
+                    <PaneContent pane="primary">
+                      {primaryActiveTab && (
+                        <SplitPaneRouter tab={primaryActiveTab} type="primary" />
+                      )}
+                    </PaneContent>
+                  </div>
+                </ResizablePanel>
+                <Activity mode={hasSplit ? 'visible' : 'hidden'}>
+                  <ResizableHandle withHandle className="print:hidden! z-50 *:z-50" />
+                  <ResizablePanel
+                    id="secondary"
+                    defaultSize={100 - splitRatio}
+                    minSize={412}
+                    className={cn({
+                      'print:hidden!': activePane === 'primary',
+                    })}
+                    onMouseDown={() => setActivePane('secondary')}
+                  >
+                    <div
+                      className="@container relative flex flex-col h-full overflow-hidden"
+                      onMouseDown={() => setActivePane('secondary')}
+                    >
+                      <PaneTabBar pane="secondary" />
+                      <PaneContent pane="secondary">
+                        {secondaryActiveTab && (
+                          <SplitPaneRouter tab={secondaryActiveTab} type="secondary" />
+                        )}
+                      </PaneContent>
+                    </div>
+                  </ResizablePanel>
+                </Activity>
+              </ResizablePanelGroup>
+            </TabDndProvider>
+          </SidebarInset>
+        </div>
+      </AppSidebarProvider>
       <TanStackRouterDevtools />
       <Toaster />
     </>

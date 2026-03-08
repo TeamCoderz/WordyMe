@@ -19,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@repo/ui/components/dropdown-menu';
 import {
@@ -64,6 +63,8 @@ import {
 } from '@/queries/spaces';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { toast } from 'sonner';
+import { ScrollArea } from '@repo/ui/components/scroll-area';
+import { cn } from '@repo/ui/lib/utils';
 
 export function SpaceSwitcher() {
   const { isMobile } = useSidebar();
@@ -399,57 +400,64 @@ export function SpaceSwitcher() {
                 <ChevronsUpDown className="ml-auto" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              onCloseAutoFocus={(e) => e.preventDefault()}
-              className="w-[--radix-dropdown-menu-trigger-width] max-w-[280px] md:max-w-[360px] min-w-56 max-h-80 rounded-lg p-1 flex flex-col overflow-hidden"
-              align="start"
-              side={isMobile ? 'bottom' : 'right'}
-              sideOffset={4}
-              onEscapeKeyDown={
-                canCloseOnEscape
-                  ? undefined
-                  : (e) => {
-                      e.preventDefault();
-                      return;
-                    }
-              }
-            >
-              <DropdownMenuItem asChild disabled={shouldDisableManage}>
-                <SidebarMenuButton asChild>
-                  <Link
-                    to="/spaces/manage"
-                    className={
-                      shouldDisableManage ? 'cursor-default pointer-events-none' : 'cursor-pointer'
-                    }
-                    tabIndex={shouldDisableManage ? -1 : 0}
-                    onMouseDown={(e) => {
-                      if (shouldDisableManage) e.preventDefault();
-                    }}
-                  >
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Manage Spaces
-                  </Link>
-                </SidebarMenuButton>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-
-              {/* Scrollable space items */}
-              <SidebarMenu className="bg-sidebar text-sidebar-foreground w-64 max-h-80 overflow-x-hidden overflow-y-auto scrollbar-thin space-y-0.5 min-h-0 pb-1">
-                {isLoading ? (
-                  Array.from({ length: 5 }).map((_, index) => (
-                    <SidebarMenuSkeleton key={index} showIcon />
-                  ))
-                ) : (
-                  <>{rootSpaces.map((space: TreeNode<SpaceData>) => renderSpaceItem(space))}</>
-                )}
-              </SidebarMenu>
-
-              {/* Fixed create section at bottom */}
-              <div className="relative flex-shrink-0 mt-1">
-                <ContextMenu>
-                  <ContextMenuTrigger asChild>
+            <ContextMenu>
+              <DropdownMenuContent
+                onCloseAutoFocus={(e) => e.preventDefault()}
+                className="w-[--radix-dropdown-menu-trigger-width] max-w-[280px] md:max-w-[360px] min-w-56 max-h-80 rounded-lg p-1 flex flex-col overflow-hidden"
+                align="start"
+                side={isMobile ? 'bottom' : 'right'}
+                sideOffset={4}
+                onEscapeKeyDown={
+                  canCloseOnEscape
+                    ? undefined
+                    : (e) => {
+                        e.preventDefault();
+                        return;
+                      }
+                }
+              >
+                <ContextMenuTrigger>
+                  <DropdownMenuItem asChild disabled={shouldDisableManage}>
                     <SidebarMenuButton
-                      className="border-1 border-dashed rounded-md select-none bg-accent/50 hover:bg-accent/70 flex items-center gap-2 text-muted-foreground"
+                      className="border border-dashed rounded-md select-none bg-accent/50 hover:bg-accent/70 flex items-center gap-2 text-muted-foreground"
+                      asChild
+                    >
+                      <Link
+                        to="/spaces/manage"
+                        data-new-tab="true"
+                        className={cn('shrink-0 mb-1 cursor-pointer', {
+                          'cursor-default pointer-events-none': shouldDisableManage,
+                        })}
+                        tabIndex={shouldDisableManage ? -1 : 0}
+                        onMouseDown={(e) => {
+                          if (shouldDisableManage) e.preventDefault();
+                        }}
+                      >
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        Manage Spaces
+                      </Link>
+                    </SidebarMenuButton>
+                  </DropdownMenuItem>
+
+                  {/* Scrollable space items */}
+                  <ScrollArea className="h-59 [&>[data-radix-scroll-area-viewport]>div[style]]:block!">
+                    <SidebarMenu className="bg-sidebar text-sidebar-foreground space-y-0.5 min-h-0 h-full pb-1">
+                      {isLoading ? (
+                        Array.from({ length: 5 }).map((_, index) => (
+                          <SidebarMenuSkeleton key={index} showIcon />
+                        ))
+                      ) : (
+                        <>
+                          {rootSpaces.map((space: TreeNode<SpaceData>) => renderSpaceItem(space))}
+                        </>
+                      )}
+                    </SidebarMenu>
+                  </ScrollArea>
+
+                  {/* Fixed create section at bottom */}
+                  <div className="relative shrink-0 mt-1">
+                    <SidebarMenuButton
+                      className="border border-dashed rounded-md select-none bg-accent/50 hover:bg-accent/70 flex items-center gap-2 text-muted-foreground"
                       onSelect={(e) => {
                         // Prevent the dropdown from closing when clicking
                         e.preventDefault();
@@ -458,56 +466,56 @@ export function SpaceSwitcher() {
                       <Info className="size-4" />
                       <div className="font-medium text-sm truncate">Right-click to create</div>
                     </SidebarMenuButton>
-                  </ContextMenuTrigger>
-                  <ContextMenuContent
-                    className="p-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onCloseAutoFocus={(e) => {
-                      e.preventDefault();
-                      return;
-                    }}
-                  >
-                    <ContextMenuItem
-                      className="group"
-                      onSelect={() => {
-                        insertPlaceholder({ parentId: null, type: 'space' });
-                      }}
-                    >
-                      <BriefcaseMedical className="mr-2 h-4 w-4" />
-                      Create a space
-                    </ContextMenuItem>
-                    <ContextMenuItem
-                      className="group"
-                      onSelect={() => {
-                        insertPlaceholder({ parentId: null, type: 'folder' });
-                      }}
-                    >
-                      <FolderClosed className="mr-2 h-4 w-4" />
-                      Create a folder
-                    </ContextMenuItem>
-                    <ContextMenuSeparator />
+                  </div>
+                </ContextMenuTrigger>
+              </DropdownMenuContent>
+              <ContextMenuContent
+                className="p-2"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onCloseAutoFocus={(e) => {
+                  e.preventDefault();
+                  return;
+                }}
+              >
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    insertPlaceholder({ parentId: null, type: 'space' });
+                  }}
+                >
+                  <BriefcaseMedical className="mr-2 h-4 w-4" />
+                  Create a space
+                </ContextMenuItem>
+                <ContextMenuItem
+                  className="group"
+                  onSelect={() => {
+                    insertPlaceholder({ parentId: null, type: 'folder' });
+                  }}
+                >
+                  <FolderClosed className="mr-2 h-4 w-4" />
+                  Create a folder
+                </ContextMenuItem>
+                <ContextMenuSeparator />
 
-                    <ContextMenuItem className="group" onSelect={handlePaste} disabled={!canPaste}>
-                      <Clipboard className="mr-2 h-4 w-4" />
-                      Paste
-                    </ContextMenuItem>
-                    <ContextMenuItem className="group" onSelect={handleImport}>
-                      <FolderInput className="mr-2 h-4 w-4" />
-                      Import Space
-                    </ContextMenuItem>
+                <ContextMenuItem className="group" onSelect={handlePaste} disabled={!canPaste}>
+                  <Clipboard className="mr-2 h-4 w-4" />
+                  Paste
+                </ContextMenuItem>
+                <ContextMenuItem className="group" onSelect={handleImport}>
+                  <FolderInput className="mr-2 h-4 w-4" />
+                  Import Space
+                </ContextMenuItem>
 
-                    <ContextMenuSeparator />
-                    <ContextMenuItem className="group" onSelect={handleManage}>
-                      <Settings2 className="mr-2 h-4 w-4" />
-                      Manage Spaces
-                    </ContextMenuItem>
-                  </ContextMenuContent>
-                </ContextMenu>
-              </div>
-            </DropdownMenuContent>
+                <ContextMenuSeparator />
+                <ContextMenuItem className="group" onSelect={handleManage}>
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Manage Spaces
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           </DropdownMenu>
         </div>
       </SidebarMenuItem>

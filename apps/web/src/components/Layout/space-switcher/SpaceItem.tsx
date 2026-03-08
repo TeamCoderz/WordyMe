@@ -367,6 +367,7 @@ function ContainerSpaceItem({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const isCreating = space.id === space.clientId;
@@ -421,10 +422,8 @@ function ContainerSpaceItem({
     }
   }, [isPlaceholder, space.id, space.clientId, placeholderClientId, removePlaceholderHandler]);
 
-  const isAncestor = useSelector((state) =>
-    state.activeSpace?.path.map((p) => p.id).includes(space.id),
-  );
-  const isActive = useSelector((state) => state.activeSpace?.id === space.id);
+  const isAncestor = activeSpace?.path.map((p) => p.id).includes(space.id);
+  const isActive = activeSpace?.id === space.id;
   const isCutThisSpace = clipboardSpace?.type === 'move' && clipboardSpace.space.id === space.id;
   const highlightAsAncestorCollapsed = isAncestor && !isExpanded;
 
@@ -885,7 +884,9 @@ function RegularSpaceItem({
   const [isRenaming, setIsRenaming] = React.useState(false);
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
   const { addToFavorites, removeFromFavorites } = useSpaceFavoritesMutation();
-  const isActive = useSelector((state) => state.activeSpace?.id === space.id);
+  const isActive = useSelector(
+    (state) => state.activeSpace[state.tabs.activePane]?.id === space.id,
+  );
   const isCreating = space.id === (space.clientId ?? '');
   const { setSpacesClipboard } = useActions();
   const deleteSpaceMutation = useDeleteSpaceMutation({ space: space as any });

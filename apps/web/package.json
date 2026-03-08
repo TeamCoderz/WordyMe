@@ -28,6 +28,7 @@
     "@repo/types": "workspace:*",
     "@repo/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/react-hotkeys": "^0.3.2",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-query-devtools": "^5.91.3",
     "@tanstack/react-router": "^1.159.5",

@@ -27,7 +27,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="h-14 p-1 justify-center">
         <SpaceSwitcher />
       </SidebarHeader>
-      <SidebarSeparator className="mx-0 !h-[calc(var(--spacing)/4)] bg-border" />
+      <SidebarSeparator className="mx-0 h-[calc(var(--spacing)/4)]! bg-border" />
       <NavDocumentsContextMenu>
         <SidebarContent className="overflow-hidden">
           <NavDocuments className="flex-1" />

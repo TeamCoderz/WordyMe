@@ -10,17 +10,19 @@ import { Link } from '@tanstack/react-router';
 import { useSelector } from '@/store';
 
 export function NavDocuments(props: React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const activeSpace = useSelector((state) => state.activeSpace);
+  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
   return (
     <SidebarGroup
       {...props}
       className={cn('group-data-[collapsible=icon]:hidden flex-1 min-h-0', props.className)}
     >
-      <SidebarGroupLabel asChild>
-        <Link to="/docs/manage">
-          {(activeSpace?.path?.length ?? 0 > 0) ? activeSpace?.name : 'Documents'}
-        </Link>
-      </SidebarGroupLabel>
+      <div className="flex gap-1 w-full justify-between items-center">
+        <SidebarGroupLabel asChild>
+          <Link to="/docs/manage" data-new-tab="true">
+            {(activeSpace?.path?.length ?? 0 > 0) ? activeSpace?.name : 'Documents'}
+          </Link>
+        </SidebarGroupLabel>
+      </div>
       <DocumentTree />
     </SidebarGroup>
   );

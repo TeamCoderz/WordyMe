@@ -19,9 +19,9 @@ export function ManageDocumentsTopbar({
 }: ManageDocumentsTopbarProps) {
   return (
     <>
-      <div className="px-4 min-h-14 border-b flex items-center justify-between flex-wrap py-1">
-        <h2 className="text-lg  font-bold">Manage Documents</h2>
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="p-4 gap-2 min-h-14 border-b flex items-center justify-between flex-wrap">
+        <h2 className="font-bold truncate">Manage Documents</h2>
+        <div className="flex items-center gap-2 flex-wrap justify-end ml-auto">
           <Button
             variant="outline"
             size="sm"

@@ -6,7 +6,7 @@
 import { ViewDocument } from '@/components/documents/view-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, redirect, useRouteContext } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getDocumentByHandleQueryOptions, getDocumentByIdQueryOptions } from '@/queries/documents';
@@ -55,6 +55,7 @@ export const Route = createFileRoute('/_authed/view/$handle')({
 
 function RouteComponent() {
   const { setActiveSpaceBySpaceId } = useActions();
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
   const user = useSelector((state) => state.user);
   const { handle } = Route.useParams();
   const search = Route.useSearch();
@@ -74,7 +75,7 @@ function RouteComponent() {
   const invalidate = useAllQueriesInvalidate();
 
   useEffect(() => {
-    setActiveSpaceBySpaceId(document?.spaceId ?? '');
+    setActiveSpaceBySpaceId(document?.spaceId ?? '', splitPaneType);
     if (document) {
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,

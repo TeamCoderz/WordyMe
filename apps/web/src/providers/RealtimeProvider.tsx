@@ -26,6 +26,7 @@ import {
   unsubscribeFromSpace,
 } from '@repo/sdk/realtime/client';
 import { useQueryClient } from '@tanstack/react-query';
+import { useRouteContext } from '@tanstack/react-router';
 import { createContext, useContext, useEffect, useState } from 'react';
 interface RealtimeProviderContextType {
   isConnected: boolean;
@@ -37,7 +38,8 @@ const RealtimeProviderContext = createContext<RealtimeProviderContextType>({
 export const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
-  const activeSpaceId = useSelector((state) => state.activeSpace?.id);
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const activeSpaceId = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']?.id);
   const invalidate = useAllQueriesInvalidate();
   useEffect(() => {
     connectSocket();

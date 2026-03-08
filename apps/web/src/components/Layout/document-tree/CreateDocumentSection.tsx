@@ -9,11 +9,12 @@ import * as React from 'react';
 import { Info, X } from '@repo/ui/components/icons';
 import { alert } from '@/components/Layout/alert';
 import { cn } from '@repo/ui/lib/utils';
-import { useLocalStorage } from '@repo/ui/hooks/use-local-storage';
+import { useSelector, useActions } from '@/store';
 import { SidebarMenuButton } from '@repo/ui/components/sidebar';
 
 export function CreateDocumentSection() {
-  const [isHidden, setIsHidden] = useLocalStorage('create-document-section-hidden', false);
+  const isHidden = useSelector((state) => state.createDocumentSectionHidden);
+  const { setCreateDocumentSectionHidden } = useActions();
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
 
   if (isHidden) return null;
@@ -38,7 +39,7 @@ export function CreateDocumentSection() {
           confirmText: 'Confirm',
           cancelText: 'Cancel',
           onConfirm: () => {
-            setIsHidden(true);
+            setCreateDocumentSectionHidden(true);
             setIsAlertOpen(false);
           },
           onCancel: () => {
