@@ -1,4 +1,5 @@
 **WordyMe™**
+
 <p align="center">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
 <img src="https://img.shields.io/badge/Maintained%20by-TeamCoderz%20Ltd-orange" alt="Maintained by TeamCoderz Ltd">
@@ -14,7 +15,7 @@ The Core: This repository contains the open-source core of WordyMe™, licensed 
 The Enterprise: We will offer a PRO version for institutions requiring Service Documentation Management, permission control, advanced SSO, audit logs, managed compliance and more. All of this will be available in our Next Generation ERP Solution: [ReactSuite](https://www.linkedin.com/showcase/reactsuite)
 
 🚀 Overview  
-WordyMe™ is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions. 
+WordyMe™ is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions.
 
 ## Architecture
 

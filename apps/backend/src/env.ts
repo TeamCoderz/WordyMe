@@ -13,7 +13,12 @@ export const envSchema = z.object({
   CLIENT_URL: z
     .string()
     .default('http://localhost:5173')
-    .transform((s) => s.split(',').map((u) => u.trim()).filter(Boolean))
+    .transform((s) =>
+      s
+        .split(',')
+        .map((u) => u.trim())
+        .filter(Boolean),
+    )
     .pipe(z.array(z.url())),
 });
 

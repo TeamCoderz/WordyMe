@@ -39,9 +39,10 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 To protect the project's future and allow us to offer an Enterprise version to sustain development, we require all contributors to agree to our Contributor License Agreement (CLA).
 
 By submitting a Pull Request to this repository, you agree to the following:
- - You grant TeamCoderz Ltd a perpetual, worldwide, irrevocable license to use, modify, and distribute your contribution.
- - You represent that you own the rights to the code you are submitting.
- - You understand that your contribution will be licensed under AGPL-3.0 in this repository, but TeamCoderz Ltd may also use it in commercial or proprietary versions of the software.
+
+- You grant TeamCoderz Ltd a perpetual, worldwide, irrevocable license to use, modify, and distribute your contribution.
+- You represent that you own the rights to the code you are submitting.
+- You understand that your contribution will be licensed under AGPL-3.0 in this repository, but TeamCoderz Ltd may also use it in commercial or proprietary versions of the software.
 
 Note: For large contributions, our automated assistant will prompt you to digitally sign the full CLA before your code can be merged.
 
@@ -57,12 +58,15 @@ To ensure the license stays with the code, every new source file must include th
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 ```
+
 ---
 
 ## Commercial Features
+
 WordyMe™ follows an Open Core model. If you are interested in developing features intended for large institutions (e.g., SAML/SSO, advanced audit logging), please contact us first. These features often belong in our Enterprise version, and we can discuss how to best collaborate.
 
 ---
+
 ## Code of Conduct
 
 Be **welcoming, inclusive, and respectful**. We don't tolerate harassment or exclusionary behavior. Report violations to maintainers.
@@ -80,13 +84,13 @@ If you have questions about implementation details or need help:
 
 ## How to Contribute
 
-| Type | Description |
-|------|-------------|
-| **Bug Reports** | [Report a bug](https://github.com/TeamCoderz/WordyMe/issues/new?template=bug_report.md) with reproduction steps and environment details |
-| **Feature Requests** | [Request a feature](https://github.com/TeamCoderz/WordyMe/issues/new?template=feature_request.md) describing the problem it solves |
-| **Documentation** | Fix typos, add examples, improve clarity, translate content |
-| **Code Review** | Review open PRs — fresh eyes catch bugs |
-| **Design** | UI/UX feedback, accessibility improvements |
+| Type                 | Description                                                                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bug Reports**      | [Report a bug](https://github.com/TeamCoderz/WordyMe/issues/new?template=bug_report.md) with reproduction steps and environment details |
+| **Feature Requests** | [Request a feature](https://github.com/TeamCoderz/WordyMe/issues/new?template=feature_request.md) describing the problem it solves      |
+| **Documentation**    | Fix typos, add examples, improve clarity, translate content                                                                             |
+| **Code Review**      | Review open PRs — fresh eyes catch bugs                                                                                                 |
+| **Design**           | UI/UX feedback, accessibility improvements                                                                                              |
 
 ---
 
@@ -132,16 +136,16 @@ See [LOCAL_SETUP.md](LOCAL_SETUP.md) for detailed instructions, or [DOCKER.md](D
 
 This is a **Turborepo monorepo** with the following packages:
 
-| Package | Description |
-|---------|-------------|
-| `apps/web` | React 19 frontend (Vite, TanStack Router) |
-| `apps/backend` | Express.js API (Drizzle ORM, libSQL) |
-| `packages/editor` | Lexical rich text editor |
-| `packages/ui` | Shared UI components |
-| `packages/sdk` | API client SDK |
-| `packages/types` | TypeScript type definitions |
-| `packages/lib` | Shared utilities |
-| `packages/shared` | Shared business logic |
+| Package           | Description                               |
+| ----------------- | ----------------------------------------- |
+| `apps/web`        | React 19 frontend (Vite, TanStack Router) |
+| `apps/backend`    | Express.js API (Drizzle ORM, libSQL)      |
+| `packages/editor` | Lexical rich text editor                  |
+| `packages/ui`     | Shared UI components                      |
+| `packages/sdk`    | API client SDK                            |
+| `packages/types`  | TypeScript type definitions               |
+| `packages/lib`    | Shared utilities                          |
+| `packages/shared` | Shared business logic                     |
 
 ### Commands
 
@@ -186,12 +190,14 @@ pnpm drizzle-kit migrate   # Apply migration
 ### Before Opening a PR
 
 1. **Sync with upstream:**
+
    ```bash
    git fetch upstream
    git rebase upstream/main
    ```
 
 2. **Run all checks:**
+
    ```bash
    pnpm lint && pnpm check-types && pnpm build
    ```
@@ -224,12 +230,12 @@ Examples: `feat(editor): add keyboard shortcuts`, `fix(auth): resolve session on
 
 ### Requirements
 
-| Requirement | Verification |
-|-------------|--------------|
-| Passes lint | `pnpm lint` |
-| Passes type check | `pnpm check-types` |
-| Builds successfully | `pnpm build` |
-| Tested manually | Your verification |
+| Requirement           | Verification                                |
+| --------------------- | ------------------------------------------- |
+| Passes lint           | `pnpm lint`                                 |
+| Passes type check     | `pnpm check-types`                          |
+| Builds successfully   | `pnpm build`                                |
+| Tested manually       | Your verification                           |
 | Clear commit messages | See [Commit Convention](#commit-convention) |
 
 ---
@@ -247,17 +253,17 @@ We follow [Conventional Commits](https://conventionalcommits.org/). Please use t
 
 ### Types
 
-| Type | Description |
-|------|-------------|
-| `feat` | New feature |
-| `fix` | Bug fix |
-| `docs` | Documentation changes |
-| `style` | Formatting, no code change |
-| `refactor` | Code restructuring |
-| `test` | Adding or updating tests |
-| `build` | Build system or dependencies |
-| `ci` | CI configuration |
-| `chore` | Other changes |
+| Type       | Description                  |
+| ---------- | ---------------------------- |
+| `feat`     | New feature                  |
+| `fix`      | Bug fix                      |
+| `docs`     | Documentation changes        |
+| `style`    | Formatting, no code change   |
+| `refactor` | Code restructuring           |
+| `test`     | Adding or updating tests     |
+| `build`    | Build system or dependencies |
+| `ci`       | CI configuration             |
+| `chore`    | Other changes                |
 
 ### Examples
 
@@ -276,13 +282,13 @@ Use descriptive prefixes: `feature/`, `fix/`, `docs/`, `refactor/`
 
 ## Issue Labels
 
-| Label | Description |
-|-------|-------------|
+| Label              | Description         |
+| ------------------ | ------------------- |
 | `good first issue` | Great for newcomers |
-| `help wanted` | Extra help needed |
-| `bug` | Something's broken |
-| `enhancement` | Feature request |
-| `documentation` | Docs improvement |
+| `help wanted`      | Extra help needed   |
+| `bug`              | Something's broken  |
+| `enhancement`      | Feature request     |
+| `documentation`    | Docs improvement    |
 
 ---
 
