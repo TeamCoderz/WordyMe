@@ -805,7 +805,7 @@ export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | n
         spaceId: null,
         position: newPosition,
       });
-      if (error) throw error || new Error('Failed to move space');
+      if (error) throw error;
       invalidate([SPACES_QUERY_KEYS.FAVORITES, SPACES_QUERY_KEYS.HOME.BASE]);
       return data;
     },

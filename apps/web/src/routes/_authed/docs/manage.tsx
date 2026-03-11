@@ -100,7 +100,7 @@ function ManageDocumentsPage() {
     if (!current) return rootDocumentId;
     // If selected is not a container, climb to nearest ancestor container
     if (current.isContainer !== true) {
-      while (current && current.parentId) {
+      while (current.parentId) {
         const parent = byId.get(current.parentId);
         if (!parent) break;
         if (parent.isContainer === true) {

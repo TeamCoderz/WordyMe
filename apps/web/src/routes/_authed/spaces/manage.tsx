@@ -133,7 +133,7 @@ function ManageSpacesPage() {
     let current = byId.get(rootSpaceId);
     if (!current) return rootSpaceId;
     if (current.isContainer !== true) {
-      while (current && current.parentId) {
+      while (current.parentId) {
         const parent = byId.get(current.parentId);
         if (!parent) break;
         if (parent.isContainer === true) {

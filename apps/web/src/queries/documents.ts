@@ -1096,7 +1096,7 @@ export const useMoveDocumentMutation = (
         spaceId: newParentDocument.spaceId,
         position: newPosition,
       });
-      if (error) throw error || new Error('Failed to move document');
+      if (error) throw error;
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,

@@ -213,7 +213,7 @@ export default function CoverImage() {
     }
 
     setIsEditing(false);
-    if (sourceUrl) URL.revokeObjectURL(sourceUrl);
+    if (sourceUrl && sourceUrl.startsWith('blob:')) URL.revokeObjectURL(sourceUrl);
     setSourceUrl(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   }, [changeCover, updateCoverMetadata, croppedAreaPixels, sourceUrl, zoom, isNewUpload]);

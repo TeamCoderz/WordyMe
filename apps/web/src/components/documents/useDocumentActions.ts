@@ -202,7 +202,7 @@ export function useDocumentActions(handle: string | null) {
     return () => {
       window.removeEventListener('checksum-change', handleChecksumChange);
     };
-  }, []);
+  }, [docId]);
 
   useEffect(() => {
     if (isLoading) return;
