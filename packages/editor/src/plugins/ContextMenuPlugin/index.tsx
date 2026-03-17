@@ -535,7 +535,7 @@ export default function ContextMenuPlugin({ children }: ContextMenuPluginProps):
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
-      <ContextMenuContent onCloseAutoFocus={onCloseAutoFocus}>
+      <ContextMenuContent onCloseAutoFocus={onCloseAutoFocus} className="overflow-visible!">
         {isLink && (
           <>
             <ContextMenuItem asChild>

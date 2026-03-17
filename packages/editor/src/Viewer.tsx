@@ -21,7 +21,10 @@ import { serializeEditorState } from '@repo/editor/utils/editorState';
 import SelectionHighlightPlugin from '@repo/editor/plugins/SelectionHighlightPlugin';
 import { LinkNavigatePlugin } from '@repo/editor/plugins/LinkPlugin';
 
-export const Viewer: React.FC<{ documentId?: string }> = ({ documentId }) => {
+export const Viewer: React.FC<{ documentId?: string; tabId?: string }> = ({
+  documentId,
+  tabId,
+}) => {
   const [editor] = useLexicalComposerContext();
   const isPaged = useSelector((state) => state.pageSetup?.isPaged);
   const { updateEditorStoreState } = useActions();
@@ -32,7 +35,7 @@ export const Viewer: React.FC<{ documentId?: string }> = ({ documentId }) => {
       if (documentId) {
         // Dispatch custom event with checksum
         const event = new CustomEvent('checksum-change', {
-          detail: { documentId: documentId, checksum },
+          detail: { documentId, tabId, checksum },
         });
         window.dispatchEvent(event);
       }
@@ -49,7 +52,7 @@ export const Viewer: React.FC<{ documentId?: string }> = ({ documentId }) => {
   return (
     <div
       className={cn(
-        'viewer-container @container flex flex-col w-0 flex-1 h-full min-h-[stretch] relative text-base',
+        'viewer-container @container flex flex-col w-0 flex-1 min-h-full relative text-base',
         {
           'scale-medium': isPaged,
         },
@@ -58,7 +61,7 @@ export const Viewer: React.FC<{ documentId?: string }> = ({ documentId }) => {
       <RichTextPlugin
         contentEditable={
           <ContentEditable
-            className="editor-input p-6 @md:p-8 w-full flex-1 self-stretch"
+            className="editor-input p-8 w-full flex-1 self-stretch"
             ariaLabel="editor input"
           />
         }

@@ -167,10 +167,14 @@ function DetailsTools({ node }: { node: DetailsContainerNode }) {
 
 export default function DetailsToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: DetailsContainerNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<DetailsTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<DetailsTools node={node} />, container);
 }

@@ -650,7 +650,6 @@ function TableTools({ node }: { node: TableNode }) {
       if (tableCellToolbarElem === null) return false;
 
       const tableCell = selectedCells[selectedCells.length - 1];
-      if (!tableCell) return false;
       const tableCellKey = tableCell.getKey();
       const tableCellElement = editor.getElementByKey(tableCellKey);
       if (tableCellElement === null) return false;
@@ -937,10 +936,14 @@ function TableTools({ node }: { node: TableNode }) {
 
 export default function TableToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: TableNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<TableTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<TableTools node={node} />, container);
 }

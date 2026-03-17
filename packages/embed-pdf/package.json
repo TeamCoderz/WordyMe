@@ -1,0 +1,61 @@
+{
+  "name": "@repo/embed-pdf",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@embedpdf/core": "^2.8.0",
+    "@embedpdf/engines": "^2.8.0",
+    "@embedpdf/models": "^2.8.0",
+    "@embedpdf/pdfium": "^2.8.0",
+    "@embedpdf/plugin-annotation": "^2.8.0",
+    "@embedpdf/plugin-capture": "^2.8.0",
+    "@embedpdf/plugin-commands": "^2.8.0",
+    "@embedpdf/plugin-document-manager": "^2.8.0",
+    "@embedpdf/plugin-export": "^2.8.0",
+    "@embedpdf/plugin-fullscreen": "^2.8.0",
+    "@embedpdf/plugin-history": "^2.8.0",
+    "@embedpdf/plugin-i18n": "^2.8.0",
+    "@embedpdf/plugin-interaction-manager": "^2.8.0",
+    "@embedpdf/plugin-pan": "^2.8.0",
+    "@embedpdf/plugin-print": "^2.8.0",
+    "@embedpdf/plugin-redaction": "^2.8.0",
+    "@embedpdf/plugin-render": "^2.8.0",
+    "@embedpdf/plugin-rotate": "^2.8.0",
+    "@embedpdf/plugin-scroll": "^2.8.0",
+    "@embedpdf/plugin-search": "^2.8.0",
+    "@embedpdf/plugin-selection": "^2.8.0",
+    "@embedpdf/plugin-spread": "^2.8.0",
+    "@embedpdf/plugin-thumbnail": "^2.8.0",
+    "@embedpdf/plugin-tiling": "^2.8.0",
+    "@embedpdf/plugin-ui": "^2.8.0",
+    "@embedpdf/plugin-view-manager": "^2.8.0",
+    "@embedpdf/plugin-viewport": "^2.8.0",
+    "@embedpdf/plugin-zoom": "^2.8.0",
+    "@embedpdf/utils": "^2.8.0",
+    "@repo/ui": "workspace:*"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@tailwindcss/postcss": "^4.2.1",
+    "@turbo/gen": "^2.8.14",
+    "@types/node": "^25.2.1",
+    "@types/react": "^19.2.13",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^10.0.0",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  },
+  "peerDependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "exports": {
+    "./viewer": "./src/viewer.tsx"
+  }
+}

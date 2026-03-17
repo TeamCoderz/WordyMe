@@ -166,10 +166,14 @@ function AttachmentTools({ node }: { node: AttachmentNode }) {
 
 export default function AttachmentToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: AttachmentNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<AttachmentTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<AttachmentTools node={node} />, container);
 }

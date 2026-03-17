@@ -142,8 +142,7 @@ export default function MathComponent({ initialValue, nodeKey }: MathComponentPr
       });
     }
 
-    function onFocus(event: FocusEvent) {
-      const mathfield = event.target as MathfieldElement;
+    function onFocus() {
       clearSelection();
       setSelected(true);
       const mathVirtualKeyboard = window.mathVirtualKeyboard;
@@ -152,33 +151,21 @@ export default function MathComponent({ initialValue, nodeKey }: MathComponentPr
       if (!element) return;
       element.ontransitionend = (event) => {
         if (event.propertyName !== 'transform') return;
-        mathfield.executeCommand('scrollIntoView');
-        const mathTools = document.getElementById('math-tools');
         const virtualKeyboard = window.mathVirtualKeyboard;
         const container = (virtualKeyboard as any)?.element?.firstElementChild as HTMLElement;
-        if (!container || !mathTools) return;
+        if (!container) return;
         document.documentElement.style.setProperty(
           '--keyboard-inset-height',
           container.clientHeight + 'px',
         );
-        if (getComputedStyle(mathTools).position === 'fixed') {
-          const mathToolsBounds = mathTools.getBoundingClientRect();
-          const mathfieldBounds = mathfield.getBoundingClientRect();
-          const kbdBounds = container.getBoundingClientRect();
-          if (mathfieldBounds.bottom > kbdBounds.top - mathToolsBounds.height) {
-            scrollBy(0, mathfieldBounds.bottom - kbdBounds.top + mathToolsBounds.height + 8);
-          }
-        }
       };
     }
 
     const onBlur = (event: FocusEvent) => {
       if (!event.isTrusted) return;
-      const target = event.target as HTMLElement;
-      if (target.tagName === 'MATH-FIELD') return;
       const relatedTarget = event.relatedTarget as HTMLElement | null;
-      if (relatedTarget?.tagName === 'MATH-FIELD') return;
-      if (relatedTarget?.closest('.editor-toolbar')) return;
+      if (!relatedTarget || relatedTarget.tagName === 'MATH-FIELD') return;
+      if (relatedTarget.closest('.math-toolbar')) return;
       const mathVirtualKeyboard = window.mathVirtualKeyboard;
       mathVirtualKeyboard.hide();
       document.documentElement.style.setProperty('--keyboard-inset-height', '0px');
@@ -237,7 +224,7 @@ export default function MathComponent({ initialValue, nodeKey }: MathComponentPr
 
     mathfield.addEventListener('input', onInput);
     mathfield.addEventListener('focus', onFocus);
-    mathfield.addEventListener('blur', onBlur, true);
+    mathfield.addEventListener('blur', onBlur);
     mathfield.addEventListener('keydown', onKeydown);
     mathfield.addEventListener('move-out', onMoveout);
     mathfield.addEventListener('contextmenu', onContextmenu, { capture: true });
@@ -245,7 +232,7 @@ export default function MathComponent({ initialValue, nodeKey }: MathComponentPr
     return () => {
       mathfield.removeEventListener('input', onInput);
       mathfield.removeEventListener('focus', onFocus);
-      mathfield.removeEventListener('blur', onBlur, true);
+      mathfield.removeEventListener('blur', onBlur);
       mathfield.removeEventListener('keydown', onKeydown);
       mathfield.removeEventListener('move-out', onMoveout);
       mathfield.removeEventListener('contextmenu', onContextmenu, {

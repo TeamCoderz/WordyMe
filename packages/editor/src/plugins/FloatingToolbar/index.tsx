@@ -143,7 +143,7 @@ function FloatingToolbar({
   return (
     <div
       ref={popupCharStylesEditorRef}
-      className="floating-toolbar @max-md:hidden absolute top-0 left-0 z-30 will-change-transform print:hidden"
+      className="floating-toolbar @max-md:hidden absolute top-0 left-0 z-50 will-change-transform print:hidden"
     >
       <TextFormatToggles />
     </div>
@@ -221,10 +221,13 @@ function useFloatingToolbar(editor: LexicalEditor, anchorElem: HTMLElement) {
 }
 
 export default function FloatingTextFormatToolbarPlugin({
-  anchorElem = document.body,
+  anchorElem,
 }: {
   anchorElem?: HTMLElement;
 }) {
   const [editor] = useLexicalComposerContext();
-  return useFloatingToolbar(editor, anchorElem);
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return useFloatingToolbar(editor, container);
 }

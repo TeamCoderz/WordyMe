@@ -273,10 +273,14 @@ function ImageTools({
 
 export default function ImageToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: ImageNode | SketchNode | DiagramNode | IFrameNode | ScoreNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<ImageTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<ImageTools node={node} />, container);
 }
