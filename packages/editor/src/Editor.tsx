@@ -55,8 +55,9 @@ import SelectionHighlightPlugin from '@repo/editor/plugins/SelectionHighlightPlu
 
 export const Editor: React.FC<{
   documentId?: string;
+  tabId?: string;
   onChange?: (editorState: EditorState, editor: LexicalEditor, tags: Set<string>) => void;
-}> = ({ documentId, onChange }) => {
+}> = ({ documentId, tabId, onChange }) => {
   const [editor] = useLexicalComposerContext();
   const isPaged = useSelector((state) => state.pageSetup?.isPaged);
   const { updateEditorStoreState } = useActions();
@@ -67,7 +68,7 @@ export const Editor: React.FC<{
       if (documentId) {
         // Dispatch custom event with checksum
         const event = new CustomEvent('checksum-change', {
-          detail: { documentId: documentId, checksum },
+          detail: { documentId, tabId, checksum },
         });
         window.dispatchEvent(event);
       }
@@ -97,7 +98,7 @@ export const Editor: React.FC<{
   return (
     <div
       className={cn(
-        'editor-container @container flex flex-col w-0 flex-1 h-full min-h-[stretch] relative text-base',
+        'editor-container @container flex flex-col w-0 flex-1 min-h-full relative text-base',
         {
           'scale-medium': isPaged,
         },
@@ -108,7 +109,7 @@ export const Editor: React.FC<{
         contentEditable={
           <ContextMenuPlugin>
             <ContentEditable
-              className="editor-input p-6 @md:p-8 w-full flex-1 self-stretch"
+              className="editor-input p-8 w-full flex-1 self-stretch"
               ariaLabel="editor input"
             />
           </ContextMenuPlugin>

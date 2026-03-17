@@ -17,6 +17,7 @@ interface ViewDocumentProps {
   documentHandle: string;
   revisionId?: string;
   initialState?: string;
+  tabId?: string;
 }
 
 export function ViewDocument({
@@ -25,6 +26,7 @@ export function ViewDocument({
   documentHandle,
   revisionId,
   initialState,
+  tabId,
 }: ViewDocumentProps) {
   const editorRef = useRef<LexicalEditor>(null);
   const services = useServices(documentId, userId);
@@ -39,7 +41,7 @@ export function ViewDocument({
     >
       <DocumentSidebar handle={documentHandle}>
         <ImageZoom />
-        <Viewer documentId={documentId} />
+        <Viewer documentId={documentId} tabId={tabId} />
       </DocumentSidebar>
     </EditorComposer>
   );

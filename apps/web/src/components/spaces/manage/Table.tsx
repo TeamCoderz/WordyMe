@@ -44,7 +44,7 @@ export const ManageSpacesTable = React.forwardRef<
   }
 >(({ rootSpaceId, spaces, onInsertPlaceholder, onRemovePlaceholder, placeholderClientId }, ref) => {
   const tableRef = useRef<ManageSpacesTableContentHandle | null>(null);
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const queryClient = useQueryClient();
 
   // Root-level paste mutations for spaces

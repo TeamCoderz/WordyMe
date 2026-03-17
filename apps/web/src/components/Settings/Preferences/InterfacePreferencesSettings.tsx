@@ -19,8 +19,8 @@ import { useTheme } from '@repo/ui/theme/theme-provider';
 import { FoldHorizontal, RefreshCcw, UnfoldHorizontal } from '@repo/ui/components/icons';
 
 function InterfacePreferencesSettings() {
-  const appSidebar = useSelector((state) => state.appSidebar);
-  const documentSidebar = useSelector((state) => state.documentSidebar);
+  const appSidebar = useSelector((state) => state.ui.appSidebar);
+  const documentSidebar = useSelector((state) => state.ui.documentSidebar);
   const { setAppSidebar, setDocumentSidebar } = useActions();
   const { animations, setAnimations } = useTheme();
   return (

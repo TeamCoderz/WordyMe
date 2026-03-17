@@ -104,7 +104,7 @@ export function SpaceSwitcher() {
 
   const rootSpaces = spacesTree?.children ?? [];
 
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   // Root-level paste mutations
   const copySpaceMutation = useCopySpaceMutation(null);
   const moveSpaceMutation = useMoveSpaceMutation(null);

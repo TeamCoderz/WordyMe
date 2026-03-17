@@ -1,3 +1,8 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
 import { useStore } from 'zustand';
 import { useShallow } from 'zustand/shallow';
 import { store, type Store } from './store';
@@ -8,10 +13,11 @@ export const useSelector = <T>(selector: (store: Store) => T): T => {
 
 export const useActions = () => {
   return useSelector((state) => ({
+    ...state.appActions,
     ...state.userActions,
     ...state.uiActions,
-    ...state.wordyActions,
     ...state.tabsActions,
+    ...state.wordyActions,
   }));
 };
 

@@ -16,20 +16,47 @@ import { useServices } from './useServices';
 import { useSaveLocalRevisionMutation } from '@/queries/revisions';
 import { useDebouncedCallback } from '@repo/ui/hooks/use-debounce';
 import { serializeEditorState } from '@repo/editor/utils/editorState';
+import { useHotkey } from '@tanstack/react-hotkeys';
 import { useDocumentActions } from './useDocumentActions';
 import { DocumentSidebar } from './document-sidebar';
+import { useSelector } from '@/store';
 
 interface EditDocumentProps {
   user: User;
   document: Document;
   initialState?: string;
+  tabId?: string;
 }
 
-export function EditDocument({ document, user, initialState }: EditDocumentProps) {
+export function EditDocument({ document, user, initialState, tabId }: EditDocumentProps) {
   const { mutateAsync: saveLocalRevision } = useSaveLocalRevisionMutation({
     documentId: document.id,
   });
-  const { handleUpdate, editorSettings } = useDocumentActions(document.handle);
+  const isActiveTab = useSelector(
+    (state) => state.tabs.activeTabId[state.tabs.activePane] === tabId,
+  );
+  const {
+    handleUpdate,
+    handleSaveAsNewRevision,
+    handleSaveAndOverwrite,
+    editorSettings,
+    isDisabled,
+    isPreviouslySaved,
+  } = useDocumentActions(document.handle, tabId);
+
+  useHotkey('Mod+S', () => handleUpdate(false), { enabled: isActiveTab });
+  useHotkey(
+    'Mod+Shift+S',
+    () => {
+      if (isDisabled || isPreviouslySaved) return;
+      if (editorSettings?.keepPreviousRevision && !editorSettings?.autosave) {
+        handleSaveAndOverwrite();
+      } else {
+        handleSaveAsNewRevision();
+      }
+    },
+    { enabled: isActiveTab },
+  );
 
   const editorRefCallback = (editor: LexicalEditor) => {
     return mergeRegister(
@@ -101,7 +128,7 @@ export function EditDocument({ document, user, initialState }: EditDocumentProps
       editorRef={editorRefCallback}
     >
       <DocumentSidebar handle={document.handle}>
-        <Editor documentId={document.id} onChange={onChange} />
+        <Editor documentId={document.id} onChange={onChange} tabId={tabId} />
       </DocumentSidebar>
     </EditorComposer>
   );

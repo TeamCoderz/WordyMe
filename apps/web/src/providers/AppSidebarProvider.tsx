@@ -16,7 +16,7 @@ function AppSidebarInner({
   className,
   ...rest
 }: PropsWithChildren<SidebarProviderProps & { defaultOpen: boolean }>) {
-  const appSidebar = useSelector((state) => state.appSidebar);
+  const appSidebar = useSelector((state) => state.ui.appSidebar);
   const { setAppSidebarOpen } = useActions();
   const [open, setOpen] = useState(defaultOpen);
 
@@ -46,8 +46,8 @@ export function AppSidebarProvider({
   className,
   ...rest
 }: PropsWithChildren<SidebarProviderProps>) {
-  const appSidebar = useSelector((state) => state.appSidebar);
-  const appSidebarOpen = useSelector((state) => state.appSidebarOpen);
+  const appSidebar = useSelector((state) => state.ui.appSidebar);
+  const appSidebarOpen = useSelector((state) => state.ui.appSidebarOpen);
 
   const defaultOpen = useMemo(() => {
     if (appSidebar === 'expanded') return true;

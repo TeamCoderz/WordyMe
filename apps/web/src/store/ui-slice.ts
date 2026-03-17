@@ -37,7 +37,7 @@ type UiActions = {
   setHomeSorts: (sorts: HomeSortState | ((prev: HomeSortState) => HomeSortState)) => void;
 };
 
-export type UiSlice = UiState & { uiActions: UiActions };
+export type UiSlice = { ui: UiState; uiActions: UiActions };
 
 const initialState: UiState = {
   appSidebar: 'expanded',
@@ -61,19 +61,27 @@ export const createUiSlice: StateCreator<
   UiSlice
 > = (set) => {
   return {
-    ...initialState,
+    ui: initialState,
     uiActions: {
-      setAppSidebar: (appSidebar) => set({ appSidebar }),
-      setAppSidebarOpen: (appSidebarOpen) => set({ appSidebarOpen }),
-      setDocumentSidebar: (documentSidebar) => set({ documentSidebar }),
-      setDocumentSidebarOpen: (documentSidebarOpen) => set({ documentSidebarOpen }),
-      setDocumentSidebarActiveTab: (documentSidebarActiveTab) => set({ documentSidebarActiveTab }),
+      setAppSidebar: (appSidebar) => set((state) => ({ ui: { ...state.ui, appSidebar } })),
+      setAppSidebarOpen: (appSidebarOpen) =>
+        set((state) => ({ ui: { ...state.ui, appSidebarOpen } })),
+      setDocumentSidebar: (documentSidebar) =>
+        set((state) => ({ ui: { ...state.ui, documentSidebar } })),
+      setDocumentSidebarOpen: (documentSidebarOpen) =>
+        set((state) => ({ ui: { ...state.ui, documentSidebarOpen } })),
+      setDocumentSidebarActiveTab: (documentSidebarActiveTab) =>
+        set((state) => ({ ui: { ...state.ui, documentSidebarActiveTab } })),
       setCreateDocumentSectionHidden: (createDocumentSectionHidden) =>
-        set({ createDocumentSectionHidden }),
-      setFeedbackCardHidden: (feedbackCardHidden) => set({ feedbackCardHidden }),
+        set((state) => ({ ui: { ...state.ui, createDocumentSectionHidden } })),
+      setFeedbackCardHidden: (feedbackCardHidden) =>
+        set((state) => ({ ui: { ...state.ui, feedbackCardHidden } })),
       setHomeSorts: (sorts) =>
         set((state) => ({
-          homeSorts: typeof sorts === 'function' ? sorts(state.homeSorts) : sorts,
+          ui: {
+            ...state.ui,
+            homeSorts: typeof sorts === 'function' ? sorts(state.ui.homeSorts) : sorts,
+          },
         })),
     },
   };

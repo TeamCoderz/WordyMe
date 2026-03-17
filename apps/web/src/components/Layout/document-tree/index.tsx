@@ -17,7 +17,7 @@ import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/l
 import { ScrollArea } from '@repo/ui/components/scroll-area';
 
 export function DocumentTree() {
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   const spaceId = activeSpace?.id ?? '';
   const { data: documentsData } = useQuery(getAllDocumentsQueryOptions(spaceId!));
 
@@ -42,7 +42,7 @@ export function DocumentTree() {
   } = useDocumentTree(documentsWithPlaceholder);
 
   const rootDocuments = documentsTree?.children ?? [];
-  const inlineCreate = useSelector((s) => s.inlineCreate);
+  const inlineCreate = useSelector((state) => state.wordy.inlineCreate);
   const { clearInlineCreate } = useActions();
 
   const insertPlaceholder = React.useCallback(

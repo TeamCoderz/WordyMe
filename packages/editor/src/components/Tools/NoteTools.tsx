@@ -174,10 +174,14 @@ function NoteTools({ node }: { node: StickyNode }) {
 
 export default function NoteToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: StickyNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<NoteTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<NoteTools node={node} />, container);
 }

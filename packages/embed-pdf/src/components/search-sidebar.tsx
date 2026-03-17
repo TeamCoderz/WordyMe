@@ -1,0 +1,255 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
+
+import { useSearch } from '@embedpdf/plugin-search/react';
+import { useScrollCapability } from '@embedpdf/plugin-scroll/react';
+import { useState, useRef, useEffect } from 'react';
+import { MatchFlag } from '@embedpdf/models';
+import { SearchResult } from '@embedpdf/models';
+import { SearchIcon, CloseIcon, ChevronRightIcon, ChevronLeftIcon } from './icons';
+
+const HitLine = ({
+  hit,
+  onClick,
+  active,
+}: {
+  hit: SearchResult;
+  onClick: () => void;
+  active: boolean;
+}) => {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (active && ref.current) {
+      ref.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [active]);
+
+  return (
+    <button
+      ref={ref}
+      onClick={onClick}
+      className={`w-full rounded border p-2 text-left text-sm transition-colors ${
+        active
+          ? 'border-accent bg-accent text-accent-foreground'
+          : 'border bg-background text-muted-foreground hover:bg-accent/75 hover:text-accent-foreground'
+      }`}
+    >
+      <span>
+        {hit.context.truncatedLeft && '… '}
+        {hit.context.before}
+        <span className="font-bold text-blue-600">{hit.context.match}</span>
+        {hit.context.after}
+        {hit.context.truncatedRight && ' …'}
+      </span>
+    </button>
+  );
+};
+
+type SearchSidebarProps = {
+  documentId: string;
+  onClose?: () => void;
+};
+
+export function SearchSidebar({ documentId, onClose }: SearchSidebarProps) {
+  const { state, provides } = useSearch(documentId);
+  const { provides: scroll } = useScrollCapability();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [inputValue, setInputValue] = useState('');
+
+  // Sync inputValue with persisted state.query when state loads
+  useEffect(() => {
+    setInputValue(state.query || '');
+  }, [state.query, documentId]); // Include documentId to reset on tab change
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [provides]);
+
+  useEffect(() => {
+    if (state.activeResultIndex !== undefined && state.activeResultIndex >= 0 && !state.loading) {
+      scrollToItem(state.activeResultIndex);
+    }
+  }, [state.activeResultIndex, state.loading, state.query, state.flags]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInputValue(value);
+
+    // Trigger search immediately on user input
+    if (value === '') {
+      provides?.stopSearch();
+    } else {
+      provides?.searchAllPages(value);
+    }
+  };
+
+  const handleFlagChange = (flag: MatchFlag, checked: boolean) => {
+    if (checked) {
+      provides?.setFlags([...state.flags, flag]);
+    } else {
+      provides?.setFlags(state.flags.filter((f) => f !== flag));
+    }
+  };
+
+  const clearInput = () => {
+    setInputValue('');
+    provides?.stopSearch();
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const scrollToItem = (index: number) => {
+    const item = state.results[index];
+    if (!item) return;
+
+    const minCoordinates = item.rects.reduce(
+      (min, rect) => ({
+        x: Math.min(min.x, rect.origin.x),
+        y: Math.min(min.y, rect.origin.y),
+      }),
+      { x: Infinity, y: Infinity },
+    );
+
+    scroll?.forDocument(documentId).scrollToPage({
+      pageNumber: item.pageIndex + 1,
+      pageCoordinates: minCoordinates,
+    });
+  };
+
+  const groupByPage = (results: typeof state.results) => {
+    return results.reduce<Record<number, { hit: (typeof results)[0]; index: number }[]>>(
+      (map, r, i) => {
+        (map[r.pageIndex] ??= []).push({ hit: r, index: i });
+        return map;
+      },
+      {},
+    );
+  };
+
+  if (!provides) return null;
+
+  const grouped = groupByPage(state.results);
+
+  return (
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-border px-4 py-3">
+        <h2 className="text-lg font-semibold text-foreground">Search</h2>
+        <button
+          onClick={onClose}
+          className="rounded p-1 text-muted-foreground transition-colors hover:bg-accent/75 hover:text-accent-foreground"
+          aria-label="Close"
+        >
+          <CloseIcon className="h-5 w-5" />
+        </button>
+      </div>
+
+      {/* Search Input */}
+      <div className="border-b border-border p-4">
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <SearchIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <input
+            ref={inputRef}
+            type="text"
+            placeholder="Search"
+            value={inputValue}
+            onChange={handleInputChange}
+            className="w-full rounded-lg border border-border py-2 pl-10 pr-10 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+          />
+          {inputValue && (
+            <button
+              onClick={clearInput}
+              className="absolute inset-y-0 right-0 flex items-center pr-3"
+            >
+              <CloseIcon className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+            </button>
+          )}
+        </div>
+
+        {/* Options */}
+        <div className="mt-3 space-y-2">
+          <label className="flex items-center text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={state.flags.includes(MatchFlag.MatchCase)}
+              onChange={(e) => handleFlagChange(MatchFlag.MatchCase, e.target.checked)}
+              className="mr-2 h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            />
+            Case sensitive
+          </label>
+          <label className="flex items-center text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={state.flags.includes(MatchFlag.MatchWholeWord)}
+              onChange={(e) => handleFlagChange(MatchFlag.MatchWholeWord, e.target.checked)}
+              className="mr-2 h-4 w-4 rounded border-border text-accent focus:ring-accent"
+            />
+            Whole word
+          </label>
+        </div>
+
+        {/* Results count and navigation */}
+        {state.active && !state.loading && state.total > 0 && (
+          <div className="mt-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">{state.total} results found</span>
+            {state.total > 1 && (
+              <div className="flex gap-1">
+                <button
+                  onClick={() => provides.previousResult()}
+                  className="rounded p-1 text-muted-foreground hover:bg-accent/75 hover:text-accent-foreground"
+                  aria-label="Previous result"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => provides.nextResult()}
+                  className="rounded p-1 text-muted-foreground hover:bg-accent/75 hover:text-accent-foreground"
+                  aria-label="Next result"
+                >
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Results */}
+      <div className="flex-1 overflow-auto p-4">
+        {state.loading ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-accent" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {Object.entries(grouped).map(([page, hits]) => (
+              <div key={page}>
+                <div className="mb-2 text-xs font-semibold text-muted-foreground">
+                  Page {Number(page) + 1}
+                </div>
+                <div className="space-y-2">
+                  {hits.map(({ hit, index }) => (
+                    <HitLine
+                      key={index}
+                      hit={hit}
+                      active={index === state.activeResultIndex}
+                      onClick={() => provides.goToResult(index)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

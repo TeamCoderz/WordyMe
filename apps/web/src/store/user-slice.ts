@@ -40,6 +40,7 @@ export type UserState =
       isGuest: boolean;
     })
   | null;
+
 export type UserActions = {
   setUser: (user: UserState) => void;
   setAvatarImage: (avatarImage: NonNullable<UserState>['avatar_image']) => void;

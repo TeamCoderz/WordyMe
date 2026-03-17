@@ -51,8 +51,8 @@ export const ManageDocumentsTable = React.forwardRef<
   ref,
 ) {
   const { splitPaneType } = useRouteContext({ from: '__root__' });
-  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[splitPaneType ?? 'primary']);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const tableRef = useRef<ManageDocumentsTableContentHandle | null>(null);
   const queryClient = useQueryClient();
 

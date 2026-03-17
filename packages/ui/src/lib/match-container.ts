@@ -11,7 +11,7 @@
 
 declare global {
   interface Element {
-    matchContainer?(containerQueryString: string): ContainerQueryList;
+    matchContainer(containerQueryString: string): ContainerQueryList;
   }
 
   interface ContainerQueryList extends EventTarget {
@@ -122,7 +122,19 @@ if (
     }
   }
 
+  const queryListCache = new WeakMap<Element, Map<string, ContainerQueryList>>();
+
   Element.prototype.matchContainer = function (containerQueryString: string) {
-    return new ContainerQueryList(this, containerQueryString);
+    let elementCache = queryListCache.get(this);
+    if (!elementCache) {
+      elementCache = new Map();
+      queryListCache.set(this, elementCache);
+    }
+    let queryList = elementCache.get(containerQueryString);
+    if (!queryList) {
+      queryList = new ContainerQueryList(this, containerQueryString);
+      elementCache.set(containerQueryString, queryList);
+    }
+    return queryList;
   };
 }

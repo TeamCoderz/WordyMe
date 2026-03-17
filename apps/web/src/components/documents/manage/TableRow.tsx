@@ -138,7 +138,7 @@ export function ManageDocumentsTableRow({
   );
   const importDocumentMutation = useImportDocumentMutation(doc?.id ?? null, spaceID);
   const { setDocumentsClipboard } = useActions();
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const isCutThisItem =
     clipboardDocument?.type === 'move' && clipboardDocument.document.id === (doc?.id ?? '');
 

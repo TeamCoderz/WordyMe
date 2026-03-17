@@ -415,10 +415,14 @@ function MathTools({ node }: { node: MathNode }) {
 
 export default function MathToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: MathNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<MathTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<MathTools node={node} />, container);
 }

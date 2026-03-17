@@ -27,8 +27,11 @@ import HrTools from '@repo/editor/components/Tools/HrTools';
 import AttachmentToolbar from '@repo/editor/components/Tools/AttachmentTools';
 import { cn } from '@repo/ui/lib/utils';
 import { useSelector } from '@repo/editor/store';
+import { Portal } from '@repo/ui/components/portal';
+import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 
 export default function NodeTools() {
+  const [editor] = useLexicalComposerContext();
   const blockType = useSelector((state) => state.blockType);
   const selectedNode = useSelector((state) => state.selectedNode);
   const isTable = useSelector((state) => state.isTable);
@@ -77,12 +80,21 @@ export default function NodeTools() {
       {showHrTools && <HrTools node={selectedNode} />}
       {showAttachmentTools && <AttachmentToolbar node={selectedNode} />}
       {showTextFormatTools && (
-        <TextFormatToggles
-          className={cn(
-            'flex @md:hidden @3xl:flex bottom-[calc(var(--keyboard-inset-height)+4px)] z-50',
-            'fixed inset-x-0 left-1/2 -translate-x-1/2 @md:translate-x-0 @md:static justify-center @md:justify-start',
-          )}
-        />
+        <TextFormatToggles className={cn('hidden @3xl:flex justify-start')} />
+      )}
+      {showTextFormatTools && (
+        <Portal
+          container={() =>
+            editor.getRootElement()?.closest<HTMLElement>('.editor-container') ?? document.body
+          }
+        >
+          <TextFormatToggles
+            className={cn(
+              'flex @3xl:hidden sticky z-50 @max-lg:w-full',
+              'bottom-1 @lg:left-1/2 @lg:-translate-x-1/2',
+            )}
+          />
+        </Portal>
       )}
     </>
   );

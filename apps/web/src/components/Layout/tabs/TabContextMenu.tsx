@@ -37,12 +37,13 @@ import {
 import { useDocumentActions } from '@/components/documents/useDocumentActions';
 import { IS_APPLE } from '@repo/shared/environment';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
-import { useNavigate } from '@tanstack/react-router';
 
 const SHORTCUTS = {
   close: IS_APPLE ? '⌘⌥W' : 'Ctrl+Alt+W',
   save: IS_APPLE ? '⌘S' : 'Ctrl+S',
   saveAlt: IS_APPLE ? '⌘⇧S' : 'Ctrl+Shift+S',
+  closeOthers: IS_APPLE ? '⌘⌥T' : 'Ctrl+Alt+T',
+  copyLink: IS_APPLE ? '⌘⇧C' : 'Ctrl+Shift+C',
 } as const;
 
 export interface TabContextMenuProps {
@@ -52,12 +53,19 @@ export interface TabContextMenuProps {
 }
 
 export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
-  const { openTab, closeTab, closeOtherTabs, closeAllTabs, moveTabToPane, closeSplit } =
-    useActions();
-  const navigate = useNavigate();
+  const {
+    openTab,
+    closeTab,
+    closeOtherTabs,
+    closeAllTabs,
+    moveTabToPane,
+    closeSplit,
+    setActiveTab,
+    updateTab,
+  } = useActions();
   const isActive = useSelector((state) => state.tabs.activeTabId[pane] === tab.id);
-  const hasMultipleTabs = useSelector((state) => state.tabs.primaryTabIds.length > 1);
-  const hasSplit = useSelector((state) => state.tabs.secondaryTabIds.length > 0);
+  const hasMultipleTabs = useSelector((state) => state.tabs.paneTabIds[pane].length > 1);
+  const hasSplit = useSelector((state) => state.tabs.paneTabIds.secondary.length > 0);
   const isLastTab = useSelector((state) => state.tabs.tabList.length === 1);
 
   const isPortrait = useMediaQuery('(orientation: portrait)');
@@ -79,7 +87,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
     handleExport,
     handlePrint,
     editorSettings,
-  } = useDocumentActions(documentHandle);
+  } = useDocumentActions(documentHandle, tab.id);
 
   // Close this tab
   const handleClose = useCallback(() => {
@@ -137,22 +145,23 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
 
   // Copy link with search params and hash
   const handleCopyPath = useCallback(() => {
-    const searchParams = tab.search
-      ? '?' + new URLSearchParams(tab.search as Record<string, string>).toString()
-      : '';
-    const hash = tab.hash ? tab.hash : '';
+    const searchParams =
+      Object.keys(tab.search ?? {}).length > 0
+        ? `?${new URLSearchParams(tab.search as Record<string, string>).toString()}`
+        : '';
+    const hash = tab.hash ? `#${tab.hash}` : '';
     navigator.clipboard.writeText(window.location.origin + tab.pathname + searchParams + hash);
   }, [tab.pathname, tab.search, tab.hash]);
 
   const handleView = useCallback(() => {
     if (!isEditTab || !documentHandle) return;
-    navigate({ to: '/view/$handle', params: { handle: documentHandle } });
-  }, [isEditTab, documentHandle, navigate]);
+    updateTab(tab.id, { pathname: `/view/${documentHandle}` });
+  }, [isEditTab, documentHandle, updateTab]);
 
   const handleEdit = useCallback(() => {
     if (!isViewTab || !documentHandle) return;
-    navigate({ to: '/edit/$handle', params: { handle: documentHandle } });
-  }, [isViewTab, documentHandle, navigate]);
+    updateTab(tab.id, { pathname: `/edit/${documentHandle}` });
+  }, [isViewTab, documentHandle, updateTab]);
 
   const handleAttachmentDownload = useCallback(async () => {
     const url = tab.search?.url as string | undefined;
@@ -181,73 +190,15 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
   }, [tab.search?.url, tab.search?.name]);
 
   return (
-    <ContextMenu>
+    <ContextMenu
+      onOpenChange={(open) => {
+        if (open) setActiveTab(tab.id);
+      }}
+    >
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-56">
-        {/* Close actions */}
-        <ContextMenuItem onClick={handleClose} disabled={isHomeTab && isLastTab}>
-          <X className="mr-2 size-4" />
-          Close
-          <ContextMenuShortcut>{SHORTCUTS.close}</ContextMenuShortcut>
-        </ContextMenuItem>
-        {hasMultipleTabs && (
-          <ContextMenuItem onClick={handleCloseOthers}>
-            <XCircle className="mr-2 size-4" />
-            Close Others
-          </ContextMenuItem>
-        )}
-        <ContextMenuItem onClick={handleCloseAll} disabled={isHomeTab && isLastTab}>
-          <XCircle className="mr-2 size-4" />
-          Close All
-        </ContextMenuItem>
-
-        <ContextMenuSeparator />
-
-        {/* Copy path */}
-        <ContextMenuItem onClick={handleCopyPath}>
-          <Copy className="mr-2 size-4" />
-          Copy Link
-        </ContextMenuItem>
-
-        <ContextMenuSeparator />
-
-        {/* Pane actions */}
-        <ContextMenuItem onClick={handleOpenInSplit}>
-          {isPortrait ? (
-            <SquareSplitVerticalIcon className="mr-2 size-4" />
-          ) : (
-            <SquareSplitHorizontalIcon className="mr-2 size-4" />
-          )}
-          {splitLabel}
-        </ContextMenuItem>
-        <ContextMenuItem onClick={handleMoveToOtherPane}>
-          {isPortrait ? (
-            pane === 'primary' ? (
-              <PanelBottomIcon className="mr-2 size-4" />
-            ) : (
-              <PanelTopIcon className="mr-2 size-4" />
-            )
-          ) : pane === 'primary' ? (
-            <PanelRightIcon className="mr-2 size-4" />
-          ) : (
-            <PanelLeftIcon className="mr-2 size-4" />
-          )}
-          {moveLabel}
-        </ContextMenuItem>
-        {hasSplit && (
-          <ContextMenuItem onClick={handleCloseSplit}>
-            {isPortrait ? (
-              <PanelTopCloseIcon className="mr-2 size-4" />
-            ) : (
-              <PanelRightCloseIcon className="mr-2 size-4" />
-            )}
-            Close Split View
-          </ContextMenuItem>
-        )}
-
         {isDocumentTab && (
           <>
-            <ContextMenuSeparator />
             <ContextMenuItem
               disabled={isSaveDisabled && !tab.isDirty}
               onClick={() => handleUpdate(false)}
@@ -304,12 +255,77 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
               <PrinterIcon className="mr-2 size-4" />
               Print
             </ContextMenuItem>
+            <ContextMenuSeparator />
           </>
         )}
         {isAttachmentTab && (
-          <ContextMenuItem onClick={handleAttachmentDownload}>
-            <DownloadIcon className="mr-2 size-4" />
-            Download
+          <>
+            <ContextMenuItem onClick={handleAttachmentDownload}>
+              <DownloadIcon className="mr-2 size-4" />
+              Download
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+          </>
+        )}
+
+        {/* Close actions */}
+        <ContextMenuItem onClick={handleClose} disabled={isHomeTab && isLastTab}>
+          <X className="mr-2 size-4" />
+          Close
+          <ContextMenuShortcut>{SHORTCUTS.close}</ContextMenuShortcut>
+        </ContextMenuItem>
+        {hasMultipleTabs && (
+          <ContextMenuItem onClick={handleCloseOthers}>
+            <XCircle className="mr-2 size-4" />
+            Close Others
+            <ContextMenuShortcut>{SHORTCUTS.closeOthers}</ContextMenuShortcut>
+          </ContextMenuItem>
+        )}
+        <ContextMenuItem onClick={handleCloseAll} disabled={isHomeTab && isLastTab}>
+          <XCircle className="mr-2 size-4" />
+          Close All
+        </ContextMenuItem>
+
+        {/* Copy path */}
+        <ContextMenuItem onClick={handleCopyPath}>
+          <Copy className="mr-2 size-4" />
+          Copy Link
+          <ContextMenuShortcut>{SHORTCUTS.copyLink}</ContextMenuShortcut>
+        </ContextMenuItem>
+
+        <ContextMenuSeparator />
+
+        {/* Pane actions */}
+        <ContextMenuItem onClick={handleOpenInSplit}>
+          {isPortrait ? (
+            <SquareSplitVerticalIcon className="mr-2 size-4" />
+          ) : (
+            <SquareSplitHorizontalIcon className="mr-2 size-4" />
+          )}
+          {splitLabel}
+        </ContextMenuItem>
+        <ContextMenuItem onClick={handleMoveToOtherPane}>
+          {isPortrait ? (
+            pane === 'primary' ? (
+              <PanelBottomIcon className="mr-2 size-4" />
+            ) : (
+              <PanelTopIcon className="mr-2 size-4" />
+            )
+          ) : pane === 'primary' ? (
+            <PanelRightIcon className="mr-2 size-4" />
+          ) : (
+            <PanelLeftIcon className="mr-2 size-4" />
+          )}
+          {moveLabel}
+        </ContextMenuItem>
+        {hasSplit && (
+          <ContextMenuItem onClick={handleCloseSplit}>
+            {isPortrait ? (
+              <PanelTopCloseIcon className="mr-2 size-4" />
+            ) : (
+              <PanelRightCloseIcon className="mr-2 size-4" />
+            )}
+            Close Split View
           </ContextMenuItem>
         )}
       </ContextMenuContent>

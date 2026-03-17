@@ -152,10 +152,14 @@ function AlertTools({ node }: { node: AlertNode }) {
 
 export default function AlertToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: AlertNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<AlertTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<AlertTools node={node} />, container);
 }

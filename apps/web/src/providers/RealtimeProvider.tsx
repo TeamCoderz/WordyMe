@@ -39,7 +39,9 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
   const [isConnected, setIsConnected] = useState(false);
   const queryClient = useQueryClient();
   const { splitPaneType } = useRouteContext({ from: '__root__' });
-  const activeSpaceId = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']?.id);
+  const activeSpaceId = useSelector(
+    (state) => state.wordy.activeSpace[splitPaneType ?? 'primary']?.id,
+  );
   const invalidate = useAllQueriesInvalidate();
   useEffect(() => {
     connectSocket();

@@ -143,10 +143,14 @@ function HrTools({ node }: { node: HorizontalRuleNode }) {
 
 export default function HrToolbar({
   node,
-  anchorElem = document.querySelector('.editor-container') as HTMLElement,
+  anchorElem,
 }: {
   node: HorizontalRuleNode;
   anchorElem?: HTMLElement;
 }) {
-  return createPortal(<HrTools node={node} />, anchorElem);
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+  const container =
+    anchorElem ?? rootElement?.closest<HTMLElement>('.editor-container') ?? document.body;
+  return createPortal(<HrTools node={node} />, container);
 }

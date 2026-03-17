@@ -39,7 +39,6 @@ math-field::part(menu-toggle) {
   --keycap-gap: 6px;
   --_keyboard-height: 295px !important;
   --keyboard-zindex: 10000;
-  position: sticky !important;
   bottom: 0 !important;
   height: 100vh !important;
 }

@@ -28,7 +28,7 @@ function ManageDocumentsPage() {
   const rootDocumentId = searchParams.item;
   const navigate = useNavigate();
   const { splitPaneType } = useRouteContext({ from: '__root__' });
-  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[splitPaneType ?? 'primary']);
   const spaceID = activeSpace?.id ?? '';
 
   const { data: documentsData, isLoading } = useQuery({

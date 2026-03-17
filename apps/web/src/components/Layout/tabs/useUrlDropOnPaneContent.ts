@@ -6,7 +6,7 @@
 import { useCallback, useState } from 'react';
 import { PANE_CONTENT_SPLIT_PRIMARY } from './PaneContent';
 import { useActions } from '@/store';
-import { hasUrlInDataTransfer } from './utils';
+import { getLocationFromDataTransfer, hasUrlInDataTransfer } from './utils';
 
 export interface UseUrlDropOnPaneContentOptions {
   /** Called when a drop is successfully handled; use to reset parent state. */
@@ -47,22 +47,17 @@ export function useUrlDropOnPaneContent(
     (e: React.DragEvent) => {
       setIsDragging(false);
 
-      const url = e.dataTransfer.getData('text/uri-list')?.split('\n')[0]?.trim();
-      if (!url) return;
+      const location = getLocationFromDataTransfer(e.dataTransfer);
+      if (location === null) return;
 
       try {
-        const { pathname, searchParams, hash, origin } = new URL(url);
-        if (origin !== window.location.origin) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
+        const { pathname, search, hash } = location;
         const overId = e.currentTarget.id;
         const shouldSplit = overId === PANE_CONTENT_SPLIT_PRIMARY;
         const tabId = openTab({
           pathname,
-          search: Object.fromEntries(searchParams.entries()) as Record<string, unknown>,
-          hash: hash.slice(1),
+          search,
+          hash,
           pane,
           background: shouldSplit,
         });

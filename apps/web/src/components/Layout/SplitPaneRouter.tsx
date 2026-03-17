@@ -50,8 +50,6 @@ export function SplitPaneRouter({ tab, type }: SplitPaneRouterProps) {
   const isSyncingRef = useRef(false);
 
   // Created once per mount (component remounts when tab.id changes via key).
-  // Dynamic values (session, etc.) are passed via the RouterProvider context
-  // prop below so they propagate on every render without recreating the router.
   const [splitRouter] = useState(() =>
     createRouter({
       routeTree,
@@ -62,6 +60,7 @@ export function SplitPaneRouter({ tab, type }: SplitPaneRouterProps) {
         session: { data: null, isLoading: true },
         isSplitPane: true as const,
         splitPaneType: type,
+        tabId: tab.id,
       },
     }),
   );
@@ -110,6 +109,7 @@ export function SplitPaneRouter({ tab, type }: SplitPaneRouterProps) {
         session: { data: session, isLoading: isPending || isRefetching },
         isSplitPane: true as const,
         splitPaneType: type,
+        tabId: tab.id,
       }}
     />
   );

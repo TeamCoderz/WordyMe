@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react';
 import { Download, FileQuestion, AlertCircle } from '@repo/ui/components/icons';
 import { Button } from '@repo/ui/components/button';
 import { cn } from '@repo/ui/lib/utils';
+import { PDFViewer } from '@repo/embed-pdf/viewer';
 
 type MediaType = 'image' | 'video' | 'audio' | 'pdf' | 'unknown';
 
@@ -130,13 +131,7 @@ export function AttachmentViewer({
     case 'pdf':
       return (
         <div className={cn('flex flex-col h-full', className)}>
-          <iframe
-            src={url}
-            title={name}
-            className="flex-1 w-full min-h-[80vh] border-0"
-            onError={handleError}
-            onLoad={handleLoad}
-          />
+          <PDFViewer url={url} />
         </div>
       );
 

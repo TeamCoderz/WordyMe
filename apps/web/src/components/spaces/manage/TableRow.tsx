@@ -116,7 +116,7 @@ export function ManageSpacesTableRow({
   const createContainerSpaceMutation = useCreateContainerSpaceMutation({
     from: 'manage',
   });
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const isCutThisItem =
     clipboardSpace?.type === 'move' && clipboardSpace.space.id === (space?.id ?? '');
   const [isRenaming, setIsRenaming] = React.useState(false);

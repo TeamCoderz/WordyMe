@@ -20,7 +20,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@repo/ui/components/sidebar';
-import { Activity, Suspense, useEffect, useRef } from 'react';
+import { Activity, Suspense, useEffect } from 'react';
 import { TableOfContents, TableOfContentsHeader } from './TableOfContents';
 import { cn } from '@repo/ui/lib/utils';
 import { Button } from '@repo/ui/components/button';
@@ -32,6 +32,7 @@ import { useSelector, useActions } from '@/store';
 import { Portal } from '@repo/ui/components/portal';
 import { useContainerQuery } from '@repo/ui/hooks/use-container-query';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
+import { useRouteContext } from '@tanstack/react-router';
 
 const tabs = [
   {
@@ -60,7 +61,7 @@ export function DocumentSidebarComponent({
   handle,
   ...props
 }: React.ComponentProps<typeof Sidebar> & { handle?: string }) {
-  const documentSidebarActiveTab = useSelector((state) => state.documentSidebarActiveTab);
+  const documentSidebarActiveTab = useSelector((state) => state.ui.documentSidebarActiveTab);
   const { setDocumentSidebarActiveTab } = useActions();
   const [activeTab, setActiveTab] = useState(documentSidebarActiveTab);
   const { open, openMobile, setOpen } = useSidebar();
@@ -172,8 +173,8 @@ export interface DocumentSidebarProps {
 }
 
 function useDefaultDocumentSidebarOpen() {
-  const documentSidebar = useSelector((state) => state.documentSidebar);
-  const documentSidebarOpen = useSelector((state) => state.documentSidebarOpen);
+  const documentSidebar = useSelector((state) => state.ui.documentSidebar);
+  const documentSidebarOpen = useSelector((state) => state.ui.documentSidebarOpen);
 
   return useMemo(() => {
     if (documentSidebar === 'expanded') return true;
@@ -184,7 +185,7 @@ function useDefaultDocumentSidebarOpen() {
 }
 
 const sidebarProviderClassName = cn(
-  'group/document-sidebar relative flex flex-1 flex-col items-center min-h-auto',
+  'group/document-sidebar relative flex flex-1 flex-col items-center min-h-auto h-full',
   '**:data-collapsible:sticky **:data-collapsible:top-0 **:data-collapsible:z-50',
 );
 
@@ -193,15 +194,14 @@ const sidebarProviderStyle = {
   '--sidebar-width-icon': 'calc(var(--spacing) * 14)',
 } as React.CSSProperties;
 
-function DocumentSidebarInner({
-  defaultOpen,
-  children,
-  handle,
-}: DocumentSidebarProps & { defaultOpen: boolean }) {
-  const documentSidebar = useSelector((state) => state.documentSidebar);
+export function DocumentSidebar({ children, handle }: DocumentSidebarProps) {
+  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const paneSelector = `[data-pane="${splitPaneType}"]`;
+  const sidebarTriggerSelector = `[data-pane="${splitPaneType}"] #document-sidebar-trigger`;
+  const documentSidebar = useSelector((state) => state.ui.documentSidebar);
   const { setDocumentSidebarOpen } = useActions();
-  const sidebarWrapperRef = useRef<HTMLDivElement>(null);
-  const isDesktop = useContainerQuery(sidebarWrapperRef, 1024);
+  const isDesktop = useContainerQuery(paneSelector, '(width >= 1024px)');
+  const defaultOpen = useDefaultDocumentSidebarOpen();
   const [openDesktop, setOpenDesktop] = useState(defaultOpen);
   const [openMobile, setOpenMobile] = useState(false);
 
@@ -217,17 +217,7 @@ function DocumentSidebarInner({
     [isDesktop, documentSidebar, setDocumentSidebarOpen],
   );
 
-  const open = isDesktop ? openDesktop : openMobile;
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
-  const sidebarRefCallback = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      const panel = node.closest('[data-panel]');
-      const container = panel?.querySelector<HTMLElement>('#document-sidebar-trigger');
-      setPortalContainer(container ?? null);
-    } else {
-      setPortalContainer(null);
-    }
-  }, []);
+  const open = isDesktop == undefined ? undefined : isDesktop ? openDesktop : openMobile;
 
   return (
     <SidebarProvider
@@ -236,30 +226,15 @@ function DocumentSidebarInner({
       defaultOpen={defaultOpen}
       open={open}
       onOpenChange={toggleSidebar}
-      ref={sidebarRefCallback}
     >
-      <div
-        className="flex flex-1 justify-center w-full h-full items-start relative"
-        ref={sidebarWrapperRef}
-      >
+      <div className="flex flex-1 justify-center w-full h-full items-start relative">
         {children}
-        <Portal container={portalContainer}>
+        <Portal container={sidebarTriggerSelector}>
           <SidebarTrigger variant="outline" className="size-9 p-2! [&>svg]:rotate-180 md:hidden" />
         </Portal>
 
         <DocumentSidebarComponent handle={handle} />
       </div>
     </SidebarProvider>
-  );
-}
-
-export function DocumentSidebar({ children, handle }: DocumentSidebarProps) {
-  const defaultOpen = useDefaultDocumentSidebarOpen();
-  const documentSidebar = useSelector((state) => state.documentSidebar);
-
-  return (
-    <DocumentSidebarInner key={documentSidebar} defaultOpen={defaultOpen} handle={handle}>
-      {children}
-    </DocumentSidebarInner>
   );
 }

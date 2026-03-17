@@ -980,7 +980,7 @@ export function useCopyDocumentMutation(
 ) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const { clearDocumentsClipboard } = useActions();
   const mutation = useMutation({
     mutationKey: ['copyDocument', clipboardDocument?.document.id],
@@ -1054,7 +1054,7 @@ export const useMoveDocumentMutation = (
 ) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const { clearDocumentsClipboard } = useActions();
   const mutation = useMutation({
     mutationKey: ['moveDocument'],
