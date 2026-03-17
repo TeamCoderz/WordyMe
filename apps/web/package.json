@@ -22,6 +22,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@repo/backend": "workspace:*",
     "@repo/editor": "workspace:*",
+    "@repo/embed-pdf": "workspace:*",
     "@repo/lib": "workspace:*",
     "@repo/sdk": "workspace:*",
     "@repo/shared": "workspace:*",

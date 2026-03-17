@@ -14,15 +14,10 @@ import type { Store } from './store';
 export interface TabsState {
   /** All open tabs (data store — pathname, isDirty, etc.) */
   tabList: Tab[];
-  /** Ordered tab IDs in the primary (left / top) pane */
-  primaryTabIds: string[];
-  /** Ordered tab IDs in the secondary (right / bottom) pane. Empty = no split. */
-  secondaryTabIds: string[];
+  /** Ordered tab IDs */
+  paneTabIds: Record<'primary' | 'secondary', string[]>;
   /** Selected tab ID per pane */
-  activeTabId: {
-    primary: string | null;
-    secondary: string | null;
-  };
+  activeTabId: Record<'primary' | 'secondary', string | null>;
   /** Which pane is currently focused */
   activePane: 'primary' | 'secondary';
   /** Persisted split panel ratio (percentage for the first panel, 0-100) */
@@ -84,17 +79,14 @@ export interface TabsActions {
   setSplitRatio: (ratio: number) => void;
 }
 
-export type TabsSlice = { tabs: TabsState } & {
-  tabsActions: TabsActions;
-};
+export type TabsSlice = { tabs: TabsState; tabsActions: TabsActions };
 
 const initialState: TabsState = {
   tabList: [],
-  primaryTabIds: [],
-  secondaryTabIds: [],
+  paneTabIds: { primary: [], secondary: [] },
   activeTabId: { primary: null, secondary: null },
   activePane: 'primary',
-  splitRatio: 50,
+  splitRatio: 100,
 };
 
 // Helper to generate unique tab IDs
@@ -122,7 +114,7 @@ export const createTabsSlice: StateCreator<
               : (input.pane ?? 'primary');
 
           const splitRatio =
-            pane === 'secondary' && state.tabs.secondaryTabIds.length === 0
+            pane === 'secondary' && state.tabs.paneTabIds.secondary.length === 0
               ? 50
               : state.tabs.splitRatio;
 
@@ -138,8 +130,7 @@ export const createTabsSlice: StateCreator<
           tabId = newTab.id;
           const newTabList = [...state.tabs.tabList, newTab];
 
-          const paneIds =
-            pane === 'primary' ? state.tabs.primaryTabIds : state.tabs.secondaryTabIds;
+          const paneIds = state.tabs.paneTabIds[pane];
           const insertIndex =
             input.index != null
               ? Math.max(0, Math.min(input.index, paneIds.length))
@@ -150,39 +141,19 @@ export const createTabsSlice: StateCreator<
             ...paneIds.slice(insertIndex),
           ];
 
-          if (pane === 'secondary') {
-            return {
-              tabs: {
-                ...state.tabs,
-                tabList: newTabList,
-                secondaryTabIds: newPaneIds,
-                ...(input.background
-                  ? {}
-                  : {
-                      activeTabId: {
-                        ...state.tabs.activeTabId,
-                        secondary: newTab.id,
-                      },
-                      activePane: 'secondary' as const,
-                    }),
-                splitRatio,
-              },
-            };
-          }
-
           return {
             tabs: {
               ...state.tabs,
               tabList: newTabList,
-              primaryTabIds: newPaneIds,
+              paneTabIds: { ...state.tabs.paneTabIds, [pane]: newPaneIds },
               ...(input.background
                 ? {}
                 : {
                     activeTabId: {
                       ...state.tabs.activeTabId,
-                      primary: newTab.id,
+                      [pane]: newTab.id,
                     },
-                    activePane: 'primary' as const,
+                    activePane: pane,
                   }),
               splitRatio,
             },
@@ -195,58 +166,38 @@ export const createTabsSlice: StateCreator<
         set((state) => {
           const tab = state.tabs.tabList.find((t) => t.id === tabId);
           if (!tab) return state;
-
+          const pane = state.tabs.paneTabIds.primary.includes(tabId) ? 'primary' : 'secondary';
           const newTabList = state.tabs.tabList.filter((t) => t.id !== tabId);
-          const inPrimary = state.tabs.primaryTabIds.includes(tabId);
-          const inSecondary = state.tabs.secondaryTabIds.includes(tabId);
-
-          let newPrimaryTabIds = state.tabs.primaryTabIds;
-          let newSecondaryTabIds = state.tabs.secondaryTabIds;
+          const newPaneTabIds = { ...state.tabs.paneTabIds };
           const newActiveTabId = { ...state.tabs.activeTabId };
-          let newActivePane = state.tabs.activePane;
 
-          if (inPrimary) {
-            const idx = newPrimaryTabIds.indexOf(tabId);
-            newPrimaryTabIds = newPrimaryTabIds.filter((id) => id !== tabId);
-
-            if (state.tabs.activeTabId.primary === tabId) {
-              if (newPrimaryTabIds.length === 0 && newSecondaryTabIds.length > 0) {
-                // Promote secondary tabs to primary when primary becomes empty
-                newPrimaryTabIds = [...newSecondaryTabIds];
-                newSecondaryTabIds = [];
-                newActiveTabId.primary = state.tabs.activeTabId.secondary ?? newPrimaryTabIds[0];
-                newActiveTabId.secondary = null;
-                newActivePane = 'primary';
-              } else if (newPrimaryTabIds.length === 0) {
-                newActiveTabId.primary = null;
-              } else if (idx >= newPrimaryTabIds.length) {
-                newActiveTabId.primary = newPrimaryTabIds[newPrimaryTabIds.length - 1];
-              } else {
-                newActiveTabId.primary = newPrimaryTabIds[idx];
-              }
-            }
-          } else if (inSecondary) {
-            const idx = newSecondaryTabIds.indexOf(tabId);
-            newSecondaryTabIds = newSecondaryTabIds.filter((id) => id !== tabId);
-
-            if (state.tabs.activeTabId.secondary === tabId) {
-              if (newSecondaryTabIds.length === 0) {
-                newActiveTabId.secondary = null;
-                newActivePane = 'primary';
-              } else if (idx >= newSecondaryTabIds.length) {
-                newActiveTabId.secondary = newSecondaryTabIds[newSecondaryTabIds.length - 1];
-              } else {
-                newActiveTabId.secondary = newSecondaryTabIds[idx];
-              }
-            }
+          const index = newPaneTabIds[pane].indexOf(tabId);
+          newPaneTabIds[pane] = [
+            ...newPaneTabIds[pane].slice(0, index),
+            ...newPaneTabIds[pane].slice(index + 1),
+          ];
+          if (newPaneTabIds.primary.length === 0) {
+            newPaneTabIds.primary = [...newPaneTabIds.secondary];
+            newPaneTabIds.secondary = [];
+            newActiveTabId.primary =
+              newActiveTabId.secondary ??
+              newPaneTabIds.primary[newPaneTabIds.primary.length - 1] ??
+              null;
+            newActiveTabId.secondary = null;
           }
 
+          if (tabId === state.tabs.activeTabId[pane]) {
+            newActiveTabId[pane] =
+              newPaneTabIds[pane][index] ?? newPaneTabIds[pane][index - 1] ?? null;
+          }
+
+          const newActivePane =
+            newPaneTabIds.secondary.length === 0 ? 'primary' : state.tabs.activePane;
           return {
             tabs: {
               ...state.tabs,
               tabList: newTabList,
-              primaryTabIds: newPrimaryTabIds,
-              secondaryTabIds: newSecondaryTabIds,
+              paneTabIds: newPaneTabIds,
               activeTabId: newActiveTabId,
               activePane: newActivePane,
             },
@@ -259,53 +210,33 @@ export const createTabsSlice: StateCreator<
           const tabToKeep = state.tabs.tabList.find((t) => t.id === tabId);
           if (!tabToKeep) return state;
 
-          const inPrimary = state.tabs.primaryTabIds.includes(tabId);
-
-          if (inPrimary) {
-            const newTabList = state.tabs.tabList.filter(
-              (t) => t.id === tabId || state.tabs.secondaryTabIds.includes(t.id),
-            );
-            return {
-              tabs: {
-                ...state.tabs,
-                tabList: newTabList,
-                primaryTabIds: [tabId],
-                activeTabId: {
-                  ...state.tabs.activeTabId,
-                  primary: tabId,
-                },
+          const pane = state.tabs.paneTabIds.primary.includes(tabId) ? 'primary' : 'secondary';
+          const oppositePane = pane === 'primary' ? 'secondary' : 'primary';
+          const newTabList = state.tabs.tabList.filter(
+            (t) => t.id === tabId || state.tabs.paneTabIds[oppositePane].includes(t.id),
+          );
+          return {
+            tabs: {
+              ...state.tabs,
+              tabList: newTabList,
+              paneTabIds: { ...state.tabs.paneTabIds, [pane]: [tabId] },
+              activeTabId: {
+                ...state.tabs.activeTabId,
+                [pane]: tabId,
               },
-            };
-          } else {
-            const newTabList = state.tabs.tabList.filter(
-              (t) => t.id === tabId || state.tabs.primaryTabIds.includes(t.id),
-            );
-            return {
-              tabs: {
-                ...state.tabs,
-                tabList: newTabList,
-                secondaryTabIds: [tabId],
-                activeTabId: {
-                  ...state.tabs.activeTabId,
-                  secondary: tabId,
-                },
-              },
-            };
-          }
+            },
+          };
         });
       },
 
       closeAllTabs: () => {
         set((state) => {
           const activePane = state.tabs.activePane;
-          const activePaneTabIds =
-            activePane === 'primary' ? state.tabs.primaryTabIds : state.tabs.secondaryTabIds;
+          const activePaneTabIds = state.tabs.paneTabIds[activePane];
           return {
             tabs: {
               tabList: state.tabs.tabList.filter((t) => !activePaneTabIds.includes(t.id)),
-              primaryTabIds:
-                activePane === 'primary' ? state.tabs.secondaryTabIds : state.tabs.primaryTabIds,
-              secondaryTabIds: [],
+              paneTabIds: { ...state.tabs.paneTabIds, [activePane]: [] },
               activeTabId: {
                 primary:
                   activePane === 'primary'
@@ -322,34 +253,18 @@ export const createTabsSlice: StateCreator<
 
       setActiveTab: (tabId: string) => {
         set((state) => {
-          const inPrimary = state.tabs.primaryTabIds.includes(tabId);
-          const inSecondary = state.tabs.secondaryTabIds.includes(tabId);
+          const pane = state.tabs.paneTabIds.primary.includes(tabId) ? 'primary' : 'secondary';
 
-          if (inPrimary) {
-            return {
-              tabs: {
-                ...state.tabs,
-                activeTabId: {
-                  ...state.tabs.activeTabId,
-                  primary: tabId,
-                },
-                activePane: 'primary',
+          return {
+            tabs: {
+              ...state.tabs,
+              activeTabId: {
+                ...state.tabs.activeTabId,
+                [pane]: tabId,
               },
-            };
-          }
-          if (inSecondary) {
-            return {
-              tabs: {
-                ...state.tabs,
-                activeTabId: {
-                  ...state.tabs.activeTabId,
-                  secondary: tabId,
-                },
-                activePane: 'secondary',
-              },
-            };
-          }
-          return state;
+              activePane: pane,
+            },
+          };
         });
       },
 
@@ -366,20 +281,22 @@ export const createTabsSlice: StateCreator<
         set((state) => {
           if (fromIndex === toIndex) return state;
 
-          const ids =
-            pane === 'primary' ? [...state.tabs.primaryTabIds] : [...state.tabs.secondaryTabIds];
-
-          if (fromIndex < 0 || fromIndex >= ids.length || toIndex < 0 || toIndex > ids.length) {
+          const paneTabIds = [...state.tabs.paneTabIds[pane]];
+          if (
+            fromIndex < 0 ||
+            fromIndex >= paneTabIds.length ||
+            toIndex < 0 ||
+            toIndex > paneTabIds.length
+          ) {
             return state;
           }
-
-          const [movedId] = ids.splice(fromIndex, 1);
-          ids.splice(toIndex, 0, movedId);
+          const [movedId] = paneTabIds.splice(fromIndex, 1);
+          paneTabIds.splice(toIndex, 0, movedId);
 
           return {
             tabs: {
               ...state.tabs,
-              ...(pane === 'primary' ? { primaryTabIds: ids } : { secondaryTabIds: ids }),
+              paneTabIds: { ...state.tabs.paneTabIds, [pane]: paneTabIds },
             },
           };
         });
@@ -390,13 +307,8 @@ export const createTabsSlice: StateCreator<
           const tab = state.tabs.tabList.find((t) => t.id === tabId);
           if (!tab) return state;
 
-          const inPrimary = state.tabs.primaryTabIds.includes(tabId);
-          const inSecondary = state.tabs.secondaryTabIds.includes(tabId);
-
-          const splitRatio =
-            targetPane === 'secondary' && state.tabs.secondaryTabIds.length === 0
-              ? 50
-              : state.tabs.splitRatio;
+          const inPrimary = state.tabs.paneTabIds.primary.includes(tabId);
+          const inSecondary = state.tabs.paneTabIds.secondary.includes(tabId);
 
           if (
             (targetPane === 'primary' && inPrimary) ||
@@ -405,84 +317,54 @@ export const createTabsSlice: StateCreator<
             return state;
           }
 
-          let newPrimaryTabIds = [...state.tabs.primaryTabIds];
-          let newSecondaryTabIds = [...state.tabs.secondaryTabIds];
+          const oppositePane = targetPane === 'primary' ? 'secondary' : 'primary';
+          const splitRatio =
+            targetPane === 'secondary' && state.tabs.paneTabIds.secondary.length === 0
+              ? 50
+              : state.tabs.splitRatio;
+
+          const newPaneTabIds = { ...state.tabs.paneTabIds };
+
           const newActiveTabId = { ...state.tabs.activeTabId };
 
-          const insertIndex =
+          const fromIndex = state.tabs.paneTabIds[oppositePane].indexOf(tabId);
+
+          const toIndex =
             index != null
-              ? Math.max(
-                  0,
-                  Math.min(
-                    index,
-                    targetPane === 'primary' ? newPrimaryTabIds.length : newSecondaryTabIds.length,
-                  ),
-                )
-              : undefined;
+              ? Math.max(0, Math.min(index, state.tabs.paneTabIds[targetPane].length))
+              : state.tabs.paneTabIds[targetPane].length;
 
-          if (targetPane === 'secondary') {
-            const idx = newPrimaryTabIds.indexOf(tabId);
-            newPrimaryTabIds = newPrimaryTabIds.filter((id) => id !== tabId);
-            newSecondaryTabIds = [
-              ...newSecondaryTabIds.slice(0, insertIndex ?? newSecondaryTabIds.length),
-              tabId,
-              ...newSecondaryTabIds.slice(insertIndex ?? newSecondaryTabIds.length),
-            ];
+          newPaneTabIds[oppositePane] = newPaneTabIds[oppositePane].filter((id) => id !== tabId);
+          newPaneTabIds[targetPane].splice(toIndex, 0, tabId);
+          newActiveTabId[targetPane] = tabId;
+          newActiveTabId[oppositePane] =
+            newPaneTabIds[oppositePane][fromIndex] ??
+            newPaneTabIds[oppositePane][fromIndex - 1] ??
+            null;
 
-            if (state.tabs.activeTabId.primary === tabId) {
-              if (newPrimaryTabIds.length === 0) {
-                newActiveTabId.primary = null;
-              } else if (idx >= newPrimaryTabIds.length) {
-                newActiveTabId.primary = newPrimaryTabIds[newPrimaryTabIds.length - 1];
-              } else {
-                newActiveTabId.primary = newPrimaryTabIds[idx];
-              }
-            }
-
-            newActiveTabId.secondary = tabId;
-          } else {
-            const idx = newSecondaryTabIds.indexOf(tabId);
-            newSecondaryTabIds = newSecondaryTabIds.filter((id) => id !== tabId);
-            const primaryInsert = insertIndex ?? newPrimaryTabIds.length;
-            newPrimaryTabIds = [
-              ...newPrimaryTabIds.slice(0, primaryInsert),
-              tabId,
-              ...newPrimaryTabIds.slice(primaryInsert),
-            ];
-
-            if (state.tabs.activeTabId.secondary === tabId) {
-              if (newSecondaryTabIds.length === 0) {
-                newActiveTabId.secondary = null;
-              } else if (idx >= newSecondaryTabIds.length) {
-                newActiveTabId.secondary = newSecondaryTabIds[newSecondaryTabIds.length - 1];
-              } else {
-                newActiveTabId.secondary = newSecondaryTabIds[idx];
-              }
-            }
-
-            newActiveTabId.primary = tabId;
-          }
-
-          const shouldCloseSplit = newPrimaryTabIds.length === 0;
-          if (shouldCloseSplit) {
+          if (newPaneTabIds.primary.length === 0) {
+            const homeTab: Tab = {
+              id: generateTabId(),
+              pathname: '/',
+              isDirty: false,
+            };
             return {
               tabs: {
-                ...state.tabs,
-                primaryTabIds: newSecondaryTabIds,
-                secondaryTabIds: [],
+                tabList: [...state.tabs.tabList, homeTab],
+                paneTabIds: { ...newPaneTabIds, primary: [homeTab.id] },
                 activeTabId: {
-                  primary: tabId,
-                  secondary: null,
+                  ...newActiveTabId,
+                  primary: homeTab.id,
                 },
-                activePane: 'primary',
+                activePane: targetPane,
+                splitRatio: 50,
               },
             };
           }
           return {
             tabs: {
               ...state.tabs,
-              primaryTabIds: newPrimaryTabIds,
-              secondaryTabIds: newSecondaryTabIds,
+              paneTabIds: newPaneTabIds,
               activeTabId: newActiveTabId,
               activePane: targetPane,
               splitRatio,
@@ -495,18 +377,20 @@ export const createTabsSlice: StateCreator<
         set((state) => {
           const tab = state.tabs.tabList.find((t) => t.id === tabId);
           if (!tab) return state;
-          if (!state.tabs.primaryTabIds.includes(tabId)) return state;
-          if (state.tabs.primaryTabIds.length <= 1) return state;
+          if (!state.tabs.paneTabIds.primary.includes(tabId)) return state;
+          if (state.tabs.paneTabIds.primary.length <= 1) return state;
 
-          const others = state.tabs.primaryTabIds.filter((id) => id !== tabId);
+          const others = state.tabs.paneTabIds.primary.filter((id) => id !== tabId);
+          const secondaryActiveTabId = others.includes(state.tabs.activeTabId.primary ?? '')
+            ? state.tabs.activeTabId.primary
+            : (others[0] ?? null);
           return {
             tabs: {
               ...state.tabs,
-              primaryTabIds: [tabId],
-              secondaryTabIds: others,
+              paneTabIds: { primary: [tabId], secondary: others },
               activeTabId: {
                 primary: tabId,
-                secondary: others[0] ?? null,
+                secondary: secondaryActiveTabId,
               },
               activePane: 'primary',
               splitRatio: 50,
@@ -551,19 +435,7 @@ export const createTabsSlice: StateCreator<
 
       resetTabs: () => {
         set(() => {
-          return {
-            tabs: {
-              tabList: [],
-              primaryTabIds: [],
-              secondaryTabIds: [],
-              activeTabId: {
-                primary: null,
-                secondary: null,
-              },
-              activePane: 'primary' as const,
-              splitRatio: 100,
-            },
-          };
+          return { tabs: initialState };
         });
       },
 
@@ -571,8 +443,10 @@ export const createTabsSlice: StateCreator<
         set((state) => ({
           tabs: {
             ...state.tabs,
-            primaryTabIds: [...state.tabs.primaryTabIds, ...state.tabs.secondaryTabIds],
-            secondaryTabIds: [],
+            paneTabIds: {
+              primary: [...state.tabs.paneTabIds.primary, ...state.tabs.paneTabIds.secondary],
+              secondary: [],
+            },
             activeTabId: {
               ...state.tabs.activeTabId,
               secondary: null,

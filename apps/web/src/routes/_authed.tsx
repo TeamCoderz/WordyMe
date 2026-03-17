@@ -204,7 +204,7 @@ function UserSync() {
 function ActiveSpaceLoader() {
   const { data: spaces, isLoading } = useQuery(getAllSpacesQueryOptions);
   const { setActiveSpace } = useActions();
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   useEffect(() => {
     if (!isLoading && spaces) {
       const freshActiveSpace = spaces?.find((space) => space.id === activeSpace?.id);

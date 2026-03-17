@@ -21,7 +21,47 @@ export const matchTabLocation = (
   );
 };
 
+export const getLocationFromDragEvent = (event: React.DragEvent | DragEvent) => {
+  const target = event.target as HTMLElement | null;
+  if (!target) return null;
+  const link = target.closest('a');
+  if (!link) return null;
+  const { origin, pathname, searchParams, hash } = new URL(link.href);
+  if (origin !== window.location.origin) return null;
+  return {
+    pathname,
+    search: Object.fromEntries(searchParams.entries()) as Record<string, unknown>,
+    hash: hash.slice(1),
+  };
+};
+
 export const hasUrlInDataTransfer = (dataTransfer: DataTransfer | null) => {
   if (!dataTransfer) return false;
   return dataTransfer.types.includes('text/uri-list') || dataTransfer.types.length === 0;
+};
+
+export const getLocationFromDataTransfer = (dataTransfer: DataTransfer | null) => {
+  if (!dataTransfer) return null;
+  const uriList = dataTransfer.getData('text/uri-list');
+  if (!uriList) return null;
+  const url = uriList.split('\n')[0]?.trim();
+  if (!url) return null;
+  try {
+    const { origin, pathname, searchParams, hash } = new URL(url);
+    if (origin !== window.location.origin) return null;
+    return {
+      pathname,
+      search: Object.fromEntries(searchParams.entries()) as Record<string, unknown>,
+      hash: hash.slice(1),
+    };
+  } catch {
+    return null;
+  }
+};
+export const matchAppLink = (tab: Tab, pathname: string) => {
+  return pathname.split('/').length === 2 && tab.pathname.split('/')[1] === pathname.split('/')[1];
+};
+
+export const matchAppLocation = (tab: Tab, pathname: string) => {
+  return tab.pathname.split('/')[1] === pathname.split('/')[1];
 };

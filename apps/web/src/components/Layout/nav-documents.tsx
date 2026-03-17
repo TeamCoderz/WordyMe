@@ -10,7 +10,7 @@ import { Link } from '@tanstack/react-router';
 import { useSelector } from '@/store';
 
 export function NavDocuments(props: React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   return (
     <SidebarGroup
       {...props}

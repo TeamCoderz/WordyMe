@@ -10,7 +10,7 @@ import { useUrlDropOnPaneContent } from './useUrlDropOnPaneContent';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
-import { hasUrlInDataTransfer } from './utils';
+import { getLocationFromDragEvent } from './utils';
 
 export const PANE_CONTENT_SPLIT_PRIMARY = 'pane-content-split-primary';
 export const PANE_CONTENT_SPLIT_SECONDARY = 'pane-content-split-secondary';
@@ -28,7 +28,8 @@ export interface PaneContentProps {
  * move others to secondary; right = move tab to secondary.
  */
 export function PaneContent({ pane, children, className }: PaneContentProps) {
-  const hasSplit = useSelector((state) => state.tabs.secondaryTabIds.length > 0);
+  const isPortrait = useMediaQuery('(orientation: portrait)');
+  const hasSplit = useSelector((state) => state.tabs.paneTabIds.secondary.length > 0);
   const isEditorTab = useSelector((state) =>
     state.tabs.tabList
       .find((t) => t.id === state.tabs.activeTabId[pane])
@@ -51,8 +52,8 @@ export function PaneContent({ pane, children, className }: PaneContentProps) {
   const [isLinkDragging, setIsLinkDragging] = useState(false);
   const [isShiftHeld, setIsShiftHeld] = useState(false);
   const handleDrag = useCallback((e: DragEvent) => {
-    const hasLink = hasUrlInDataTransfer(e.dataTransfer);
-    setIsLinkDragging(hasLink);
+    const location = getLocationFromDragEvent(e);
+    setIsLinkDragging(location !== null);
     setIsShiftHeld(e.shiftKey);
   }, []);
   const handleDragEnd = useCallback(() => {
@@ -82,8 +83,17 @@ export function PaneContent({ pane, children, className }: PaneContentProps) {
     (isTabDropTarget || (isLinkDragging && (!isShiftHeld || !isEditorTab)));
 
   return (
-    <div ref={setNodeRef} className={cn('flex-1 min-h-0 relative', className)}>
-      <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]>div[style]]:block!">
+    <div
+      ref={setNodeRef}
+      className={cn(
+        'flex-1 min-h-0 relative',
+        {
+          'pb-(--keyboard-inset-height)': !hasSplit || !isPortrait || pane === 'secondary',
+        },
+        className,
+      )}
+    >
+      <ScrollArea className="h-full *:data-radix-scroll-area-viewport:*:block! *:data-radix-scroll-area-viewport:*:h-full">
         {children}
       </ScrollArea>
       {showTabSplitZones && <TabSplitDropZones />}

@@ -13,7 +13,7 @@ import { useSelector, useActions } from '@/store';
 import { SidebarMenuButton } from '@repo/ui/components/sidebar';
 
 export function CreateDocumentSection() {
-  const isHidden = useSelector((state) => state.createDocumentSectionHidden);
+  const isHidden = useSelector((state) => state.ui.createDocumentSectionHidden);
   const { setCreateDocumentSectionHidden } = useActions();
   const [isAlertOpen, setIsAlertOpen] = React.useState(false);
 

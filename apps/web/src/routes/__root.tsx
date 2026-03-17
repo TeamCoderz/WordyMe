@@ -13,7 +13,7 @@ import { AppHeader } from '@/components/Layout/app-header';
 import { AppSidebar } from '@/components/Layout/app-sidebar';
 import { store, useSelector } from '@/store';
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { Activity, useCallback, useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import SplashScreen from '@/components/splash-screen';
 import {
   getShouldBlockNavigation,
@@ -41,6 +41,7 @@ export const Route = createRootRouteWithContext<{
   };
   isSplitPane?: boolean;
   splitPaneType?: 'primary' | 'secondary' | null;
+  tabId?: string;
 }>()({
   component: Root,
   pendingComponent: () => <SplashScreen className="absolute" />,
@@ -91,7 +92,9 @@ function RootLayout() {
   const hasSplit = !!primaryActiveTab && !!secondaryActiveTab;
 
   const isPortrait = useMediaQuery('(orientation: portrait)');
+  const isCoarsePointer = useMediaQuery('(pointer: coarse)');
   const splitDirection = isPortrait ? 'vertical' : 'horizontal';
+  const panelMinSize = isCoarsePointer ? 260 : 412;
 
   const handleLayoutChanged = useCallback(
     (layout: Record<string, number>) => {
@@ -131,26 +134,34 @@ function RootLayout() {
               <ResizablePanelGroup
                 onLayoutChanged={handleLayoutChanged}
                 orientation={splitDirection as 'horizontal' | 'vertical'}
+                resizeTargetMinimumSize={{ coarse: 37, fine: 20 }}
+                style={
+                  {
+                    '--split-ratio': `${hasSplit ? splitRatio : 100}%`,
+                  } as React.CSSProperties
+                }
                 className={cn(
                   'flex-1 print:flex-row! print:*:h-auto! print:*:max-h-none! print:*:hidden!',
                   {
                     'print:*:first:flex!': activePane === 'primary',
                     'print:*:last:flex!': activePane === 'secondary',
+                    '*:first:max-h-[calc(var(--split-ratio)-var(--keyboard-inset-height))]!':
+                      isPortrait && activePane === 'secondary',
                   },
                 )}
               >
                 <ResizablePanel
                   id="primary"
                   defaultSize={hasSplit ? splitRatio : 100}
-                  minSize={412}
-                  className={cn({
+                  minSize={panelMinSize}
+                  className={cn('@container', {
                     'print:hidden!': activePane === 'secondary',
                   })}
                   onMouseDown={() => setActivePane('primary')}
                 >
                   <div
-                    className="@container relative flex flex-col h-full overflow-hidden"
-                    onMouseDown={() => setActivePane('primary')}
+                    data-pane="primary"
+                    className="relative flex flex-col h-full overflow-hidden"
                   >
                     <PaneTabBar pane="primary" />
                     <PaneContent pane="primary">
@@ -160,30 +171,32 @@ function RootLayout() {
                     </PaneContent>
                   </div>
                 </ResizablePanel>
-                <Activity mode={hasSplit ? 'visible' : 'hidden'}>
-                  <ResizableHandle withHandle className="print:hidden! z-50 *:z-50" />
-                  <ResizablePanel
-                    id="secondary"
-                    defaultSize={100 - splitRatio}
-                    minSize={412}
-                    className={cn({
-                      'print:hidden!': activePane === 'primary',
-                    })}
-                    onMouseDown={() => setActivePane('secondary')}
-                  >
-                    <div
-                      className="@container relative flex flex-col h-full overflow-hidden"
+                {hasSplit && (
+                  <>
+                    <ResizableHandle
+                      withHandle
+                      className="print:hidden! z-50 *:z-50 focus-visible:shadow-[none] aria-[orientation=horizontal]:min-h-4 aria-[orientation=vertical]:min-w-4"
+                    />
+                    <ResizablePanel
+                      defaultSize={100 - splitRatio}
+                      minSize={panelMinSize}
+                      className={cn('@container', {
+                        'print:hidden!': activePane === 'primary',
+                      })}
                       onMouseDown={() => setActivePane('secondary')}
                     >
-                      <PaneTabBar pane="secondary" />
-                      <PaneContent pane="secondary">
-                        {secondaryActiveTab && (
+                      <div
+                        data-pane="secondary"
+                        className="relative flex flex-col h-full overflow-hidden"
+                      >
+                        <PaneTabBar pane="secondary" />
+                        <PaneContent pane="secondary">
                           <SplitPaneRouter tab={secondaryActiveTab} type="secondary" />
-                        )}
-                      </PaneContent>
-                    </div>
-                  </ResizablePanel>
-                </Activity>
+                        </PaneContent>
+                      </div>
+                    </ResizablePanel>
+                  </>
+                )}
               </ResizablePanelGroup>
             </TabDndProvider>
           </SidebarInset>

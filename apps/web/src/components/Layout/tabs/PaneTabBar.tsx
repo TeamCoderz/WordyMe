@@ -6,7 +6,8 @@
 import { cn } from '@repo/ui/lib/utils';
 import { useSelector, useActions } from '@/store';
 import { Tab } from './Tab';
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { TabBarContextMenu } from './TabBarContextMenu';
+import { useCallback, useRef, useEffect } from 'react';
 import { useUrlDropOnTabBar } from './useUrlDropOnTabBar';
 import { useDroppable } from '@dnd-kit/core';
 import type { Tab as TabType } from '@repo/types';
@@ -20,6 +21,7 @@ import {
 } from '@repo/ui/components/icons';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
+import { useHotkey } from '@tanstack/react-hotkeys';
 
 export interface PaneTabBarProps {
   pane: 'primary' | 'secondary';
@@ -29,21 +31,27 @@ export interface PaneTabBarProps {
 export function PaneTabBar({ pane, className }: PaneTabBarProps) {
   const tabsViewportRef = useRef<HTMLDivElement>(null);
 
-  const tabs = useSelector((state) => state.tabs);
-  const tabIds = pane === 'primary' ? tabs.primaryTabIds : tabs.secondaryTabIds;
-  const activeTabId = tabs.activeTabId[pane];
-  // Get the actual tab objects for this pane
-  const paneTabs = useMemo(
-    () => tabIds.map((id) => tabs.tabList.find((t) => t.id === id)).filter(Boolean) as TabType[],
-    [tabIds, tabs.tabList],
+  const paneTabCount = useSelector((state) => state.tabs.paneTabIds[pane].length);
+  const activeTab = useSelector((state) =>
+    state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId[pane]),
   );
+  const activePane = useSelector((state) => state.tabs.activePane);
+  // Get the actual tab objects for this pane
+  const paneTabs = useSelector(
+    (state) =>
+      state.tabs.paneTabIds[pane]
+        .map((id) => state.tabs.tabList.find((t) => t.id === id))
+        .filter(Boolean) as TabType[],
+  );
+
+  const { closeTab, closeOtherTabs } = useActions();
 
   const { setNodeRef: setTabBarEndSlotRef, isOver: isOverTabBarEndSlot } = useDroppable({
     id: `pane-tabbar-${pane}`,
     data: {
       type: 'tab-slot',
       pane,
-      index: tabIds.length,
+      index: paneTabCount,
       side: 'left',
     },
   });
@@ -70,10 +78,10 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
 
   // Scroll active tab into view
   useEffect(() => {
-    if (!activeTabId || !tabsViewportRef.current) return;
+    if (!activeTab || !tabsViewportRef.current) return;
 
     const activeTabElement = tabsViewportRef.current.querySelector(
-      `[data-tab-id="${activeTabId}"]`,
+      `[data-tab-id="${activeTab.id}"]`,
     );
     if (activeTabElement) {
       activeTabElement.scrollIntoView({
@@ -82,13 +90,9 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
         inline: 'nearest',
       });
     }
-  }, [activeTabId]);
+  }, [activeTab]);
 
   const { openTab, closeSplit } = useActions();
-  const activeTab = useMemo(
-    () => (activeTabId ? (tabs.tabList.find((t) => t.id === activeTabId) ?? null) : null),
-    [activeTabId, tabs.tabList],
-  );
   const isPortrait = useMediaQuery('(orientation: portrait)');
   const targetPane = pane === 'primary' ? 'secondary' : 'primary';
   const splitLabel =
@@ -104,16 +108,52 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
     });
   }, [activeTab, openTab, targetPane]);
 
-  const handleCloseSplit = useCallback(() => {
-    closeSplit();
-  }, [closeSplit]);
+  // Copy link with search params and hash
+  const handleCopyPath = useCallback(() => {
+    if (!activeTab) return;
+
+    const searchParams =
+      Object.keys(activeTab.search ?? {}).length > 0
+        ? `?${new URLSearchParams(activeTab.search as Record<string, string>).toString()}`
+        : '';
+    const hash = activeTab.hash ? `#${activeTab.hash}` : '';
+    navigator.clipboard.writeText(
+      window.location.origin + activeTab.pathname + searchParams + hash,
+    );
+  }, [activeTab]);
 
   // External URL drops (address bar, bookmarks): dnd-kit doesn't support these,
   // so we use native HTML5 drag events via useUrlDropOnTabBar.
-  const { dropIndicatorLeft: linkDropIndicatorLeft, dropHandlers } = useUrlDropOnTabBar(
-    pane,
-    tabsViewportRef,
-    tabIds.length,
+  const {
+    isLinkDragging,
+    dropIndicatorLeft: linkDropIndicatorLeft,
+    dropHandlers,
+  } = useUrlDropOnTabBar(pane, tabsViewportRef, paneTabCount);
+
+  useHotkey(
+    'Mod+Alt+W',
+    () => {
+      if (!activeTab) return;
+      const isHomeTab = activeTab.pathname === '/';
+      const isLastTab = paneTabs.length === 1;
+      if (!(isHomeTab && isLastTab)) closeTab(activeTab.id);
+    },
+    { enabled: pane === activePane },
+  );
+  useHotkey(
+    'Mod+Alt+T',
+    () => {
+      if (!activeTab) return;
+      closeOtherTabs(activeTab.id);
+    },
+    { enabled: pane === activePane },
+  );
+  useHotkey(
+    'Mod+Shift+C',
+    () => {
+      handleCopyPath();
+    },
+    { enabled: pane === activePane },
   );
 
   return (
@@ -135,7 +175,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
           aria-label={`${pane} pane tabs`}
           {...dropHandlers}
         >
-          {linkDropIndicatorLeft != null && (
+          {isLinkDragging && linkDropIndicatorLeft != null && (
             <div
               className="absolute top-0 bottom-0 w-px bg-primary pointer-events-none z-50"
               style={{ left: linkDropIndicatorLeft }}
@@ -145,21 +185,20 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
             <Tab
               key={tab.id}
               tab={tab}
-              isActive={tab.id === activeTabId}
+              isActive={tab.id === activeTab?.id}
               pane={pane}
               index={index}
             />
           ))}
-          <div
-            ref={setTabBarEndSlotRef}
-            className={cn(
-              'flex-1 -translate-x-px pointer-events-none z-50 border-l border-transparent',
-              {
+          <TabBarContextMenu pane={pane}>
+            <div
+              ref={setTabBarEndSlotRef}
+              className={cn('flex-1 -translate-x-px z-50 border-l border-transparent', {
                 'border-l-primary': isOverTabBarEndSlot,
-              },
-            )}
-            aria-hidden
-          />
+              })}
+              aria-hidden
+            />
+          </TabBarContextMenu>
         </div>
       </ScrollArea>
       <div className="flex items-center gap-2 px-2 justify-center min-w-14 h-full border-l">
@@ -183,7 +222,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
                 className="size-7"
                 aria-label="Close Split View"
                 disabled={!activeTab}
-                onClick={handleCloseSplit}
+                onClick={closeSplit}
               >
                 {isPortrait ? <PanelTopCloseIcon /> : <PanelRightCloseIcon />}
               </Button>

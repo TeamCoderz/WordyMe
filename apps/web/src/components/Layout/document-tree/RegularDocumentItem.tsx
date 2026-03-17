@@ -31,6 +31,10 @@ import {
   CopyPlus,
   SquarePen,
   FileOutput,
+  SquareArrowOutUpRight,
+  SquareSplitVerticalIcon,
+  MousePointerClickIcon,
+  SquareSplitHorizontalIcon,
 } from '@repo/ui/components/icons';
 import { SidebarMenuButton, SidebarMenuItem, useSidebar } from '@repo/ui/components/sidebar';
 import { cachedDocuments } from '@/queries/caches/documents';
@@ -40,9 +44,12 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuShortcut,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import { IS_APPLE } from '@repo/shared/environment';
+import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 
 interface RegularDocumentItemProps {
   document: DocumentData;
@@ -75,7 +82,7 @@ export function RegularDocumentItem({
   const { pathname } = useLocation();
   const activeDocumentHandle = decodeURIComponent(pathname.split('/').pop() ?? '');
   const isActive = activeDocumentHandle === document.handle;
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const isCutThisItem =
     clipboardDocument?.type === 'move' && clipboardDocument.document.id === document.id;
   const isCreating = document.id === document.clientId;
@@ -104,7 +111,7 @@ export function RegularDocumentItem({
   });
 
   // Clipboard state management
-  const { setDocumentsClipboard } = useActions();
+  const { setDocumentsClipboard, openTab } = useActions();
   const isPlaceholder = document.id === 'new-doc' && !document.isContainer;
 
   const removePlaceholderHandler = React.useCallback(() => {
@@ -236,6 +243,8 @@ export function RegularDocumentItem({
     };
   }, [isCreating]);
 
+  const isPortrait = useMediaQuery('(orientation: portrait)');
+
   // Return DocumentNameInput directly for placeholder or renaming mode
   if (isPlaceholder || isRenaming) {
     return (
@@ -343,6 +352,42 @@ export function RegularDocumentItem({
           }}
           ref={contextMenuContentRef}
         >
+          <ContextMenuItem
+            onSelect={() => {
+              openTab({
+                pathname: `/view/${document.handle ?? document.id}`,
+                search: document.handle ? undefined : { id: true },
+              });
+            }}
+          >
+            <SquareArrowOutUpRight className="size-4 group-hover:text-foreground" />
+            Open in new tab
+            <ContextMenuShortcut className="flex">
+              {IS_APPLE ? '⌘' : 'Ctrl'}
+              <MousePointerClickIcon />
+            </ContextMenuShortcut>
+          </ContextMenuItem>
+          <ContextMenuItem
+            onSelect={() => {
+              openTab({
+                pathname: `/view/${document.handle ?? document.id}`,
+                search: document.handle ? undefined : { id: true },
+                pane: 'opposite',
+              });
+            }}
+          >
+            {isPortrait ? (
+              <SquareSplitVerticalIcon className="size-4 group-hover:text-foreground" />
+            ) : (
+              <SquareSplitHorizontalIcon className="size-4 group-hover:text-foreground" />
+            )}
+            Open to the side
+            <ContextMenuShortcut className="flex">
+              {IS_APPLE ? '⇧' : 'Shift'}
+              <MousePointerClickIcon />
+            </ContextMenuShortcut>
+          </ContextMenuItem>
+          <ContextMenuSeparator />
           {isIconPickerOpen ? (
             <>
               <IconPicker

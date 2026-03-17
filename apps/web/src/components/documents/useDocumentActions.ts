@@ -20,7 +20,7 @@ import {
 } from '@/queries/revisions';
 import { useActions, useSelector } from '@/store';
 
-export function useDocumentActions(handle: string | null) {
+export function useDocumentActions(handle: string | null, tabId?: string) {
   const queryClient = useQueryClient();
   // Queries
   const documentQueryOptions = getDocumentByHandleQueryOptions(handle ?? '');
@@ -44,7 +44,10 @@ export function useDocumentActions(handle: string | null) {
   );
 
   const isPreviouslySaved = !!cloudRevision;
-  const isUpToDate = isPreviouslySaved && document?.currentRevisionId === cloudRevision.id;
+  const isUpToDate =
+    isPreviouslySaved &&
+    document?.currentRevisionId === cloudRevision.id &&
+    cloudRevision.checksum === checksum;
 
   const isLoading =
     !document ||
@@ -55,13 +58,10 @@ export function useDocumentActions(handle: string | null) {
   const [isSaving, setIsSaving] = useState(false);
   const [isJustSaved, setIsJustSaved] = useState(false);
   const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;
-
-  const documentTab = useSelector((state) =>
-    state.tabs.tabList.find(
-      (tab) => decodeURIComponent(tab.pathname.split('/').pop() ?? '') === handle,
-    ),
-  );
-  const isViewTab = documentTab?.pathname.startsWith('/view/');
+  const tab = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId));
+  const isViewTab = tab && tab.pathname.startsWith('/view/');
+  const isEditTab = tab && tab.pathname.startsWith('/edit/');
+  const isDocumentTab = isEditTab || isViewTab;
   const { setTabDirty } = useActions();
 
   const { mutateAsync: updateDocumentHead } = useUpdateDocumentHeadMutation({
@@ -82,8 +82,8 @@ export function useDocumentActions(handle: string | null) {
   const exportDocumentMutation = useExportDocumentMutation(docId, document?.name);
 
   const handleSaveSuccess = async () => {
-    if (documentTab) {
-      setTabDirty(documentTab.id, false);
+    if (isDocumentTab) {
+      setTabDirty(tab.id, false);
     }
     setIsSaving(false);
     setIsJustSaved(true);
@@ -108,9 +108,9 @@ export function useDocumentActions(handle: string | null) {
           );
           queryClient.setQueryData(
             getLocalRevisionByDocumentIdQueryOptions(document?.id ?? '').queryKey,
-            { data: JSON.parse(revision?.content) },
+            { content: revision.content },
           );
-          await saveLocalRevision({ serializedEditorState: JSON.parse(revision?.content) });
+          await saveLocalRevision({ serializedEditorState: JSON.parse(revision.content) });
         }
       } else {
         const serializedEditorState = await queryClient
@@ -191,9 +191,10 @@ export function useDocumentActions(handle: string | null) {
     const handleChecksumChange = (event: Event) => {
       const customEvent = event as CustomEvent<{
         documentId: string;
+        tabId: string;
         checksum: string;
       }>;
-      if (customEvent.detail.documentId === docId) {
+      if (customEvent.detail.documentId === docId && customEvent.detail.tabId === tabId) {
         setChecksum(customEvent.detail.checksum);
       }
     };
@@ -202,12 +203,12 @@ export function useDocumentActions(handle: string | null) {
     return () => {
       window.removeEventListener('checksum-change', handleChecksumChange);
     };
-  }, [docId]);
+  }, []);
 
   useEffect(() => {
     if (isLoading) return;
-    if (documentTab) {
-      setTabDirty(documentTab.id, !isUpToDate);
+    if (isDocumentTab) {
+      setTabDirty(tab.id, !isUpToDate);
     }
   }, [isLoading, isUpToDate, setTabDirty]);
 

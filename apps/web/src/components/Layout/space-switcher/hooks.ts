@@ -19,7 +19,7 @@ export function useSpaceSwitcher(overrideSpaces?: ListSpaceResult): UseSpaceSwit
   const { data, isLoading } = useQuery(getAllSpacesQueryOptions);
   const spaces = overrideSpaces ?? data ?? [];
   const spacesTree = React.useMemo(() => arrayToTree(spaces as Space[]), [spaces]);
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
 
   const [expandedSpaces, setExpandedSpaces] = React.useState<Set<string>>(new Set([]));
   const [openMenuSpaceId, setOpenMenuSpaceId] = React.useState<string | null>(null);

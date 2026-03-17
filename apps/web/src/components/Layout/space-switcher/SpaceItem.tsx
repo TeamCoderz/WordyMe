@@ -367,14 +367,14 @@ function ContainerSpaceItem({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const [isRenaming, setIsRenaming] = React.useState(false);
   const isCreating = space.id === space.clientId;
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
   // Favorites not used in container context menu
   const { setSpacesClipboard } = useActions();
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const canPaste =
     !!clipboardSpace &&
     (clipboardSpace.type === 'copy' || clipboardSpace.type === 'move') &&
@@ -885,7 +885,7 @@ function RegularSpaceItem({
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
   const { addToFavorites, removeFromFavorites } = useSpaceFavoritesMutation();
   const isActive = useSelector(
-    (state) => state.activeSpace[state.tabs.activePane]?.id === space.id,
+    (state) => state.wordy.activeSpace[state.tabs.activePane]?.id === space.id,
   );
   const isCreating = space.id === (space.clientId ?? '');
   const { setSpacesClipboard } = useActions();
@@ -894,7 +894,7 @@ function RegularSpaceItem({
     space: space as any,
   });
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
-  const clipboardSpaceRegular = useSelector((state) => state.spacesClipboard);
+  const clipboardSpaceRegular = useSelector((state) => state.wordy.spacesClipboard);
   const isCutThisSpaceRegular =
     clipboardSpaceRegular?.type === 'move' && clipboardSpaceRegular.space.id === space.id;
 

@@ -124,10 +124,10 @@ export function ContainerDocumentItem({
 
   // Clipboard state management
   const { setDocumentsClipboard } = useActions();
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const isCutThisItem =
     clipboardDocument?.type === 'move' && clipboardDocument.document.id === document.id;
-  const inlineCreate = useSelector((state) => state.inlineCreate);
+  const inlineCreate = useSelector((state) => state.wordy.inlineCreate);
   const { clearInlineCreate } = useActions();
 
   const isPlaceholder = document.id === 'new-doc';

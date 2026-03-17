@@ -15,6 +15,7 @@ import { useTabMetadata } from './useTabMetadata';
 import { useDocumentActions } from '@/components/documents/useDocumentActions';
 import { TabDropSlot } from './TabDropSlot';
 import { useSortable } from '@dnd-kit/sortable';
+import { useHotkey } from '@tanstack/react-hotkeys';
 
 const TabIcon = ({ name }: { name: string | undefined }) => {
   switch (name) {
@@ -60,7 +61,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
   const documentHandle = isDocumentTab
     ? decodeURIComponent(tab.pathname.split('/').pop() ?? '')
     : null;
-  const { isSaving, isJustSaved, handleUpdate } = useDocumentActions(documentHandle);
+  const { isSaving, isJustSaved, handleUpdate } = useDocumentActions(documentHandle, tab.id);
 
   const { attributes, listeners, setNodeRef } = useSortable({
     id: tab.id,
@@ -93,6 +94,17 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
     [tab.id, closeTab, isHomeTab, isLastTab],
   );
 
+  const isActiveTab = isActive && pane === activePane;
+  useHotkey({ key: (index + 1).toString(), mod: true, alt: true }, () => setActiveTab(tab.id), {
+    enabled: pane === activePane,
+    conflictBehavior: 'replace',
+  });
+
+  useHotkey({ key: (index + 1).toString(), mod: true, shift: true }, () => setActiveTab(tab.id), {
+    enabled: pane !== activePane,
+    conflictBehavior: 'replace',
+  });
+
   return (
     <TabContextMenu tab={tab} pane={pane}>
       <div
@@ -107,8 +119,8 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         {...attributes}
         {...listeners}
         role="tab"
-        aria-selected={isActive && pane === activePane}
-        tabIndex={isActive && pane === activePane ? 0 : -1}
+        aria-selected={isActiveTab}
+        tabIndex={isActiveTab ? 0 : -1}
       >
         <TabDropSlot pane={pane} index={index} />
         {/* Tab icon */}
@@ -119,7 +131,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         {/* Tab title */}
         <span
           className={cn('flex-1 truncate text-sm font-medium', {
-            'text-muted-foreground': !isActive || pane !== activePane,
+            'text-muted-foreground': !isActiveTab,
           })}
           title={title}
         >
@@ -162,7 +174,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
                 <DotIcon
                   className={cn(
                     'size-2 rounded-full group-hover/tab:hidden',
-                    isActive && pane === activePane
+                    isActiveTab
                       ? 'text-yellow-500 bg-yellow-500'
                       : 'text-yellow-500/50 bg-yellow-500/50',
                   )}

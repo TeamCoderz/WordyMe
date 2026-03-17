@@ -59,7 +59,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
 ) {
   const queryClient = useQueryClient();
   const { splitPaneType } = useRouteContext({ from: '__root__' });
-  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[splitPaneType ?? 'primary']);
   const spaceID = activeSpace?.id ?? '';
   const queryOptions = React.useMemo(() => {
     const options = getAllDocumentsQueryOptions(spaceID!);

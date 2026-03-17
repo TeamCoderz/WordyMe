@@ -9,13 +9,15 @@ import { createUserSlice, UserSlice } from './user-slice';
 import { createUiSlice, UiSlice } from './ui-slice';
 import { createTabsSlice, TabsSlice } from './tabs-slice';
 import { createWordySlice, WordySlice } from './wordy-slice';
+import { createAppSlice, AppSlice } from './app-slice';
 
-export type Store = UserSlice & UiSlice & TabsSlice & WordySlice;
+export type Store = AppSlice & UserSlice & UiSlice & TabsSlice & WordySlice;
 
 export const store = createStore<Store>()(
   devtools(
     persist(
       (...a) => ({
+        ...createAppSlice(...a),
         ...createUserSlice(...a),
         ...createUiSlice(...a),
         ...createTabsSlice(...a),
@@ -23,34 +25,13 @@ export const store = createStore<Store>()(
       }),
       {
         name: 'Wordy',
-        version: 2,
+        version: 4,
         partialize: (state) => ({
-          activeSpace: state.activeSpace,
+          app: state.app,
           tabs: state.tabs,
-          appSidebar: state.appSidebar,
-          appSidebarOpen: state.appSidebarOpen,
-          documentSidebar: state.documentSidebar,
-          documentSidebarOpen: state.documentSidebarOpen,
-          documentSidebarActiveTab: state.documentSidebarActiveTab,
-          createDocumentSectionHidden: state.createDocumentSectionHidden,
-          feedbackCardHidden: state.feedbackCardHidden,
-          homeSorts: state.homeSorts,
+          ui: state.ui,
+          wordy: state.wordy,
         }),
-        migrate: (persistedState, version) => {
-          const state = persistedState as Record<string, unknown>;
-          if (
-            version === 1 &&
-            (state.editorSidebar !== undefined || state.editorSidebarOpen !== undefined)
-          ) {
-            const { editorSidebar, editorSidebarOpen, ...rest } = state;
-            return {
-              ...rest,
-              documentSidebar: rest.documentSidebar ?? editorSidebar,
-              documentSidebarOpen: rest.documentSidebarOpen ?? editorSidebarOpen,
-            };
-          }
-          return state;
-        },
       },
     ),
     { name: 'Wordy' },

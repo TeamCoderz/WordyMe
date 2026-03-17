@@ -6,7 +6,7 @@
 import { EditDocument } from '@/components/documents/edit-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';
-import { createFileRoute, redirect, useRouteContext } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { useEffect } from 'react';
 import { DOCUMENTS_QUERY_KEYS } from '@/queries/query-keys';
 import { useAllQueriesInvalidate } from '@/queries/utils';
@@ -48,7 +48,7 @@ export const Route = createFileRoute('/_authed/edit/$handle')({
 
 function RouteComponent() {
   const { setActiveSpaceBySpaceId } = useActions();
-  const { splitPaneType } = useRouteContext({ from: '__root__' });
+  const { splitPaneType, tabId } = Route.useRouteContext();
   const user = useSelector((state) => state.user);
   const { handle } = Route.useParams();
   const { data: document, isSuccess } = useQuery(getDocumentByHandleQueryOptions(handle));
@@ -76,5 +76,7 @@ function RouteComponent() {
     return <EditDocumentLoading handle={handle} />;
   }
 
-  return <EditDocument user={user} document={document} initialState={revision.content} />;
+  return (
+    <EditDocument user={user} document={document} initialState={revision.content} tabId={tabId} />
+  );
 }

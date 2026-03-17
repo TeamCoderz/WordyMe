@@ -698,7 +698,7 @@ export const getHomeFavoriteSpacesQueryOptions = (orderBy: SortOptions) => {
 export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | null) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const { clearSpacesClipboard } = useActions();
   const mutation = useMutation({
     mutationKey: ['copyDocument', clipboardSpace?.space.id],
@@ -764,7 +764,7 @@ export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | n
 export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | null) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
-  const clipboardSpace = useSelector((state) => state.spacesClipboard);
+  const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const { clearSpacesClipboard } = useActions();
   const mutation = useMutation({
     mutationKey: ['moveSpace', clipboardSpace?.space.id],

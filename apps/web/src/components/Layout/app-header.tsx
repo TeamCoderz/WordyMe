@@ -13,8 +13,9 @@ import { Link } from '@tanstack/react-router';
 
 export const AppHeader = () => {
   const handleResize = () => {
-    const keyboardInsetHeight =
-      window.innerHeight - (window.visualViewport?.height || window.innerHeight);
+    const keyboardInsetHeight = Math.ceil(
+      window.innerHeight - (window.visualViewport?.height || window.innerHeight),
+    );
     document.documentElement.style.setProperty(
       '--keyboard-inset-height',
       `${keyboardInsetHeight}px`,
@@ -26,6 +27,21 @@ export const AppHeader = () => {
     window.visualViewport.addEventListener('resize', handleResize);
     return () => {
       window.visualViewport?.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  const handleGeometryChange = (event: any) => {
+    const { height } = event.target.boundingRect;
+    document.documentElement.style.setProperty('--keyboard-inset-height', `${height}px`);
+  };
+
+  useEffect(() => {
+    if (!('virtualKeyboard' in navigator)) return;
+    const virtualKeyboard = navigator.virtualKeyboard as any;
+    virtualKeyboard.overlaysContent = true;
+    virtualKeyboard.addEventListener('geometrychange', handleGeometryChange);
+    return () => {
+      virtualKeyboard.removeEventListener('geometrychange', handleGeometryChange);
     };
   }, []);
 

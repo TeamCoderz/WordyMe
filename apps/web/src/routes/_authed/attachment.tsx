@@ -21,7 +21,7 @@ export const Route = createFileRoute('/_authed/attachment')({
 function RouteComponent() {
   const { url, name, mimeType } = Route.useSearch();
   return (
-    <div className="flex flex-col h-full min-h-0 mt-14">
+    <div className="flex flex-col h-full min-h-0">
       <main className="flex-1 min-h-0 overflow-auto">
         <AttachmentViewer url={url} name={name} mimeType={mimeType} className="min-h-full" />
       </main>

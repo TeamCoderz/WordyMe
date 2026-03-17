@@ -34,13 +34,13 @@ type NavDocumentsContextMenuProps = {
 
 export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuProps) {
   // Keep selector if needed in future; currently not used
-  // const activeSpace = useSelector((state) => state.activeSpace);
+  // const activeSpace = useSelector((state) => state.wordy.activeSpace);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { setInlineCreate } = useActions();
   const { isMobile: isMobileSidebar, setOpenMobile } = useSidebar();
-  const clipboardDocument = useSelector((state) => state.documentsClipboard);
-  const activeSpace = useSelector((state) => state.activeSpace[state.tabs.activePane]);
+  const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   // Mutations for paste functionality
   const copyDocumentMutation = useCopyDocumentMutation({
     spaceId: activeSpace?.id ?? '',

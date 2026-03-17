@@ -3,9 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useActions } from '@/store';
-import { hasUrlInDataTransfer } from './utils';
+import {
+  getLocationFromDataTransfer,
+  getLocationFromDragEvent,
+  hasUrlInDataTransfer,
+} from './utils';
 
 /**
  * VSCode-like: open tabs when dropping external URLs (e.g. from address bar,
@@ -21,22 +25,30 @@ export function useUrlDropOnTabBar(
   containerRef: React.RefObject<HTMLDivElement | null>,
   tabCount: number,
 ) {
+  const [isLinkDragging, setIsLinkDragging] = useState(false);
   const [dropIndicatorLeft, setDropIndicatorLeft] = useState<number | null>(null);
   const { openTab } = useActions();
+  const handleDrag = useCallback((e: DragEvent) => {
+    const location = getLocationFromDragEvent(e);
+    setIsLinkDragging(location !== null);
+  }, []);
+  const handleDragEnd = useCallback(() => {
+    setIsLinkDragging(false);
+  }, []);
+  useEffect(() => {
+    window.addEventListener('drag', handleDrag);
+    window.addEventListener('dragend', handleDragEnd);
+    return () => {
+      window.removeEventListener('drag', handleDrag);
+      window.removeEventListener('dragend', handleDragEnd);
+      setIsLinkDragging(false);
+    };
+  }, [handleDrag, handleDragEnd]);
+
   const handleDragOver = useCallback(
     (e: React.DragEvent) => {
       const hasLink = hasUrlInDataTransfer(e.dataTransfer);
       if (!hasLink) return;
-
-      const url = e.dataTransfer.getData('text/uri-list')?.split('\n')[0]?.trim();
-      if (url) {
-        try {
-          if (new URL(url).origin !== window.location.origin) return;
-        } catch {
-          return;
-        }
-      }
-
       e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
       const container = containerRef.current;
@@ -82,48 +94,37 @@ export function useUrlDropOnTabBar(
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       setDropIndicatorLeft(null);
-      const uriList = e.dataTransfer.getData('text/uri-list')?.split('\n')[0]?.trim();
-      const plainText = e.dataTransfer.getData('text/plain')?.trim();
-      const url = uriList || (plainText?.startsWith('http') ? plainText : null);
-      if (!url) return;
-
-      try {
-        const { pathname, searchParams, hash, origin } = new URL(url);
-        if (origin !== window.location.origin) return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        let insertIndex = tabCount;
-        const container = containerRef.current;
-        if (container) {
-          const tabElements = container.querySelectorAll('[data-tab-id]');
-          for (let i = 0; i < tabElements.length; i++) {
-            const rect = tabElements[i].getBoundingClientRect();
-            const mid = rect.left + rect.width / 2;
-            if (e.clientX < mid) {
-              insertIndex = i;
-              break;
-            }
-            insertIndex = i + 1;
+      const location = getLocationFromDataTransfer(e.dataTransfer);
+      if (!location) return;
+      const { pathname, search, hash } = location;
+      let insertIndex = tabCount;
+      const container = containerRef.current;
+      if (container) {
+        const tabElements = container.querySelectorAll('[data-tab-id]');
+        for (let i = 0; i < tabElements.length; i++) {
+          const rect = tabElements[i].getBoundingClientRect();
+          const mid = rect.left + rect.width / 2;
+          if (e.clientX < mid) {
+            insertIndex = i;
+            break;
           }
+          insertIndex = i + 1;
         }
-
-        openTab({
-          pathname,
-          search: Object.fromEntries(searchParams.entries()) as Record<string, unknown>,
-          hash: hash.slice(1),
-          pane,
-          index: insertIndex,
-        });
-      } catch {
-        return;
       }
+
+      openTab({
+        pathname,
+        search,
+        hash,
+        pane,
+        index: insertIndex,
+      });
     },
     [openTab, pane, tabCount, containerRef],
   );
 
   return {
+    isLinkDragging,
     dropIndicatorLeft,
     dropHandlers: {
       onDragOver: handleDragOver,

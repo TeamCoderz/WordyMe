@@ -28,7 +28,9 @@ interface TabDndProviderProps {
 
 export function TabDndProvider({ children }: TabDndProviderProps) {
   const { reorderTabs, moveTabToPane, splitWithTabInPrimary, openTab } = useActions();
-  const tabs = useSelector((state) => state.tabs);
+  const primaryTabIds = useSelector((state) => state.tabs.paneTabIds.primary);
+  const secondaryTabIds = useSelector((state) => state.tabs.paneTabIds.secondary);
+  const tabList = useSelector((state) => state.tabs.tabList);
   const [activeTab, setActiveTab] = useState<TabType | null>(null);
 
   const sensors = useSensors(
@@ -56,7 +58,6 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
       const { active, over } = event;
 
       if (!over) return;
-
       const activeTabId = active.id as string;
       const activeData = active.data.current as
         | { type: string; pane: 'primary' | 'secondary' }
@@ -81,7 +82,7 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
           moveTabToPane(activeTabId, slotParsed.pane, slotParsed.index);
         } else {
           // Same pane: reorder to slot index
-          const ids = slotParsed.pane === 'primary' ? tabs.primaryTabIds : tabs.secondaryTabIds;
+          const ids = slotParsed.pane === 'primary' ? primaryTabIds : secondaryTabIds;
           const oldIndex = ids.indexOf(activeTabId);
           const newIndex = Math.min(slotParsed.index, ids.length);
           if (oldIndex !== -1 && oldIndex !== newIndex) {
@@ -97,11 +98,10 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
 
       if (overId.startsWith('pane-tabbar-')) {
         targetPane = overId.replace('pane-tabbar-', '') as 'primary' | 'secondary';
-        dropIndex =
-          targetPane === 'primary' ? tabs.primaryTabIds.length : tabs.secondaryTabIds.length;
+        dropIndex = targetPane === 'primary' ? primaryTabIds.length : secondaryTabIds.length;
       } else if (overId === PANE_CONTENT_SPLIT_PRIMARY) {
-        if (tabs.tabList.length === 1) {
-          const activeTab = tabs.tabList[0];
+        if (tabList.length === 1) {
+          const activeTab = tabList[0];
           openTab({
             pathname: activeTab.pathname,
             search: activeTab.search,
@@ -112,8 +112,8 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
         splitWithTabInPrimary(activeTabId);
         return;
       } else if (overId === PANE_CONTENT_SPLIT_SECONDARY) {
-        if (tabs.tabList.length === 1) {
-          const activeTab = tabs.tabList[0];
+        if (tabList.length === 1) {
+          const activeTab = tabList[0];
           openTab({
             pathname: activeTab.pathname,
             search: activeTab.search,
@@ -129,7 +129,7 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
         dropIndex = undefined; // append
       } else if (overData?.type === 'tab') {
         targetPane = overData.pane as 'primary' | 'secondary' | undefined;
-        const ids = targetPane === 'primary' ? tabs.primaryTabIds : tabs.secondaryTabIds;
+        const ids = targetPane === 'primary' ? primaryTabIds : secondaryTabIds;
         dropIndex = ids.indexOf(over.id as string);
         if (dropIndex === -1) dropIndex = ids.length;
       }
@@ -140,7 +140,7 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
         // Same pane: reorder
         if (active.id === over.id) return;
 
-        const ids = targetPane === 'primary' ? tabs.primaryTabIds : tabs.secondaryTabIds;
+        const ids = targetPane === 'primary' ? primaryTabIds : secondaryTabIds;
         const oldIndex = ids.indexOf(activeTabId);
         const newIndex = overData?.type === 'tab' ? ids.indexOf(over.id as string) : ids.length;
 
@@ -152,7 +152,15 @@ export function TabDndProvider({ children }: TabDndProviderProps) {
         moveTabToPane(activeTabId, targetPane, dropIndex);
       }
     },
-    [tabs.primaryTabIds, tabs.secondaryTabIds, reorderTabs, moveTabToPane, splitWithTabInPrimary],
+    [
+      primaryTabIds,
+      secondaryTabIds,
+      tabList,
+      openTab,
+      reorderTabs,
+      moveTabToPane,
+      splitWithTabInPrimary,
+    ],
   );
 
   return (

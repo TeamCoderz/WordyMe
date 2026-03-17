@@ -146,9 +146,10 @@ export function SpaceContextMenu({
               <DropdownMenuSeparator />
               <DropdownMenuItem className="group" onClick={() => onRemoveFromFavorites(space)}>
                 <Star
-                  className={cn('mr-2 h-4 w-4 fill-current group-hover:text-foreground', {
-                    'fill-amber-400': isFavorite,
-                  })}
+                  className={cn(
+                    'mr-2 h-4 w-4 fill-current group-hover:text-foreground',
+                    isFavorite && 'fill-amber-400',
+                  )}
                 />
                 Remove from Favorites
               </DropdownMenuItem>

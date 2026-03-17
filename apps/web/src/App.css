@@ -98,6 +98,16 @@ html > body.fullscreen {
   }
 }
 
+body:has([contenteditable="true"]) {
+  pointer-events: auto !important;
+}
+
+@media (pointer: coarse) and (max-width: 40rem) {
+  body:has([contenteditable="true"]) [data-radix-popper-content-wrapper]:has(>[data-slot="context-menu-content"]) {
+    margin-top: calc(var(--spacing) * 6);
+  }
+}
+
 @media print {
   * {
     -webkit-print-color-adjust: exact;

@@ -25,7 +25,7 @@ import { useRouteContext } from '@tanstack/react-router';
 
 export function ManageDocumentsHeader() {
   const { splitPaneType } = useRouteContext({ from: '__root__' });
-  const activeSpace = useSelector((state) => state.activeSpace[splitPaneType ?? 'primary']);
+  const activeSpace = useSelector((state) => state.wordy.activeSpace[splitPaneType ?? 'primary']);
 
   if (!activeSpace) return null;
 

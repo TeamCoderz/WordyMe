@@ -14,7 +14,7 @@ import { getHomeAllDocumentsQueryOptions } from '@/queries/documents';
 import { useEffect } from 'react';
 
 export const HomePage = () => {
-  const homeSorts = useSelector((state) => state.homeSorts);
+  const homeSorts = useSelector((state) => state.ui.homeSorts);
   const { setHomeSorts } = useActions();
   const { time } = useTime();
   const user = useSelector((state) => state.user);
