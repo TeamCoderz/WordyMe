@@ -15,7 +15,6 @@ interface ViewDocumentProps {
   userId: string;
   documentId: string;
   documentHandle: string;
-  revisionId?: string;
   initialState?: string;
   tabId?: string;
 }
@@ -24,24 +23,23 @@ export function ViewDocument({
   userId,
   documentId,
   documentHandle,
-  revisionId,
-  initialState,
   tabId,
+  initialState,
 }: ViewDocumentProps) {
   const editorRef = useRef<LexicalEditor>(null);
   const services = useServices(documentId, userId);
 
   return (
     <EditorComposer
-      key={revisionId ?? documentId}
-      initialState={initialState ?? null}
+      key={documentId}
+      initialState={initialState}
       editable={false}
       services={services}
       editorRef={editorRef}
     >
       <DocumentSidebar handle={documentHandle}>
         <ImageZoom />
-        <Viewer documentId={documentId} tabId={tabId} />
+        <Viewer documentId={documentId} tabId={tabId} initialState={initialState} />
       </DocumentSidebar>
     </EditorComposer>
   );

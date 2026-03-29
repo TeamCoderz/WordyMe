@@ -1191,6 +1191,8 @@ export function useExportDocumentMutation(itemId: string, documentName?: string)
         throw error;
       }
       if (data) {
+        // Parse the content as JSON
+        (data as any).revision.content = JSON.parse((data as any).revision.content);
         // Stringify the data
         const jsonString = JSON.stringify(data, null, 2);
 

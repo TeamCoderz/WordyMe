@@ -98,9 +98,8 @@ function RouteComponent() {
       userId={user.id}
       documentId={document.id}
       documentHandle={document.handle}
-      revisionId={search.v ? cloudRevision?.id : undefined}
-      initialState={revision.content}
       tabId={tabId}
+      initialState={revision.content}
     />
   );
 }

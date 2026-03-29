@@ -77,6 +77,12 @@ function RouteComponent() {
   }
 
   return (
-    <EditDocument user={user} document={document} initialState={revision.content} tabId={tabId} />
+    <EditDocument
+      userId={user.id}
+      documentId={document.id}
+      documentHandle={document.handle}
+      tabId={tabId}
+      initialState={revision.content}
+    />
   );
 }

@@ -24,10 +24,7 @@ import {
 } from '@repo/ui/components/tooltip';
 import { setShouldBlockNavigation, NAVIGATION_BLOCKED_EVENT } from '@repo/shared/navigation';
 import { cn } from '@repo/ui/lib/utils';
-
-interface ImageZoomProps {
-  selector?: string;
-}
+import { useLexicalComposerContext } from '@repo/editor/lexical';
 
 interface ImageItem {
   src: string;
@@ -55,7 +52,18 @@ const ZOOM_STEP = 0.5;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 5;
 
-export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
+const rotatePoint = (x: number, y: number, degrees: number) => {
+  const radians = (degrees * Math.PI) / 180;
+  const cos = Math.cos(radians);
+  const sin = Math.sin(radians);
+
+  return {
+    x: x * cos - y * sin,
+    y: x * sin + y * cos,
+  };
+};
+
+export function ImageZoom() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const [transform, setTransform] = useState<TransformState>(INITIAL_TRANSFORM);
@@ -64,6 +72,7 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastPointerPositionRef = useRef<{ x: number; y: number } | null>(null);
   const transformRef = useRef<TransformState>(INITIAL_TRANSFORM);
   const pinchStartRef = useRef<{
     distance: number;
@@ -79,13 +88,15 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
     transformRef.current = transform;
   }, [transform]);
 
+  const [editor] = useLexicalComposerContext();
+  const rootElement = editor.getRootElement();
+
   // Scan for images
   useEffect(() => {
     const updateImages = () => {
-      const container = document.querySelector(selector);
-      if (!container) return;
+      if (!rootElement) return;
 
-      const imgElements = Array.from(container.querySelectorAll('img'));
+      const imgElements = Array.from(rootElement.querySelectorAll('img'));
       const items: ImageItem[] = imgElements.map((img, index) => {
         // Add click listener to existing images to open preview
         // We'll use a delegated listener on the container instead for better perf
@@ -106,15 +117,14 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
 
     updateImages();
 
-    const container = document.querySelector(selector);
-    if (!container) return;
+    if (!rootElement) return;
 
     // Observer for dynamic content
     const observer = new MutationObserver(() => {
       updateImages();
     });
 
-    observer.observe(container, {
+    observer.observe(rootElement, {
       childList: true,
       subtree: true,
       attributes: true,
@@ -136,19 +146,19 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
       }
     };
 
-    container.addEventListener('click', handleClick);
+    rootElement.addEventListener('click', handleClick);
 
     return () => {
       observer.disconnect();
-      container.removeEventListener('click', handleClick);
+      rootElement.removeEventListener('click', handleClick);
       // Cleanup styles
-      const imgs = container.querySelectorAll('img');
+      const imgs = rootElement.querySelectorAll('img');
       imgs.forEach((img) => {
         img.style.cursor = '';
         img.removeAttribute('data-image-zoom-index');
       });
     };
-  }, [selector]);
+  }, [rootElement]);
 
   // Handle open/close side effects
   useEffect(() => {
@@ -192,19 +202,102 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
     resetTransform();
   }, [resetTransform]);
 
-  const handleZoomIn = useCallback(() => {
-    setTransform((prev) => ({
-      ...prev,
-      scale: Math.min(prev.scale + ZOOM_STEP, MAX_SCALE),
-    }));
+  const getVisibleCenterAnchor = useCallback(() => {
+    const container = containerRef.current;
+
+    if (!container) return null;
+
+    const rect = container.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    };
   }, []);
 
+  const getPointerZoomAnchor = useCallback(() => {
+    const container = containerRef.current;
+
+    if (!container) return null;
+
+    const lastPointer = lastPointerPositionRef.current;
+    if (lastPointer) return lastPointer;
+
+    return getVisibleCenterAnchor();
+  }, [getVisibleCenterAnchor]);
+
+  const getTransformForScaleAtPoint = useCallback(
+    (prev: TransformState, nextScale: number, clientX: number, clientY: number): TransformState => {
+      const container = containerRef.current;
+      const image = imageRef.current;
+
+      if (!container || !image) {
+        return {
+          ...prev,
+          scale: nextScale,
+        };
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const baseCenterX = image.offsetLeft + image.offsetWidth / 2;
+      const baseCenterY = image.offsetTop + image.offsetHeight / 2;
+      const currentCenterX = containerRect.left + baseCenterX + prev.x;
+      const currentCenterY = containerRect.top + baseCenterY + prev.y;
+      const pointerDeltaX = clientX - currentCenterX;
+      const pointerDeltaY = clientY - currentCenterY;
+      const localPoint = rotatePoint(pointerDeltaX, pointerDeltaY, -prev.rotate);
+      const imagePointX = localPoint.x / prev.scale;
+      const imagePointY = localPoint.y / prev.scale;
+      const nextPointerDelta = rotatePoint(
+        imagePointX * nextScale,
+        imagePointY * nextScale,
+        prev.rotate,
+      );
+      const nextCenterX = clientX - containerRect.left - nextPointerDelta.x;
+      const nextCenterY = clientY - containerRect.top - nextPointerDelta.y;
+
+      return {
+        ...prev,
+        scale: nextScale,
+        x: nextCenterX - baseCenterX,
+        y: nextCenterY - baseCenterY,
+      };
+    },
+    [],
+  );
+
+  const zoomToAnchor = useCallback(
+    (scaleDelta: number, anchor: { x: number; y: number } | null) => {
+      setTransform((prev) => {
+        const nextScale = Math.min(Math.max(prev.scale + scaleDelta, MIN_SCALE), MAX_SCALE);
+
+        if (!anchor || nextScale === prev.scale) {
+          return {
+            ...prev,
+            scale: nextScale,
+          };
+        }
+
+        return getTransformForScaleAtPoint(prev, nextScale, anchor.x, anchor.y);
+      });
+    },
+    [getTransformForScaleAtPoint],
+  );
+
+  const handleZoomIn = useCallback(() => {
+    zoomToAnchor(ZOOM_STEP, getPointerZoomAnchor());
+  }, [getPointerZoomAnchor, zoomToAnchor]);
+
+  const handleToolbarZoomIn = useCallback(() => {
+    zoomToAnchor(ZOOM_STEP, getVisibleCenterAnchor());
+  }, [getVisibleCenterAnchor, zoomToAnchor]);
+
   const handleZoomOut = useCallback(() => {
-    setTransform((prev) => ({
-      ...prev,
-      scale: Math.max(prev.scale - ZOOM_STEP, MIN_SCALE),
-    }));
-  }, []);
+    zoomToAnchor(-ZOOM_STEP, getPointerZoomAnchor());
+  }, [getPointerZoomAnchor, zoomToAnchor]);
+
+  const handleToolbarZoomOut = useCallback(() => {
+    zoomToAnchor(-ZOOM_STEP, getVisibleCenterAnchor());
+  }, [getVisibleCenterAnchor, zoomToAnchor]);
 
   const handleRotateLeft = useCallback(() => {
     setTransform((prev) => ({
@@ -241,6 +334,8 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
     if (currentIndex === null) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
       switch (e.key) {
         case 'Escape':
           handleClose();
@@ -292,42 +387,24 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
   }, [currentIndex, handleClose, handleNext, handlePrev, handleZoomIn, handleZoomOut, handleReset]);
 
   // Mouse/Touch handlers for Pan & Zoom
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    const delta = (e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP) * 0.25;
-    const container = containerRef.current;
-    const image = imageRef.current;
+  const handleWheel = useCallback(
+    (e: React.WheelEvent) => {
+      e.preventDefault();
+      lastPointerPositionRef.current = { x: e.clientX, y: e.clientY };
 
-    if (container && image) {
-      const containerRect = container.getBoundingClientRect();
-      const mouseX = e.clientX - containerRect.left - containerRect.width / 2;
-      const mouseY = e.clientY - containerRect.top - containerRect.height / 2;
-
+      const delta = (e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP) * 0.25;
       setTransform((prev) => {
-        const newScale = Math.min(Math.max(prev.scale + delta, MIN_SCALE), MAX_SCALE);
+        const nextScale = Math.min(Math.max(prev.scale + delta, MIN_SCALE), MAX_SCALE);
 
-        // Calculate the point on the image (in image coordinates) that's under the mouse
-        const imageX = (mouseX - prev.x) / prev.scale;
-        const imageY = (mouseY - prev.y) / prev.scale;
+        if (nextScale === prev.scale) {
+          return prev;
+        }
 
-        // Adjust position to keep the same image point under the mouse
-        const newX = mouseX - imageX * newScale;
-        const newY = mouseY - imageY * newScale;
-
-        return {
-          ...prev,
-          scale: newScale,
-          x: newX,
-          y: newY,
-        };
+        return getTransformForScaleAtPoint(prev, nextScale, e.clientX, e.clientY);
       });
-    } else {
-      // Fallback to simple zoom if refs aren't available
-      setTransform((prev) => ({
-        ...prev,
-        scale: Math.min(Math.max(prev.scale + delta, MIN_SCALE), MAX_SCALE),
-      }));
-    }
-  }, []);
+    },
+    [getTransformForScaleAtPoint],
+  );
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return; // Only left click
@@ -344,6 +421,8 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
+    lastPointerPositionRef.current = { x: e.clientX, y: e.clientY };
+
     if (!isDragging || !dragStartRef.current) return;
     e.preventDefault();
 
@@ -466,6 +545,13 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
 
   const currentImage = images[currentIndex];
 
+  const isTransformed =
+    transform.scale !== 1 || transform.rotate !== 0 || transform.x !== 0 || transform.y !== 0;
+
+  const isPortrait =
+    currentImage.element.height > currentImage.element.width &&
+    currentImage.element.height > window.innerHeight * 0.9;
+
   return createPortal(
     <TooltipProvider>
       <div
@@ -485,7 +571,12 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
           <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon-sm" onClick={handleReset}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleReset}
+                  disabled={!isTransformed}
+                >
                   <MinimizeIcon />
                 </Button>
               </TooltipTrigger>
@@ -512,7 +603,12 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon-sm" onClick={handleZoomOut}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleToolbarZoomOut}
+                  disabled={transform.scale <= MIN_SCALE}
+                >
                   <ZoomOutIcon />
                 </Button>
               </TooltipTrigger>
@@ -521,7 +617,12 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon-sm" onClick={handleZoomIn}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={handleToolbarZoomIn}
+                  disabled={transform.scale >= MAX_SCALE}
+                >
                   <ZoomInIcon />
                 </Button>
               </TooltipTrigger>
@@ -532,12 +633,7 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={handleClose}
-                  className="hover:bg-red-500/20 hover:text-red-400"
-                >
+                <Button variant="outline" size="icon-sm" onClick={handleClose}>
                   <XIcon />
                 </Button>
               </TooltipTrigger>
@@ -580,7 +676,7 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
           className={cn(
             'relative w-full h-full overflow-hidden flex items-center justify-center cursor-move touch-none',
             {
-              'items-start': currentImage.element.height > window.innerHeight * 0.9,
+              'items-start': isPortrait,
             },
           )}
           onPointerDown={handlePointerDown}
@@ -597,11 +693,10 @@ export function ImageZoom({ selector = '.editor-input' }: ImageZoomProps) {
             src={currentImage.src}
             alt={currentImage.alt}
             className={cn(
-              'max-w-[90vw] object-contain transition-[scale,rotate] duration-75 ease-linear',
+              'max-w-[90vw] object-contain will-change-transform transition-[translate,scale,rotate] duration-75 ease-linear',
               {
-                'dark:invert-[.86] dark:hue-rotate-[180deg]': currentImage.hasDarkModeFilter,
-                'w-full': currentImage.element.width > window.innerWidth * 0.9,
-                'h-auto': currentImage.element.height > window.innerHeight * 0.9,
+                'dark:invert-[.86] dark:hue-rotate-180': currentImage.hasDarkModeFilter,
+                'h-auto': isPortrait,
               },
             )}
             style={{

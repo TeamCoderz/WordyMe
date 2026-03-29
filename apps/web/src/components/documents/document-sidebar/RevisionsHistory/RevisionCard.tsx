@@ -126,36 +126,7 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
 
   const viewRevision = async () => {
     setViewStatus('loading');
-    if (pathname.startsWith('/view/')) {
-      try {
-        const cloudRevision = await queryClient.ensureQueryData(
-          getRevisionByIdQueryOptions(revision.id, true),
-        );
-        setViewStatus('success');
-        if (!tabId) return;
-        const event = new CustomEvent('checksum-change', {
-          detail: {
-            documentId: cloudRevision.documentId,
-            tabId: tabId,
-            checksum: cloudRevision.checksum,
-          },
-        });
-        setTimeout(() => {
-          window.dispatchEvent(event);
-          updateTab(tabId, {
-            pathname: `/view/${handle}`,
-            search: { v: revision.id },
-          });
-        }, 300);
-      } catch (error) {
-        console.error(error);
-        setViewStatus('error');
-      } finally {
-        setTimeout(() => setViewStatus('idle'), 300);
-      }
-      return;
-    }
-    if (hasLocalChanges) {
+    if (hasLocalChanges && pathname.startsWith('/edit/')) {
       await alert({
         title: 'Save Local Changes',
         description: 'You have unsaved changes. Do you want to save them?',
@@ -189,6 +160,13 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
         },
       });
       window.dispatchEvent(event);
+      if (pathname.startsWith('/view/')) {
+        if (!tabId) return;
+        updateTab(tabId, {
+          pathname: `/view/${handle}`,
+          search: { v: revision.id },
+        });
+      }
       setViewStatus('success');
     } catch (error) {
       console.error(error);
@@ -246,12 +224,10 @@ export function RevisionCard({ handle, revision }: { handle: string; revision: R
           { content: cloudRevision.content },
         );
         if (!tabId) return;
-        setTimeout(() => {
-          updateTab(tabId, {
-            pathname: `/view/${handle}`,
-            search: { v: undefined },
-          });
-        }, 300);
+        updateTab(tabId, {
+          pathname: `/view/${handle}`,
+          search: { v: undefined },
+        });
       }
     } catch (error) {
       console.error(error);

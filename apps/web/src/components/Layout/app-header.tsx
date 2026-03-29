@@ -10,26 +10,9 @@ import { ThemeCustomizer } from '@repo/ui/theme/theme-customizer';
 import { NavUser } from './nav-user';
 import { cn } from '@repo/ui/lib/utils';
 import { Link } from '@tanstack/react-router';
+import { IS_MOBILE } from '@repo/shared/environment';
 
 export const AppHeader = () => {
-  const handleResize = () => {
-    const keyboardInsetHeight = Math.ceil(
-      window.innerHeight - (window.visualViewport?.height || window.innerHeight),
-    );
-    document.documentElement.style.setProperty(
-      '--keyboard-inset-height',
-      `${keyboardInsetHeight}px`,
-    );
-  };
-
-  useEffect(() => {
-    if (!window.visualViewport) return;
-    window.visualViewport.addEventListener('resize', handleResize);
-    return () => {
-      window.visualViewport?.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
   const handleGeometryChange = (event: any) => {
     const { height } = event.target.boundingRect;
     document.documentElement.style.setProperty('--keyboard-inset-height', `${height}px`);
@@ -42,6 +25,26 @@ export const AppHeader = () => {
     virtualKeyboard.addEventListener('geometrychange', handleGeometryChange);
     return () => {
       virtualKeyboard.removeEventListener('geometrychange', handleGeometryChange);
+    };
+  }, []);
+
+  const handleResize = () => {
+    const keyboardInsetHeight = Math.ceil(
+      window.innerHeight - (window.visualViewport?.height || window.innerHeight),
+    );
+    document.documentElement.style.setProperty(
+      '--keyboard-inset-height',
+      `${keyboardInsetHeight}px`,
+    );
+  };
+
+  useEffect(() => {
+    if ('virtualKeyboard' in navigator) return;
+    if (!IS_MOBILE) return;
+    if (!window.visualViewport) return;
+    window.visualViewport.addEventListener('resize', handleResize);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', handleResize);
     };
   }, []);
 

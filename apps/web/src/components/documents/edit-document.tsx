@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import type { Document } from '@repo/types/documents';
-import type { User } from '@repo/types/user';
 import { EditorComposer } from '@repo/editor/EditorComposer';
 import { Editor } from '@repo/editor/Editor';
 import type { EditorState, LexicalEditor } from '@repo/editor/types';
@@ -22,15 +20,22 @@ import { DocumentSidebar } from './document-sidebar';
 import { useSelector } from '@/store';
 
 interface EditDocumentProps {
-  user: User;
-  document: Document;
+  userId: string;
+  documentId: string;
+  documentHandle: string;
   initialState?: string;
   tabId?: string;
 }
 
-export function EditDocument({ document, user, initialState, tabId }: EditDocumentProps) {
+export function EditDocument({
+  userId,
+  documentId,
+  documentHandle,
+  initialState,
+  tabId,
+}: EditDocumentProps) {
   const { mutateAsync: saveLocalRevision } = useSaveLocalRevisionMutation({
-    documentId: document.id,
+    documentId,
   });
   const isActiveTab = useSelector(
     (state) => state.tabs.activeTabId[state.tabs.activePane] === tabId,
@@ -42,7 +47,7 @@ export function EditDocument({ document, user, initialState, tabId }: EditDocume
     editorSettings,
     isDisabled,
     isPreviouslySaved,
-  } = useDocumentActions(document.handle, tabId);
+  } = useDocumentActions(documentHandle, tabId);
 
   useHotkey('Mod+S', () => handleUpdate(false), { enabled: isActiveTab });
   useHotkey(
@@ -55,7 +60,7 @@ export function EditDocument({ document, user, initialState, tabId }: EditDocume
         handleSaveAsNewRevision();
       }
     },
-    { enabled: isActiveTab },
+    { enabled: isActiveTab, conflictBehavior: 'allow' },
   );
 
   const editorRefCallback = (editor: LexicalEditor) => {
@@ -117,18 +122,18 @@ export function EditDocument({ document, user, initialState, tabId }: EditDocume
     }
   }, 300);
 
-  const services = useServices(document.id, user.id);
+  const services = useServices(documentId, userId);
 
   return (
     <EditorComposer
-      key={document.id}
+      key={documentId}
       services={services}
       initialState={initialState ?? null}
       editable={true}
       editorRef={editorRefCallback}
     >
-      <DocumentSidebar handle={document.handle}>
-        <Editor documentId={document.id} onChange={onChange} tabId={tabId} />
+      <DocumentSidebar handle={documentHandle}>
+        <Editor documentId={documentId} onChange={onChange} tabId={tabId} />
       </DocumentSidebar>
     </EditorComposer>
   );

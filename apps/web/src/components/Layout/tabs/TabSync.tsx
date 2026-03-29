@@ -87,7 +87,7 @@ export function TabSync() {
         updateTab(activeTab.id, {
           pathname,
           search,
-          hash,
+          hash: hash.slice(1),
           isDirty: isDocumentLink ? undefined : activeTab.isDirty,
         });
       } else if (existingTab && !isModifierHeld) {
@@ -97,7 +97,7 @@ export function TabSync() {
         openTab({
           pathname,
           search,
-          hash,
+          hash: hash.slice(1),
           pane,
         });
       }

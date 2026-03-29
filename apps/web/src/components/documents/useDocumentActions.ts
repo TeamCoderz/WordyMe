@@ -93,12 +93,12 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
   };
 
   const handleUpdate = async (isAutosave: boolean = false) => {
-    if (isSaving || isUpToDate || !document || !handle) return;
+    if (isDisabled) return;
     setIsSaving(true);
     try {
       if (isPreviouslySaved && cloudRevision) {
         await updateDocumentHead({
-          id: docId,
+          id: document.id,
           head: cloudRevision.id,
         });
         setChecksum(cloudRevision.checksum);
@@ -106,10 +106,9 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
           const revision = await queryClient.ensureQueryData(
             getRevisionByIdQueryOptions(cloudRevision.id, true),
           );
-          queryClient.setQueryData(
-            getLocalRevisionByDocumentIdQueryOptions(document?.id ?? '').queryKey,
-            { content: revision.content },
-          );
+          queryClient.setQueryData(getLocalRevisionByDocumentIdQueryOptions(document.id).queryKey, {
+            content: revision.content,
+          });
           await saveLocalRevision({ serializedEditorState: JSON.parse(revision.content) });
         }
       } else {

@@ -186,13 +186,13 @@ export function PDFViewer({ url }: PDFViewerProps) {
   };
 
   return (
-    <div className="flex h-screen flex-1 flex-col overflow-hidden" onClick={handleClick}>
-      <div className="flex flex-1 select-none flex-col overflow-hidden">
+    <div className="flex flex-1 flex-col overflow-hidden" onClick={handleClick}>
+      <div className="flex flex-1 select-none flex-col overflow-hidden *:flex *:flex-col *:flex-1">
         <EmbedPDF engine={engine} plugins={plugins}>
           {({ pluginsReady, activeDocumentId }) => (
             <>
               {pluginsReady ? (
-                <div className="flex h-full flex-col">
+                <div className="flex h-full flex-col flex-1">
                   {/* Schema-driven UI with UIProvider */}
                   {activeDocumentId ? (
                     <UIProvider

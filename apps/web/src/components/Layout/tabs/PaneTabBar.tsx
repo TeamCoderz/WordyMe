@@ -138,7 +138,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
       const isLastTab = paneTabs.length === 1;
       if (!(isHomeTab && isLastTab)) closeTab(activeTab.id);
     },
-    { enabled: pane === activePane },
+    { enabled: pane === activePane, conflictBehavior: 'allow' },
   );
   useHotkey(
     'Mod+Alt+T',
@@ -146,14 +146,14 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
       if (!activeTab) return;
       closeOtherTabs(activeTab.id);
     },
-    { enabled: pane === activePane },
+    { enabled: pane === activePane, conflictBehavior: 'allow' },
   );
   useHotkey(
     'Mod+Shift+C',
     () => {
       handleCopyPath();
     },
-    { enabled: pane === activePane },
+    { enabled: pane === activePane, conflictBehavior: 'allow' },
   );
 
   return (

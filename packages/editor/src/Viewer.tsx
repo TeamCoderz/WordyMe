@@ -15,25 +15,23 @@ import MathPlugin from '@repo/editor/plugins/MathPlugin';
 import { useCallback, useEffect } from 'react';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import { useActions, useSelector } from '@repo/editor/store';
-import type { SerializedEditorState } from 'lexical';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { serializeEditorState } from '@repo/editor/utils/editorState';
 import SelectionHighlightPlugin from '@repo/editor/plugins/SelectionHighlightPlugin';
 import { LinkNavigatePlugin } from '@repo/editor/plugins/LinkPlugin';
 
-export const Viewer: React.FC<{ documentId?: string; tabId?: string }> = ({
+export const Viewer: React.FC<{ documentId?: string; tabId?: string; initialState?: string }> = ({
   documentId,
   tabId,
+  initialState,
 }) => {
   const [editor] = useLexicalComposerContext();
   const isPaged = useSelector((state) => state.pageSetup?.isPaged);
   const { updateEditorStoreState } = useActions();
   const updateChecksum = useCallback(
-    (serializedEditorState: SerializedEditorState) => {
-      const checksum = computeChecksum(serializedEditorState);
+    (checksum: string) => {
       updateEditorStoreState('checksum', checksum);
       if (documentId) {
-        // Dispatch custom event with checksum
         const event = new CustomEvent('checksum-change', {
           detail: { documentId, tabId, checksum },
         });
@@ -46,8 +44,16 @@ export const Viewer: React.FC<{ documentId?: string; tabId?: string }> = ({
   useEffect(() => {
     const editorState = editor.getEditorState();
     const serializedEditorState = serializeEditorState(editorState);
-    updateChecksum(serializedEditorState);
-  }, [editor, updateChecksum]);
+    const editorChecksum = computeChecksum(serializedEditorState);
+    updateChecksum(editorChecksum);
+    if (!initialState) return;
+    const initialChecksum = computeChecksum(JSON.parse(initialState));
+    if (editorChecksum !== initialChecksum) {
+      const initialEditorState = editor.parseEditorState(initialState);
+      editor.setEditorState(initialEditorState);
+      updateChecksum(initialChecksum);
+    }
+  }, [editor, initialState, updateEditorStoreState]);
 
   return (
     <div

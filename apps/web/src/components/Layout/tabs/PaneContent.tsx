@@ -93,9 +93,7 @@ export function PaneContent({ pane, children, className }: PaneContentProps) {
         className,
       )}
     >
-      <ScrollArea className="h-full *:data-radix-scroll-area-viewport:*:block! *:data-radix-scroll-area-viewport:*:h-full">
-        {children}
-      </ScrollArea>
+      <ScrollArea className="h-full">{children}</ScrollArea>
       {showTabSplitZones && <TabSplitDropZones />}
       {showLinkSplitZones && <LinkSplitDropZones />}
       <div

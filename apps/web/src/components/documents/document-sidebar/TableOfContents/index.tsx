@@ -17,10 +17,12 @@ import type { JSX } from 'react';
 import { TableOfContentsPlugin } from '@repo/editor/plugins/TableOfContentsPlugin';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '@repo/ui/lib/utils';
-import { useHash } from '@repo/ui/hooks/use-hash';
 import { decodeId } from '@repo/lib/utils/id';
 import { TableOfContentsIcon } from '@repo/ui/components/icons';
 import { useDebounce } from '@repo/ui/hooks/use-debounce';
+import { useLexicalComposerContext } from '@repo/editor/lexical';
+import { useRouteContext } from '@tanstack/react-router';
+import { useSelector } from '@/store';
 
 export function TableOfContentsList({
   tableOfContents,
@@ -28,9 +30,11 @@ export function TableOfContentsList({
   tableOfContents: Array<TableOfContentsEntry>;
 }): JSX.Element {
   const [selectedKey, setSelectedKey] = useState('');
-  const [hash] = useHash();
+  const { tabId } = useRouteContext({ from: '__root__' });
+  const hash = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId)?.hash);
   const observersRef = useRef<Map<string, IntersectionObserver>>(new Map());
   const shouldObserveRef = useRef(true);
+  const [editor] = useLexicalComposerContext();
 
   useEffect(() => {
     // Clean up previous observers
@@ -38,12 +42,10 @@ export function TableOfContentsList({
     observersRef.current.clear();
 
     if (tableOfContents.length === 0) return;
-
     // Set up intersection observers for each heading
     const headingElements = tableOfContents
-      .map(([key, , , id]) => {
-        const element =
-          document.getElementById(id) || document.querySelector(`[href="${hash}"][target="_self"]`);
+      .map(([key]) => {
+        const element = editor.getElementByKey(key);
         if (!element) return null;
         return { key, element };
       })
@@ -107,35 +109,26 @@ export function TableOfContentsList({
       observer.disconnect();
       observersRef.current.clear();
     };
-  }, [tableOfContents]);
+  }, [editor, tableOfContents]);
 
   useEffect(() => {
     if (!hash) return;
     if (tableOfContents.length === 0) return;
-    if (hash.length < 2) return;
+    if (hash.length < 1) return;
     shouldObserveRef.current = false;
-    const id = hash.slice(1);
-    const decodedId = decodeId(id);
-    const key = tableOfContents.find(([, , , _id]) => decodedId === _id)?.[0];
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (key) setSelectedKey(key);
-    const scrollIntoView = () => {
-      const target = document.getElementById(decodedId);
-      if (target) target.scrollIntoView({ block: 'start' });
-      else
-        Array.from(document.getElementsByTagName('a'))
-          .find(
-            (a) =>
-              a.getAttribute('href') === `#${decodedId}` && a.getAttribute('target') === '_self',
-          )
-          ?.scrollIntoView({ block: 'start' });
-    };
-    scrollIntoView();
-    setTimeout(scrollIntoView, 0);
+    const id = decodeId(hash);
+    const key = tableOfContents.find(([, , , _id]) => id === _id)?.[0];
+    if (!key) return;
+    requestAnimationFrame(() => {
+      setSelectedKey(key);
+      const element = editor.getElementByKey(key);
+      if (!element) return;
+      element.scrollIntoView({ block: 'start' });
+    });
     setTimeout(() => {
       shouldObserveRef.current = true;
     }, 1000);
-  }, [hash, tableOfContents]);
+  }, [editor, hash, tableOfContents]);
 
   const minDepth = tableOfContents.reduce(
     (min, [, , tag]) => Math.min(min, parseInt(tag.slice(1))),

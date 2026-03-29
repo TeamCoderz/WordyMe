@@ -75,7 +75,7 @@ export function DocumentSidebarComponent({
       collapsible="icon"
       className={cn(
         'md:sticky overflow-hidden *:data-[sidebar=sidebar]:flex-row md:*:data-[sidebar=sidebar]:flex-row-reverse',
-        'h-[calc(100svh---spacing(28)-2px)]! max-h-[calc(100svh---spacing(28)-2px)]! top-[calc(var(--spacing)*28+2px)] md:top-0',
+        'h-[calc(100svh---spacing(28)-1px)]! max-h-[calc(100svh---spacing(28)-1px)]! top-[calc(var(--spacing)*28+1px)] md:top-0',
         'data-[state=closed]:translate-x-full',
       )}
       side="right"
@@ -227,7 +227,7 @@ export function DocumentSidebar({ children, handle }: DocumentSidebarProps) {
       open={open}
       onOpenChange={toggleSidebar}
     >
-      <div className="flex flex-1 justify-center w-full h-full items-start relative">
+      <div className="flex flex-1 justify-center w-full h-full relative">
         {children}
         <Portal container={sidebarTriggerSelector}>
           <SidebarTrigger variant="outline" className="size-9 p-2! [&>svg]:rotate-180 md:hidden" />

@@ -21,10 +21,11 @@ export const Route = createFileRoute('/_authed/attachment')({
 function RouteComponent() {
   const { url, name, mimeType } = Route.useSearch();
   return (
-    <div className="flex flex-col h-full min-h-0">
-      <main className="flex-1 min-h-0 overflow-auto">
-        <AttachmentViewer url={url} name={name} mimeType={mimeType} className="min-h-full" />
-      </main>
-    </div>
+    <AttachmentViewer
+      url={url}
+      name={name}
+      mimeType={mimeType}
+      className="w-full flex flex-1 flex-col h-[calc(100svh---spacing(28)-1px)]! max-h-[calc(100svh---spacing(28)-1px)]!"
+    />
   );
 }

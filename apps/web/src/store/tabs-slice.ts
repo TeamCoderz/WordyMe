@@ -52,6 +52,8 @@ export interface TabsActions {
   closeTab: (tabId: string) => void;
   /** Close all tabs in the same pane except the specified one */
   closeOtherTabs: (tabId: string) => void;
+  /** Close all tabs to the right of the specified tab in the same pane */
+  closeTabsToRight: (tabId: string) => void;
   /** Close all tabs in all panes */
   closeAllTabs: () => void;
   /** Set the active tab — also sets activePane to its pane */
@@ -229,6 +231,39 @@ export const createTabsSlice: StateCreator<
         });
       },
 
+      closeTabsToRight: (tabId: string) => {
+        set((state) => {
+          const tabToKeep = state.tabs.tabList.find((t) => t.id === tabId);
+          if (!tabToKeep) return state;
+
+          const pane = state.tabs.paneTabIds.primary.includes(tabId) ? 'primary' : 'secondary';
+          const paneTabIds = state.tabs.paneTabIds[pane];
+          const tabIndex = paneTabIds.indexOf(tabId);
+          if (tabIndex === -1 || tabIndex === paneTabIds.length - 1) return state;
+
+          const tabsToClose = new Set(paneTabIds.slice(tabIndex + 1));
+          const newPaneTabIds = {
+            ...state.tabs.paneTabIds,
+            [pane]: paneTabIds.slice(0, tabIndex + 1),
+          };
+          const newActiveTabId = {
+            ...state.tabs.activeTabId,
+            [pane]: tabsToClose.has(state.tabs.activeTabId[pane] ?? '')
+              ? tabId
+              : state.tabs.activeTabId[pane],
+          };
+
+          return {
+            tabs: {
+              ...state.tabs,
+              tabList: state.tabs.tabList.filter((t) => !tabsToClose.has(t.id)),
+              paneTabIds: newPaneTabIds,
+              activeTabId: newActiveTabId,
+            },
+          };
+        });
+      },
+
       closeAllTabs: () => {
         set((state) => {
           const activePane = state.tabs.activePane;
@@ -236,7 +271,13 @@ export const createTabsSlice: StateCreator<
           return {
             tabs: {
               tabList: state.tabs.tabList.filter((t) => !activePaneTabIds.includes(t.id)),
-              paneTabIds: { ...state.tabs.paneTabIds, [activePane]: [] },
+              paneTabIds: {
+                primary:
+                  activePane === 'primary'
+                    ? state.tabs.paneTabIds.secondary
+                    : state.tabs.paneTabIds.primary,
+                secondary: [],
+              },
               activeTabId: {
                 primary:
                   activePane === 'primary'

@@ -33,6 +33,7 @@ import {
   PanelTopIcon,
   PanelLeftIcon,
   PanelTopCloseIcon,
+  SquareArrowRightIcon,
 } from '@repo/ui/components/icons';
 import { useDocumentActions } from '@/components/documents/useDocumentActions';
 import { IS_APPLE } from '@repo/shared/environment';
@@ -57,6 +58,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
     openTab,
     closeTab,
     closeOtherTabs,
+    closeTabsToRight,
     closeAllTabs,
     moveTabToPane,
     closeSplit,
@@ -65,6 +67,11 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
   } = useActions();
   const isActive = useSelector((state) => state.tabs.activeTabId[pane] === tab.id);
   const hasMultipleTabs = useSelector((state) => state.tabs.paneTabIds[pane].length > 1);
+  const hasTabsToRight = useSelector((state) => {
+    const paneTabIds = state.tabs.paneTabIds[pane];
+    const tabIndex = paneTabIds.indexOf(tab.id);
+    return tabIndex !== -1 && tabIndex < paneTabIds.length - 1;
+  });
   const hasSplit = useSelector((state) => state.tabs.paneTabIds.secondary.length > 0);
   const isLastTab = useSelector((state) => state.tabs.tabList.length === 1);
 
@@ -98,6 +105,10 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
   const handleCloseOthers = useCallback(() => {
     closeOtherTabs(tab.id);
   }, [tab.id, closeOtherTabs]);
+
+  const handleCloseToRight = useCallback(() => {
+    closeTabsToRight(tab.id);
+  }, [tab.id, closeTabsToRight]);
 
   // Close all tabs in all panes
   const handleCloseAll = useCallback(() => {
@@ -281,10 +292,18 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
             <ContextMenuShortcut>{SHORTCUTS.closeOthers}</ContextMenuShortcut>
           </ContextMenuItem>
         )}
-        <ContextMenuItem onClick={handleCloseAll} disabled={isHomeTab && isLastTab}>
-          <XCircle className="mr-2 size-4" />
-          Close All
-        </ContextMenuItem>
+        {hasTabsToRight && (
+          <ContextMenuItem onClick={handleCloseToRight}>
+            <SquareArrowRightIcon className="mr-2 size-4" />
+            Close to the Right
+          </ContextMenuItem>
+        )}
+        {hasMultipleTabs && (
+          <ContextMenuItem onClick={handleCloseAll} disabled={isHomeTab && isLastTab}>
+            <XCircle className="mr-2 size-4" />
+            Close All
+          </ContextMenuItem>
+        )}
 
         {/* Copy path */}
         <ContextMenuItem onClick={handleCopyPath}>

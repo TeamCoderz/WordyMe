@@ -141,7 +141,7 @@ function RootLayout() {
                   } as React.CSSProperties
                 }
                 className={cn(
-                  'flex-1 print:flex-row! print:*:h-auto! print:*:max-h-none! print:*:hidden!',
+                  'flex-1 *:grow print:flex-row! print:*:h-auto! print:*:max-h-none! print:*:hidden!',
                   {
                     'print:*:first:flex!': activePane === 'primary',
                     'print:*:last:flex!': activePane === 'secondary',
@@ -152,7 +152,7 @@ function RootLayout() {
               >
                 <ResizablePanel
                   id="primary"
-                  defaultSize={hasSplit ? splitRatio : 100}
+                  defaultSize={splitRatio}
                   minSize={panelMinSize}
                   className={cn('@container', {
                     'print:hidden!': activePane === 'secondary',
@@ -175,7 +175,7 @@ function RootLayout() {
                   <>
                     <ResizableHandle
                       withHandle
-                      className="print:hidden! z-50 *:z-50 focus-visible:shadow-[none] aria-[orientation=horizontal]:min-h-4 aria-[orientation=vertical]:min-w-4"
+                      className="print:hidden! z-50 *:z-50 focus-visible:shadow-[none] aria-[orientation=horizontal]:min-h-4 aria-[orientation=vertical]:min-w-4 flex-0!"
                     />
                     <ResizablePanel
                       defaultSize={100 - splitRatio}
