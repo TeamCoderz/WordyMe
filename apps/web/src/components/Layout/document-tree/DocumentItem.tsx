@@ -20,6 +20,7 @@ import { isDocumentCached } from '@/queries/caches/documents';
 import { ContainerDocumentItem } from './ContainerDocumentItem';
 import { RegularDocumentItem } from './RegularDocumentItem';
 import { DocumentItemProps, DocumentData } from './types';
+import { v4 as uuidv4 } from 'uuid';
 
 interface DocumentNameInputProps {
   document: DocumentData;
@@ -73,7 +74,7 @@ function DocumentNameInput({
           parentId: document.parentId ?? null,
           spaceId: document.spaceId,
           name,
-          clientId: (document.clientId as string) ?? crypto.randomUUID(),
+          clientId: (document.clientId as string) ?? uuidv4(),
         },
         {
           onSuccess: (data) => {
@@ -101,7 +102,7 @@ function DocumentNameInput({
           parentId: document.parentId ?? null,
           spaceId: document.spaceId,
           name,
-          clientId: (document.clientId as string) ?? crypto.randomUUID(),
+          clientId: (document.clientId as string) ?? uuidv4(),
         },
         {
           onSuccess: (data) => {

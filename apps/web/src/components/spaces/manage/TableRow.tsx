@@ -70,6 +70,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { isSpaceCached } from '@/queries/caches/spaces';
+import { v4 as uuidv4 } from 'uuid';
 
 type AnyItem = any;
 
@@ -227,7 +228,7 @@ export function ManageSpacesTableRow({
       createSpaceMutation.mutate({
         parentId: space.id,
         spaceId: null,
-        clientId: crypto.randomUUID(),
+        clientId: uuidv4(),
       });
     }
   };
@@ -247,7 +248,7 @@ export function ManageSpacesTableRow({
       createContainerSpaceMutation.mutate({
         parentId: space.id,
         spaceId: null,
-        clientId: crypto.randomUUID(),
+        clientId: uuidv4(),
       });
     }
   };

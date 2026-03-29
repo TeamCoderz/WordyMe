@@ -65,6 +65,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { addSpaceToCache, isSpaceCached } from '@/queries/caches/spaces';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import { v4 as uuidv4 } from 'uuid';
 
 interface SpaceNameInputProps {
   space: SpaceData;
@@ -115,7 +116,7 @@ function SpaceNameInput({
         parentId: space.parentId ?? null,
         spaceId: null,
         name,
-        clientId: (space.clientId as string) ?? crypto.randomUUID(),
+        clientId: (space.clientId as string) ?? uuidv4(),
       },
       {
         onSuccess: (data) => {
