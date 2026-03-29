@@ -22,6 +22,8 @@ export const options = {
   emailAndPassword: {
     enabled: true,
   },
+  // Without a string baseURL, Better Auth uses Secure-only cookies in production; http:// (Docker/LAN) rejects them.
+  baseURL: env.BETTER_AUTH_URL ?? env.CLIENT_URL[0],
   trustedOrigins: env.CLIENT_URL,
   user: {
     additionalFields: {
@@ -75,9 +77,6 @@ export const options = {
 
 export const auth = betterAuth({
   ...options,
-  // Required for correct cookie `Secure` / `__Secure-` handling: without a string `baseURL`,
-  // Better Auth treats production as HTTPS-only cookies, which browsers reject on http:// (e.g. Docker + LAN).
-  baseURL: env.BETTER_AUTH_URL ?? env.CLIENT_URL[0],
   plugins: [
     ...options.plugins,
     customSession(async ({ user, session }) => {
