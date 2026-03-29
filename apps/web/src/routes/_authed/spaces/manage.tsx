@@ -17,6 +17,7 @@ import { Skeleton } from '@repo/ui/components/skeleton';
 import { useImportSpaceMutation } from '@/queries/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
+import { v4 as uuidv4 } from 'uuid';
 
 const validateSearch = z.object({
   item: z.string().optional(),
@@ -61,7 +62,7 @@ function ManageSpacesPage() {
       if (sorted.length === 0) position = 'a0';
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
-      const clientId = crypto.randomUUID();
+      const clientId = uuidv4();
       const newPlaceholder: ListSpaceResult[number] = {
         id: 'new-space',
         clientId: clientId as any,

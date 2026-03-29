@@ -65,6 +65,7 @@ import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/l
 import { toast } from 'sonner';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
 import { cn } from '@repo/ui/lib/utils';
+import { v4 as uuidv4 } from 'uuid';
 
 export function SpaceSwitcher() {
   const { isMobile } = useSidebar();
@@ -169,7 +170,7 @@ export function SpaceSwitcher() {
       if (sorted.length === 0) position = 'a0';
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
-      const clientId = crypto.randomUUID();
+      const clientId = uuidv4();
       const newPlaceholder: ListSpaceResultItem = {
         id: 'new-space',
         clientId: clientId as any,

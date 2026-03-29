@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { v4 as uuidv4 } from 'uuid';
 import { uploadAttachment } from '@repo/sdk/storage.ts';
 import type { Services } from '@repo/editor/store';
 import { useNavigate } from '@tanstack/react-router';
@@ -40,7 +41,7 @@ export const useServices = (documentId?: string, userId?: string): Services => {
           return {
             error: null,
             data: {
-              id: crypto.randomUUID(),
+              id: uuidv4(),
               path: d.data.url,
               fullPath: `${import.meta.env.VITE_BACKEND_URL ?? ''}/${d.data.url}`,
             },
@@ -63,7 +64,7 @@ export const useServices = (documentId?: string, userId?: string): Services => {
           return {
             error: null,
             data: {
-              id: crypto.randomUUID(),
+              id: uuidv4(),
               path: d.data.url,
               fullPath: `${import.meta.env.VITE_BACKEND_URL ?? ''}/${d.data.url}`,
             },

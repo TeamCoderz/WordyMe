@@ -15,6 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
+import { v4 as uuidv4 } from 'uuid';
 
 export function DocumentTree() {
   const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
@@ -57,7 +58,7 @@ export function DocumentTree() {
       if (sorted.length === 0) position = 'a0';
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
-      const clientId = crypto.randomUUID();
+      const clientId = uuidv4();
       const newPlaceholder: ListDocumentResult[number] = {
         id: 'new-doc',
         clientId: clientId as any,

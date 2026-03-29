@@ -9,7 +9,8 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - DB_FILE_NAME=file:storage/local.db
-      - CLIENT_URL=http://localhost:5173
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
     volumes:
       # Persist the SQLite database and uploaded files
