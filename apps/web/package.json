@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "start": "vite preview",
     "check-types": "tsc --noEmit",
     "build": "vite build",
