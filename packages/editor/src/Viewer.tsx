@@ -38,7 +38,7 @@ export const Viewer: React.FC<{ documentId?: string; tabId?: string; initialStat
         window.dispatchEvent(event);
       }
     },
-    [updateEditorStoreState],
+    [documentId, tabId, updateEditorStoreState],
   );
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export const Viewer: React.FC<{ documentId?: string; tabId?: string; initialStat
       editor.setEditorState(initialEditorState);
       updateChecksum(initialChecksum);
     }
-  }, [editor, initialState, updateEditorStoreState]);
+  }, [editor, initialState, updateChecksum]);
 
   return (
     <div
