@@ -73,7 +73,7 @@ export const Editor: React.FC<{
         window.dispatchEvent(event);
       }
     },
-    [updateEditorStoreState],
+    [documentId, tabId, updateEditorStoreState],
   );
 
   useEffect(() => {
