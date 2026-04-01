@@ -190,7 +190,7 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
     const handleChecksumChange = (event: Event) => {
       const customEvent = event as CustomEvent<{
         documentId: string;
-        tabId: string;
+        tabId?: string;
         checksum: string;
       }>;
       if (customEvent.detail.documentId === docId && customEvent.detail.tabId === tabId) {
@@ -202,14 +202,14 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
     return () => {
       window.removeEventListener('checksum-change', handleChecksumChange);
     };
-  }, []);
+  }, [docId, tabId]);
 
   useEffect(() => {
     if (isLoading) return;
     if (isDocumentTab) {
       setTabDirty(tab.id, !isUpToDate);
     }
-  }, [isLoading, isUpToDate, setTabDirty]);
+  }, [isDocumentTab, isLoading, isUpToDate, setTabDirty, tab?.id]);
 
   const backgroundClassName = (() => {
     if (!handle) return undefined;
