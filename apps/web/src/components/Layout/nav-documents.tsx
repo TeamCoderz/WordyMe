@@ -18,7 +18,7 @@ export function NavDocuments(props: React.ComponentPropsWithoutRef<typeof Sideba
     >
       <div className="flex gap-1 w-full justify-between items-center">
         <SidebarGroupLabel asChild>
-          <Link to="/docs/manage" data-new-tab="true">
+          <Link to="/docs/manage" data-new-tab="true" className="select-none">
             {(activeSpace?.path?.length ?? 0 > 0) ? activeSpace?.name : 'Documents'}
           </Link>
         </SidebarGroupLabel>
