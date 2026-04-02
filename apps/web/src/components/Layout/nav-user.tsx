@@ -26,6 +26,7 @@ import {
 } from '@repo/ui/components/sidebar';
 import { useSelector } from '@/store';
 import { logout } from '@repo/sdk/auth';
+import { useState } from 'react';
 import { version } from '../../../../../package.json';
 type NavUserProps = {
   variant?: 'sidebar' | 'avatar';
@@ -36,13 +37,14 @@ type NavUserProps = {
 export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: NavUserProps) {
   const { isMobile } = useSidebar();
   const user = useSelector((state) => state.user);
+  const [open, setOpen] = useState(false);
 
   if (variant === 'sidebar') {
     return (
       <SidebarMenu {...props}>
         <SidebarMenuItem>
           {user ? (
-            <DropdownMenu modal={false}>
+            <DropdownMenu modal={false} open={open} onOpenChange={setOpen}>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
@@ -66,6 +68,10 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
                 dropdownMenuSide={dropdownMenuSide}
                 isMobile={isMobile}
                 handleLogout={logout}
+                onClose={() => {
+                  console.log('closing menu');
+                  setOpen(false);
+                }}
               />
             </DropdownMenu>
           ) : null}
@@ -76,7 +82,7 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
 
   if (variant === 'avatar') {
     return user ? (
-      <DropdownMenu modal={false} {...props}>
+      <DropdownMenu modal={false} open={open} onOpenChange={setOpen} {...props}>
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
@@ -102,6 +108,7 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
               return;
             }
           }}
+          onClose={() => setOpen(false)}
         />
       </DropdownMenu>
     ) : null;
@@ -111,12 +118,13 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
 function MenuContent({
   dropdownMenuSide,
   isMobile,
-
+  onClose,
   handleLogout,
 }: {
   dropdownMenuSide?: 'top' | 'bottom' | 'left' | 'right';
   isMobile: boolean;
   handleLogout: () => void;
+  onClose: () => void;
 }) {
   const user = useSelector((state) => state.user);
   return (
@@ -128,8 +136,8 @@ function MenuContent({
         sideOffset={4}
         onCloseAutoFocus={(e) => e.preventDefault()}
       >
-        <DropdownMenuLabel className="p-0 font-normal" asChild>
-          <Link to="/settings/profile" className="cursor-pointer" data-new-tab="true">
+        <Link to="/settings/profile" className="cursor-pointer" data-new-tab="true">
+          <DropdownMenuLabel className="p-0 font-normal" onClick={onClose}>
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar>
                 <AvatarImage
@@ -145,16 +153,16 @@ function MenuContent({
                 </span>
               </div>
             </div>
-          </Link>
-        </DropdownMenuLabel>
+          </DropdownMenuLabel>
+        </Link>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="group" asChild>
-            <Link to="/settings/profile" data-new-tab="true">
+          <Link to="/settings/profile" data-new-tab="true">
+            <DropdownMenuItem className="group" onClick={onClose}>
               <Settings className="mr-2 group-hover:text-accent-foreground" />
               Settings
-            </Link>
-          </DropdownMenuItem>
+            </DropdownMenuItem>
+          </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

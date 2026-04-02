@@ -7,7 +7,7 @@ import { useSelector, useActions } from '@/store';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { resolveModifier, useKeyHold } from '@tanstack/react-hotkeys';
-import { matchTabLocation } from './utils';
+import { matchTabLocation, findGroupTab } from './utils';
 
 /**
  * Headless component that handles:
@@ -77,12 +77,21 @@ export function TabSync() {
       const isModifierHeld = isModifierHeldRef.current;
       const isShiftHeld = isShiftHeldRef.current;
       const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
+      const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
       const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
+      const existingGroupTab = !existingTab ? findGroupTab(allTabs, pathname) : null;
+      const existingTabSamePath =
+        !existingTab && !existingGroupTab && allTabs.find((t) => t.pathname === pathname);
       const shouldOpenNewTab = isModifierHeld || link.dataset.newTab === 'true';
       const shouldSplitTab = isShiftHeld || link.dataset.newSplitTab === 'true';
       event.preventDefault();
-      event.stopPropagation();
-      if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
+      if (existingGroupTab && !isModifierHeld && !shouldSplitTab) {
+        setActiveTab(existingGroupTab.id);
+        updateTab(existingGroupTab.id, { pathname, search, hash: hash.slice(1) });
+      } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
+        setActiveTab(existingTabSamePath.id);
+        updateTab(existingTabSamePath.id, { search, hash: hash.slice(1) });
+      } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
         const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
         updateTab(activeTab.id, {
           pathname,
@@ -118,8 +127,15 @@ export function TabSync() {
     if (locationMatches) return;
     const existingTab = tabList.find((t) => matchTabLocation(t, pathname, search, hash));
     if (existingTab) return setActiveTab(existingTab.id);
+    const existingGroupTab = findGroupTab(tabList, pathname);
+    if (existingGroupTab) {
+      if (existingGroupTab.id !== activeTab?.id) setActiveTab(existingGroupTab.id);
+      updateTab(existingGroupTab.id, { pathname, search, hash });
+      return;
+    }
     const isSameDocument = isDocumentTab && pathname.split('/').pop() === documentHandle;
-    if (isSameDocument) {
+    const isSamePath = activeTab && activeTab.pathname === pathname;
+    if (isSameDocument || isSamePath) {
       updateTab(activeTab.id, {
         pathname,
         search,
