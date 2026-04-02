@@ -5,7 +5,7 @@
 
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
-import { documentsTable } from '../models/documents.js';
+import { documentsTable, documentTypes } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { createRevisionSchema, revisionDetailsSchema } from './revisions.js';
 
@@ -21,7 +21,7 @@ export const getSingleDocumentOptionsSchema = z.object({
 
 export const documentFiltersSchema = z.object({
   search: z.string().optional(),
-  documentType: z.enum(['space', 'folder', 'note']).optional(),
+  documentType: z.enum(documentTypes).optional(),
   spaceId: z.uuid().optional(),
   parentId: z.uuid().optional(),
   orderBy: z.enum(['name', 'createdAt', 'lastViewedAt']).optional(),
@@ -45,7 +45,7 @@ export const searchDocumentResultSchema = z.object({
 });
 
 export const createDocumentSchema = createInsertSchema(documentsTable, {
-  documentType: z.enum(['space', 'folder', 'note']),
+  documentType: z.enum(documentTypes),
 }).omit({
   id: true,
   createdAt: true,
@@ -71,7 +71,7 @@ export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
 });
 
 export const plainDocumentSchema = createSelectSchema(documentsTable, {
-  documentType: z.enum(['space', 'folder', 'note']),
+  documentType: z.enum(documentTypes),
 });
 
 export const documentListItemSchema = plainDocumentSchema.extend({
@@ -80,7 +80,7 @@ export const documentListItemSchema = plainDocumentSchema.extend({
 });
 
 export const documentDetailsSchema = createSelectSchema(documentsTable, {
-  documentType: z.enum(['space', 'folder', 'note']),
+  documentType: z.enum(documentTypes),
 }).extend({
   currentRevision: createSelectSchema(revisionsTable).nullable(),
   isFavorite: z.boolean(),
@@ -88,7 +88,7 @@ export const documentDetailsSchema = createSelectSchema(documentsTable, {
 });
 
 export const copiedDocumentSchema = createSelectSchema(documentsTable, {
-  documentType: z.enum(['space', 'folder', 'note']),
+  documentType: z.enum(documentTypes),
 }).extend({
   currentRevision: revisionDetailsSchema.nullable(),
 });

@@ -12,6 +12,16 @@ import { relations } from 'drizzle-orm';
 import { documentViewsTable } from './document-views.js';
 import { favoritesTable } from './favorites.js';
 
+export const documentTypes = ['space', 'folder', 'note', 'pdf'] as const;
+export type DocumentType = (typeof documentTypes)[number];
+
+export const documentTypeOperations = {
+  space: { hasRevisions: false, canBeContainer: true },
+  folder: { hasRevisions: false, canBeContainer: true },
+  note: { hasRevisions: true, canBeContainer: true },
+  pdf: { hasRevisions: false, canBeContainer: false },
+};
+
 export const documentsTable = sqliteTable('documents', {
   id: text('id')
     .primaryKey()
@@ -41,9 +51,7 @@ export const documentsTable = sqliteTable('documents', {
     onDelete: 'cascade',
     onUpdate: 'cascade',
   }),
-  documentType: enumType(['space', 'folder', 'note'] as const, 'document_type')
-    .notNull()
-    .default('note'),
+  documentType: enumType(documentTypes, 'document_type').notNull().default('note'),
   spaceId: text('space_id').references((): SQLiteColumn => documentsTable.id, {
     onDelete: 'cascade',
     onUpdate: 'cascade',
