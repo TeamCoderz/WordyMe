@@ -5,7 +5,7 @@
 
 import z from 'zod';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { documentsTable } from '../models/documents.js';
+import { documentsTable, documentTypes, DocumentType } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
 
@@ -34,7 +34,7 @@ export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
     name: baseDocumentSchema.shape.name,
     handle: baseDocumentSchema.shape.handle,
     icon: baseDocumentSchema.shape.icon,
-    type: z.enum(['space', 'folder', 'note']),
+    type: z.enum(documentTypes),
     position: baseDocumentSchema.shape.position,
     is_container: baseDocumentSchema.shape.isContainer,
     revision: exportedRevisionSchema.nullable(),
@@ -48,7 +48,7 @@ export const importDocumentSchema = z.object({
   spaceId: z.uuid().optional().nullable(),
   parentId: z.uuid().optional().nullable(),
   position: z.string().optional().nullable(),
-  type: z.enum(['space', 'folder', 'note']),
+  type: z.enum(documentTypes),
   document: exportedDocumentSchema,
 });
 
@@ -70,7 +70,7 @@ export type ExportedDocument = {
   name: string;
   handle: string;
   icon: string | null;
-  type: 'space' | 'folder' | 'note';
+  type: DocumentType;
   position: string | null;
   is_container: boolean;
   revision: ExportedRevision | null;

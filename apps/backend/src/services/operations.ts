@@ -6,7 +6,7 @@
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { CopyDocumentInput, ExportedDocument, ImportDocumentInput } from '../schemas/operations.js';
-import { documentsTable } from '../models/documents.js';
+import { documentsTable, DocumentType } from '../models/documents.js';
 import { createDocument, createDocumentWithRevision } from './documents.js';
 import { getRevisionById } from './revisions.js';
 import {
@@ -154,7 +154,7 @@ export const importDocumentTree = async (
   const documentBody = {
     name: payload.document.name,
     icon: payload.document.icon,
-    documentType: payload.document.type as 'space' | 'folder' | 'note',
+    documentType: payload.document.type as DocumentType,
     isContainer: payload.document.is_container,
     position: payload.position ?? payload.document.position,
     spaceId: payload.spaceId ?? null,
