@@ -58,6 +58,22 @@ export const getLocationFromDataTransfer = (dataTransfer: DataTransfer | null) =
     return null;
   }
 };
+/**
+ * Route prefixes where only one tab should exist at a time.
+ * Navigating to any path under these prefixes reuses the existing tab.
+ */
+const SINGLETON_ROUTE_PREFIXES = ['/settings/'];
+
+/**
+ * Returns an existing tab that belongs to the same singleton group as `pathname`,
+ * or `null` if no such tab exists or the route is not a singleton group.
+ */
+export const findGroupTab = (tabs: Tab[], pathname: string): Tab | null => {
+  const prefix = SINGLETON_ROUTE_PREFIXES.find((p) => pathname.startsWith(p));
+  if (!prefix) return null;
+  return tabs.find((t) => t.pathname.startsWith(prefix)) ?? null;
+};
+
 export const matchAppLink = (tab: Tab, pathname: string) => {
   return pathname.split('/').length === 2 && tab.pathname.split('/')[1] === pathname.split('/')[1];
 };
