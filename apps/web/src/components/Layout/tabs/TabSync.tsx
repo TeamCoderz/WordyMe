@@ -75,7 +75,7 @@ export function TabSync() {
       const isModifierHeld = isModifierHeldRef.current;
       const isShiftHeld = isShiftHeldRef.current;
       const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
-      const allTabs = [...primaryTabList, ...secondaryTabList];
+      const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
       const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
       const existingGroupTab = !existingTab ? findGroupTab(allTabs, pathname) : null;
       const existingTabSamePath =
