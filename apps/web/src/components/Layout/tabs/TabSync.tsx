@@ -77,12 +77,25 @@ export function TabSync() {
       const isModifierHeld = isModifierHeldRef.current;
       const isShiftHeld = isShiftHeldRef.current;
       const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
+      const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
       const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
+      const isSettingsLink = pathname.startsWith('/settings/');
+      const existingSettingsTab =
+        !existingTab && isSettingsLink
+          ? allTabs.find((t) => t.pathname.startsWith('/settings/'))
+          : null;
+      const existingTabSamePath =
+        !existingTab && !existingSettingsTab && allTabs.find((t) => t.pathname === pathname);
       const shouldOpenNewTab = isModifierHeld || link.dataset.newTab === 'true';
       const shouldSplitTab = isShiftHeld || link.dataset.newSplitTab === 'true';
       event.preventDefault();
-      event.stopPropagation();
-      if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
+      if (existingSettingsTab && !isModifierHeld && !shouldSplitTab) {
+        setActiveTab(existingSettingsTab.id);
+        updateTab(existingSettingsTab.id, { pathname, search, hash: hash.slice(1) });
+      } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
+        setActiveTab(existingTabSamePath.id);
+        updateTab(existingTabSamePath.id, { search, hash: hash.slice(1) });
+      } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
         const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
         updateTab(activeTab.id, {
           pathname,
@@ -118,8 +131,18 @@ export function TabSync() {
     if (locationMatches) return;
     const existingTab = tabList.find((t) => matchTabLocation(t, pathname, search, hash));
     if (existingTab) return setActiveTab(existingTab.id);
+    const isSettingsPath = pathname.startsWith('/settings/');
+    const existingSettingsTab = isSettingsPath
+      ? tabList.find((t) => t.pathname.startsWith('/settings/'))
+      : null;
+    if (existingSettingsTab && existingSettingsTab !== activeTab) {
+      setActiveTab(existingSettingsTab.id);
+      updateTab(existingSettingsTab.id, { pathname, search, hash });
+      return;
+    }
     const isSameDocument = isDocumentTab && pathname.split('/').pop() === documentHandle;
-    if (isSameDocument) {
+    const isSamePath = activeTab && activeTab.pathname === pathname;
+    if (isSameDocument || isSamePath) {
       updateTab(activeTab.id, {
         pathname,
         search,
