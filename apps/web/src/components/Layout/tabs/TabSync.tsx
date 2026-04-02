@@ -60,10 +60,8 @@ export function TabSync() {
   }, [primaryTabList, secondaryTabList, activePane, activeTab, isModifierHeld, isShiftHeld]);
 
   useEffect(() => {
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      const link = target.closest('a');
-      if (!link) return;
+    const handleLinkClick = (event: MouseEvent) => {
+      const link = event.currentTarget as HTMLAnchorElement;
       const { origin, pathname, searchParams, hash } = new URL(link.href);
       if (origin !== location.origin) return;
       if (link.download) return;
@@ -77,7 +75,7 @@ export function TabSync() {
       const isModifierHeld = isModifierHeldRef.current;
       const isShiftHeld = isShiftHeldRef.current;
       const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
-      const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
+      const allTabs = [...primaryTabList, ...secondaryTabList];
       const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
       const existingGroupTab = !existingTab ? findGroupTab(allTabs, pathname) : null;
       const existingTabSamePath =
@@ -111,9 +109,43 @@ export function TabSync() {
         });
       }
     };
-    document.addEventListener('click', handleClick, { capture: true });
+
+    const attachToLink = (link: HTMLAnchorElement) => {
+      link.addEventListener('click', handleLinkClick);
+    };
+
+    const detachFromLink = (link: HTMLAnchorElement) => {
+      link.removeEventListener('click', handleLinkClick);
+    };
+
+    // Attach to all links currently in the DOM
+    document.querySelectorAll<HTMLAnchorElement>('a').forEach(attachToLink);
+
+    // Watch for links added/removed dynamically (portals, lazy renders, etc.)
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (node instanceof HTMLAnchorElement) {
+            attachToLink(node);
+          } else if (node instanceof Element) {
+            node.querySelectorAll<HTMLAnchorElement>('a').forEach(attachToLink);
+          }
+        }
+        for (const node of mutation.removedNodes) {
+          if (node instanceof HTMLAnchorElement) {
+            detachFromLink(node);
+          } else if (node instanceof Element) {
+            node.querySelectorAll<HTMLAnchorElement>('a').forEach(detachFromLink);
+          }
+        }
+      }
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
     return () => {
-      document.removeEventListener('click', handleClick, { capture: true });
+      document.querySelectorAll<HTMLAnchorElement>('a').forEach(detachFromLink);
+      observer.disconnect();
     };
   }, []);
 
