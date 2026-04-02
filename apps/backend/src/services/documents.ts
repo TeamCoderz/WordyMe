@@ -6,10 +6,11 @@
 import { and, count, countDistinct, eq, getTableColumns, gt, max } from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { db } from '../lib/db.js';
-import { documentsTable } from '../models/documents.js';
+import { DocumentType, documentTypeOperations, documentsTable } from '../models/documents.js';
 import {
   CreateDocumentInput,
   CreateDocumentWithRevisionInput,
+  CreatePdfDocumentInput,
   DocumentFilters,
   DocumentIdentifier,
   UpdateDocumentInput,
@@ -17,13 +18,42 @@ import {
 import { appendUniqueSuffix, slugify } from '../utils/strings.js';
 import { documentViewsTable } from '../models/document-views.js';
 import { favoritesTable } from '../models/favorites.js';
-import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
+import { PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
 import { saveRevisionContent } from './revision-contents.js';
+import { deletePdfContent, getPdfContentUrl, savePdfContent } from './pdf-contents.js';
+
+export const mapDocumentResponse = <T extends { documentType: DocumentType; id: string }>(
+  document: T,
+) => {
+  return {
+    ...document,
+    pdfUrl: documentTypeOperations[document.documentType].hasPdfContent
+      ? getPdfContentUrl(document.id)
+      : null,
+  };
+};
+
+export const mapDocumentListResponse = <T extends { documentType: DocumentType; id: string }>(
+  documents: T[],
+) => {
+  return documents.map((document) => mapDocumentResponse(document));
+};
+
+export const mapPaginatedDocumentResponse = <
+  T extends { items: { documentType: DocumentType; id: string }[] },
+>(
+  result: T,
+) => {
+  return {
+    ...result,
+    items: mapDocumentListResponse(result.items),
+  };
+};
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -57,11 +87,11 @@ export const getDocumentDetails = async (
   });
 
   if (!document) return undefined;
-  return {
+  return mapDocumentResponse({
     ...document,
     isFavorite: document.favorites.length > 0,
     lastViewedAt: document.views.length > 0 ? document.views[0].lastViewedAt : null,
-  };
+  });
 };
 
 export const getUserDocuments = async (
@@ -101,7 +131,7 @@ export const getUserDocuments = async (
     .limit(filters.limit)
     .getResult();
 
-  return result as DocumentListItem[];
+  return mapDocumentListResponse(result) as DocumentListItem[];
 };
 
 export const getLastViewedDocuments = async (
@@ -142,7 +172,7 @@ export const getLastViewedDocuments = async (
     .order(orderByColumn, filters.order ?? 'desc')
     .getPaginatedResult(filters);
 
-  return result as PaginatedResult<DocumentListItem>;
+  return mapPaginatedDocumentResponse(result) as typeof result;
 };
 
 export const createDocument = async (payload: CreateDocumentInput, userId: string) => {
@@ -159,7 +189,12 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
     })
     .returning();
 
-  const result = { ...document, isFavorite: false, lastViewedAt: null, currentRevision: null };
+  const result = mapDocumentResponse({
+    ...document,
+    isFavorite: false,
+    lastViewedAt: null,
+    currentRevision: null,
+  });
 
   if (payload.documentType === 'space') {
     emitToUser(userId, 'space:created', result);
@@ -170,11 +205,30 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
   return result;
 };
 
+export const createPdfDocument = async (
+  payload: CreatePdfDocumentInput,
+  temporaryPdfPath: string,
+  userId: string,
+) => {
+  const document = await createDocument(
+    {
+      ...payload,
+      documentType: 'pdf',
+      isContainer: false,
+    },
+    userId,
+  );
+
+  await savePdfContent(temporaryPdfPath, document.id);
+
+  return mapDocumentResponse(document);
+};
+
 export const createDocumentWithRevision = async (
   payload: CreateDocumentWithRevisionInput,
   userId: string,
 ) => {
-  const result = await db.transaction(async (tx) => {
+  const rawResult = await db.transaction(async (tx) => {
     let handle = slugify(payload.name);
     if (await checkExistingDocumentHandle(handle)) {
       handle = appendUniqueSuffix(handle);
@@ -218,12 +272,12 @@ export const createDocumentWithRevision = async (
   });
 
   if (payload.documentType === 'space') {
-    emitToUser(userId, 'space:created', result);
+    emitToUser(userId, 'space:created', mapDocumentResponse(rawResult));
   } else if (payload.spaceId) {
-    emitToSpace(payload.spaceId, 'document:created', result);
+    emitToSpace(payload.spaceId, 'document:created', mapDocumentResponse(rawResult));
   }
 
-  return result;
+  return mapDocumentResponse(rawResult);
 };
 
 export const viewDocument = async (documentId: string, userId: string) => {
@@ -264,13 +318,15 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     .where(eq(documentsTable.id, documentId))
     .returning();
 
+  const result = mapDocumentResponse(document);
+
   if (document.documentType === 'space') {
-    emitToUser(document.userId, 'space:updated', document);
+    emitToUser(document.userId, 'space:updated', result);
   } else if (document.spaceId) {
-    emitToSpace(document.spaceId, 'document:updated', document);
+    emitToSpace(document.spaceId, 'document:updated', result);
   }
 
-  return document;
+  return result;
 };
 
 export const getUserDocumentCount = async (userId: string): Promise<number> => {
@@ -291,10 +347,17 @@ export const deleteDocument = async (documentId: string) => {
 
   if (!document) return;
 
-  if (document.documentType === 'space') {
-    emitToUser(document.userId, 'space:deleted', document);
-  } else if (document.spaceId) {
-    emitToSpace(document.spaceId, 'document:deleted', document);
+  if (documentTypeOperations[document.documentType].hasPdfContent) {
+    await deletePdfContent(document.id);
   }
-  return document;
+
+  const result = mapDocumentResponse(document);
+
+  if (document.documentType === 'space') {
+    emitToUser(document.userId, 'space:deleted', result);
+  } else if (document.spaceId) {
+    emitToSpace(document.spaceId, 'document:deleted', result);
+  }
+
+  return result;
 };
