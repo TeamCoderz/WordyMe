@@ -7,7 +7,7 @@ import { useSelector, useActions } from '@/store';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { resolveModifier, useKeyHold } from '@tanstack/react-hotkeys';
-import { matchTabLocation } from './utils';
+import { matchTabLocation, findGroupTab } from './utils';
 
 /**
  * Headless component that handles:
@@ -79,19 +79,15 @@ export function TabSync() {
       const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
       const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
       const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
-      const isSettingsLink = pathname.startsWith('/settings/');
-      const existingSettingsTab =
-        !existingTab && isSettingsLink
-          ? allTabs.find((t) => t.pathname.startsWith('/settings/'))
-          : null;
+      const existingGroupTab = !existingTab ? findGroupTab(allTabs, pathname) : null;
       const existingTabSamePath =
-        !existingTab && !existingSettingsTab && allTabs.find((t) => t.pathname === pathname);
+        !existingTab && !existingGroupTab && allTabs.find((t) => t.pathname === pathname);
       const shouldOpenNewTab = isModifierHeld || link.dataset.newTab === 'true';
       const shouldSplitTab = isShiftHeld || link.dataset.newSplitTab === 'true';
       event.preventDefault();
-      if (existingSettingsTab && !isModifierHeld && !shouldSplitTab) {
-        setActiveTab(existingSettingsTab.id);
-        updateTab(existingSettingsTab.id, { pathname, search, hash: hash.slice(1) });
+      if (existingGroupTab && !isModifierHeld && !shouldSplitTab) {
+        setActiveTab(existingGroupTab.id);
+        updateTab(existingGroupTab.id, { pathname, search, hash: hash.slice(1) });
       } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
         setActiveTab(existingTabSamePath.id);
         updateTab(existingTabSamePath.id, { search, hash: hash.slice(1) });
@@ -131,13 +127,10 @@ export function TabSync() {
     if (locationMatches) return;
     const existingTab = tabList.find((t) => matchTabLocation(t, pathname, search, hash));
     if (existingTab) return setActiveTab(existingTab.id);
-    const isSettingsPath = pathname.startsWith('/settings/');
-    const existingSettingsTab = isSettingsPath
-      ? tabList.find((t) => t.pathname.startsWith('/settings/'))
-      : null;
-    if (existingSettingsTab && existingSettingsTab !== activeTab) {
-      setActiveTab(existingSettingsTab.id);
-      updateTab(existingSettingsTab.id, { pathname, search, hash });
+    const existingGroupTab = findGroupTab(tabList, pathname);
+    if (existingGroupTab) {
+      if (existingGroupTab.id !== activeTab?.id) setActiveTab(existingGroupTab.id);
+      updateTab(existingGroupTab.id, { pathname, search, hash });
       return;
     }
     const isSameDocument = isDocumentTab && pathname.split('/').pop() === documentHandle;
