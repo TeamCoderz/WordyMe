@@ -27,10 +27,14 @@ const PersonalInformationSchema = z.object({
     .string({ error: 'First Name is required' })
     .trim()
     .min(2, { message: 'First Name must be at least 2 characters' }),
-  last_name: z
-    .string({ error: 'Last Name is required' })
-    .trim()
-    .min(2, { message: 'Last Name must be at least 2 characters' }),
+  last_name: z.union([
+    z
+      .string({ error: 'Last Name is required' })
+      .trim()
+      .min(2, { message: 'Last Name must be at least 2 characters' })
+      .optional(),
+    z.literal('').transform(() => undefined), // Allow empty string for last name
+  ]),
   bio: z.string().trim().optional(),
   job_title: z.string().trim().optional(),
 });
@@ -51,7 +55,7 @@ const PersonalInformation = () => {
   const onSubmit = ({ first_name, last_name, ...data }: PersonalInformationSchemaType) => {
     mutate({
       ...data,
-      name: [first_name.trim(), last_name.trim()].filter(Boolean).join(' '),
+      name: [first_name.trim(), last_name?.trim()].filter(Boolean).join(' '),
     });
   };
   return (

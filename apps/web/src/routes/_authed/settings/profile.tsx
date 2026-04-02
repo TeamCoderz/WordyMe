@@ -10,7 +10,7 @@ import { createFileRoute, useSearch } from '@tanstack/react-router';
 import { z } from 'zod';
 
 const profileSearchSchema = z.object({
-  section: z.enum(['personal', 'account', 'danger', 'all']).optional().default('all'),
+  section: z.enum(['personal', 'account', 'danger', 'all']).optional().default('all').catch('all'),
 });
 
 export const Route = createFileRoute('/_authed/settings/profile')({
