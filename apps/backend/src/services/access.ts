@@ -5,7 +5,7 @@
 
 import { and, eq } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { documentsTable } from '../models/documents.js';
+import { documentsTable, DocumentType } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 
 export const userHasDocument = async (userId: string, documentId: string) => {
@@ -32,4 +32,17 @@ export const hasMultipleDocuments = async (userId: string) => {
     .where(eq(documentsTable.userId, userId))
     .limit(2);
   return documents.length > 1;
+};
+
+export const getUserDocumentType = async (
+  userId: string,
+  documentId: string,
+): Promise<DocumentType | null> => {
+  const [document] = await db
+    .select({ documentType: documentsTable.documentType })
+    .from(documentsTable)
+    .where(and(eq(documentsTable.id, documentId), eq(documentsTable.userId, userId)))
+    .limit(1);
+
+  return document?.documentType ?? null;
 };

@@ -5,7 +5,12 @@
 
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
-import { documentsTable, documentTypes } from '../models/documents.js';
+import {
+  documentsTable,
+  documentTypes,
+  DocumentType,
+  nonPdfDocumentTypes,
+} from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { createRevisionSchema, revisionDetailsSchema } from './revisions.js';
 
@@ -32,7 +37,7 @@ export const documentFiltersSchema = z.object({
 });
 
 export const createDocumentSchema = createInsertSchema(documentsTable, {
-  documentType: z.enum(documentTypes),
+  documentType: z.enum(nonPdfDocumentTypes),
 }).omit({
   id: true,
   createdAt: true,
@@ -44,6 +49,15 @@ export const createDocumentSchema = createInsertSchema(documentsTable, {
 
 export const createDocumentWithRevisionSchema = createDocumentSchema.extend({
   revision: createRevisionSchema.omit({ documentId: true }),
+});
+
+export const createPdfDocumentSchema = z.object({
+  name: z.coerce.string().min(1),
+  parentId: z.coerce.string().pipe(z.uuid()).optional(),
+  spaceId: z.coerce.string().pipe(z.uuid()).optional(),
+  icon: z.coerce.string().optional(),
+  position: z.coerce.string().optional(),
+  clientId: z.coerce.string().optional(),
 });
 
 export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
@@ -64,6 +78,7 @@ export const plainDocumentSchema = createSelectSchema(documentsTable, {
 export const documentListItemSchema = plainDocumentSchema.extend({
   isFavorite: z.boolean(),
   lastViewedAt: z.date().nullable(),
+  pdfUrl: z.string().nullable(),
 });
 
 export const documentDetailsSchema = createSelectSchema(documentsTable, {
@@ -72,17 +87,27 @@ export const documentDetailsSchema = createSelectSchema(documentsTable, {
   currentRevision: createSelectSchema(revisionsTable).nullable(),
   isFavorite: z.boolean(),
   lastViewedAt: z.date().nullable(),
+  pdfUrl: z.string().nullable(),
 });
 
 export const copiedDocumentSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(documentTypes),
 }).extend({
   currentRevision: revisionDetailsSchema.nullable(),
+  pdfUrl: z.string().nullable(),
 });
 
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
-export type CreateDocumentInput = z.output<typeof createDocumentSchema>;
-export type CreateDocumentWithRevisionInput = z.output<typeof createDocumentWithRevisionSchema>;
+export type CreateDocumentInput = Omit<z.output<typeof createDocumentSchema>, 'documentType'> & {
+  documentType: DocumentType;
+};
+export type CreateDocumentWithRevisionInput = Omit<
+  z.output<typeof createDocumentWithRevisionSchema>,
+  'documentType'
+> & {
+  documentType: DocumentType;
+};
+export type CreatePdfDocumentInput = z.output<typeof createPdfDocumentSchema>;
 export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
 export type DocumentListItem = z.output<typeof documentListItemSchema>;

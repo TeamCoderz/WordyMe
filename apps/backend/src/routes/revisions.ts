@@ -17,8 +17,9 @@ import {
   updateRevisionName,
   deleteRevisionById,
 } from '../services/revisions.js';
-import { HttpNotFound } from '@httpx/exception';
-import { userHasDocument, userHasRevision } from '../services/access.js';
+import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import { getUserDocumentType, userHasDocument, userHasRevision } from '../services/access.js';
+import { documentTypeOperations } from '../models/documents.js';
 
 const router: Router = Router();
 
@@ -30,6 +31,21 @@ router.post('/', validate({ body: createRevisionSchema }), async (req, res) => {
       'The document does not exist or is not accessible by the authenticated user.',
     );
   }
+
+  const documentType = await getUserDocumentType(req.user!.id, req.body.documentId);
+
+  if (!documentType) {
+    throw new HttpNotFound(
+      'The document does not exist or is not accessible by the authenticated user.',
+    );
+  }
+
+  if (!documentTypeOperations[documentType].hasRevisions) {
+    throw new HttpUnprocessableEntity({
+      message: 'This document type does not support revisions.',
+    });
+  }
+
   const revision = await createRevision(req.body, req.user!.id);
   res.status(201).json(revision);
 });

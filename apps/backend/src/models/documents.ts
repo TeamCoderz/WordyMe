@@ -13,14 +13,18 @@ import { documentViewsTable } from './document-views.js';
 import { favoritesTable } from './favorites.js';
 
 export const documentTypes = ['space', 'folder', 'note', 'pdf'] as const;
+export const nonPdfDocumentTypes = ['space', 'folder', 'note'] as const;
 export type DocumentType = (typeof documentTypes)[number];
 
 export const documentTypeOperations = {
-  space: { hasRevisions: false, canBeContainer: true },
-  folder: { hasRevisions: false, canBeContainer: true },
-  note: { hasRevisions: true, canBeContainer: true },
-  pdf: { hasRevisions: false, canBeContainer: false },
-};
+  space: { hasRevisions: false, canBeContainer: true, hasPdfContent: false },
+  folder: { hasRevisions: false, canBeContainer: true, hasPdfContent: false },
+  note: { hasRevisions: true, canBeContainer: true, hasPdfContent: false },
+  pdf: { hasRevisions: false, canBeContainer: false, hasPdfContent: true },
+} satisfies Record<
+  DocumentType,
+  { hasRevisions: boolean; canBeContainer: boolean; hasPdfContent: boolean }
+>;
 
 export const documentsTable = sqliteTable('documents', {
   id: text('id')

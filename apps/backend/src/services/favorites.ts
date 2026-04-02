@@ -8,8 +8,8 @@ import { db } from '../lib/db.js';
 import { favoritesTable } from '../models/favorites.js';
 import { documentsTable } from '../models/documents.js';
 import { documentViewsTable } from '../models/document-views.js';
-import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
-import { orderByColumns } from './documents.js';
+import { PaginationQuery } from '../schemas/pagination.js';
+import { mapPaginatedDocumentResponse, orderByColumns } from './documents.js';
 import { DocumentFilters, DocumentListItem } from '../schemas/documents.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { emitToUser } from '../lib/socket.js';
@@ -94,5 +94,8 @@ export const listFavorites = async (userId: string, filters: DocumentFilters & P
     .order(orderByColumn, filters.order ?? 'desc')
     .getPaginatedResult(filters);
 
-  return result as PaginatedResult<DocumentListItem>;
+  return mapPaginatedDocumentResponse(result) as {
+    items: DocumentListItem[];
+    meta: (typeof result)['meta'];
+  };
 };

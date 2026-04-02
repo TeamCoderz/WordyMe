@@ -17,6 +17,7 @@ import {
   documentListItemSchema,
   getSingleDocumentOptionsSchema,
   createDocumentWithRevisionSchema,
+  createPdfDocumentSchema,
 } from '../schemas/documents.js';
 import {
   createRevisionSchema,
@@ -119,6 +120,40 @@ export const openApiDocument = createDocument({
             content: {
               'application/json': { schema: documentDetailsSchema },
             },
+          },
+        },
+      },
+    },
+    '/api/documents/pdf': {
+      post: {
+        summary: 'Create a new PDF document',
+        tags: ['Documents'],
+        description:
+          'Creates a PDF document using multipart upload. This route is dedicated for document types that use binary PDF content instead of revisions.',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: createPdfDocumentSchema.extend({
+                pdf: z.string().describe('The PDF file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'PDF document created successfully. Returns the document details including pdfUrl.',
+            content: {
+              'application/json': { schema: documentDetailsSchema },
+            },
+          },
+          404: {
+            description:
+              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+          },
+          422: {
+            description: 'Invalid upload payload or unsupported file type.',
           },
         },
       },
@@ -555,6 +590,32 @@ export const openApiDocument = createDocument({
           404: {
             description:
               'The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/storage/pdfs/{documentId}': {
+      get: {
+        summary: 'Download PDF document file',
+        tags: ['Storage'],
+        description:
+          'Downloads the binary PDF file associated with a PDF document. Access is restricted to the authenticated owner of the document.',
+        requestParams: { path: documentIdParamSchema },
+        responses: {
+          200: {
+            description: 'PDF file returned successfully.',
+            content: {
+              'application/pdf': {
+                schema: z.string(),
+              },
+            },
+          },
+          404: {
+            description:
+              'The document does not exist or is not accessible by the authenticated user.',
+          },
+          422: {
+            description: 'The specified document type is not PDF.',
           },
         },
       },

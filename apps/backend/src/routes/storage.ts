@@ -8,7 +8,7 @@ import formidable from 'formidable';
 import { requireAuth } from '../middlewares/auth.js';
 import { validate } from '../middlewares/validate.js';
 import { revisionIdParamSchema } from '../schemas/revisions.js';
-import { userHasDocument, userHasRevision } from '../services/access.js';
+import { getUserDocumentType, userHasDocument, userHasRevision } from '../services/access.js';
 import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../lib/storage.js';
 import { getRevisionContentUrl } from '../services/revision-contents.js';
@@ -24,6 +24,8 @@ import {
   updateUserCover,
   updateUserImage,
 } from '../services/images.js';
+import { getPdfContentPhysicalPath } from '../services/pdf-contents.js';
+import { documentTypeOperations } from '../models/documents.js';
 
 const router: Router = Router();
 
@@ -110,6 +112,32 @@ router.get(
 
     res.sendFile(resolvePhysicalPath(getAttachmentUrl(documentId, filename)), (err) => {
       if (err) next(new HttpNotFound('Attachment not found'));
+    });
+  },
+);
+
+router.get(
+  '/pdfs/:documentId',
+  validate({ params: documentIdParamSchema }),
+  async (req, res, next) => {
+    const { documentId } = req.params;
+
+    if (!(await userHasDocument(req.user!.id, documentId))) {
+      throw new HttpNotFound(
+        'The document does not exist or is not accessible by the authenticated user.',
+      );
+    }
+
+    const documentType = await getUserDocumentType(req.user!.id, documentId);
+
+    if (!documentType || !documentTypeOperations[documentType].hasPdfContent) {
+      throw new HttpUnprocessableEntity({
+        message: 'Only PDF documents can be accessed through this endpoint.',
+      });
+    }
+
+    res.sendFile(getPdfContentPhysicalPath(documentId), (err) => {
+      if (err) next(new HttpNotFound('PDF file not found'));
     });
   },
 );
