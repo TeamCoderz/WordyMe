@@ -11,6 +11,7 @@ import type {
   DocumentListItem,
   GetSingleDocumentOptions,
   PlainDocument,
+  SearchDocumentResult,
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
 import type { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
@@ -30,6 +31,10 @@ export const getUserDocuments = async (filters?: DocumentFilters) => {
 
 export const getLastViewedDocuments = async (filters?: DocumentFilters & PaginationQuery) => {
   return await get<PaginatedResult<DocumentListItem>>('/documents/last-viewed', filters);
+};
+
+export const searchDocuments = async (query: string, limit?: number) => {
+  return await get<SearchDocumentResult[]>('/documents/search', { query, limit });
 };
 
 export const getDocumentById = async (documentId: string, options?: GetSingleDocumentOptions) => {
