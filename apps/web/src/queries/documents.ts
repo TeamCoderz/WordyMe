@@ -66,11 +66,11 @@ export type SearchDocumentsResult = NonNullable<
   Awaited<ReturnType<typeof searchDocuments>>['data']
 >;
 
-export const searchDocumentsQueryOptions = (search: string, limit = 20) => {
+export const searchDocumentsQueryOptions = (search: string, spaceId?: string, limit = 20) => {
   const trimmedSearch = search.trim();
 
   return {
-    queryKey: DOCUMENTS_QUERY_KEYS.SEARCH_DOCUMENTS(trimmedSearch),
+    queryKey: DOCUMENTS_QUERY_KEYS.SEARCH_DOCUMENTS(trimmedSearch, spaceId),
     queryFn: async (): Promise<SearchDocumentsResult> => {
       if (!trimmedSearch) {
         return [];

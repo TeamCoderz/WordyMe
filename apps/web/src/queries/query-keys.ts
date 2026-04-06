@@ -13,7 +13,7 @@ export const DOCUMENTS_QUERY_KEYS = {
     RECENT_VIEWS: ['home', 'docs', 'recent-views'],
   },
   RECENT_VIEWS: ['docs', 'recent-viewed'],
-  SEARCH_DOCUMENTS: (search: string) => ['docs', 'search', { search }],
+  SEARCH_DOCUMENTS: (search: string, spaceId?: string) => ['docs', 'search', { search, spaceId }],
 };
 
 //spaces query keys
