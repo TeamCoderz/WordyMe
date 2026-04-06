@@ -90,7 +90,7 @@ export const openApiDocument = createDocument({
         summary: 'Search user documents',
         tags: ['Documents'],
         description:
-          'Runs full-text search against the authenticated user documents using title and current revision body content.',
+          'Runs full-text search against the authenticated user documents using title and current revision body content. Supports optional filtering by spaceId.',
         requestParams: { query: searchDocumentsQuerySchema },
         responses: {
           200: {

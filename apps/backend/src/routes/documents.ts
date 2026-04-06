@@ -46,7 +46,12 @@ router.get('/', validate({ query: documentFiltersSchema }), async (req, res) => 
 });
 
 router.get('/search', validate({ query: searchDocumentsQuerySchema }), async (req, res) => {
-  const results = await searchDocuments(req.user!.id, req.query.query, req.query.limit);
+  const results = await searchDocuments(
+    req.user!.id,
+    req.query.query,
+    req.query.limit,
+    req.query.spaceId,
+  );
   res.status(200).json(results);
 });
 
