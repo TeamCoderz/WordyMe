@@ -32,8 +32,6 @@ ARG VITE_BACKEND_URL
 
 ENV VITE_BACKEND_URL=${VITE_BACKEND_URL:-}
 
-RUN cd /app/apps/backend && node node_modules/drizzle-kit/bin.cjs migrate
-
 
 RUN pnpm build --filter=web... --filter=@repo/backend...
 
@@ -52,11 +50,11 @@ RUN addgroup --system --gid 1001 nodejs && \
 
 COPY --from=builder /app/pruned-backend .
 COPY --from=builder /app/apps/backend/dist ./dist
+COPY --from=builder /app/apps/backend/drizzle ./drizzle
+COPY --from=builder /app/apps/backend/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/node_modules/.pnpm/drizzle-kit@*/node_modules/drizzle-kit ./node_modules/drizzle-kit
 
 RUN mkdir -p storage && chown -R nodejs:nodejs storage
-
-# Copy the 'seed' database created during build
-COPY --from=builder --chown=nodejs:nodejs /app/apps/backend/local.db ./storage/local.db
 
 USER nodejs
 
@@ -67,7 +65,7 @@ ENV CLIENT_URL=http://localhost:5173
 
 EXPOSE 3000
 
-CMD ["node", "dist/index.js"]
+CMD ["sh", "-c", "node node_modules/drizzle-kit/bin.cjs migrate && node dist/index.js"]
 
 # ==========================================
 # STAGE 4: Web Runner (Nginx)
