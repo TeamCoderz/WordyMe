@@ -12,8 +12,8 @@
     {
       "idx": 1,
       "version": "6",
-      "when": 1775088000000,
-      "tag": "0001_documents_fts",
+      "when": 1775433600000,
+      "tag": "0001_document_search_index",
       "breakpoints": true
     }
   ]
