@@ -10,3 +10,4 @@ export * from './editor-settings.js';
 export * from './favorites.js';
 export * from './user-images.js';
 export * from './revisions.js';
+export * from './document-search-index.js';
