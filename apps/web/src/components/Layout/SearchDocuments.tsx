@@ -83,6 +83,7 @@ const SearchCommandContent = ({
   setOpen,
   search,
   setSearch,
+  spaceId,
 }: {
   setOpen: React.Dispatch<React.SetStateAction<boolean>>;
   search: string;
@@ -91,8 +92,8 @@ const SearchCommandContent = ({
 }) => {
   const [debouncedSearch] = useDebounce(search, 800);
   const queryOptions = useMemo(
-    () => searchDocumentsQueryOptions(debouncedSearch),
-    [debouncedSearch],
+    () => searchDocumentsQueryOptions(debouncedSearch, spaceId),
+    [debouncedSearch, spaceId],
   );
   const navigate = useNavigate();
   const { data = [], isError } = useQuery(queryOptions);
