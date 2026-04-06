@@ -31,6 +31,18 @@ export const documentFiltersSchema = z.object({
   limit: z.coerce.number().min(1).optional(),
 });
 
+export const searchDocumentsQuerySchema = z.object({
+  query: z.string().min(1, 'Search query is required'),
+  limit: z.coerce.number().min(1).max(50).optional(),
+});
+
+export const searchDocumentResultSchema = z.object({
+  id: z.uuid(),
+  title: z.string(),
+  snippet: z.string(),
+  score: z.number(),
+});
+
 export const createDocumentSchema = createInsertSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
 }).omit({
@@ -87,6 +99,8 @@ export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
 export type DocumentListItem = z.output<typeof documentListItemSchema>;
 export type DocumentDetails = z.output<typeof documentDetailsSchema>;
+export type SearchDocumentsQuery = z.output<typeof searchDocumentsQuerySchema>;
+export type SearchDocumentResult = z.output<typeof searchDocumentResultSchema>;
 export type PlainDocument = Omit<
   DocumentDetails,
   'currentRevision' | 'views' | 'favorites' | 'isFavorite' | 'lastViewedAt'

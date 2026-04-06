@@ -17,6 +17,8 @@ import {
   documentListItemSchema,
   getSingleDocumentOptionsSchema,
   createDocumentWithRevisionSchema,
+  searchDocumentResultSchema,
+  searchDocumentsQuerySchema,
 } from '../schemas/documents.js';
 import {
   createRevisionSchema,
@@ -79,6 +81,23 @@ export const openApiDocument = createDocument({
           404: {
             description:
               'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/api/documents/search': {
+      get: {
+        summary: 'Search user documents',
+        tags: ['Documents'],
+        description:
+          'Runs full-text search against the authenticated user documents using title and current revision body content.',
+        requestParams: { query: searchDocumentsQuerySchema },
+        responses: {
+          200: {
+            description: 'List of matching documents ordered by relevance score.',
+            content: {
+              'application/json': { schema: z.array(searchDocumentResultSchema) },
+            },
           },
         },
       },
