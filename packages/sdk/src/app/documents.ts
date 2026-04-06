@@ -33,8 +33,8 @@ export const getLastViewedDocuments = async (filters?: DocumentFilters & Paginat
   return await get<PaginatedResult<DocumentListItem>>('/documents/last-viewed', filters);
 };
 
-export const searchDocuments = async (query: string, limit?: number) => {
-  return await get<SearchDocumentResult[]>('/documents/search', { query, limit });
+export const searchDocuments = async (query: string, limit?: number, spaceId?: string) => {
+  return await get<SearchDocumentResult[]>('/documents/search', { query, limit, spaceId });
 };
 
 export const getDocumentById = async (documentId: string, options?: GetSingleDocumentOptions) => {

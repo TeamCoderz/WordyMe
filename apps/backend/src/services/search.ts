@@ -14,14 +14,20 @@ const documentSearchFtsTable = sqliteTable('document_search_fts', {
   rowid: integer('rowid'),
 });
 
-const runSearch = async (userId: string, match: string, limit: number) => {
+const runSearch = async (userId: string, match: string, limit: number, spaceId?: string) => {
   if (!match) return [];
+
+  const whereClauses = [eq(documentsTable.userId, userId), sql`document_search_fts MATCH ${match}`];
+
+  if (spaceId) {
+    whereClauses.push(eq(documentsTable.spaceId, spaceId));
+  }
 
   const rows = await db
     .select({
       id: documentsTable.id,
       title: documentsTable.name,
-      snippet: sql<string>`snippet(document_search_fts, 1, '[', ']', ' ... ', 20)`.as('snippet'),
+      snippet: sql<string>`snippet(document_search_fts, 1, '[', ']', ' ... ', 40)`.as('snippet'),
       score: sql<number>`bm25(document_search_fts)`.as('score'),
     })
     .from(documentSearchFtsTable)
@@ -30,7 +36,7 @@ const runSearch = async (userId: string, match: string, limit: number) => {
       sql`document_search_index.rowid = ${documentSearchFtsTable.rowid}`,
     )
     .innerJoin(documentsTable, eq(documentsTable.id, documentSearchIndexTable.documentId))
-    .where(and(eq(documentsTable.userId, userId), sql`document_search_fts MATCH ${match}`))
+    .where(and(...whereClauses))
     .orderBy(sql`bm25(document_search_fts)`)
     .limit(limit);
 
@@ -42,8 +48,13 @@ const runSearch = async (userId: string, match: string, limit: number) => {
   }));
 };
 
-export const searchDocuments = async (userId: string, query: string, limit = 10) => {
+export const searchDocuments = async (
+  userId: string,
+  query: string,
+  limit = 10,
+  spaceId?: string,
+) => {
   const safeLimit = Math.max(1, Math.min(50, Math.trunc(limit)));
   const match = buildPrefixMatchQuery(tokenizeSearchQuery(query));
-  return runSearch(userId, match, safeLimit);
+  return runSearch(userId, match, safeLimit, spaceId);
 };

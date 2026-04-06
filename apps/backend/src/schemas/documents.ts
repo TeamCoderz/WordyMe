@@ -34,6 +34,7 @@ export const documentFiltersSchema = z.object({
 export const searchDocumentsQuerySchema = z.object({
   query: z.string().min(1, 'Search query is required'),
   limit: z.coerce.number().min(1).max(50).optional(),
+  spaceId: z.uuid().optional(),
 });
 
 export const searchDocumentResultSchema = z.object({
