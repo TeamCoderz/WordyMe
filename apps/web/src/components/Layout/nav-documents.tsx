@@ -8,6 +8,9 @@ import { DocumentTree } from './document-tree';
 import { cn } from '@repo/ui/lib/utils';
 import { Link } from '@tanstack/react-router';
 import { useSelector } from '@/store';
+import SearchDocuments from './SearchDocuments';
+import { Search } from '@repo/ui/components/icons';
+import { Button } from '@repo/ui/components/button';
 
 export function NavDocuments(props: React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
@@ -22,6 +25,11 @@ export function NavDocuments(props: React.ComponentPropsWithoutRef<typeof Sideba
             {(activeSpace?.path?.length ?? 0 > 0) ? activeSpace?.name : 'Documents'}
           </Link>
         </SidebarGroupLabel>
+        <SearchDocuments spaceId={activeSpace?.id}>
+          <Button variant="ghost" size="icon-sm" aria-label="Search documents">
+            <Search />
+          </Button>
+        </SearchDocuments>
       </div>
       <DocumentTree />
     </SidebarGroup>

@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useMutation,
+  useQueryClient,
+  UseSuspenseQueryOptions,
+} from '@tanstack/react-query';
 import type { QueryClient, UseQueryOptions } from '@tanstack/react-query';
 import {
   deleteDocument,
@@ -14,6 +19,7 @@ import {
   getLastViewedDocuments,
   createDocumentWithRevision,
   getDocumentById,
+  searchDocuments,
 } from '@repo/sdk/documents.ts';
 import {
   addDocumentToFavorites,
@@ -55,6 +61,32 @@ export type ListDocumentResultItem = NonNullable<
   from?: 'sidebar' | 'manage';
 };
 export type ListDocumentResult = ListDocumentResultItem[];
+
+export type SearchDocumentsResult = NonNullable<
+  Awaited<ReturnType<typeof searchDocuments>>['data']
+>;
+
+export const searchDocumentsQueryOptions = (search: string, limit = 20) => {
+  const trimmedSearch = search.trim();
+
+  return {
+    queryKey: DOCUMENTS_QUERY_KEYS.SEARCH_DOCUMENTS(trimmedSearch),
+    queryFn: async (): Promise<SearchDocumentsResult> => {
+      if (!trimmedSearch) {
+        return [];
+      }
+
+      const { data, error } = await searchDocuments(trimmedSearch, limit);
+      if (error) {
+        throw error;
+      }
+      return data ?? [];
+    },
+    staleTime: 0,
+    placeholderData: keepPreviousData,
+    enabled: !!trimmedSearch,
+  };
+};
 
 export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<ListDocumentResult> {
   return {

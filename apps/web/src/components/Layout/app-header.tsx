@@ -11,6 +11,7 @@ import { NavUser } from './nav-user';
 import { cn } from '@repo/ui/lib/utils';
 import { Link } from '@tanstack/react-router';
 import { IS_MOBILE } from '@repo/shared/environment';
+import SearchDocuments from './SearchDocuments';
 
 export const AppHeader = () => {
   const handleGeometryChange = (event: any) => {
@@ -68,6 +69,7 @@ export const AppHeader = () => {
             <SidebarTrigger variant="outline" className="size-9 p-2!" />
           </div>
           <div className="flex items-center gap-2 px-4">
+            <SearchDocuments />
             <ThemeCustomizer />
             <NavUser variant="avatar" dropdownMenuSide="bottom" className="w-auto size-8" />
           </div>
