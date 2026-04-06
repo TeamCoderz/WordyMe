@@ -11,6 +11,7 @@ import {
   documentHandleParamSchema,
   documentIdParamSchema,
   getSingleDocumentOptionsSchema,
+  searchDocumentsQuerySchema,
   updateDocumentSchema,
 } from '../schemas/documents.js';
 import { requireAuth } from '../middlewares/auth.js';
@@ -26,6 +27,7 @@ import {
   updateDocument,
   viewDocument,
 } from '../services/documents.js';
+import { searchDocuments } from '../services/search.js';
 import { userHasDocument } from '../services/access.js';
 import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
@@ -41,6 +43,11 @@ router.use(requireAuth);
 router.get('/', validate({ query: documentFiltersSchema }), async (req, res) => {
   const documents = await getUserDocuments(req.user!.id, req.query);
   res.status(200).json(documents);
+});
+
+router.get('/search', validate({ query: searchDocumentsQuerySchema }), async (req, res) => {
+  const results = await searchDocuments(req.user!.id, req.query.query, req.query.limit);
+  res.status(200).json(results);
 });
 
 router.get(
