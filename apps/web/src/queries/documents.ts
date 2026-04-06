@@ -76,7 +76,7 @@ export const searchDocumentsQueryOptions = (search: string, spaceId?: string, li
         return [];
       }
 
-      const { data, error } = await searchDocuments(trimmedSearch, limit);
+      const { data, error } = await searchDocuments(trimmedSearch, limit, spaceId);
       if (error) {
         throw error;
       }

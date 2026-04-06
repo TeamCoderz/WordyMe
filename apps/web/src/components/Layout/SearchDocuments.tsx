@@ -22,7 +22,8 @@ import DOMPurify from 'dompurify';
 
 interface SearchDocumentsProps {
   spaceId?: string;
-  children?: React.ReactElement;
+  children?: React.ReactElement<{ onClick?: React.MouseEventHandler }>;
+  enableHotkey?: boolean;
 }
 
 function renderSnippet(snippet: string) {
@@ -31,11 +32,17 @@ function renderSnippet(snippet: string) {
   return snippet.replace(/\[([^\]]+)\]/g, '<mark>$1</mark>');
 }
 
-function SearchDocuments({ spaceId: _spaceId, children }: SearchDocumentsProps) {
+function SearchDocuments({
+  spaceId: _spaceId,
+  children,
+  enableHotkey = false,
+}: SearchDocumentsProps) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
+    if (!enableHotkey) return;
+
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
@@ -45,12 +52,17 @@ function SearchDocuments({ spaceId: _spaceId, children }: SearchDocumentsProps) 
 
     document.addEventListener('keydown', down);
     return () => document.removeEventListener('keydown', down);
-  }, []);
+  }, [enableHotkey]);
 
   return (
     <>
       {children ? (
-        cloneElement(children, { onClick: () => setOpen(true) } as any)
+        cloneElement(children, {
+          onClick: (e: React.MouseEvent) => {
+            children.props.onClick?.(e);
+            setOpen(true);
+          },
+        })
       ) : (
         <Button
           variant="outline"

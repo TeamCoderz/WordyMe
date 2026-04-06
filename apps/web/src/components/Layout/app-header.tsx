@@ -69,7 +69,7 @@ export const AppHeader = () => {
             <SidebarTrigger variant="outline" className="size-9 p-2!" />
           </div>
           <div className="flex items-center gap-2 px-4">
-            <SearchDocuments />
+            <SearchDocuments enableHotkey />
             <ThemeCustomizer />
             <NavUser variant="avatar" dropdownMenuSide="bottom" className="w-auto size-8" />
           </div>
