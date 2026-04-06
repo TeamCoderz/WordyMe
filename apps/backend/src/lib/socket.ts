@@ -25,8 +25,9 @@ export const initializeSocket = (server: HttpServer) => {
       console.log(`Socket disconnected: ${socket.id} - ${socket.user.id}`);
     });
 
-    socket.on('subscribeToSpace', (spaceId: string) => {
-      if (!userHasDocument(socket.user.id, spaceId)) {
+    socket.on('subscribeToSpace', async (spaceId: string) => {
+      const hasAccess = await userHasDocument(socket.user.id, spaceId);
+      if (!hasAccess) {
         return;
       }
       socket.join(`space:${spaceId}`);
