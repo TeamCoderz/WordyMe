@@ -105,6 +105,7 @@ export function ManageSpacesTableRow({
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
+  const isSubmittingRenameRef = React.useRef<boolean>(false);
   const { setActiveSpaceBySpaceId, setSpacesClipboard } = useActions();
   const { updateSpaceName, isPending: isRenamePending } = useRenameSpaceMutation();
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
@@ -186,14 +187,19 @@ export function ManageSpacesTableRow({
   };
 
   const handleRenameSubmit = async () => {
-    if (isRenamePending) return;
+    if (isRenamePending || isSubmittingRenameRef.current) return;
+    isSubmittingRenameRef.current = true;
     if (renameName.trim() && renameName.trim() !== space.name) {
       try {
         await updateSpaceName(space.id ?? '', renameName.trim());
       } catch {
         toast.error('Failed to rename space');
         setRenameName(space.name ?? ''); // Reset on error
+      } finally {
+        isSubmittingRenameRef.current = false;
       }
+    } else {
+      isSubmittingRenameRef.current = false;
     }
     setIsRenaming(false);
   };

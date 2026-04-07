@@ -58,6 +58,7 @@ export function DocumentRow({
 }: DocumentRowProps) {
   const [renameValue, setRenameValue] = useState<string>('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const isSubmittingRef = useRef<boolean>(false);
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
 
   const { updateDocumentName } = useRenameDocumentMutation({ document });
@@ -73,19 +74,27 @@ export function DocumentRow({
     setOpenDropdownId(null);
   };
 
+  const handleRenameSubmit = async (documentId: string) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
+      if (renameValue.trim()) {
+        await updateDocumentName(documentId, renameValue.trim());
+        setRenameValue('');
+        onRename({ id: null }); // This will set renamingDocumentId to null in parent
+      }
+    } catch (error) {
+      // Error handling is done in the mutation
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
   const handleRenameKeyDown = async (e: React.KeyboardEvent, documentId: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      if (renameValue.trim()) {
-        try {
-          await updateDocumentName(documentId, renameValue.trim());
-          setRenameValue('');
-          onRename({ id: null }); // This will set renamingDocumentId to null in parent
-        } catch (error) {
-          // Error handling is done in the mutation
-        }
-      }
+      await handleRenameSubmit(documentId);
     } else if (e.key === 'Escape') {
       setRenameValue('');
       onRename({ id: null }); // This will set renamingDocumentId to null in parent
@@ -237,6 +246,7 @@ export function DocumentRow({
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 onKeyDown={(e) => handleRenameKeyDown(e, document.id)}
+                onBlur={() => handleRenameSubmit(document.id)}
                 className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
                 onClick={(e) => e.stopPropagation()}
                 autoFocus

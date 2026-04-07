@@ -90,6 +90,7 @@ function SpaceNameInput({
   const queryClient = useQueryClient();
   const [inputValue, setInputValue] = React.useState(space.name);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const isSubmittingRef = React.useRef(false);
 
   // Mutations
   const { updateSpaceName, isPending: isRenamingPending } = useRenameSpaceMutation();
@@ -103,10 +104,12 @@ function SpaceNameInput({
 
   // Handle placeholder submission
   const submitPlaceholder = React.useCallback(() => {
-    if (!isPlaceholder) return;
+    if (!isPlaceholder || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     const name = inputValue.trim();
     if (!name) {
       onRemovePlaceholder?.();
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -120,6 +123,7 @@ function SpaceNameInput({
       },
       {
         onSuccess: (data) => {
+          isSubmittingRef.current = false;
           queryClient.setQueryData(
             getAllSpacesQueryOptions.queryKey,
             (old: ListSpaceResult | undefined) => {
@@ -135,6 +139,7 @@ function SpaceNameInput({
           );
         },
         onError: () => {
+          isSubmittingRef.current = false;
           onRemovePlaceholder?.();
         },
       },
@@ -153,14 +158,19 @@ function SpaceNameInput({
 
   // Handle rename submission
   const submitRename = React.useCallback(async () => {
-    if (!isRenaming || isRenamingPending) return;
+    if (!isRenaming || isRenamingPending || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     if (inputValue.trim() && inputValue.trim() !== space.name) {
       try {
         await updateSpaceName(space.id, inputValue.trim());
       } catch {
         toast.error('Failed to rename space');
         setInputValue(space.name); // Reset on error
+      } finally {
+        isSubmittingRef.current = false;
       }
+    } else {
+      isSubmittingRef.current = false;
     }
     onRenameComplete?.();
   }, [
