@@ -20,12 +20,13 @@ export interface Space {
   currentRevisionId: string | null;
   userId: string;
   parentId: string | null;
-  documentType: 'space' | 'folder' | 'note';
+  documentType: 'space' | 'folder' | 'note' | 'pdf';
   spaceId: string | null;
   isContainer: boolean;
   clientId: string | null;
   isFavorite: boolean;
   lastViewedAt: Date | null;
+  pdfUrl: string | null;
 }
 
 export interface SpaceCreateInput {

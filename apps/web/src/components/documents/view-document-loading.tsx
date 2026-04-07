@@ -6,8 +6,10 @@
 import { Skeleton } from '@repo/ui/components/skeleton';
 import { EditorComposer } from '@repo/editor/EditorComposer';
 import { DocumentSidebar } from './document-sidebar';
+import { useParams } from '@tanstack/react-router';
 
-export function ViewDocumentLoading({ handle }: { handle: string }) {
+export function ViewDocumentLoading() {
+  const { handle } = useParams({ from: '/_authed/view/$handle' });
   return (
     <EditorComposer initialState={null} editable={false}>
       <DocumentSidebar handle={handle}>

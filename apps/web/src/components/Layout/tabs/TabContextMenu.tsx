@@ -86,6 +86,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
     : null;
 
   const {
+    document: doc,
     isDisabled: isSaveDisabled,
     isPreviouslySaved,
     handleUpdate,
@@ -95,6 +96,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
     handlePrint,
     editorSettings,
   } = useDocumentActions(documentHandle, tab.id);
+  const documentType = doc?.documentType;
 
   // Close this tab
   const handleClose = useCallback(() => {
@@ -208,7 +210,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
     >
       <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
       <ContextMenuContent className="w-56">
-        {isDocumentTab && (
+        {isDocumentTab && documentType === 'note' && (
           <>
             <ContextMenuItem
               disabled={isSaveDisabled && !tab.isDirty}

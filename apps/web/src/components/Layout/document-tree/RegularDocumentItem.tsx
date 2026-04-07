@@ -279,11 +279,13 @@ export function RegularDocumentItem({
             isActive={isActive}
             className={cn(
               'relative flex w-full items-center gap-2 cursor-pointer py-0! text-sm select-none overflow-hidden rounded-sm',
-              'group-hover/document:bg-sidebar-accent/50! group-hover/document:text-sidebar-accent-foreground group-hover/document:pr-8! max-md:pr-8!',
+              'group-hover/document:bg-sidebar-accent/50! group-hover/document:text-sidebar-accent-foreground max-md:pr-8!',
               {
                 'bg-muted border border-dashed border-border/60': isCutThisItem,
-                'text-foreground! pr-8! bg-sidebar-accent! group-hover/document:bg-sidebar-accent!':
+                'text-foreground! bg-sidebar-accent! group-hover/document:bg-sidebar-accent!':
                   isActive,
+                'group-hover/document:pr-8!': document.documentType === 'note',
+                'pr-8!': isActive && document.documentType === 'note',
               },
             )}
             asChild
@@ -323,11 +325,11 @@ export function RegularDocumentItem({
             className={cn(
               'items-center hidden group-hover/document:flex max-md:flex absolute top-0 right-0 shrink-0',
               {
-                flex: isActive && !isCreating,
+                flex: isActive && !isCreating && document.documentType === 'note',
               },
             )}
           >
-            {!isPlaceholder && !isCreating && (
+            {!isPlaceholder && !isCreating && document.documentType === 'note' && (
               <Link
                 className="p-2 text-muted-foreground hovert:text-foreground group/control-item"
                 to="/edit/$handle"

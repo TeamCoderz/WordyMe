@@ -19,6 +19,7 @@ import {
   Scissors,
   CopyPlus,
   FolderOutput,
+  FileType,
 } from '@repo/ui/components/icons';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { cn } from '@repo/ui/lib/utils';
@@ -45,6 +46,7 @@ import {
   useCopyDocumentMutation,
   useMoveDocumentMutation,
   useExportDocumentMutation,
+  useCreatePdfDocumentMutation,
 } from '@/queries/documents';
 import { alert } from '../alert';
 import { cachedDocuments } from '@/queries/caches/documents';
@@ -56,6 +58,7 @@ import {
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import { v4 as uuidv4 } from 'uuid';
 
 interface ContainerDocumentItemProps {
   document: DocumentData;
@@ -89,6 +92,10 @@ export function ContainerDocumentItem({
 }: ContainerDocumentItemProps) {
   // Export document mutation
   const exportDocumentMutation = useExportDocumentMutation(document.id, document.name);
+  const createPdfDocumentMutation = useCreatePdfDocumentMutation({
+    spaceId: document.spaceId ?? '',
+    from: 'sidebar',
+  });
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = React.useState(false);
@@ -172,6 +179,24 @@ export function ContainerDocumentItem({
   };
 
   const handleCreateChildFolder = () => beginInlineCreate('folder');
+
+  const handleCreateChildPdf = () => {
+    dispatchEscapeKey();
+    if (!isExpanded) onToggleExpanded(document.id);
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      createPdfDocumentMutation.mutate({
+        file,
+        clientId: uuidv4(),
+        parentId: document.id,
+      });
+    };
+    input.click();
+  };
 
   const handleCopy = () => {
     setDocumentsClipboard(document as any, 'copy');
@@ -479,6 +504,19 @@ export function ContainerDocumentItem({
                 >
                   <FolderPlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Add Child Folder
+                </ContextMenuItem>
+                <ContextMenuItem
+                  className="group"
+                  disabled={createPdfDocumentMutation.isPending}
+                  onSelect={() => {
+                    dispatchEscapeKey();
+                    setTimeout(() => {
+                      handleCreateChildPdf();
+                    }, 0);
+                  }}
+                >
+                  <FileType className="mr-2 h-4 w-4 group-hover:text-foreground" />
+                  Add Child PDF
                 </ContextMenuItem>
                 <ContextMenuSeparator />
                 <ContextMenuItem

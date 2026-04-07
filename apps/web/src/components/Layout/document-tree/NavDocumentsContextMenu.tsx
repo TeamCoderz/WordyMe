@@ -13,7 +13,14 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger,
 } from '@repo/ui/components/context-menu';
-import { FilePlus, FolderPlus, Settings2, Clipboard, FolderInput } from '@repo/ui/components/icons';
+import {
+  FilePlus,
+  FolderPlus,
+  Settings2,
+  Clipboard,
+  FolderInput,
+  FileType,
+} from '@repo/ui/components/icons';
 import { useActions, useSelector } from '@/store';
 // Removed unused create mutations; we rely on inline create via store actions
 import { useNavigate } from '@tanstack/react-router';
@@ -24,9 +31,11 @@ import {
   useCopyDocumentMutation,
   useMoveDocumentMutation,
   useImportDocumentMutation,
+  useCreatePdfDocumentMutation,
 } from '@/queries/documents';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import { v4 as uuidv4 } from 'uuid';
 
 type NavDocumentsContextMenuProps = {
   children: React.ReactNode;
@@ -49,6 +58,10 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
     spaceId: activeSpace?.id ?? '',
   });
   const importDocumentMutation = useImportDocumentMutation(null, activeSpace?.id ?? '');
+  const createPdfDocumentMutation = useCreatePdfDocumentMutation({
+    spaceId: activeSpace?.id ?? '',
+    from: 'sidebar',
+  });
 
   const handleCreateNote = () => {
     dispatchEscapeKey();
@@ -80,6 +93,22 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
     } else {
       copyDocumentMutation.mutate();
     }
+  };
+
+  const handleCreatePdf = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      createPdfDocumentMutation.mutate({
+        file,
+        clientId: uuidv4(),
+        parentId: null,
+      });
+    };
+    input.click();
   };
 
   const handleImport = () => {
@@ -141,6 +170,13 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
         <ContextMenuItem onSelect={handleCreateFolder}>
           <FolderPlus className="mr-2 h-4 w-4" />
           Create Folder
+        </ContextMenuItem>
+        <ContextMenuItem
+          onSelect={handleCreatePdf}
+          disabled={!activeSpace?.id || createPdfDocumentMutation.isPending}
+        >
+          <FileType className="mr-2 h-4 w-4" />
+          Create PDF
         </ContextMenuItem>
         <ContextMenuSeparator />
 

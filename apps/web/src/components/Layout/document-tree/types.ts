@@ -29,10 +29,12 @@ export interface DocumentContextMenuProps {
   onChangeIcon: () => void;
   onRename: () => void;
   onCreateFolder?: () => void;
+  onCreatePdf?: () => void;
   onAddToFavorites?: () => void;
   onRemoveFromFavorites?: () => void;
   onCreateChildNote?: () => void;
   onCreateChildFolder?: () => void;
+  onCreateChildPdf?: () => void;
   onManage?: () => void;
   onDelete?: () => void;
   onCopy?: () => void;

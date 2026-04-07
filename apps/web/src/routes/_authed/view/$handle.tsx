@@ -3,11 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { ViewDocument } from '@/components/documents/view-document';
 import SplashScreen from '@/components/splash-screen';
 import { useActions, useSelector } from '@/store';
 import { createFileRoute, redirect } from '@tanstack/react-router';
-import { useEffect } from 'react';
+import { useEffect, lazy } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { getDocumentByHandleQueryOptions, getDocumentByIdQueryOptions } from '@/queries/documents';
 import { DOCUMENTS_QUERY_KEYS } from '@/queries/query-keys';
@@ -18,6 +17,12 @@ import {
 } from '@/queries/revisions';
 import { ViewDocumentLoading } from '@/components/documents/view-document-loading';
 import z from 'zod';
+const ViewDocument = lazy(() =>
+  import('@/components/documents/view-document').then((m) => ({ default: m.ViewDocument })),
+);
+const ViewPDF = lazy(() =>
+  import('@/components/documents/view-pdf').then((m) => ({ default: m.ViewPDF })),
+);
 
 const searchParamsSchema = z.object({
   search: z.string().optional(),
@@ -49,7 +54,7 @@ export const Route = createFileRoute('/_authed/view/$handle')({
     await queryClient.ensureQueryData(getDocumentByHandleQueryOptions(handle));
   },
   notFoundComponent: () => <SplashScreen className="absolute" title="Document not found" />,
-  pendingComponent: () => <SplashScreen className="absolute" title="Loading Document" />,
+  pendingComponent: () => <ViewDocumentLoading />,
   validateSearch: searchParamsSchema,
 });
 
@@ -60,18 +65,20 @@ function RouteComponent() {
   const { handle } = Route.useParams();
   const search = Route.useSearch();
   const { data: document, isSuccess } = useQuery(getDocumentByHandleQueryOptions(handle));
-  const { data: localRevision } = useQuery(
-    getLocalRevisionByDocumentIdQueryOptions(
+  const isPdf = document?.documentType === 'pdf';
+
+  const { data: localRevision } = useQuery({
+    ...getLocalRevisionByDocumentIdQueryOptions(
       document?.id,
       document?.currentRevisionId ?? null,
-      isSuccess && !search.v,
+      isSuccess && !search.v && !isPdf,
     ),
-  );
-  const { data: cloudRevision, error: cloudRevisionError } = useQuery(
-    getRevisionByIdQueryOptions(search.v ?? '', Boolean(search.v)),
-  );
+  });
+  const { data: cloudRevision, error: cloudRevisionError } = useQuery({
+    ...getRevisionByIdQueryOptions(search.v ?? '', Boolean(search.v) && !isPdf),
+  });
   const revision = search.v ? (cloudRevision ?? localRevision) : localRevision;
-  const isLoading = !localRevision && !cloudRevision;
+  const isLoadingNotes = !isPdf && !localRevision && !cloudRevision;
   const invalidate = useAllQueriesInvalidate();
 
   useEffect(() => {
@@ -85,12 +92,20 @@ function RouteComponent() {
     }
   }, [document]);
 
-  if (cloudRevisionError) {
+  if (cloudRevisionError && !isPdf) {
     return <SplashScreen className="absolute" title="Revision not found" />;
   }
 
-  if (isLoading || !document || !user || !revision) {
-    return <ViewDocumentLoading handle={handle} />;
+  if (!document || !user) {
+    return <ViewDocumentLoading />;
+  }
+
+  if (isPdf) {
+    return <ViewPDF pdfUrl={document.pdfUrl} />;
+  }
+
+  if (isLoadingNotes || !revision) {
+    return <ViewDocumentLoading />;
   }
 
   return (

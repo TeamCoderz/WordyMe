@@ -186,6 +186,7 @@ export function SpaceSwitcher() {
         updatedAt: new Date(),
         lastViewedAt: null,
         documentType: 'space',
+        pdfUrl: null,
         from: 'sidebar',
         userId: '',
         currentRevisionId: null,

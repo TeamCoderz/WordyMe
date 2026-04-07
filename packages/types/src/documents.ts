@@ -16,7 +16,7 @@ export interface EditorDocument {
   currentRevisionId: string | null;
   userId: string;
   parentId: string | null;
-  documentType: 'space' | 'folder' | 'note';
+  documentType: 'space' | 'folder' | 'note' | 'pdf';
   spaceId: string | null;
   isContainer: boolean;
   clientId: string | null;

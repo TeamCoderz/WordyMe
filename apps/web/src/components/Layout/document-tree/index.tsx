@@ -74,6 +74,7 @@ export function DocumentTree() {
         updatedAt: new Date(),
         lastViewedAt: null,
         documentType: params.type === 'folder' ? ('folder' as any) : ('note' as any),
+        pdfUrl: null,
         from: 'sidebar',
         currentRevisionId: null,
         userId: '',

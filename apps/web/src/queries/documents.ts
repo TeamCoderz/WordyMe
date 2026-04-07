@@ -15,6 +15,7 @@ import {
   updateDocument,
   getDocumentByHandle,
   createDocument,
+  createPdfDocument,
   getUserDocuments,
   getLastViewedDocuments,
   createDocumentWithRevision,
@@ -52,8 +53,16 @@ import { getRevisionsByDocumentIdQueryOptions } from './revisions';
 import { addDocumentToCache, isDocumentCached, removeDocumentFromCache } from './caches/documents';
 import { createLocalDocument, deleteLocalDocument } from '@repo/editor/indexeddb';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
+
 const listDocuments = async ({ spaceId }: { spaceId: string }) => {
-  return await getUserDocuments({ spaceId, documentType: 'note' });
+  const notes = await getUserDocuments({ spaceId, documentType: 'note' });
+  if (notes.error) return notes;
+  const pdfs = await getUserDocuments({ spaceId, documentType: 'pdf' });
+  if (pdfs.error) return pdfs;
+  return {
+    data: [...(notes.data ?? []), ...(pdfs.data ?? [])],
+    error: null,
+  };
 };
 export type ListDocumentResultItem = NonNullable<
   Awaited<ReturnType<typeof listDocuments>>['data']
@@ -588,6 +597,102 @@ export const useCreateDocumentMutation = ({
 
   return mutation;
 };
+
+export const useCreatePdfDocumentMutation = ({
+  spaceId,
+  from,
+}: {
+  spaceId: string;
+  from: 'sidebar' | 'manage';
+}) => {
+  const queryClient = useQueryClient();
+  const invalidate = useAllQueriesInvalidate();
+
+  return useMutation({
+    mutationKey: ['createPdfDocument', spaceId],
+    mutationFn: async ({
+      parentId,
+      file,
+      clientId,
+      name,
+    }: {
+      parentId?: string | null;
+      file: File;
+      clientId: string;
+      name?: string | null;
+    }) => {
+      const currentDocuments = queryClient.getQueryData(
+        getAllDocumentsQueryOptions(spaceId).queryKey,
+      ) as ListDocumentResult;
+
+      if (!currentDocuments) {
+        throw new Error('No documents data available');
+      }
+
+      const siblings = getSiblings(currentDocuments, parentId ?? null);
+      const sortedSiblings = sortByPosition(siblings);
+      let newPosition: string;
+      if (sortedSiblings.length === 0) {
+        newPosition = 'a0';
+      } else {
+        const lastSibling = sortedSiblings[sortedSiblings.length - 1];
+        const lastPosition = lastSibling?.position || 'a0';
+        newPosition = generatePositionKeyBetween(lastPosition, null);
+      }
+
+      const baseName =
+        name?.trim() || file.name.replace(/\.pdf$/i, '').trim() || file.name.trim() || 'Untitled';
+
+      const { data, error } = await createPdfDocument(
+        {
+          name: baseName,
+          parentId: parentId ?? undefined,
+          spaceId,
+          position: newPosition,
+          clientId,
+          icon: 'file',
+        },
+        file,
+      );
+
+      if (error) throw error;
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+      ]);
+      return data;
+    },
+    onMutate() {
+      return { toastId: toast.loading('Creating PDF…') };
+    },
+    onSuccess: async (data, { clientId }, context) => {
+      if (data && !isDocumentCached(clientId)) {
+        const { currentRevision: _cr, ...document } = data;
+        queryClient.setQueryData(
+          getAllDocumentsQueryOptions(spaceId).queryKey,
+          (old: ListDocumentResult) => {
+            if (old) {
+              addDocumentToCache(clientId, from);
+              return [...old, document];
+            }
+            return old;
+          },
+        );
+      }
+      toast.success('PDF created successfully', {
+        id: context?.toastId ?? undefined,
+      });
+    },
+    onError: (error, { clientId }, context) => {
+      removeDocumentFromCache(clientId);
+      toast.error(error.message || 'Failed to create PDF', {
+        id: context?.toastId ?? undefined,
+      });
+    },
+  });
+};
+
 export const useCreateContainerDocumentMutation = ({
   document,
   from,

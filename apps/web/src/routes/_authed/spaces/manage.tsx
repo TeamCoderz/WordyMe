@@ -78,6 +78,7 @@ function ManageSpacesPage() {
         updatedAt: new Date(),
         lastViewedAt: null,
         documentType: 'space',
+        pdfUrl: null,
         from: 'manage',
         userId: '',
         currentRevisionId: null,

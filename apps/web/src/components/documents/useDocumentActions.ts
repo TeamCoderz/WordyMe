@@ -19,12 +19,13 @@ import {
   useSaveLocalRevisionMutation,
 } from '@/queries/revisions';
 import { useActions, useSelector } from '@/store';
+import type { DocumentDetails } from '@repo/backend/documents.js';
 
 export function useDocumentActions(handle: string | null, tabId?: string) {
   const queryClient = useQueryClient();
   // Queries
   const documentQueryOptions = getDocumentByHandleQueryOptions(handle ?? '');
-  const { data: document } = useQuery({
+  const { data: document } = useQuery<DocumentDetails>({
     ...documentQueryOptions,
     enabled: !!handle,
   });
@@ -224,6 +225,7 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
   })();
 
   return {
+    document,
     isLoading,
     isSaving,
     isJustSaved,

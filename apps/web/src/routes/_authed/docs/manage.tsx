@@ -10,7 +10,11 @@ import { ManageDocumentsTopbar } from '@/components/documents/manage/Topbar';
 import { ManageDocumentsTable } from '@/components/documents/manage/Table';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from '@/store';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
+import {
+  getAllDocumentsQueryOptions,
+  ListDocumentResult,
+  useCreatePdfDocumentMutation,
+} from '@/queries/documents';
 import { toast } from 'sonner';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,6 +42,11 @@ function ManageDocumentsPage() {
   });
 
   const [placeholder, setPlaceholder] = React.useState<ListDocumentResult[number] | null>(null);
+
+  const createPdfDocumentMutation = useCreatePdfDocumentMutation({
+    spaceId: spaceID,
+    from: 'manage',
+  });
 
   // Merge placeholder with documents data
   const documentsWithPlaceholder = React.useMemo(() => {
@@ -80,6 +89,7 @@ function ManageDocumentsPage() {
         updatedAt: new Date(),
         lastViewedAt: null,
         documentType: params.type === 'folder' ? ('folder' as any) : ('note' as any),
+        pdfUrl: null,
         from: 'manage',
         userId: '',
         currentRevisionId: null,
@@ -129,6 +139,26 @@ function ManageDocumentsPage() {
     tableRef.current?.beginRootInlineCreate('folder');
   }, [rootDocumentId]);
 
+  const handleCreatePdf = React.useCallback(() => {
+    if (!spaceID) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      if (rootDocumentId) {
+        tableRef.current?.expandItem(rootDocumentId);
+      }
+      createPdfDocumentMutation.mutate({
+        file,
+        clientId: uuidv4(),
+        parentId: rootDocumentId ?? null,
+      });
+    };
+    input.click();
+  }, [spaceID, rootDocumentId, createPdfDocumentMutation]);
+
   React.useEffect(() => {
     if (isLoading) return;
     if (!rootDocumentId) return;
@@ -144,6 +174,7 @@ function ManageDocumentsPage() {
       <ManageDocumentsTopbar
         onCreateNote={handleCreateNote}
         onCreateFolder={handleCreateFolder}
+        onCreatePdf={handleCreatePdf}
         onImportDocument={() => tableRef.current?.importDocuments()}
       />
       <ManageDocumentsTable

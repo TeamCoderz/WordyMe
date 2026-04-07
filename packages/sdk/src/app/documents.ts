@@ -6,6 +6,7 @@
 import type {
   CreateDocumentInput,
   CreateDocumentWithRevisionInput,
+  CreatePdfDocumentInput,
   DocumentDetails,
   DocumentFilters,
   DocumentListItem,
@@ -15,7 +16,7 @@ import type {
   UpdateDocumentInput,
 } from '@repo/backend/documents.js';
 import type { PaginatedResult, PaginationQuery } from '@repo/backend/pagination.js';
-import { del, get, patch, post } from './client.js';
+import { del, get, patch, post, postFormData } from './client.js';
 
 export const createDocument = async (data: CreateDocumentInput) => {
   return await post<PlainDocument>('/documents', data);
@@ -23,6 +24,28 @@ export const createDocument = async (data: CreateDocumentInput) => {
 
 export const createDocumentWithRevision = async (data: CreateDocumentWithRevisionInput) => {
   return await post<DocumentDetails>('/documents/with-revision', data);
+};
+
+export const createPdfDocument = async (data: CreatePdfDocumentInput, pdf: File) => {
+  const formData = new FormData();
+  formData.append('name', data.name);
+  formData.append('pdf', pdf);
+  if (data.parentId !== undefined) {
+    formData.append('parentId', data.parentId);
+  }
+  if (data.spaceId !== undefined) {
+    formData.append('spaceId', data.spaceId);
+  }
+  if (data.icon !== undefined) {
+    formData.append('icon', data.icon);
+  }
+  if (data.position !== undefined) {
+    formData.append('position', data.position);
+  }
+  if (data.clientId !== undefined) {
+    formData.append('clientId', data.clientId);
+  }
+  return await postFormData<DocumentDetails>('/documents/pdf', formData);
 };
 
 export const getUserDocuments = async (filters?: DocumentFilters) => {

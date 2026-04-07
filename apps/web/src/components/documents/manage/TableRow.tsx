@@ -26,6 +26,7 @@ import {
   FolderPlus,
   FolderOutput,
   FolderInput,
+  FileType,
 } from '@repo/ui/components/icons';
 import { format, formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -41,6 +42,7 @@ import {
   useCreateContainerDocumentMutation,
   useExportDocumentMutation,
   useImportDocumentMutation,
+  useCreatePdfDocumentMutation,
   ListDocumentResult,
   getAllDocumentsQueryOptions,
 } from '@/queries/documents';
@@ -70,6 +72,7 @@ import { isDocumentCached } from '@/queries/caches/documents';
 import { ItemInstance } from '@headless-tree/core';
 import { TreeNode } from '@repo/lib/data/tree';
 import { ListDocumentResultItem } from '@/queries/documents';
+import { v4 as uuidv4 } from 'uuid';
 
 type DocumentTreeNode = TreeNode<ListDocumentResultItem>;
 type DocumentTreeItem = ItemInstance<DocumentTreeNode | null>;
@@ -137,6 +140,10 @@ export function ManageDocumentsTableRow({
     doc?.name,
   );
   const importDocumentMutation = useImportDocumentMutation(doc?.id ?? null, spaceID);
+  const createPdfDocumentMutation = useCreatePdfDocumentMutation({
+    spaceId: spaceID,
+    from: 'manage',
+  });
   const { setDocumentsClipboard } = useActions();
   const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const isCutThisItem =
@@ -328,6 +335,35 @@ export function ManageDocumentsTableRow({
         clientId: doc.clientId as string,
       });
     }
+  };
+
+  const handleAddChildPdf = () => {
+    if (!doc?.id) return;
+    try {
+      const isOpen = typeof item.isExpanded === 'function' ? item.isExpanded() : false;
+      if (!isOpen) {
+        if (typeof (item as any).setExpanded === 'function') {
+          (item as any).setExpanded(true);
+        } else if (typeof (item as any).expand === 'function') {
+          (item as any).expand();
+        }
+      }
+    } catch {
+      // ignore
+    }
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/pdf,.pdf';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      createPdfDocumentMutation.mutate({
+        file,
+        clientId: uuidv4(),
+        parentId: doc.id,
+      });
+    };
+    input.click();
   };
 
   const removePlaceholderHandler = React.useCallback(() => {
@@ -807,6 +843,14 @@ export function ManageDocumentsTableRow({
                           <FolderPlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
                           Add Child Folder
                         </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="group"
+                          disabled={createPdfDocumentMutation.isPending}
+                          onSelect={handleAddChildPdf}
+                        >
+                          <FileType className="mr-2 h-4 w-4 group-hover:text-foreground" />
+                          Add Child PDF
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                       </>
                     )}
@@ -962,6 +1006,13 @@ export function ManageDocumentsTableRow({
               <ContextMenuItem onSelect={handleAddChildFolder}>
                 <FolderPlus className="mr-2 h-4 w-4" />
                 Add Child Folder
+              </ContextMenuItem>
+              <ContextMenuItem
+                disabled={createPdfDocumentMutation.isPending}
+                onSelect={handleAddChildPdf}
+              >
+                <FileType className="mr-2 h-4 w-4" />
+                Add Child PDF
               </ContextMenuItem>
               <ContextMenuSeparator />
             </>
