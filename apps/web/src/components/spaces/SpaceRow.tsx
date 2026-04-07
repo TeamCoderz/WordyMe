@@ -144,27 +144,6 @@ export function SpaceRow({
     }
   }, [renamingSpaceId, space.id, space.name]);
 
-  // Cancel rename when clicking outside the input
-  useEffect(() => {
-    if (renamingSpaceId !== space.id) return;
-
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      const input = renameInputRef.current;
-      const target = e.target as Node | null;
-      if (!input) return;
-      if (target && input.contains(target)) return;
-      setRenameValue('');
-      onRename({ id: null } as any);
-    };
-
-    window.addEventListener('mousedown', handlePointerDown, true);
-    window.addEventListener('touchstart', handlePointerDown, true);
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown, true);
-      window.removeEventListener('touchstart', handlePointerDown, true);
-    };
-  }, [renamingSpaceId, space.id, onRename]);
-
   // Close picker when clicking elsewhere
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

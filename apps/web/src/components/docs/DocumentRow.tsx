@@ -152,27 +152,6 @@ export function DocumentRow({
     }
   }, [renamingDocumentId, document.id, document.name]);
 
-  // Cancel rename when clicking outside the input
-  useEffect(() => {
-    if (renamingDocumentId !== document.id) return;
-
-    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
-      const input = renameInputRef.current;
-      const target = e.target as Node | null;
-      if (!input) return;
-      if (target && input.contains(target)) return;
-      setRenameValue('');
-      onRename({ id: null });
-    };
-
-    window.addEventListener('mousedown', handlePointerDown, true);
-    window.addEventListener('touchstart', handlePointerDown, true);
-    return () => {
-      window.removeEventListener('mousedown', handlePointerDown, true);
-      window.removeEventListener('touchstart', handlePointerDown, true);
-    };
-  }, [renamingDocumentId, document.id, onRename]);
-
   // Close picker when clicking elsewhere
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
