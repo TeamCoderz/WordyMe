@@ -56,6 +56,7 @@ export function SpaceRow({
 }: SpaceRowProps) {
   const [renameValue, setRenameValue] = useState<string>('');
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const isSubmittingRef = useRef<boolean>(false);
   const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
   const { setActiveSpaceBySpaceId } = useActions();
   const deleteSpaceMutation = useDeleteSpaceMutation({ space });
@@ -66,18 +67,26 @@ export function SpaceRow({
     setOpenDropdownId(null);
   };
 
+  const handleRenameSubmit = async (spaceId: string) => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
+    try {
+      if (renameValue.trim()) {
+        await onUpdateSpaceName(spaceId, renameValue.trim());
+        setRenameValue('');
+      }
+    } catch (error) {
+      // Error handling is done in the parent component
+    } finally {
+      isSubmittingRef.current = false;
+    }
+  };
+
   const handleRenameKeyDown = async (e: React.KeyboardEvent, spaceId: string) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       e.stopPropagation();
-      if (renameValue.trim()) {
-        try {
-          await onUpdateSpaceName(spaceId, renameValue.trim());
-          setRenameValue('');
-        } catch (error) {
-          // Error handling is done in the parent component
-        }
-      }
+      await handleRenameSubmit(spaceId);
     } else if (e.key === 'Escape') {
       setRenameValue('');
     }
@@ -228,6 +237,7 @@ export function SpaceRow({
                 value={renameValue}
                 onChange={(e) => setRenameValue(e.target.value)}
                 onKeyDown={(e) => handleRenameKeyDown(e, space.id)}
+                onBlur={() => handleRenameSubmit(space.id)}
                 className="h-6 text-sm px-1 py-0 border-0 bg-transparent focus-visible:border-0 focus-visible:ring-0 focus-visible:outline-none shadow-none flex-1 min-w-0"
                 onClick={(e) => e.stopPropagation()}
                 autoFocus

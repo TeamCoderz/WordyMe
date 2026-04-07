@@ -42,6 +42,7 @@ function DocumentNameInput({
   const queryClient = useQueryClient();
   const [inputValue, setInputValue] = React.useState(document.name);
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const isSubmittingRef = React.useRef(false);
 
   // Mutations
   const { updateDocumentName, isPending: isRenamingPending } = useRenameDocumentMutation({
@@ -61,10 +62,12 @@ function DocumentNameInput({
 
   // Handle placeholder submission
   const submitPlaceholder = React.useCallback(() => {
-    if (!isPlaceholder) return;
+    if (!isPlaceholder || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     const name = inputValue.trim();
     if (!name) {
       onRemovePlaceholder?.();
+      isSubmittingRef.current = false;
       return;
     }
 
@@ -78,6 +81,7 @@ function DocumentNameInput({
         },
         {
           onSuccess: (data) => {
+            isSubmittingRef.current = false;
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(document.spaceId!).queryKey,
               (old: ListDocumentResult | undefined) => {
@@ -92,6 +96,7 @@ function DocumentNameInput({
             );
           },
           onError: () => {
+            isSubmittingRef.current = false;
             onRemovePlaceholder?.();
           },
         },
@@ -106,6 +111,7 @@ function DocumentNameInput({
         },
         {
           onSuccess: (data) => {
+            isSubmittingRef.current = false;
             if (data) {
               queryClient.setQueryData(
                 getAllDocumentsQueryOptions(document.spaceId!).queryKey,
@@ -122,6 +128,7 @@ function DocumentNameInput({
             }
           },
           onError: () => {
+            isSubmittingRef.current = false;
             onRemovePlaceholder?.();
           },
         },
@@ -142,14 +149,19 @@ function DocumentNameInput({
 
   // Handle rename submission
   const submitRename = React.useCallback(async () => {
-    if (!isRenaming || isRenamingPending) return;
+    if (!isRenaming || isRenamingPending || isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     if (inputValue.trim() && inputValue.trim() !== document.name) {
       try {
         await updateDocumentName(document.id, inputValue.trim());
       } catch {
         toast.error('Failed to rename document');
         setInputValue(document.name); // Reset on error
+      } finally {
+        isSubmittingRef.current = false;
       }
+    } else {
+      isSubmittingRef.current = false;
     }
     onRenameComplete?.();
   }, [

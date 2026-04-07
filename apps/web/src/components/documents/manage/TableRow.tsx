@@ -109,6 +109,7 @@ export function ManageDocumentsTableRow({
   const placeholderInputRef = React.useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
+  const isSubmittingRenameRef = React.useRef<boolean>(false);
   const { updateDocumentName, isPending: isRenamePending } = useRenameDocumentMutation({
     document: doc,
   });
@@ -204,14 +205,19 @@ export function ManageDocumentsTableRow({
   };
 
   const handleRenameSubmit = async () => {
-    if (isRenamePending) return;
+    if (isRenamePending || isSubmittingRenameRef.current) return;
+    isSubmittingRenameRef.current = true;
     if (renameName.trim() && renameName.trim() !== doc.name) {
       try {
         await updateDocumentName(doc.id ?? '', renameName.trim());
       } catch {
         toast.error('Failed to rename document');
         setRenameName(doc.name ?? '');
+      } finally {
+        isSubmittingRenameRef.current = false;
       }
+    } else {
+      isSubmittingRenameRef.current = false;
     }
     setIsRenaming(false);
   };
