@@ -38,6 +38,7 @@ import {
 } from '@repo/ui/components/breadcrumb';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { Skeleton } from '@repo/ui/components/skeleton';
+import { HoverCard, HoverCardTrigger, HoverCardContent } from '@repo/ui/components/hover-card';
 
 import { TreeNode } from '@repo/lib/data/tree';
 import { SpaceItem } from './SpaceItem';
@@ -310,97 +311,125 @@ export function SpaceSwitcher() {
               setIsSwitcherOpen(open);
             }}
           >
-            <DropdownMenuTrigger asChild>
-              <SidebarMenuButton
-                size="lg"
-                className="bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent text-sidebar-accent-foreground overflow-hidden"
-              >
-                {isLoading ? (
-                  <div className="flex items-center gap-2 w-full">
-                    <Skeleton className="size-4" />
-                    <Skeleton className="h-4 w-40" />
-                  </div>
-                ) : activeSpace ? (
-                  <>
-                    {activeSpace.path && activeSpace.path.length > 0 ? (
-                      <div className="flex items-center gap-2 flex-1 text-foreground">
-                        <DynamicIcon
-                          name={
-                            activeSpace.path[activeSpace.path.length - 1]?.icon ?? 'folder-closed'
-                          }
-                          className="size-4"
-                        />
-                        <Breadcrumb className="flex-1">
-                          <BreadcrumbList className="flex-nowrap overflow-hidden">
-                            {activeSpace.path.length === 1 ? (
-                              // Show only the single path item
-                              <>
-                                <BreadcrumbItem>
-                                  <BreadcrumbPage className="text-xs font-medium truncate">
-                                    {activeSpace.path[0].name}
-                                  </BreadcrumbPage>
-                                </BreadcrumbItem>
-                              </>
-                            ) : activeSpace.path.length === 2 ? (
-                              // Show both path items
-                              <>
-                                {activeSpace.path.map((pathSpace, index) => (
-                                  <React.Fragment key={pathSpace.id}>
-                                    <BreadcrumbItem>
-                                      {index === activeSpace.path.length - 1 ? (
-                                        <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
-                                          {pathSpace.name}
-                                        </BreadcrumbPage>
-                                      ) : (
-                                        <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
-                                          {pathSpace.name}
-                                        </BreadcrumbPage>
-                                      )}
-                                    </BreadcrumbItem>
-                                    {index < activeSpace.path.length - 1 && (
-                                      <BreadcrumbSeparator className="text-foreground" />
-                                    )}
-                                  </React.Fragment>
-                                ))}
-                              </>
-                            ) : (
-                              // Show first + ellipsis + last (3+ items)
-                              <>
-                                <BreadcrumbItem>
-                                  <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
-                                    {activeSpace.path[0].name}
-                                  </BreadcrumbPage>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="text-foreground" />
-                                <BreadcrumbItem>
-                                  <BreadcrumbEllipsis className="text-xs overflow-hidden text-foreground" />
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="text-foreground" />
-                                <BreadcrumbItem>
-                                  <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
-                                    {activeSpace.path[activeSpace.path.length - 1].name}
-                                  </BreadcrumbPage>
-                                </BreadcrumbItem>
-                              </>
-                            )}
-                          </BreadcrumbList>
-                        </Breadcrumb>
+            <HoverCard openDelay={200} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton
+                    size="lg"
+                    className="bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent text-sidebar-accent-foreground overflow-hidden"
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2 w-full">
+                        <Skeleton className="size-4" />
+                        <Skeleton className="h-4 w-40" />
                       </div>
+                    ) : activeSpace ? (
+                      <>
+                        {activeSpace.path && activeSpace.path.length > 0 ? (
+                          <div className="flex items-center gap-2 flex-1 text-foreground">
+                            <DynamicIcon
+                              name={
+                                activeSpace.path[activeSpace.path.length - 1]?.icon ??
+                                'folder-closed'
+                              }
+                              className="size-4"
+                            />
+                            <Breadcrumb className="flex-1">
+                              <BreadcrumbList className="flex-nowrap overflow-hidden">
+                                {activeSpace.path.length === 1 ? (
+                                  // Show only the single path item
+                                  <>
+                                    <BreadcrumbItem>
+                                      <BreadcrumbPage className="text-xs font-medium truncate">
+                                        {activeSpace.path[0].name}
+                                      </BreadcrumbPage>
+                                    </BreadcrumbItem>
+                                  </>
+                                ) : activeSpace.path.length === 2 ? (
+                                  // Show both path items
+                                  <>
+                                    {activeSpace.path.map((pathSpace, index) => (
+                                      <React.Fragment key={pathSpace.id}>
+                                        <BreadcrumbItem>
+                                          {index === activeSpace.path.length - 1 ? (
+                                            <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
+                                              {pathSpace.name}
+                                            </BreadcrumbPage>
+                                          ) : (
+                                            <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
+                                              {pathSpace.name}
+                                            </BreadcrumbPage>
+                                          )}
+                                        </BreadcrumbItem>
+                                        {index < activeSpace.path.length - 1 && (
+                                          <BreadcrumbSeparator className="text-foreground" />
+                                        )}
+                                      </React.Fragment>
+                                    ))}
+                                  </>
+                                ) : (
+                                  // Show first + ellipsis + last (3+ items)
+                                  <>
+                                    <BreadcrumbItem>
+                                      <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
+                                        {activeSpace.path[0].name}
+                                      </BreadcrumbPage>
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator className="text-foreground" />
+                                    <BreadcrumbItem>
+                                      <BreadcrumbEllipsis className="text-xs overflow-hidden text-foreground" />
+                                    </BreadcrumbItem>
+                                    <BreadcrumbSeparator className="text-foreground" />
+                                    <BreadcrumbItem>
+                                      <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
+                                        {activeSpace.path[activeSpace.path.length - 1].name}
+                                      </BreadcrumbPage>
+                                    </BreadcrumbItem>
+                                  </>
+                                )}
+                              </BreadcrumbList>
+                            </Breadcrumb>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 text-foreground">
+                            <DynamicIcon
+                              name={activeSpace.icon ?? 'briefcase'}
+                              className="size-4"
+                            />
+                            <span className="text-sm font-medium">{activeSpace.name}</span>
+                          </div>
+                        )}
+                      </>
                     ) : (
-                      <div className="flex items-center gap-2 text-foreground">
-                        <DynamicIcon name={activeSpace.icon ?? 'briefcase'} className="size-4" />
-                        <span className="text-sm font-medium">{activeSpace.name}</span>
+                      <div className="flex items-center justify-center text-sm font-medium text-muted-foreground">
+                        Select a space
                       </div>
                     )}
-                  </>
-                ) : (
-                  <div className="flex items-center justify-center text-sm font-medium text-muted-foreground">
-                    Select a space
-                  </div>
-                )}
-                <ChevronsUpDown className="ml-auto" />
-              </SidebarMenuButton>
-            </DropdownMenuTrigger>
+                    <ChevronsUpDown className="ml-auto" />
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+              </HoverCardTrigger>
+              {activeSpace && activeSpace.path && activeSpace.path.length > 2 && (
+                <HoverCardContent side="bottom" align="start" className="w-fit max-w-70 p-2">
+                  <Breadcrumb>
+                    <BreadcrumbList className="flex-wrap ">
+                      {activeSpace.path.map((pathSpace, index) => (
+                        <React.Fragment key={pathSpace.id}>
+                          <BreadcrumbItem>
+                            <BreadcrumbPage className="text-xs font-medium">
+                              {pathSpace.name}
+                            </BreadcrumbPage>
+                          </BreadcrumbItem>
+                          {index < activeSpace.path.length - 1 && (
+                            <BreadcrumbSeparator className="text-foreground [&>svg]:size-2.5" />
+                          )}
+                        </React.Fragment>
+                      ))}
+                    </BreadcrumbList>
+                  </Breadcrumb>
+                </HoverCardContent>
+              )}
+            </HoverCard>
             <ContextMenu>
               <DropdownMenuContent
                 onCloseAutoFocus={(e) => e.preventDefault()}
