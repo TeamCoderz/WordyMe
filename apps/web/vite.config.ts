@@ -25,23 +25,6 @@ export default defineConfig(({ mode }) => {
       'import.meta.env.SERVER_ORIGIN': JSON.stringify(defaultEnv.SERVER_ORIGIN),
       'import.meta.env.ANALAYZE_BUNDLE': JSON.stringify(defaultEnv.ANALAYZE_BUNDLE),
     },
-    optimizeDeps: {
-      rolldownOptions: {
-        experimental: {
-          strictExecutionOrder: true,
-        },
-        output: {
-          advancedChunks: {
-            groups: [
-              {
-                test: (id) => id.includes('icons'),
-                name: 'icons',
-              },
-            ],
-          },
-        },
-      },
-    },
     plugins: [
       tanstackRouter({
         autoCodeSplitting: true,
@@ -81,13 +64,26 @@ export default defineConfig(({ mode }) => {
         },
       }),
     ],
-    build: {
-      rollupOptions: {
-        experimental: {
-          strictExecutionOrder: true,
-        },
+    optimizeDeps: {
+      rolldownOptions: {
         output: {
-          advancedChunks: {
+          strictExecutionOrder: true,
+          codeSplitting: {
+            groups: [
+              {
+                test: (id) => id.includes('icons'),
+                name: 'icons',
+              },
+            ],
+          },
+        },
+      },
+    },
+    build: {
+      rolldownOptions: {
+        output: {
+          strictExecutionOrder: true,
+          codeSplitting: {
             groups: [
               {
                 test: (id) => id.includes('icons'),

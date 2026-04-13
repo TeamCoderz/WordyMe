@@ -24,7 +24,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "axios": "^1.13.6",
+    "axios": "^1.15.0",
     "better-auth": "^1.5.6",
     "socket.io-client": "^4.8.3"
   }
