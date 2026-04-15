@@ -6,6 +6,7 @@
 import { HttpException } from '@repo/backend/errors.js';
 import { ImageMeta } from '@repo/backend/images.js';
 import axios, { AxiosError } from 'axios';
+import { applyBackendMessageToAxiosError } from './axios-backend-message.js';
 
 const storageClient = axios.create({
   baseURL: import.meta.env.VITE_BACKEND_URL + '/storage',
@@ -17,7 +18,10 @@ export const getFile = async (url: string, responseType: 'text' | 'blob' = 'text
     const response = await storageClient.get(url, { responseType });
     return { data: response.data, error: null };
   } catch (error) {
-    return { data: null, error: error as AxiosError<HttpException> };
+    return {
+      data: null,
+      error: applyBackendMessageToAxiosError(error) as AxiosError<HttpException>,
+    };
   }
 };
 
@@ -30,7 +34,10 @@ export const uploadFormData = async <T>(
     const response = await storageClient[method]<T>(url, formData, {});
     return { data: response.data, error: null };
   } catch (error) {
-    return { data: null, error: error as AxiosError<HttpException> };
+    return {
+      data: null,
+      error: applyBackendMessageToAxiosError(error) as AxiosError<HttpException>,
+    };
   }
 };
 
@@ -39,7 +46,7 @@ export const deleteFile = async (url: string) => {
     await storageClient.delete(url);
     return { error: null };
   } catch (error) {
-    return { error: error as AxiosError<HttpException> };
+    return { error: applyBackendMessageToAxiosError(error) as AxiosError<HttpException> };
   }
 };
 

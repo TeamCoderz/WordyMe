@@ -1258,8 +1258,8 @@ export function useExportDocumentMutation(itemId: string, documentName?: string)
     onMutate() {
       return toast.loading('Exporting document...');
     },
-    onError(_, __, context) {
-      toast.error('Failed to export document', { id: context });
+    onError(error, __, context) {
+      toast.error(error.message || 'Failed to export document', { id: context });
     },
     onSuccess(_, __, context) {
       toast.success('Document exported successfully', { id: context });

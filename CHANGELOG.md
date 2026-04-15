@@ -4,44 +4,44 @@
 
 ### Features
 
-* create document search index table and related triggers ([1bb9484](https://github.com/TeamCoderz/WordyMe/commit/1bb948422b2fda7334958df7d4578548e41ce218))
-* **database:** implement full-text search for documents with FTS5 ([0f4274e](https://github.com/TeamCoderz/WordyMe/commit/0f4274e254d044b29681f89b589bddba88336fa3))
-* **search-ui:** match Wordy search dialog UI and wire global document search ([7927120](https://github.com/TeamCoderz/WordyMe/commit/7927120af656fb238e34067950935da3f7c6023b))
-* **search:** add full-text search endpoint for user documents ([dc46805](https://github.com/TeamCoderz/WordyMe/commit/dc46805206e6ca970bc6d76ebb4a9c55705f81ed))
-* **search:** add searchDocuments function the SDK ([1554477](https://github.com/TeamCoderz/WordyMe/commit/15544774fcd1c71350b5ca5a902fb5f55850cd8c))
-* **search:** enhance full-text search to support optional spaceId filtering ([c8f59e7](https://github.com/TeamCoderz/WordyMe/commit/c8f59e7317e6841ecbc3da864d7592a68db00698))
-* **search:** implement full-text search functionality and query utilities ([a899896](https://github.com/TeamCoderz/WordyMe/commit/a899896bf9fee8e39d1ab6ff82bbaf202cf918ce))
-* **search:** pass spaceId through search query options ([eabdd9b](https://github.com/TeamCoderz/WordyMe/commit/eabdd9bbed37e5f5b5ab62fe4a9000c6a337945a))
-* **space-switcher:** add hover card showing full breadcrumb path for nested spaces ([e4c82ba](https://github.com/TeamCoderz/WordyMe/commit/e4c82ba540dfbc1366c214c2b767c908102dc76b))
-* **TEA-69:** disable signups after the first account exists ([#33](https://github.com/TeamCoderz/WordyMe/issues/33)) ([bc0bfe9](https://github.com/TeamCoderz/WordyMe/commit/bc0bfe9c4858946a30264b35219a2e570e861dbc))
+- create document search index table and related triggers ([1bb9484](https://github.com/TeamCoderz/WordyMe/commit/1bb948422b2fda7334958df7d4578548e41ce218))
+- **database:** implement full-text search for documents with FTS5 ([0f4274e](https://github.com/TeamCoderz/WordyMe/commit/0f4274e254d044b29681f89b589bddba88336fa3))
+- **search-ui:** match Wordy search dialog UI and wire global document search ([7927120](https://github.com/TeamCoderz/WordyMe/commit/7927120af656fb238e34067950935da3f7c6023b))
+- **search:** add full-text search endpoint for user documents ([dc46805](https://github.com/TeamCoderz/WordyMe/commit/dc46805206e6ca970bc6d76ebb4a9c55705f81ed))
+- **search:** add searchDocuments function the SDK ([1554477](https://github.com/TeamCoderz/WordyMe/commit/15544774fcd1c71350b5ca5a902fb5f55850cd8c))
+- **search:** enhance full-text search to support optional spaceId filtering ([c8f59e7](https://github.com/TeamCoderz/WordyMe/commit/c8f59e7317e6841ecbc3da864d7592a68db00698))
+- **search:** implement full-text search functionality and query utilities ([a899896](https://github.com/TeamCoderz/WordyMe/commit/a899896bf9fee8e39d1ab6ff82bbaf202cf918ce))
+- **search:** pass spaceId through search query options ([eabdd9b](https://github.com/TeamCoderz/WordyMe/commit/eabdd9bbed37e5f5b5ab62fe4a9000c6a337945a))
+- **space-switcher:** add hover card showing full breadcrumb path for nested spaces ([e4c82ba](https://github.com/TeamCoderz/WordyMe/commit/e4c82ba540dfbc1366c214c2b767c908102dc76b))
+- **TEA-69:** disable signups after the first account exists ([#33](https://github.com/TeamCoderz/WordyMe/issues/33)) ([bc0bfe9](https://github.com/TeamCoderz/WordyMe/commit/bc0bfe9c4858946a30264b35219a2e570e861dbc))
 
 ### Bug Fixes
 
-* **deps:** resolve 5 CVEs via dependency upgrades and pnpm overrides ([6f6a649](https://github.com/TeamCoderz/WordyMe/commit/6f6a64969d5fe077329daed0e13236b6e311c02e))
-* **docker:** run database migrations at container startup instead of build time ([a64c4b9](https://github.com/TeamCoderz/WordyMe/commit/a64c4b973f269189e854360b3500b780d1170a83))
-* **editor:** refresh checksum event deps ([e24969a](https://github.com/TeamCoderz/WordyMe/commit/e24969a1e0ecad017ba86dc9f67f5ba7a138621c))
-* **inputs:** prevent Firefox double-submit on inline create/rename inputs ([73d9a65](https://github.com/TeamCoderz/WordyMe/commit/73d9a651f5141033568ac1bd552f0eb542184e73))
-* **layout:** responsive on small screens ([7758824](https://github.com/TeamCoderz/WordyMe/commit/77588240e5c507358811812ec697f86c5c21914b))
-* **search:** pass spaceId to SDK, singleton hotkey, and safe cloneElement ([acaaf55](https://github.com/TeamCoderz/WordyMe/commit/acaaf55054a33e3a912c067b962bb246d57fe449))
-* **security:** resolve transitive vulnerabilities via pnpm overrides ([dee948e](https://github.com/TeamCoderz/WordyMe/commit/dee948e41d3803e6c7e0ea6ffaf1d4d980c3b9fa))
-* **tabs:** fix tabs save button error ([674f781](https://github.com/TeamCoderz/WordyMe/commit/674f781a711d74105ed790063d9639942f1b40b6))
-* **web:** allow empty last name and guard invalid profile section ([544950f](https://github.com/TeamCoderz/WordyMe/commit/544950ffd9cf1ce9f37a17bf66abaeca3463cf9f))
-* **web:** improve settings tab reuse and close user menu on navigation ([35bf4b2](https://github.com/TeamCoderz/WordyMe/commit/35bf4b2172161d91a5be02b299773fe67e5f928d))
+- **deps:** resolve 5 CVEs via dependency upgrades and pnpm overrides ([6f6a649](https://github.com/TeamCoderz/WordyMe/commit/6f6a64969d5fe077329daed0e13236b6e311c02e))
+- **docker:** run database migrations at container startup instead of build time ([a64c4b9](https://github.com/TeamCoderz/WordyMe/commit/a64c4b973f269189e854360b3500b780d1170a83))
+- **editor:** refresh checksum event deps ([e24969a](https://github.com/TeamCoderz/WordyMe/commit/e24969a1e0ecad017ba86dc9f67f5ba7a138621c))
+- **inputs:** prevent Firefox double-submit on inline create/rename inputs ([73d9a65](https://github.com/TeamCoderz/WordyMe/commit/73d9a651f5141033568ac1bd552f0eb542184e73))
+- **layout:** responsive on small screens ([7758824](https://github.com/TeamCoderz/WordyMe/commit/77588240e5c507358811812ec697f86c5c21914b))
+- **search:** pass spaceId to SDK, singleton hotkey, and safe cloneElement ([acaaf55](https://github.com/TeamCoderz/WordyMe/commit/acaaf55054a33e3a912c067b962bb246d57fe449))
+- **security:** resolve transitive vulnerabilities via pnpm overrides ([dee948e](https://github.com/TeamCoderz/WordyMe/commit/dee948e41d3803e6c7e0ea6ffaf1d4d980c3b9fa))
+- **tabs:** fix tabs save button error ([674f781](https://github.com/TeamCoderz/WordyMe/commit/674f781a711d74105ed790063d9639942f1b40b6))
+- **web:** allow empty last name and guard invalid profile section ([544950f](https://github.com/TeamCoderz/WordyMe/commit/544950ffd9cf1ce9f37a17bf66abaeca3463cf9f))
+- **web:** improve settings tab reuse and close user menu on navigation ([35bf4b2](https://github.com/TeamCoderz/WordyMe/commit/35bf4b2172161d91a5be02b299773fe67e5f928d))
 
 ## [0.1.1-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.0-beta.0...v0.1.1-beta.0) (2026-03-29)
 
 ### Features
 
-* add embed-pdf package and refactor state management ([#17](https://github.com/TeamCoderz/WordyMe/issues/17)) ([166c14c](https://github.com/TeamCoderz/WordyMe/commit/166c14c442a6fd884124389668f18fdb5fa2f7df))
-* add useDocumentActions and refine various components ([b921984](https://github.com/TeamCoderz/WordyMe/commit/b92198441de59dec0d13342622218bdf2b1f8511))
-* enhance bug report template with issue scope and detailed environment info ([07a7c2d](https://github.com/TeamCoderz/WordyMe/commit/07a7c2dd63bbca4276e58c3ecf571c5c47d19049))
-* split view ([#15](https://github.com/TeamCoderz/WordyMe/issues/15)) ([055b78a](https://github.com/TeamCoderz/WordyMe/commit/055b78aced3783b5df3a3e2dd31f38c05958731a)), closes [#16](https://github.com/TeamCoderz/WordyMe/issues/16)
+- add embed-pdf package and refactor state management ([#17](https://github.com/TeamCoderz/WordyMe/issues/17)) ([166c14c](https://github.com/TeamCoderz/WordyMe/commit/166c14c442a6fd884124389668f18fdb5fa2f7df))
+- add useDocumentActions and refine various components ([b921984](https://github.com/TeamCoderz/WordyMe/commit/b92198441de59dec0d13342622218bdf2b1f8511))
+- enhance bug report template with issue scope and detailed environment info ([07a7c2d](https://github.com/TeamCoderz/WordyMe/commit/07a7c2dd63bbca4276e58c3ecf571c5c47d19049))
+- split view ([#15](https://github.com/TeamCoderz/WordyMe/issues/15)) ([055b78a](https://github.com/TeamCoderz/WordyMe/commit/055b78aced3783b5df3a3e2dd31f38c05958731a)), closes [#16](https://github.com/TeamCoderz/WordyMe/issues/16)
 
 ### Bug Fixes
 
-* add canBeEmpty method to PageContentNode and enhance stray child handling in PaginationPlugin ([bfe7560](https://github.com/TeamCoderz/WordyMe/commit/bfe75608ea7bf1deb8a8a8c677fd2031cadbea5d))
-* **auth,editor:** HTTP session cookies, compose env, and IndexedDB AES without Web Crypto ([a78963c](https://github.com/TeamCoderz/WordyMe/commit/a78963c590cfab1b2a369facc55e1233b9deb91d))
-* update image zoom logic and table of contents scrolling ([3503c1c](https://github.com/TeamCoderz/WordyMe/commit/3503c1c4af3a5e0feb7c4c045db3a376c365df54))
+- add canBeEmpty method to PageContentNode and enhance stray child handling in PaginationPlugin ([bfe7560](https://github.com/TeamCoderz/WordyMe/commit/bfe75608ea7bf1deb8a8a8c677fd2031cadbea5d))
+- **auth,editor:** HTTP session cookies, compose env, and IndexedDB AES without Web Crypto ([a78963c](https://github.com/TeamCoderz/WordyMe/commit/a78963c590cfab1b2a369facc55e1233b9deb91d))
+- update image zoom logic and table of contents scrolling ([3503c1c](https://github.com/TeamCoderz/WordyMe/commit/3503c1c4af3a5e0feb7c4c045db3a376c365df54))
 
 ## [0.1.1-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.0-beta.0...v0.1.0-beta.0) (2026-03-29)
 
