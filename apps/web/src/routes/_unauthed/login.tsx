@@ -30,7 +30,8 @@ import {
   InputGroupButton,
   InputGroupAddon,
 } from '@repo/ui/components/input-group';
-import { useLoginMutation } from '@/queries/auth';
+import { signupAvailabilityQueryOptions, useLoginMutation } from '@/queries/auth';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
 const loginSchema = z.object({
@@ -46,6 +47,7 @@ export const Route = createFileRoute('/_unauthed/login')({
 
 function RouteComponent() {
   const loginMutation = useLoginMutation();
+  const { data: signupAvailability } = useQuery(signupAvailabilityQueryOptions);
   const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<LoginFormValues>({
@@ -138,12 +140,14 @@ function RouteComponent() {
                   'Sign in'
                 )}
               </Button>
-              <div className="text-center text-sm text-muted-foreground">
-                Don't have an account?{' '}
-                <Link to="/signup" className="text-primary hover:underline font-medium">
-                  Sign up
-                </Link>
-              </div>
+              {signupAvailability?.signupEnabled ? (
+                <div className="text-center text-sm text-muted-foreground">
+                  Don't have an account?{' '}
+                  <Link to="/signup" className="text-primary hover:underline font-medium">
+                    Sign up
+                  </Link>
+                </div>
+              ) : null}
             </form>
           </Form>
         </CardContent>

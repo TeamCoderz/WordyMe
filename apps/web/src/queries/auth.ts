@@ -3,9 +3,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useMutation } from '@tanstack/react-query';
-import { login, register } from '@repo/sdk/auth';
+import { useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
+import { getSignupAvailability, type SignupAvailability, login, register } from '@repo/sdk/auth';
 import { toast } from '@repo/ui/components/sonner';
+
+export const signupAvailabilityQueryKey = ['auth', 'signupAvailability'] as const;
+
+export const signupAvailabilityQueryOptions: UseQueryOptions<SignupAvailability, Error> = {
+  queryKey: signupAvailabilityQueryKey,
+  queryFn: getSignupAvailability,
+  staleTime: 60_000,
+};
 
 export function useLoginMutation() {
   return useMutation({
@@ -38,6 +46,7 @@ export function useLoginMutation() {
 }
 
 export function useRegisterMutation() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['register'],
     mutationFn: async ({
@@ -63,6 +72,7 @@ export function useRegisterMutation() {
       return toast.loading('Creating account...');
     },
     onSuccess: (_, __, toastId) => {
+      void queryClient.invalidateQueries({ queryKey: signupAvailabilityQueryKey });
       toast.success('Account created successfully', {
         id: toastId,
       });
