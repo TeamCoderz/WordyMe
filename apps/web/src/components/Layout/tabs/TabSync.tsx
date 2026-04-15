@@ -108,6 +108,18 @@ export function TabSync() {
         });
       } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
         const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
+        // Path-C: autosave if leaving a dirty edit tab for a different location
+        const isLeavingDirtyEditTab =
+          activeTab.pathname.startsWith('/edit/') &&
+          activeTab.isDirty &&
+          pathname !== activeTab.pathname;
+        if (isLeavingDirtyEditTab) {
+          window.dispatchEvent(
+            new CustomEvent('save-request', {
+              detail: { tabId: activeTab.id, isAutosave: true },
+            }),
+          );
+        }
         updateTab(activeTab.id, {
           pathname,
           search,

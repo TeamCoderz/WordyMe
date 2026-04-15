@@ -28,7 +28,13 @@ import {
 import { SplitPaneRouter } from '@/components/Layout/SplitPaneRouter';
 import { useActions } from '@/store';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
-import { TabSync, PaneTabBar, TabDndProvider, PaneContent } from '@/components/Layout/tabs';
+import {
+  TabSync,
+  PaneTabBar,
+  TabDndProvider,
+  PaneContent,
+  TabAutoSave,
+} from '@/components/Layout/tabs';
 import { cn } from '@repo/ui/lib/utils';
 import { SessionData } from '@repo/sdk/auth';
 
@@ -124,6 +130,7 @@ function RootLayout() {
     <>
       <NavigationBlocker />
       <TabSync />
+      <TabAutoSave />
       <Alert />
       <AppSidebarProvider>
         <AppHeader />

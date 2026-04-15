@@ -5,6 +5,7 @@
 
 export { Tab } from './Tab';
 export { TabSync } from './TabSync';
+export { TabAutoSave } from './TabAutoSave';
 export { TabDndProvider } from './TabDndProvider';
 export { TabDropSlot, tabSlotId, parseTabSlotId } from './TabDropSlot';
 export { TabContextMenu } from './TabContextMenu';
