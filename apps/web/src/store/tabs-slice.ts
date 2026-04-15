@@ -70,6 +70,10 @@ export interface TabsActions {
   splitWithTabInPrimary: (tabId: string) => void;
   /** Mark a tab as dirty (has unsaved changes) */
   setTabDirty: (tabId: string, isDirty: boolean) => void;
+  /** Mark a tab as currently saving */
+  setTabSaving: (tabId: string, isSaving: boolean) => void;
+  /** Mark a tab as just saved (triggers green checkmark animation) */
+  setTabJustSaved: (tabId: string, isJustSaved: boolean) => void;
   /** Update tab information */
   updateTab: (
     tabId: string,
@@ -489,6 +493,46 @@ export const createTabsSlice: StateCreator<
           newTabList[tabIndex] = {
             ...newTabList[tabIndex],
             isDirty,
+          };
+
+          return {
+            tabs: {
+              ...state.tabs,
+              tabList: newTabList,
+            },
+          };
+        });
+      },
+
+      setTabSaving: (tabId: string, isSaving: boolean) => {
+        set((state) => {
+          const tabIndex = state.tabs.tabList.findIndex((t) => t.id === tabId);
+          if (tabIndex === -1) return state;
+
+          const newTabList = [...state.tabs.tabList];
+          newTabList[tabIndex] = {
+            ...newTabList[tabIndex],
+            isSaving,
+          };
+
+          return {
+            tabs: {
+              ...state.tabs,
+              tabList: newTabList,
+            },
+          };
+        });
+      },
+
+      setTabJustSaved: (tabId: string, isJustSaved: boolean) => {
+        set((state) => {
+          const tabIndex = state.tabs.tabList.findIndex((t) => t.id === tabId);
+          if (tabIndex === -1) return state;
+
+          const newTabList = [...state.tabs.tabList];
+          newTabList[tabIndex] = {
+            ...newTabList[tabIndex],
+            isJustSaved,
           };
 
           return {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import {
@@ -20,7 +20,15 @@ import {
 } from '@/queries/revisions';
 import { useActions, useSelector } from '@/store';
 
-export function useDocumentActions(handle: string | null, tabId?: string) {
+interface UseDocumentActionsOptions {
+  listenForSaveRequests?: boolean;
+}
+
+export function useDocumentActions(
+  handle: string | null,
+  tabId?: string,
+  options?: UseDocumentActionsOptions,
+) {
   const queryClient = useQueryClient();
   // Queries
   const documentQueryOptions = getDocumentByHandleQueryOptions(handle ?? '');
@@ -55,14 +63,27 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
     !revisions?.length ||
     (isPreviouslySaved && cloudRevision.documentId !== document.id);
 
-  const [isSaving, setIsSaving] = useState(false);
-  const [isJustSaved, setIsJustSaved] = useState(false);
-  const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;
+  const [localIsSaving, setLocalIsSaving] = useState(false);
+  const [localIsJustSaved, setLocalIsJustSaved] = useState(false);
   const tab = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId));
   const isViewTab = tab && tab.pathname.startsWith('/view/');
   const isEditTab = tab && tab.pathname.startsWith('/edit/');
   const isDocumentTab = isEditTab || isViewTab;
-  const { setTabDirty } = useActions();
+  const { setTabDirty, setTabSaving, setTabJustSaved } = useActions();
+
+  const isSaving = tabId ? !!tab?.isSaving : localIsSaving;
+  const isJustSaved = tabId ? !!tab?.isJustSaved : localIsJustSaved;
+
+  const setIsSaving = (v: boolean) => {
+    if (tabId) setTabSaving(tabId, v);
+    else setLocalIsSaving(v);
+  };
+  const setIsJustSaved = (v: boolean) => {
+    if (tabId) setTabJustSaved(tabId, v);
+    else setLocalIsJustSaved(v);
+  };
+
+  const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;
 
   const { mutateAsync: updateDocumentHead } = useUpdateDocumentHeadMutation({
     doc: document ?? null,
@@ -186,6 +207,8 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
     }
   };
 
+  const handleUpdateRef = useRef(handleUpdate);
+
   useEffect(() => {
     const handleChecksumChange = (event: Event) => {
       const customEvent = event as CustomEvent<{
@@ -203,6 +226,23 @@ export function useDocumentActions(handle: string | null, tabId?: string) {
       window.removeEventListener('checksum-change', handleChecksumChange);
     };
   }, [docId, tabId]);
+
+  useEffect(() => {
+    handleUpdateRef.current = handleUpdate;
+  }, [handleUpdate]);
+
+  useEffect(() => {
+    if (!tabId || !options?.listenForSaveRequests) return;
+    const handleSaveRequest = (event: Event) => {
+      const customEvent = event as CustomEvent<{ tabId: string; isAutosave: boolean }>;
+      if (customEvent.detail.tabId !== tabId) return;
+      void handleUpdateRef.current(customEvent.detail.isAutosave);
+    };
+    window.addEventListener('save-request', handleSaveRequest);
+    return () => {
+      window.removeEventListener('save-request', handleSaveRequest);
+    };
+  }, [options?.listenForSaveRequests, tabId]);
 
   useEffect(() => {
     if (isLoading) return;

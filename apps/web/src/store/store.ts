@@ -28,7 +28,10 @@ export const store = createStore<Store>()(
         version: 4,
         partialize: (state) => ({
           app: state.app,
-          tabs: state.tabs,
+          tabs: {
+            ...state.tabs,
+            tabList: state.tabs.tabList.map(({ isSaving: _s, isJustSaved: _j, ...rest }) => rest),
+          },
           ui: state.ui,
           wordy: state.wordy,
         }),

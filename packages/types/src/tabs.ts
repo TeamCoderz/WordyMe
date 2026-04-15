@@ -29,4 +29,8 @@ export interface Tab {
   isDirty: boolean;
   /** Transient preview tab (italic title, replaced by next preview-link click in the same pane). */
   isPreview?: boolean;
+  /** Whether the tab is currently saving */
+  isSaving?: boolean;
+  /** Whether the tab was just saved (shows green checkmark animation) */
+  isJustSaved?: boolean;
 }

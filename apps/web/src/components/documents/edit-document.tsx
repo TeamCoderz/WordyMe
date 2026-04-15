@@ -18,6 +18,7 @@ import { useHotkey } from '@tanstack/react-hotkeys';
 import { useDocumentActions } from './useDocumentActions';
 import { DocumentSidebar } from './document-sidebar';
 import { useSelector } from '@/store';
+import { useEffect } from 'react';
 
 interface EditDocumentProps {
   userId: string;
@@ -121,6 +122,13 @@ export function EditDocument({
       handleAutosave();
     }
   }, 300);
+
+  useEffect(() => {
+    return () => {
+      onChange.flush();
+      handleAutosave.flush();
+    };
+  }, [handleAutosave, onChange]);
 
   const services = useServices(documentId, userId);
 

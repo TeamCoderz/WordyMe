@@ -65,7 +65,9 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
   const documentHandle = isDocumentTab
     ? decodeURIComponent(tab.pathname.split('/').pop() ?? '')
     : null;
-  const { isSaving, isJustSaved, handleUpdate } = useDocumentActions(documentHandle, tab.id);
+  const { isSaving, isJustSaved, handleUpdate } = useDocumentActions(documentHandle, tab.id, {
+    listenForSaveRequests: true,
+  });
 
   const { attributes, listeners, setNodeRef } = useSortable({
     id: tab.id,
@@ -161,7 +163,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         </span>
 
         {/* Combined save/close button (hidden for home tab) */}
-        {isActiveTab ? (
+        {isActiveTab || (isEditTab && (isSaving || isJustSaved)) ? (
           <Button
             variant="ghost"
             size="icon"
@@ -169,19 +171,19 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
             className={cn('size-5 shrink-0 rounded-sm p-0 opacity-100 transition-opacity', {
               'opacity-0!': isHomeTab && isLastTab,
               'hover:bg-green-500/10 hover:text-green-500':
-                isDocumentTab && (tab.isDirty || isSaving || isJustSaved),
+                isEditTab && (tab.isDirty || isSaving || isJustSaved),
             })}
             onClick={(e) => {
               e.stopPropagation();
-              if (isDocumentTab && tab.isDirty) {
+              if (isEditTab && tab.isDirty) {
                 handleUpdate(false);
               } else {
                 void confirmAndClose();
               }
             }}
-            title={isDocumentTab && tab.isDirty ? 'Save' : 'Close'}
+            title={isEditTab && tab.isDirty ? 'Save' : 'Close'}
           >
-            {isDocumentTab ? (
+            {isEditTab ? (
               isSaving ? (
                 <Loader2Icon className="size-3 animate-spin" />
               ) : isJustSaved ? (
