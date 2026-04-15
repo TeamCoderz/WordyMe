@@ -40,6 +40,8 @@ export interface OpenTabInput {
   pane?: 'primary' | 'secondary' | 'opposite';
   /** Insert at this index within the pane (defaults to end) */
   index?: number;
+  /** If true, open as a preview tab (or replace an existing preview tab in the target pane). */
+  preview?: boolean;
 }
 
 /**
@@ -71,8 +73,10 @@ export interface TabsActions {
   /** Update tab information */
   updateTab: (
     tabId: string,
-    updates: Partial<Pick<Tab, 'pathname' | 'search' | 'hash' | 'isDirty'>>,
+    updates: Partial<Pick<Tab, 'pathname' | 'search' | 'hash' | 'isDirty' | 'isPreview'>>,
   ) => void;
+  /** Promote a preview tab to permanent (clears isPreview). No-op if not preview or not found. */
+  promoteTab: (tabId: string) => void;
   /** Reset tabs state to initial state */
   resetTabs: () => void;
   /** Close the split — merge secondary tabs back into primary */
@@ -120,6 +124,41 @@ export const createTabsSlice: StateCreator<
               ? 50
               : state.tabs.splitRatio;
 
+          if (input.preview) {
+            const targetPaneIds = state.tabs.paneTabIds[pane];
+            const existingPreview = state.tabs.tabList.find(
+              (t) => t.isPreview && targetPaneIds.includes(t.id),
+            );
+            if (existingPreview) {
+              const newTabList = state.tabs.tabList.map((t) =>
+                t.id === existingPreview.id
+                  ? {
+                      ...t,
+                      pathname: input.pathname,
+                      search: input.search,
+                      hash: input.hash,
+                      isDirty: false,
+                      isPreview: true,
+                    }
+                  : t,
+              );
+              tabId = existingPreview.id;
+              return {
+                tabs: {
+                  ...state.tabs,
+                  tabList: newTabList,
+                  ...(input.background
+                    ? {}
+                    : {
+                        activeTabId: { ...state.tabs.activeTabId, [pane]: existingPreview.id },
+                        activePane: pane,
+                      }),
+                  splitRatio,
+                },
+              };
+            }
+          }
+
           // Create new tab
           const newTab: Tab = {
             id: generateTabId(),
@@ -127,6 +166,7 @@ export const createTabsSlice: StateCreator<
             search: input.search,
             hash: input.hash,
             isDirty: false,
+            ...(input.preview ? { isPreview: true } : {}),
           };
 
           tabId = newTab.id;
@@ -446,7 +486,10 @@ export const createTabsSlice: StateCreator<
           if (tabIndex === -1) return state;
 
           const newTabList = [...state.tabs.tabList];
-          newTabList[tabIndex] = { ...newTabList[tabIndex], isDirty };
+          newTabList[tabIndex] = {
+            ...newTabList[tabIndex],
+            isDirty,
+          };
 
           return {
             tabs: {
@@ -457,13 +500,23 @@ export const createTabsSlice: StateCreator<
         });
       },
 
-      updateTab: (tabId: string, updates: Partial<Pick<Tab, 'pathname' | 'search' | 'hash'>>) => {
+      updateTab: (
+        tabId: string,
+        updates: Partial<Pick<Tab, 'pathname' | 'search' | 'hash' | 'isDirty' | 'isPreview'>>,
+      ) => {
         set((state) => {
           const tabIndex = state.tabs.tabList.findIndex((t) => t.id === tabId);
           if (tabIndex === -1) return state;
 
           const newTabList = [...state.tabs.tabList];
-          newTabList[tabIndex] = { ...newTabList[tabIndex], ...updates };
+          const current = newTabList[tabIndex];
+          const nextPathname = updates.pathname ?? current.pathname;
+          const shouldPromote = current.isPreview && nextPathname.startsWith('/edit/');
+          newTabList[tabIndex] = {
+            ...current,
+            ...updates,
+            ...(shouldPromote ? { isPreview: false } : {}),
+          };
 
           return {
             tabs: {
@@ -471,6 +524,18 @@ export const createTabsSlice: StateCreator<
               tabList: newTabList,
             },
           };
+        });
+      },
+
+      promoteTab: (tabId: string) => {
+        set((state) => {
+          const idx = state.tabs.tabList.findIndex((t) => t.id === tabId);
+          if (idx === -1) return state;
+          const tab = state.tabs.tabList[idx];
+          if (!tab.isPreview) return state;
+          const newTabList = [...state.tabs.tabList];
+          newTabList[idx] = { ...tab, isPreview: false };
+          return { tabs: { ...state.tabs, tabList: newTabList } };
         });
       },
 

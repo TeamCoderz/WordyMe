@@ -33,7 +33,6 @@ export function RecentViewedDocumentItem({ document }: { document: RecentViewedD
       to="/view/$handle"
       params={{ handle: (document as any).handle ?? document.id }}
       className="p-4 flex flex-col gap-7 bg-home-card rounded-md"
-      data-new-tab="true"
     >
       <div className="space-y-3 overflow-hidden">
         <div className="bg-muted p-2 rounded-md w-fit">

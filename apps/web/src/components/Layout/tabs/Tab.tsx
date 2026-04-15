@@ -16,6 +16,7 @@ import { useDocumentActions } from '@/components/documents/useDocumentActions';
 import { TabDropSlot } from './TabDropSlot';
 import { useSortable } from '@dnd-kit/sortable';
 import { useHotkey } from '@tanstack/react-hotkeys';
+import { alert } from '@/components/Layout/alert';
 
 const TabIcon = ({ name }: { name: string | undefined }) => {
   switch (name) {
@@ -35,7 +36,10 @@ export function TabDragPreview({ tab }: { tab: TabType }) {
       <span className="shrink-0 text-muted-foreground">
         <TabIcon name={icon ?? undefined} />
       </span>
-      <span className="flex-1 truncate text-sm font-medium" title={title}>
+      <span
+        className={cn('flex-1 truncate text-sm font-medium', { italic: tab.isPreview })}
+        title={title}
+      >
         {title}
       </span>
     </div>
@@ -50,7 +54,7 @@ export interface TabProps {
 }
 
 export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
-  const { closeTab, setActiveTab } = useActions();
+  const { closeTab, setActiveTab, promoteTab } = useActions();
   const activePane = useSelector((state) => state.tabs.activePane);
   const { title, icon } = useTabMetadata(tab);
   const isHomeTab = tab.pathname === '/';
@@ -76,22 +80,36 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
     setActiveTab(tab.id);
   }, [tab.id, setActiveTab]);
 
+  const confirmAndClose = useCallback(async () => {
+    if (isEditTab && tab.isDirty) {
+      const ok = await alert({
+        title: 'Unsaved changes',
+        description: 'This page has unsaved changes. Close anyway?',
+        confirmText: 'Close anyway',
+        cancelText: 'Cancel',
+        buttonVariant: 'destructive',
+      });
+      if (!ok) return;
+    }
+    closeTab(tab.id);
+  }, [isEditTab, tab.isDirty, tab.id, closeTab]);
+
   const handleClose = useCallback(
     (e: MouseEvent) => {
       e.stopPropagation();
-      closeTab(tab.id);
+      void confirmAndClose();
     },
-    [tab.id, closeTab],
+    [confirmAndClose],
   );
 
   const handleMiddleClick = useCallback(
     (e: MouseEvent) => {
       if (e.button === 1 && !(isHomeTab && isLastTab)) {
         e.preventDefault();
-        closeTab(tab.id);
+        void confirmAndClose();
       }
     },
-    [tab.id, closeTab, isHomeTab, isLastTab],
+    [confirmAndClose, isHomeTab, isLastTab],
   );
 
   const isActiveTab = isActive && pane === activePane;
@@ -112,6 +130,9 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         data-tab-id={tab.id}
         onClick={handleClick}
         onMouseDown={handleMiddleClick}
+        onDoubleClick={() => {
+          if (tab.isPreview) promoteTab(tab.id);
+        }}
         className={cn(
           'group group/tab relative flex h-full min-w-32 w-48 cursor-grab items-center gap-1.5 border-r px-3 transition-colors',
           'hover:bg-muted/50',
@@ -132,6 +153,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         <span
           className={cn('flex-1 truncate text-sm font-medium', {
             'text-muted-foreground': !isActiveTab,
+            italic: tab.isPreview,
           })}
           title={title}
         >
@@ -139,53 +161,65 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         </span>
 
         {/* Combined save/close button (hidden for home tab) */}
-        <Button
-          variant="ghost"
-          size="icon"
-          disabled={isHomeTab && isLastTab}
-          className={cn(
-            'size-5 shrink-0 rounded-sm p-0 opacity-0 transition-opacity group-hover/tab:opacity-100 max-md:opacity-100',
-            {
-              'opacity-100!': isActive || tab.isDirty,
+        {isActiveTab ? (
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={isHomeTab && isLastTab}
+            className={cn('size-5 shrink-0 rounded-sm p-0 opacity-100 transition-opacity', {
               'opacity-0!': isHomeTab && isLastTab,
               'hover:bg-green-500/10 hover:text-green-500':
                 isDocumentTab && (tab.isDirty || isSaving || isJustSaved),
-            },
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (tab.isDirty) {
-              handleUpdate(false);
-            } else {
-              handleClose(e);
-            }
-          }}
-          title={isDocumentTab && tab.isDirty ? 'Save' : 'Close'}
-        >
-          {isDocumentTab ? (
-            isSaving ? (
-              <Loader2Icon className="size-3 animate-spin" />
-            ) : isJustSaved ? (
-              <CheckCheckIcon className="size-3 text-green-500" />
-            ) : !tab.isDirty ? (
-              <XIcon className="size-3" />
+            })}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isDocumentTab && tab.isDirty) {
+                handleUpdate(false);
+              } else {
+                void confirmAndClose();
+              }
+            }}
+            title={isDocumentTab && tab.isDirty ? 'Save' : 'Close'}
+          >
+            {isDocumentTab ? (
+              isSaving ? (
+                <Loader2Icon className="size-3 animate-spin" />
+              ) : isJustSaved ? (
+                <CheckCheckIcon className="size-3 text-green-500" />
+              ) : !tab.isDirty ? (
+                <XIcon className="size-3" />
+              ) : (
+                <>
+                  <DotIcon
+                    className={cn(
+                      'size-2 rounded-full group-hover/tab:hidden',
+                      isActiveTab
+                        ? 'text-yellow-500 bg-yellow-500'
+                        : 'text-yellow-500/50 bg-yellow-500/50',
+                    )}
+                  />
+                  <SaveIcon className="size-3.5 hidden group-hover/tab:block" />
+                </>
+              )
             ) : (
-              <>
-                <DotIcon
-                  className={cn(
-                    'size-2 rounded-full group-hover/tab:hidden',
-                    isActiveTab
-                      ? 'text-yellow-500 bg-yellow-500'
-                      : 'text-yellow-500/50 bg-yellow-500/50',
-                  )}
-                />
-                <SaveIcon className="size-3.5 hidden group-hover/tab:block" />
-              </>
-            )
-          ) : (
+              <XIcon className="size-3" />
+            )}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={isHomeTab && isLastTab}
+            className={cn(
+              'size-5 shrink-0 rounded-sm p-0 opacity-0 transition-opacity group-hover/tab:opacity-100 max-md:opacity-100',
+              { 'opacity-0!': isHomeTab && isLastTab },
+            )}
+            onClick={handleClose}
+            title="Close"
+          >
             <XIcon className="size-3" />
-          )}
-        </Button>
+          </Button>
+        )}
 
         {/* Active indicator line */}
         {isActive && (

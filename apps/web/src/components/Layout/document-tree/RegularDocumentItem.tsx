@@ -304,7 +304,6 @@ export function RegularDocumentItem({
                 to="/view/$handle"
                 params={{ handle: document.handle ?? document.id }}
                 data-document-id={document.id}
-                data-new-tab={isActive ? undefined : 'true'}
                 onClick={() => {
                   if (isMobileSidebar) {
                     setOpenMobile(false);

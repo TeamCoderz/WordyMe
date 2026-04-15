@@ -729,7 +729,6 @@ export function ManageDocumentsTableRow({
                           e.stopPropagation();
                         }}
                         className="truncate text-sm select-text hover:underline max-w-full flex-1"
-                        data-new-tab="true"
                       >
                         {doc.name}
                       </Link>
