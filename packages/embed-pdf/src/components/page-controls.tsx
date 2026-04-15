@@ -20,7 +20,7 @@ export function PageControls({ documentId }: PageControlsProps) {
   } = useScroll(documentId);
   const [isVisible, setIsVisible] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
-  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [inputValue, setInputValue] = useState<string>(currentPage.toString());
 
   useEffect(() => {

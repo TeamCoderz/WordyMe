@@ -39,7 +39,7 @@ export const copyDocumentAttachments = async (
     .catch(() => false);
 
   if (!sourceExists) {
-    return [];
+    return;
   }
 
   await cp(sourceDirectory, targetDirectory, {
