@@ -15,6 +15,13 @@
       "when": 1775433600000,
       "tag": "0001_document_search_index",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1776110400000,
+      "tag": "0002_disable_signup_after_bootstrap",
+      "breakpoints": true
     }
   ]
 }

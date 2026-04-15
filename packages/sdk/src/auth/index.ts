@@ -10,6 +10,11 @@ import {
 } from 'better-auth/client/plugins';
 import { createAuthClient } from 'better-auth/react';
 import { type auth } from '@repo/backend/auth';
+import { get } from '../app/client.js';
+
+export type SignupAvailability = {
+  signupEnabled: boolean;
+};
 
 export const authClient = createAuthClient({
   // $InferAuth: options,
@@ -36,5 +41,13 @@ export const logout = async () => {
 export const getSession = async () => {
   return await authClient.getSession();
 };
+
+export const getSignupAvailability = async (): Promise<SignupAvailability> => {
+  const { data, error } = await get<SignupAvailability>('/auth-state/signup-availability');
+  if (error) throw error;
+  if (data === null) throw new Error('Signup availability unavailable');
+  return data;
+};
+
 export type SessionData = Awaited<ReturnType<typeof getSession>>['data'];
 export const useSession = authClient.useSession;

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { createFileRoute, Link, redirect } from '@tanstack/react-router';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -30,7 +30,7 @@ import {
   InputGroupButton,
   InputGroupAddon,
 } from '@repo/ui/components/input-group';
-import { useRegisterMutation } from '@/queries/auth';
+import { signupAvailabilityQueryOptions, useRegisterMutation } from '@/queries/auth';
 import { useState } from 'react';
 
 const signupSchema = z
@@ -48,6 +48,12 @@ const signupSchema = z
 type SignupFormValues = z.infer<typeof signupSchema>;
 
 export const Route = createFileRoute('/_unauthed/signup')({
+  beforeLoad: async ({ context: { queryClient } }) => {
+    const { signupEnabled } = await queryClient.ensureQueryData(signupAvailabilityQueryOptions);
+    if (!signupEnabled) {
+      throw redirect({ to: '/login' });
+    }
+  },
   component: RouteComponent,
 });
 
