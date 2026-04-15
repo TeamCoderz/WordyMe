@@ -1,6 +1,7 @@
 import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query';
 import type { Tab, TabMetadata } from '@repo/types';
 import { useEffect } from 'react';
+import { TABS_QUERY_KEYS } from '@/queries/query-keys';
 import { useSelector } from '@/store';
 import { resolveTabMetadata } from './resolveTabMetadata';
 
@@ -25,7 +26,7 @@ export function useTabMetadata(tab: Tab): TabMetadata {
 
   const { data, isError } = useQuery({
     ...resolved.queryOption,
-    queryKey: resolved.queryOption?.queryKey ?? ['tab-metadata-noop', tab.id],
+    queryKey: resolved.queryOption?.queryKey ?? TABS_QUERY_KEYS.METADATA_NOOP(tab.id),
     queryFn: resolved.queryOption?.queryFn ?? skipToken,
     placeholderData: keepPreviousData,
     retry: 1,

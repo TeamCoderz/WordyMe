@@ -19,13 +19,14 @@ import { keepPreviousData, useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAllQueriesInvalidate } from './utils';
 import { getDocumentByHandleQueryOptions } from './documents';
+import { REVISIONS_QUERY_KEYS } from './query-keys';
 import type { Document } from '@repo/types';
 import type { SerializedEditorState } from '@repo/editor/types';
 import { getLocalDocument, saveLocalDocument } from '@repo/editor/indexeddb';
 
 export const getRevisionsByDocumentIdQueryOptions = (documentId: string) => {
   return {
-    queryKey: ['revisions', documentId],
+    queryKey: REVISIONS_QUERY_KEYS.BY_DOCUMENT_ID(documentId),
     queryFn: async () => {
       if (!documentId) return [];
       const { data, error } = await getRevisionsByDocumentId(documentId);
@@ -245,7 +246,7 @@ export function useSaveDocumentMutation({
 
 export function getRevisionByIdQueryOptions(revisionId: string, enabled: boolean) {
   return {
-    queryKey: ['revision', revisionId],
+    queryKey: REVISIONS_QUERY_KEYS.BY_ID(revisionId),
     queryFn: async () => {
       const { data: revision, error: revisionError } = await getRevisionById(revisionId);
       if (revisionError) throw revisionError;
@@ -262,7 +263,7 @@ export function getLocalRevisionByDocumentIdQueryOptions(
   enabled?: boolean,
 ) {
   return {
-    queryKey: ['localDocumentRevision', documentId!],
+    queryKey: REVISIONS_QUERY_KEYS.LOCAL_BY_DOCUMENT_ID(documentId!),
     queryFn: async () => {
       if (!documentId || !head) return null;
       try {

@@ -6,11 +6,10 @@
 import { useMutation, useQueryClient, type UseQueryOptions } from '@tanstack/react-query';
 import { getSignupAvailability, type SignupAvailability, login, register } from '@repo/sdk/auth';
 import { toast } from '@repo/ui/components/sonner';
-
-export const signupAvailabilityQueryKey = ['auth', 'signupAvailability'] as const;
+import { AUTH_QUERY_KEYS } from './query-keys';
 
 export const signupAvailabilityQueryOptions: UseQueryOptions<SignupAvailability, Error> = {
-  queryKey: signupAvailabilityQueryKey,
+  queryKey: AUTH_QUERY_KEYS.SIGNUP_AVAILABILITY,
   queryFn: getSignupAvailability,
   staleTime: 60_000,
 };
@@ -72,7 +71,7 @@ export function useRegisterMutation() {
       return toast.loading('Creating account...');
     },
     onSuccess: (_, __, toastId) => {
-      void queryClient.invalidateQueries({ queryKey: signupAvailabilityQueryKey });
+      void queryClient.invalidateQueries({ queryKey: AUTH_QUERY_KEYS.SIGNUP_AVAILABILITY });
       toast.success('Account created successfully', {
         id: toastId,
       });
