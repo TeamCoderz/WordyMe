@@ -82,6 +82,13 @@ export function TabSync() {
         !existingTab && !existingGroupTab && allTabs.find((t) => t.pathname === pathname);
       const shouldOpenNewTab = isModifierHeld || link.dataset.newTab === 'true';
       const shouldSplitTab = isShiftHeld || link.dataset.newSplitTab === 'true';
+      const isViewLink = pathname.startsWith('/view/');
+      const isPreviewEligible =
+        isViewLink &&
+        !isModifierHeld &&
+        !isShiftHeld &&
+        link.dataset.newTab !== 'true' &&
+        link.dataset.newSplitTab !== 'true';
       event.preventDefault();
       if (existingGroupTab && !isModifierHeld && !shouldSplitTab) {
         setActiveTab(existingGroupTab.id);
@@ -89,6 +96,16 @@ export function TabSync() {
       } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
         setActiveTab(existingTabSamePath.id);
         updateTab(existingTabSamePath.id, { search, hash: hash.slice(1) });
+      } else if (existingTab && !isModifierHeld) {
+        setActiveTab(existingTab.id);
+      } else if (isPreviewEligible) {
+        openTab({
+          pathname,
+          search,
+          hash: hash.slice(1),
+          pane: activePane,
+          preview: true,
+        });
       } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
         const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
         updateTab(activeTab.id, {
@@ -97,8 +114,6 @@ export function TabSync() {
           hash: hash.slice(1),
           isDirty: isDocumentLink ? undefined : activeTab.isDirty,
         });
-      } else if (existingTab && !isModifierHeld) {
-        setActiveTab(existingTab.id);
       } else {
         const pane = shouldSplitTab ? 'opposite' : activePane;
         openTab({

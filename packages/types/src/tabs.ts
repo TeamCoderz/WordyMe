@@ -27,4 +27,6 @@ export interface Tab {
   hash?: string;
   /** Whether the tab has unsaved changes */
   isDirty: boolean;
+  /** Transient preview tab (italic title, replaced by next preview-link click in the same pane). */
+  isPreview?: boolean;
 }
