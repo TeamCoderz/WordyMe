@@ -5,12 +5,7 @@
 
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
-import {
-  documentsTable,
-  documentTypes,
-  DocumentType,
-  nonPdfDocumentTypes,
-} from '../models/documents.js';
+import { documentsTable, documentTypes, DocumentType } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { createRevisionSchema, revisionDetailsSchema } from './revisions.js';
 
@@ -50,7 +45,7 @@ export const searchDocumentResultSchema = z.object({
 });
 
 export const createDocumentSchema = createInsertSchema(documentsTable, {
-  documentType: z.enum(nonPdfDocumentTypes),
+  documentType: z.enum(documentTypes),
 }).omit({
   id: true,
   createdAt: true,
@@ -100,7 +95,6 @@ export const documentDetailsSchema = createSelectSchema(documentsTable, {
   currentRevision: createSelectSchema(revisionsTable).nullable(),
   isFavorite: z.boolean(),
   lastViewedAt: z.date().nullable(),
-  pdfUrl: z.string().nullable(),
 });
 
 export const copiedDocumentSchema = createSelectSchema(documentsTable, {

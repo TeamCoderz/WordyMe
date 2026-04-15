@@ -6,11 +6,10 @@
 import { and, count, countDistinct, eq, getTableColumns, gt, max } from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { db } from '../lib/db.js';
-import { DocumentType, documentTypeOperations, documentsTable } from '../models/documents.js';
+import { DocumentType, documentsTable } from '../models/documents.js';
 import {
   CreateDocumentInput,
   CreateDocumentWithRevisionInput,
-  CreatePdfDocumentInput,
   DocumentFilters,
   DocumentIdentifier,
   UpdateDocumentInput,
@@ -25,17 +24,11 @@ import { dbWritesQueue } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
 import { saveRevisionContent } from './revision-contents.js';
-import { deletePdfContent, getPdfContentUrl, savePdfContent } from './pdf-contents.js';
 
 export const mapDocumentResponse = <T extends { documentType: DocumentType; id: string }>(
   document: T,
 ) => {
-  return {
-    ...document,
-    pdfUrl: documentTypeOperations[document.documentType].hasPdfContent
-      ? getPdfContentUrl(document.id)
-      : null,
-  };
+  return { ...document };
 };
 
 export const mapDocumentListResponse = <T extends { documentType: DocumentType; id: string }>(
@@ -205,25 +198,6 @@ export const createDocument = async (payload: CreateDocumentInput, userId: strin
   return result;
 };
 
-export const createPdfDocument = async (
-  payload: CreatePdfDocumentInput,
-  temporaryPdfPath: string,
-  userId: string,
-) => {
-  const document = await createDocument(
-    {
-      ...payload,
-      documentType: 'pdf',
-      isContainer: false,
-    },
-    userId,
-  );
-
-  await savePdfContent(temporaryPdfPath, document.id);
-
-  return mapDocumentResponse(document);
-};
-
 export const createDocumentWithRevision = async (
   payload: CreateDocumentWithRevisionInput,
   userId: string,
@@ -346,10 +320,6 @@ export const deleteDocument = async (documentId: string) => {
     .returning();
 
   if (!document) return;
-
-  if (documentTypeOperations[document.documentType].hasPdfContent) {
-    await deletePdfContent(document.id);
-  }
 
   const result = mapDocumentResponse(document);
 

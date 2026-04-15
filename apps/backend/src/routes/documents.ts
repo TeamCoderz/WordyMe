@@ -7,7 +7,6 @@ import { Router } from 'express';
 import {
   createDocumentSchema,
   createDocumentWithRevisionSchema,
-  createPdfDocumentSchema,
   documentFiltersSchema,
   documentHandleParamSchema,
   documentIdParamSchema,
@@ -20,7 +19,6 @@ import { validate } from '../middlewares/validate.js';
 import {
   createDocument,
   createDocumentWithRevision,
-  createPdfDocument,
   deleteDocument,
   getDocumentDetails,
   getLastViewedDocuments,
@@ -37,10 +35,6 @@ import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
-import formidable from 'formidable';
-import { resolvePhysicalPath } from '../lib/storage.js';
-import { mkdir } from 'node:fs/promises';
-import { safeFilename } from '../utils/strings.js';
 import { documentTypeOperations } from '../models/documents.js';
 
 const router: Router = Router();
@@ -72,12 +66,6 @@ router.get(
 );
 
 router.post('/', validate({ body: createDocumentSchema }), async (req, res) => {
-  if (documentTypeOperations[req.body.documentType].hasPdfContent) {
-    throw new HttpUnprocessableEntity({
-      message: 'This document type must be created through /api/documents/pdf endpoint.',
-    });
-  }
-
   const { parentId, spaceId } = req.body;
   if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
     throw new HttpNotFound(
@@ -109,56 +97,6 @@ router.post(
     res.status(201).json(document);
   },
 );
-
-router.post('/pdf', async (req, res) => {
-  const uploadDir = resolvePhysicalPath('tmp/pdfs');
-
-  await mkdir(uploadDir, { recursive: true });
-
-  const form = formidable({
-    uploadDir,
-    multiples: false,
-    maxFiles: 1,
-    maxFileSize: 25 * 1024 * 1024,
-    keepExtensions: true,
-    filename: safeFilename,
-    filter(part) {
-      if (part.name !== 'pdf') {
-        return false;
-      }
-
-      return part.mimetype === 'application/pdf';
-    },
-  });
-
-  const [fields, files] = await form.parse(req);
-
-  const payload = createPdfDocumentSchema.parse(fields);
-
-  if (payload.parentId && !(await userHasDocument(req.user!.id, payload.parentId))) {
-    throw new HttpNotFound(
-      'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
-    );
-  }
-  if (payload.spaceId && !(await userHasDocument(req.user!.id, payload.spaceId))) {
-    throw new HttpNotFound(
-      'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
-    );
-  }
-
-  const pdfFile = files.pdf?.[0];
-
-  if (!pdfFile) {
-    throw new HttpUnprocessableEntity({
-      message:
-        'Invalid upload. Either no file was provided, the field name was incorrect (expected "pdf"), or the file is not a valid PDF.',
-    });
-  }
-
-  const document = await createPdfDocument(payload, pdfFile.filepath, req.user!.id);
-
-  res.status(201).json(document);
-});
 
 router.get(
   '/handle/:handle',
