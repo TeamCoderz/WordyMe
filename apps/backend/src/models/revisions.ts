@@ -8,6 +8,10 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { documentsTable } from './documents.js';
 import { relations } from 'drizzle-orm';
 import { users } from './auth.js';
+import { enumType } from '../utils/drizzle.js';
+
+export const revisionContentTypes = ['application/json', 'application/pdf'] as const;
+export type RevisionContentType = (typeof revisionContentTypes)[number];
 
 export const revisionsTable = sqliteTable('revisions', {
   id: text('id')
@@ -33,6 +37,7 @@ export const revisionsTable = sqliteTable('revisions', {
       onUpdate: 'cascade',
     }),
   revisionName: text('revision_name'),
+  contentType: enumType(revisionContentTypes, 'content_type').notNull().default('application/json'),
   text: text('text').notNull(),
   checksum: text('checksum'),
 });

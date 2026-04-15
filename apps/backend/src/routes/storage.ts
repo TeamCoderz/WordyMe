@@ -12,6 +12,7 @@ import { userHasDocument, userHasRevision } from '../services/access.js';
 import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../lib/storage.js';
 import { getRevisionContentUrl } from '../services/revision-contents.js';
+import { getRevisionById } from '../services/revisions.js';
 import { documentIdParamSchema } from '../schemas/documents.js';
 import { mkdir } from 'node:fs/promises';
 import z from 'zod';
@@ -39,9 +40,18 @@ router.get(
       );
     }
 
-    res.sendFile(resolvePhysicalPath(getRevisionContentUrl(req.params.revisionId)), (err) => {
-      if (err) next(new HttpNotFound('Revision content not found'));
-    });
+    const revision = await getRevisionById(req.params.revisionId);
+
+    if (!revision) {
+      throw new HttpNotFound('Revision content not found');
+    }
+
+    res.sendFile(
+      resolvePhysicalPath(getRevisionContentUrl(revision.id, revision.contentType)),
+      (err) => {
+        if (err) next(new HttpNotFound('Revision content not found'));
+      },
+    );
   },
 );
 

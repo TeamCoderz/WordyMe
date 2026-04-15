@@ -6,7 +6,7 @@
 import z from 'zod';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { documentsTable, documentTypes, DocumentType } from '../models/documents.js';
-import { revisionsTable } from '../models/revisions.js';
+import { revisionsTable, revisionContentTypes } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
 
 export const attachmentSchema = z.object({
@@ -17,6 +17,7 @@ export const attachmentSchema = z.object({
 export const exportedRevisionSchema = createSelectSchema(revisionsTable, {
   text: z.string(),
   checksum: z.string().nullable(),
+  contentType: z.enum(revisionContentTypes).default('application/json'),
 })
   .extend({
     content: z.string(),
@@ -24,6 +25,7 @@ export const exportedRevisionSchema = createSelectSchema(revisionsTable, {
   .pick({
     text: true,
     checksum: true,
+    contentType: true,
     content: true,
   });
 

@@ -19,10 +19,11 @@ import {
   createDocumentWithRevisionSchema,
   searchDocumentResultSchema,
   searchDocumentsQuerySchema,
-  createPdfDocumentSchema,
 } from '../schemas/documents.js';
 import {
   createRevisionSchema,
+  createRevisionUploadFieldsSchema,
+  revisionDetailsSchema,
   plainRevisionSchema,
   revisionIdParamSchema,
   updateRevisionSchema,
@@ -143,40 +144,6 @@ export const openApiDocument = createDocument({
         },
       },
     },
-    '/api/documents/pdf': {
-      post: {
-        summary: 'Create a new PDF document',
-        tags: ['Documents'],
-        description:
-          'Creates a PDF document using multipart upload. This route is dedicated for document types that use binary PDF content instead of revisions.',
-        requestBody: {
-          required: true,
-          content: {
-            'multipart/form-data': {
-              schema: createPdfDocumentSchema.extend({
-                pdf: z.string().describe('The PDF file to upload'),
-              }),
-            },
-          },
-        },
-        responses: {
-          201: {
-            description:
-              'PDF document created successfully. Returns the document details including pdfUrl.',
-            content: {
-              'application/json': { schema: documentDetailsSchema },
-            },
-          },
-          404: {
-            description:
-              'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
-          },
-          422: {
-            description: 'Invalid upload payload or unsupported file type.',
-          },
-        },
-      },
-    },
     '/api/documents/handle/{handle}': {
       get: {
         summary: 'Get document by handle',
@@ -253,7 +220,7 @@ export const openApiDocument = createDocument({
           200: {
             description: 'The current active revision of the document.',
             content: {
-              'application/json': { schema: plainRevisionSchema },
+              'application/json': { schema: revisionDetailsSchema },
             },
           },
           404: {
@@ -483,7 +450,7 @@ export const openApiDocument = createDocument({
             description:
               'Revision found. Returns revision metadata including ID, document reference, timestamp, and content URL.',
             content: {
-              'application/json': { schema: plainRevisionSchema },
+              'application/json': { schema: revisionDetailsSchema },
             },
           },
           404: {
@@ -551,12 +518,46 @@ export const openApiDocument = createDocument({
             description:
               'Revision created successfully. Returns the revision metadata including ID, timestamp, and content URL.',
             content: {
+              'application/json': { schema: revisionDetailsSchema },
+            },
+          },
+          404: {
+            description:
+              'The document does not exist or is not accessible by the authenticated user.',
+          },
+        },
+      },
+    },
+    '/api/revisions/upload': {
+      post: {
+        summary: 'Create a revision from an uploaded file',
+        tags: ['Revisions'],
+        description:
+          'Creates a new revision using multipart form-data instead of a data URL payload. Use this for binary revision content such as PDFs. The uploaded file is stored directly on disk and linked to the owning document.',
+        requestBody: {
+          required: true,
+          content: {
+            'multipart/form-data': {
+              schema: createRevisionUploadFieldsSchema.extend({
+                content: z.string().describe('The revision file to upload'),
+              }),
+            },
+          },
+        },
+        responses: {
+          201: {
+            description:
+              'Revision created successfully from an uploaded file. Returns the revision metadata and content URL.',
+            content: {
               'application/json': { schema: plainRevisionSchema },
             },
           },
           404: {
             description:
               'The document does not exist or is not accessible by the authenticated user.',
+          },
+          422: {
+            description: 'Invalid upload payload or unsupported file type.',
           },
         },
       },
@@ -609,32 +610,6 @@ export const openApiDocument = createDocument({
           404: {
             description:
               'The document does not exist or is not accessible by the authenticated user.',
-          },
-        },
-      },
-    },
-    '/storage/pdfs/{documentId}': {
-      get: {
-        summary: 'Download PDF document file',
-        tags: ['Storage'],
-        description:
-          'Downloads the binary PDF file associated with a PDF document. Access is restricted to the authenticated owner of the document.',
-        requestParams: { path: documentIdParamSchema },
-        responses: {
-          200: {
-            description: 'PDF file returned successfully.',
-            content: {
-              'application/pdf': {
-                schema: z.string(),
-              },
-            },
-          },
-          404: {
-            description:
-              'The document does not exist or is not accessible by the authenticated user.',
-          },
-          422: {
-            description: 'The specified document type is not PDF.',
           },
         },
       },

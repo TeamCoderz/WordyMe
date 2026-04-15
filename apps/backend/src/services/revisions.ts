@@ -5,16 +5,25 @@
 
 import { desc, eq, and } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { revisionsTable } from '../models/revisions.js';
-import { CreateRevisionInput, UpdateRevisionInput } from '../schemas/revisions.js';
+import { revisionsTable, RevisionContentType } from '../models/revisions.js';
+import {
+  CreateRevisionInput,
+  CreateRevisionUploadFieldsInput,
+  UpdateRevisionInput,
+} from '../schemas/revisions.js';
 import { documentsTable } from '../models/documents.js';
 import {
   getRevisionContentUrl,
   readRevisionContent,
   saveRevisionContent,
+  saveRevisionContentFromFile,
+  deleteRevisionContent,
 } from './revision-contents.js';
 
-export const createRevision = async (payload: CreateRevisionInput, userId: string) => {
+const createRevisionRecord = async (
+  payload: Omit<CreateRevisionInput, 'content'> & { contentType: RevisionContentType },
+  userId: string,
+) => {
   const [revision] = await db
     .insert(revisionsTable)
     .values({
@@ -22,11 +31,20 @@ export const createRevision = async (payload: CreateRevisionInput, userId: strin
       text: payload.text,
       checksum: payload.checksum,
       revisionName: payload.revisionName,
+      contentType: payload.contentType,
       userId,
     })
     .returning();
 
-  await saveRevisionContent(payload.content, revision.id);
+  return revision;
+};
+
+export const createRevision = async (payload: CreateRevisionInput, userId: string) => {
+  const contentType = (payload.contentType ?? 'application/json') as RevisionContentType;
+
+  const revision = await createRevisionRecord({ ...payload, contentType }, userId);
+
+  await saveRevisionContent(payload.content, revision.id, contentType);
 
   if (payload.makeCurrentRevision) {
     await db
@@ -39,22 +57,55 @@ export const createRevision = async (payload: CreateRevisionInput, userId: strin
 
   return {
     ...revision,
-    content: payload.content,
-    url: getRevisionContentUrl(revision.id),
+    content: await readRevisionContent(revision.id, contentType),
+    url: getRevisionContentUrl(revision.id, contentType),
   };
 };
 
-export const getRevisionById = async (revisionId: string) => {
+export const createJsonRevision = createRevision;
+
+export const createRevisionFromUpload = async (
+  payload: CreateRevisionUploadFieldsInput & {
+    contentType: RevisionContentType;
+    contentFilePath: string;
+  },
+  userId: string,
+) => {
+  const revision = await createRevisionRecord(payload, userId);
+
+  await saveRevisionContentFromFile(payload.contentFilePath, revision.id, payload.contentType);
+
+  if (payload.makeCurrentRevision) {
+    await db
+      .update(documentsTable)
+      .set({
+        currentRevisionId: revision.id,
+      })
+      .where(eq(documentsTable.id, payload.documentId));
+  }
+
+  return {
+    ...revision,
+    url: getRevisionContentUrl(revision.id, payload.contentType),
+  };
+};
+
+export const getRevisionById = async (revisionId: string, includeContent = false) => {
   const revision = await db.query.revisionsTable.findFirst({
     where: eq(revisionsTable.id, revisionId),
   });
-  return revision
-    ? {
-        ...revision,
-        content: await readRevisionContent(revision.id),
-        url: getRevisionContentUrl(revision.id),
-      }
-    : undefined;
+
+  if (!revision) {
+    return undefined;
+  }
+
+  const contentType = revision.contentType as RevisionContentType;
+
+  return {
+    ...revision,
+    ...(includeContent ? { content: await readRevisionContent(revision.id, contentType) } : {}),
+    url: getRevisionContentUrl(revision.id, contentType),
+  };
 };
 
 export const getRevisionsByDocumentId = async (documentId: string) => {
@@ -64,17 +115,21 @@ export const getRevisionsByDocumentId = async (documentId: string) => {
   });
   return revisions.map((revision) => ({
     ...revision,
-    url: getRevisionContentUrl(revision.id),
+    url: getRevisionContentUrl(revision.id, revision.contentType as RevisionContentType),
   }));
 };
 
-export const getCurrentRevisionByDocumentId = async (documentId: string) => {
+export const getCurrentRevisionByDocumentId = async (
+  documentId: string,
+  includeContent = false,
+) => {
   const [currentRevision] = await db
     .select({
       id: revisionsTable.id,
       text: revisionsTable.text,
       checksum: revisionsTable.checksum,
       createdAt: revisionsTable.createdAt,
+      contentType: revisionsTable.contentType,
       document: {
         id: documentsTable.id,
       },
@@ -90,30 +145,59 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
     .where(eq(documentsTable.id, documentId))
     .limit(1);
 
-  return currentRevision
-    ? {
-        ...currentRevision,
-        content: await readRevisionContent(currentRevision.id),
-        url: getRevisionContentUrl(currentRevision.id),
-      }
-    : undefined;
+  if (!currentRevision) {
+    return undefined;
+  }
+
+  const contentType = currentRevision.contentType as RevisionContentType;
+
+  return {
+    ...currentRevision,
+    ...(includeContent
+      ? { content: await readRevisionContent(currentRevision.id, contentType) }
+      : {}),
+    url: getRevisionContentUrl(currentRevision.id, contentType),
+  };
 };
 
-export const updateRevisionName = async (revisionId: string, payload: UpdateRevisionInput) => {
+export const updateRevision = async (revisionId: string, payload: UpdateRevisionInput) => {
   const [updatedRevision] = await db
     .update(revisionsTable)
     .set(payload)
     .where(eq(revisionsTable.id, revisionId))
     .returning();
-  if (payload.content) {
-    await saveRevisionContent(payload.content, revisionId);
+  if (!updatedRevision) {
+    return null;
   }
-  return updatedRevision
-    ? { ...updatedRevision, url: getRevisionContentUrl(updatedRevision.id) }
-    : null;
+
+  if (payload.content) {
+    await saveRevisionContent(
+      payload.content,
+      revisionId,
+      updatedRevision.contentType as RevisionContentType,
+    );
+  }
+
+  return {
+    ...updatedRevision,
+    url: getRevisionContentUrl(
+      updatedRevision.id,
+      updatedRevision.contentType as RevisionContentType,
+    ),
+  };
 };
 
+export const updateRevisionName = updateRevision;
+
 export const deleteRevisionById = async (revisionId: string) => {
+  const revision = await db.query.revisionsTable.findFirst({
+    where: eq(revisionsTable.id, revisionId),
+  });
+
+  if (revision) {
+    await deleteRevisionContent(revision.id, revision.contentType as RevisionContentType);
+  }
+
   const [deleted] = await db
     .delete(revisionsTable)
     .where(eq(revisionsTable.id, revisionId))

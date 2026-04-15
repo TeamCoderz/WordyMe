@@ -43,10 +43,23 @@ export const copyDocument = async (
 
   const originalRevision =
     originalDocument.currentRevisionId &&
-    (await getRevisionById(originalDocument.currentRevisionId));
+    (await getRevisionById(originalDocument.currentRevisionId, true));
 
   const newDocument = originalRevision
-    ? await createDocumentWithRevision({ ...documentBody, revision: originalRevision }, userId)
+    ? await createDocumentWithRevision(
+        {
+          ...documentBody,
+          revision: {
+            text: originalRevision.text,
+            checksum: originalRevision.checksum,
+            revisionName: originalRevision.revisionName,
+            contentType: originalRevision.contentType,
+            content: await readRevisionContent(originalRevision.id, originalRevision.contentType),
+            makeCurrentRevision: true,
+          },
+        },
+        userId,
+      )
     : await createDocument(documentBody, userId);
 
   await copyDocumentAttachments(documentId, newDocument.id);
@@ -115,7 +128,8 @@ export const exportDocumentTree = async (
       ? {
           text: currentRevision.text,
           checksum: currentRevision.checksum,
-          content: await readRevisionContent(currentRevision.id),
+          contentType: currentRevision.contentType,
+          content: await readRevisionContent(currentRevision.id, currentRevision.contentType),
         }
       : null,
     attachments: await exportDocumentAttachments(documentId),

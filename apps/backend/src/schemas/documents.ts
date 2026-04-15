@@ -59,15 +59,6 @@ export const createDocumentWithRevisionSchema = createDocumentSchema.extend({
   revision: createRevisionSchema.omit({ documentId: true }),
 });
 
-export const createPdfDocumentSchema = z.object({
-  name: z.coerce.string().min(1),
-  parentId: z.coerce.string().pipe(z.uuid()).optional(),
-  spaceId: z.coerce.string().pipe(z.uuid()).optional(),
-  icon: z.coerce.string().optional(),
-  position: z.coerce.string().optional(),
-  clientId: z.coerce.string().optional(),
-});
-
 export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
   id: true,
   userId: true,
@@ -86,7 +77,6 @@ export const plainDocumentSchema = createSelectSchema(documentsTable, {
 export const documentListItemSchema = plainDocumentSchema.extend({
   isFavorite: z.boolean(),
   lastViewedAt: z.date().nullable(),
-  pdfUrl: z.string().nullable(),
 });
 
 export const documentDetailsSchema = createSelectSchema(documentsTable, {
@@ -101,7 +91,6 @@ export const copiedDocumentSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(documentTypes),
 }).extend({
   currentRevision: revisionDetailsSchema.nullable(),
-  pdfUrl: z.string().nullable(),
 });
 
 export type DocumentFilters = z.output<typeof documentFiltersSchema>;
@@ -114,7 +103,6 @@ export type CreateDocumentWithRevisionInput = Omit<
 > & {
   documentType: DocumentType;
 };
-export type CreatePdfDocumentInput = z.output<typeof createPdfDocumentSchema>;
 export type UpdateDocumentInput = z.output<typeof updateDocumentSchema>;
 export type GetSingleDocumentOptions = z.output<typeof getSingleDocumentOptionsSchema>;
 export type DocumentListItem = z.output<typeof documentListItemSchema>;

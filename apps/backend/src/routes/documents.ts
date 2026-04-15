@@ -217,7 +217,7 @@ router.get(
       });
     }
 
-    const revision = await getCurrentRevisionByDocumentId(req.params.documentId);
+    const revision = await getCurrentRevisionByDocumentId(req.params.documentId, true);
     if (!revision) {
       throw new HttpNotFound(
         'No current revision exists for this document (document may be empty or newly created).',

@@ -22,7 +22,7 @@ import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
-import { revisionsTable } from '../models/revisions.js';
+import { revisionsTable, RevisionContentType } from '../models/revisions.js';
 import { saveRevisionContent } from './revision-contents.js';
 
 export const mapDocumentResponse = <T extends { documentType: DocumentType; id: string }>(
@@ -224,10 +224,11 @@ export const createDocumentWithRevision = async (
         checksum: payload.revision.checksum,
         revisionName: payload.revision.revisionName,
         userId,
+        contentType: (payload.revision.contentType ?? 'application/json') as RevisionContentType,
       })
       .returning();
 
-    await saveRevisionContent(payload.revision.content, revision.id);
+    await saveRevisionContent(payload.revision.content, revision.id, revision.contentType);
 
     await tx
       .update(documentsTable)
@@ -253,6 +254,8 @@ export const createDocumentWithRevision = async (
 
   return mapDocumentResponse(rawResult);
 };
+
+export const createDocumentWithJsonRevision = createDocumentWithRevision;
 
 export const viewDocument = async (documentId: string, userId: string) => {
   return await db

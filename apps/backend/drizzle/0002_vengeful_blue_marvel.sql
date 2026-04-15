@@ -1,0 +1,1 @@
+ALTER TABLE `revisions` ADD `content_type` text DEFAULT 'application/json' NOT NULL;

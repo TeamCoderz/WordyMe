@@ -5,7 +5,7 @@
 
 import { createInsertSchema, createSelectSchema, createUpdateSchema } from 'drizzle-zod';
 import z from 'zod';
-import { revisionsTable } from '../models/revisions.js';
+import { revisionContentTypes, revisionsTable } from '../models/revisions.js';
 
 export const revisionIdParamSchema = z.object({
   revisionId: z.uuid('Invalid revision ID'),
@@ -22,6 +22,15 @@ export const createRevisionSchema = createInsertSchema(revisionsTable)
     content: z.string().min(1, 'Revision Content is required'),
     makeCurrentRevision: z.boolean().optional(),
   });
+
+export const createRevisionUploadFieldsSchema = z.object({
+  documentId: z.uuid('Invalid document ID'),
+  text: z.string().min(1, 'Revision Text is required'),
+  checksum: z.string().optional(),
+  revisionName: z.string().optional(),
+  contentType: z.enum(revisionContentTypes).optional(),
+  makeCurrentRevision: z.stringbool().optional(),
+});
 
 export const updateRevisionNameSchema = createUpdateSchema(revisionsTable)
   .pick({
@@ -60,6 +69,7 @@ export const revisionDetailsSchema = createSelectSchema(revisionsTable)
   });
 
 export type CreateRevisionInput = z.output<typeof createRevisionSchema>;
+export type CreateRevisionUploadFieldsInput = z.output<typeof createRevisionUploadFieldsSchema>;
 export type UpdateRevisionNameInput = z.output<typeof updateRevisionNameSchema>;
 export type UpdateRevisionContentInput = z.output<typeof updateRevisionContentSchema>;
 export type UpdateRevisionInput = z.output<typeof updateRevisionSchema>;
