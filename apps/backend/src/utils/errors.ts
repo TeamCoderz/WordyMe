@@ -8,10 +8,12 @@ import { HttpError } from 'http-errors';
 import { ZodError } from 'zod';
 
 function isExpressError(err: unknown): err is HttpError {
+  return err instanceof Error && ('status' in err || 'statusCode' in err);
+}
+
+function isPayloadTooLargeError(err: unknown): err is Error & { type?: string } {
   return (
-    err instanceof Error &&
-    Object.keys(err).includes('expose') &&
-    Object.keys(err).includes('status')
+    err instanceof Error && 'type' in err && (err as { type?: string }).type === 'entity.too.large'
   );
 }
 
@@ -20,9 +22,16 @@ export const toHttpException = (error: unknown): HttpException => {
     return error;
   }
 
-  // Convert express errors to HttpException
+  if (isPayloadTooLargeError(error)) {
+    return new HttpException(
+      413,
+      'Request body is too large. Maximum allowed payload is 5MB. Please reduce the import size and try again.',
+    );
+  }
+
   if (isExpressError(error)) {
-    return new HttpException(error.status, error.message);
+    const status = typeof error.status === 'number' ? error.status : error.statusCode;
+    return new HttpException(status ?? 500, error.message);
   }
 
   if (error instanceof ZodError) {
