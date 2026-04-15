@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { NextFunction, Request, RequestHandler, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { auth } from '../lib/auth.js';
 import { fromNodeHeaders } from 'better-auth/node';
 import { HttpUnauthorized } from '@httpx/exception';
@@ -12,6 +12,7 @@ import { ExtendedError, Socket } from 'socket.io';
 type Session = typeof auth.$Infer.Session;
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: Session['user'];
@@ -29,7 +30,7 @@ declare module 'socket.io' {
 
 export const requireAuth = async <P, R, B, Q>(
   req: Request<P, R, B, Q>,
-  res: Response<R>,
+  _res: Response<R>,
   next: NextFunction,
 ) => {
   const headers = fromNodeHeaders(req.headers);

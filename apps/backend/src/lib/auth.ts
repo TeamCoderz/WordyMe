@@ -4,10 +4,12 @@
  */
 
 import { betterAuth, BetterAuthOptions } from 'better-auth';
+import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer, customSession, openAPI, username } from 'better-auth/plugins';
 import { db } from './db.js';
 import { env } from '../env.js';
+import { users } from '../models/auth.js';
 import { getEditorSettings, setEditorSettings } from '../services/editor-settings.js';
 import { createDocument } from '../services/documents.js';
 import { dbWritesQueue } from '../queues/db-writes.js';
@@ -17,12 +19,16 @@ export const adapter = drizzleAdapter(db, {
   usePlural: true,
 });
 
+export const isSignupEnabled = async (): Promise<boolean> => {
+  const existingUsers = await db.select({ id: users.id }).from(users).limit(1);
+  return existingUsers.length === 0;
+};
+
 export const options = {
   database: adapter,
   emailAndPassword: {
     enabled: true,
   },
-  // Without a string baseURL, Better Auth uses Secure-only cookies in production; http:// (Docker/LAN) rejects them.
   baseURL: env.BETTER_AUTH_URL ?? env.CLIENT_URL[0],
   trustedOrigins: env.CLIENT_URL,
   user: {
@@ -54,6 +60,13 @@ export const options = {
   databaseHooks: {
     user: {
       create: {
+        before: async () => {
+          if (!(await isSignupEnabled())) {
+            throw new APIError('BAD_REQUEST', {
+              message: 'Signup is disabled',
+            });
+          }
+        },
         after: async (user) => {
           dbWritesQueue.add(() =>
             createDocument(
