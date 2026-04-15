@@ -53,7 +53,7 @@ export type ListSpaceResultItem = NonNullable<
 export type ListSpaceResult = ListSpaceResultItem[];
 
 export const getAllSpacesQueryOptions: UseSuspenseQueryOptions<ListSpaceResult> = {
-  queryKey: ['spaces'],
+  queryKey: SPACES_QUERY_KEYS.HOME.BASE,
   queryFn: async () => {
     const { data, error } = await listSpaces();
     if (error) throw error;

@@ -90,7 +90,7 @@ export const searchDocumentsQueryOptions = (search: string, spaceId?: string, li
 
 export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<ListDocumentResult> {
   return {
-    queryKey: ['documents', spaceID],
+    queryKey: DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceID),
     queryFn: async () => {
       const { data, error } = await listDocuments({ spaceId: spaceID });
       if (error) {
@@ -943,7 +943,7 @@ export function useDuplicateDocumentMutation({
 
 export const getDocumentByIdQueryOptions = (id: string, queryClient?: QueryClient) => {
   return {
-    queryKey: ['document', id, { id: true }],
+    queryKey: DOCUMENTS_QUERY_KEYS.DETAIL_BY_ID(id),
     queryFn: async () => {
       const { data: document, error: documentError } = await getDocumentById(id, {
         updateLastViewed: true,
@@ -967,7 +967,7 @@ export const getDocumentByIdQueryOptions = (id: string, queryClient?: QueryClien
 
 export const getDocumentByHandleQueryOptions = (handle: string) => {
   return {
-    queryKey: ['document', handle],
+    queryKey: DOCUMENTS_QUERY_KEYS.DETAIL_BY_HANDLE(handle),
     queryFn: async () => {
       const { data: document, error: documentError } = await getDocumentByHandle(handle, {
         updateLastViewed: true,
@@ -1297,7 +1297,7 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
       // Invalidate the documents query for the space
       if (spaceId) {
         queryClient.invalidateQueries({
-          queryKey: ['documents', spaceId],
+          queryKey: DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceId),
         });
       }
       return data;

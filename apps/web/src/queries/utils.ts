@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, type QueryKey } from '@tanstack/react-query';
 
 export function getDescendants<T extends { id: string; parentId?: string | null }>(
   items: T[],
@@ -37,11 +37,9 @@ export function getDescendants<T extends { id: string; parentId?: string | null 
 
 export function useAllQueriesInvalidate() {
   const queryClient = useQueryClient();
-  const invalidate = (queryKeys: string[][]) => {
+  const invalidate = (queryKeys: QueryKey[]) => {
     for (const queryKey of queryKeys) {
-      queryClient.invalidateQueries({
-        queryKey: queryKey,
-      });
+      queryClient.invalidateQueries({ queryKey });
     }
   };
   return invalidate;
