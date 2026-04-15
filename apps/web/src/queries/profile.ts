@@ -67,8 +67,8 @@ export function useChangeAvatarMutation() {
         });
       }
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to upload avatar', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to upload avatar', {
         id: toastId ?? undefined,
       });
     },
@@ -130,8 +130,8 @@ export function useChangeCoverMutation() {
         });
       }
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to upload cover', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to upload cover', {
         id: toastId ?? undefined,
       });
     },
@@ -160,8 +160,8 @@ export function useUpdateCoverMetadataMutation() {
         id: toastId ?? undefined,
       });
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to update cover metadata', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update cover metadata', {
         id: toastId ?? undefined,
       });
     },
@@ -191,8 +191,8 @@ export function useUpdateAvatarMetadataMutation() {
         id: toastId ?? undefined,
       });
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to update avatar metadata', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update avatar metadata', {
         id: toastId ?? undefined,
       });
     },
@@ -220,8 +220,8 @@ export function useDeleteAvatarMutation() {
         setUser({ ...user, avatar_image: undefined });
       }
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to delete avatar', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to delete avatar', {
         id: toastId ?? undefined,
       });
     },
@@ -246,8 +246,8 @@ export function useDeleteProfileMutation() {
       });
       await logout();
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to delete account', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to delete account', {
         id: toastId ?? undefined,
       });
     },
@@ -282,8 +282,8 @@ export function useUpdateProfileMutation() {
         id: toastId ?? undefined,
       });
     },
-    onError: (_, __, toastId) => {
-      toast.error('Failed to update profile', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update profile', {
         id: toastId ?? undefined,
       });
     },
@@ -316,8 +316,8 @@ export function useToggleKeepPreviousRevisionMutation() {
         });
       }
     },
-    onError: (_err, __, toastId) => {
-      toast.error('Failed to update editor preferences', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update editor preferences', {
         id: toastId ?? undefined,
       });
     },
@@ -350,8 +350,8 @@ export function useToggleAutosaveMutation() {
         });
       }
     },
-    onError: (_err, __, toastId) => {
-      toast.error('Failed to update editor preferences', {
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update editor preferences', {
         id: toastId ?? undefined,
       });
     },

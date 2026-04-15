@@ -921,8 +921,8 @@ export function useExportSpaceMutation(itemId: string, spaceName?: string) {
     onMutate() {
       return toast.loading('Exporting space...');
     },
-    onError(_, __, context) {
-      toast.error('Failed to export space', { id: context });
+    onError(error, __, context) {
+      toast.error(error.message || 'Failed to export space', { id: context });
     },
     onSuccess(_, __, context) {
       toast.success('Space exported successfully', { id: context });
