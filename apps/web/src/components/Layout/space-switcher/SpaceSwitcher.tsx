@@ -414,18 +414,23 @@ export function SpaceSwitcher() {
                   <Breadcrumb>
                     <BreadcrumbList className="flex-wrap">
                       {activeSpace.path && activeSpace.path.length > 0 ? (
-                        activeSpace.path.map((pathSpace, index) => (
-                          <React.Fragment key={pathSpace.id}>
-                            <BreadcrumbItem>
-                              <BreadcrumbPage className="text-xs font-medium">
-                                {pathSpace.name}
-                              </BreadcrumbPage>
-                            </BreadcrumbItem>
-                            {index < activeSpace.path.length - 1 && (
+                        <>
+                          {activeSpace.path.map((pathSpace) => (
+                            <React.Fragment key={pathSpace.id}>
+                              <BreadcrumbItem>
+                                <BreadcrumbPage className="text-xs font-medium">
+                                  {pathSpace.name}
+                                </BreadcrumbPage>
+                              </BreadcrumbItem>
                               <BreadcrumbSeparator className="text-foreground [&>svg]:size-2.5" />
-                            )}
-                          </React.Fragment>
-                        ))
+                            </React.Fragment>
+                          ))}
+                          <BreadcrumbItem>
+                            <BreadcrumbPage className="text-xs font-medium">
+                              {activeSpace.name}
+                            </BreadcrumbPage>
+                          </BreadcrumbItem>
+                        </>
                       ) : (
                         <BreadcrumbItem>
                           <BreadcrumbPage className="text-xs font-medium">
