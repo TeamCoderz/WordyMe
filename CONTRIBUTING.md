@@ -77,7 +77,7 @@ SPDX automation skips generated and non-meaningful targets, including:
 
 - `*.gen.ts`, `node_modules`, `dist`, `.turbo`, `coverage`
 - Type declaration files (`*.d.ts`)
-- `*.mjs`, `*.cjs`, and tool/config files such as `drizzle.config.ts`
+- `*.mjs`, `*.cjs`, and tooling/config filename patterns: `*.config.{ts,js,tsx,jsx}`, `*.rc.{ts,js,tsx,jsx}`, `.*.rc.{ts,js,tsx,jsx}`, plus `drizzle.config.*` (examples: `vite.config.ts`, `tailwind.config.js`, `foo.rc.ts`, `.eslintrc.ts`; these mirror `TOOLING_CONFIG_PATTERNS` used by the automation)
 - Binary/media/archive assets
 - JSON files and lockfiles
 
