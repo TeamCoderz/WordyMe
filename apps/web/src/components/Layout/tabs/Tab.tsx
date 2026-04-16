@@ -4,7 +4,7 @@
  */
 
 import { cn } from '@repo/ui/lib/utils';
-import { DotIcon, XIcon, Loader2Icon, CheckCheckIcon, SaveIcon } from '@repo/ui/components/icons';
+import { DotIcon, XIcon, CheckCheckIcon, SaveIcon } from '@repo/ui/components/icons';
 import { Button } from '@repo/ui/components/button';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import type { Tab as TabType } from '@repo/types';
@@ -136,7 +136,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
           if (tab.isPreview) promoteTab(tab.id);
         }}
         className={cn(
-          'group group/tab relative flex h-full min-w-32 w-48 cursor-grab items-center gap-1.5 border-r border-b px-3 transition-colors bg-sidebar',
+          'group group/tab relative flex h-full min-w-32 w-48 cursor-pointer items-center gap-1.5 border-r border-b px-3 transition-colors bg-sidebar',
           'hover:bg-muted/50',
           isActive && 'bg-background border-b-0',
         )}
@@ -185,9 +185,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
             title={isEditTab && tab.isDirty ? 'Save' : 'Close'}
           >
             {isEditTab ? (
-              isSaving ? (
-                <Loader2Icon className="size-3 animate-spin" />
-              ) : isJustSaved ? (
+              isSaving || isJustSaved ? (
                 <CheckCheckIcon className="size-3 text-green-500" />
               ) : !tab.isDirty ? (
                 <XIcon className="size-3" />
