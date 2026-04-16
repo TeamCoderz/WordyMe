@@ -24,7 +24,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       modal={false}
       {...props}
     >
-      <SidebarHeader className="h-14 p-1 justify-center">
+      <SidebarHeader className="h-10 p-0! justify-center">
         <SpaceSwitcher />
       </SidebarHeader>
       <SidebarSeparator className="mx-0 h-[calc(var(--spacing)/4)]! bg-border" />
