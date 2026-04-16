@@ -193,7 +193,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
           <TabBarContextMenu pane={pane}>
             <div
               ref={setTabBarEndSlotRef}
-              className={cn('flex-1 z-50 border-l border-b border-l-transparent ', {
+              className={cn('flex-1 z-50 border-l border-b border-l-transparent', {
                 'border-l-primary': isOverTabBarEndSlot,
               })}
               aria-hidden
