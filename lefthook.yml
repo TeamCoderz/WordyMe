@@ -21,14 +21,10 @@ pre-commit:
   jobs:
     - name: spdx-fix
       run: pnpm license:fix {staged_files}
-      glob: "**/*.{ts,tsx,js,jsx}"
+      glob: '**/*.{ts,tsx,js,jsx}'
       stage_fixed: true
 
     - name: format
       run: pnpm format {staged_files}
-      glob: "**/*.{ts,tsx,js,jsx,json,md,yml,yaml}"
+      glob: '**/*.{ts,tsx,js,jsx,json,md,yml,yaml}'
       stage_fixed: true
-
-    - name: spdx-check
-      run: pnpm license:check {staged_files}
-      glob: "**/*.{ts,tsx,js,jsx}"
