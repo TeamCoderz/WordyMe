@@ -20,7 +20,7 @@
 pre-commit:
   jobs:
     - name: spdx-fix
-      run: pnpm license:fix:staged {staged_files}
+      run: pnpm license:fix {staged_files}
       glob: "**/*.{ts,tsx,js,jsx}"
       stage_fixed: true
 
@@ -30,5 +30,5 @@ pre-commit:
       stage_fixed: true
 
     - name: spdx-check
-      run: pnpm license:check:staged {staged_files}
+      run: pnpm license:check {staged_files}
       glob: "**/*.{ts,tsx,js,jsx}"

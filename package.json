@@ -9,8 +9,6 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "license:fix": "node scripts/spdx-license-cli.mjs add",
     "license:check": "node scripts/spdx-license-cli.mjs check",
-    "license:fix:staged": "node scripts/spdx-license-cli.mjs add",
-    "license:check:staged": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
     "start": "turbo start",
     "release": "release-it --ci --no-increment"

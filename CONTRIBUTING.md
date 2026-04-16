@@ -84,8 +84,8 @@ SPDX automation skips generated and non-meaningful targets, including:
 ### Manual commands
 
 ```bash
-pnpm license:fix       # add missing headers across tracked applicable files
-pnpm license:check     # check tracked applicable files and fail on missing headers
+pnpm license:fix       # add missing headers across tracked and untracked applicable files (full-repo mode uses git ls-files --cached --others --exclude-standard)
+pnpm license:check     # check tracked and untracked applicable files (full-repo mode uses git ls-files --cached --others --exclude-standard) and fail on missing headers
 ```
 
 ---

@@ -1,5 +1,8 @@
 #!/usr/bin/env node
-
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { resolve } from "node:path";
@@ -11,6 +14,12 @@ const mode = process.argv[2];
 const fileArgs = process.argv.slice(3);
 const SOURCE_ROOTS = ["apps/", "packages/"];
 const SOURCE_EXTENSIONS = [".ts", ".tsx", ".js", ".jsx"];
+const TOOLING_CONFIG_PATTERNS = [
+  /(?:^|\/)drizzle\.config\./,
+  /\.config\.(?:[jt]sx?)$/,
+  /\.rc\.(?:[jt]sx?)$/,
+  /(?:^|\/)\.[^/]+rc\.(?:[jt]sx?)$/,
+];
 
 if (mode !== "add" && mode !== "check") {
   console.error("Usage: node scripts/spdx-license-cli.mjs <add|check> [files...]");
@@ -42,6 +51,10 @@ function isInExcludedDirectory(filePath) {
   return EXCLUDED_DIRECTORIES.some((directory) => filePath.includes(directory));
 }
 
+function isToolingConfigFile(filePath) {
+  return TOOLING_CONFIG_PATTERNS.some((pattern) => pattern.test(filePath));
+}
+
 function isRelevantFile(filePath) {
   if (!filePath || filePath.endsWith("/")) {
     return false;
@@ -52,6 +65,10 @@ function isRelevantFile(filePath) {
   }
 
   if (filePath.endsWith(".d.ts") || filePath.endsWith(".gen.ts")) {
+    return false;
+  }
+
+  if (isToolingConfigFile(filePath)) {
     return false;
   }
 
