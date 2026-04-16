@@ -51,7 +51,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/pruned-backend .
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/drizzle ./drizzle
-COPY --from=builder /app/apps/backend/run-migrations.mjs ./run-migrations.mjs
+COPY --from=builder /app/apps/backend/src/scripts/run-migrations.mjs ./run-migrations.mjs
 
 RUN mkdir -p storage && chown -R nodejs:nodejs storage
 
