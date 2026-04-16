@@ -316,7 +316,7 @@ export function SpaceSwitcher() {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton
                     size="lg"
-                    className="bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent text-sidebar-accent-foreground overflow-hidden"
+                    className="bg-sidebar-accent/50 data-[state=open]:bg-sidebar-accent text-sidebar-accent-foreground overflow-hidden w-full h-10 py-0 rounded-none"
                   >
                     {isLoading ? (
                       <div className="flex items-center gap-2 w-full">
@@ -326,7 +326,7 @@ export function SpaceSwitcher() {
                     ) : activeSpace ? (
                       <>
                         {activeSpace.path && activeSpace.path.length > 0 ? (
-                          <div className="flex items-center gap-2 flex-1 text-foreground">
+                          <div className="flex items-center gap-2 flex-1 min-w-0 text-foreground">
                             <DynamicIcon
                               name={
                                 activeSpace.path[activeSpace.path.length - 1]?.icon ??
@@ -340,7 +340,7 @@ export function SpaceSwitcher() {
                                   // Show only the single path item
                                   <>
                                     <BreadcrumbItem>
-                                      <BreadcrumbPage className="text-xs font-medium truncate">
+                                      <BreadcrumbPage className="text-xs font-medium truncate text-foreground">
                                         {activeSpace.path[0].name}
                                       </BreadcrumbPage>
                                     </BreadcrumbItem>
@@ -352,17 +352,17 @@ export function SpaceSwitcher() {
                                       <React.Fragment key={pathSpace.id}>
                                         <BreadcrumbItem>
                                           {index === activeSpace.path.length - 1 ? (
-                                            <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
+                                            <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden text-foreground">
                                               {pathSpace.name}
                                             </BreadcrumbPage>
                                           ) : (
-                                            <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
+                                            <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden text-muted-foreground">
                                               {pathSpace.name}
                                             </BreadcrumbPage>
                                           )}
                                         </BreadcrumbItem>
                                         {index < activeSpace.path.length - 1 && (
-                                          <BreadcrumbSeparator className="text-foreground" />
+                                          <BreadcrumbSeparator className="text-muted-foreground" />
                                         )}
                                       </React.Fragment>
                                     ))}
@@ -371,17 +371,17 @@ export function SpaceSwitcher() {
                                   // Show first + ellipsis + last (3+ items)
                                   <>
                                     <BreadcrumbItem>
-                                      <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden">
+                                      <BreadcrumbPage className="text-xs truncate font-medium overflow-hidden text-muted-foreground">
                                         {activeSpace.path[0].name}
                                       </BreadcrumbPage>
                                     </BreadcrumbItem>
-                                    <BreadcrumbSeparator className="text-foreground" />
+                                    <BreadcrumbSeparator className="text-muted-foreground" />
                                     <BreadcrumbItem>
-                                      <BreadcrumbEllipsis className="text-xs overflow-hidden text-foreground" />
+                                      <BreadcrumbEllipsis className="text-xs overflow-hidden text-muted-foreground" />
                                     </BreadcrumbItem>
-                                    <BreadcrumbSeparator className="text-foreground" />
+                                    <BreadcrumbSeparator className="text-muted-foreground" />
                                     <BreadcrumbItem>
-                                      <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden">
+                                      <BreadcrumbPage className="text-xs font-medium truncate overflow-hidden text-foreground">
                                         {activeSpace.path[activeSpace.path.length - 1].name}
                                       </BreadcrumbPage>
                                     </BreadcrumbItem>
@@ -409,22 +409,30 @@ export function SpaceSwitcher() {
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
               </HoverCardTrigger>
-              {activeSpace && activeSpace.path && activeSpace.path.length > 2 && (
-                <HoverCardContent side="bottom" align="start" className="w-fit max-w-70 p-2">
+              {activeSpace && (
+                <HoverCardContent side="bottom" align="start" className="w-fit! max-w-70 p-2">
                   <Breadcrumb>
-                    <BreadcrumbList className="flex-wrap ">
-                      {activeSpace.path.map((pathSpace, index) => (
-                        <React.Fragment key={pathSpace.id}>
-                          <BreadcrumbItem>
-                            <BreadcrumbPage className="text-xs font-medium">
-                              {pathSpace.name}
-                            </BreadcrumbPage>
-                          </BreadcrumbItem>
-                          {index < activeSpace.path.length - 1 && (
-                            <BreadcrumbSeparator className="text-foreground [&>svg]:size-2.5" />
-                          )}
-                        </React.Fragment>
-                      ))}
+                    <BreadcrumbList className="flex-wrap">
+                      {activeSpace.path && activeSpace.path.length > 0 ? (
+                        activeSpace.path.map((pathSpace, index) => (
+                          <React.Fragment key={pathSpace.id}>
+                            <BreadcrumbItem>
+                              <BreadcrumbPage className="text-xs font-medium">
+                                {pathSpace.name}
+                              </BreadcrumbPage>
+                            </BreadcrumbItem>
+                            {index < activeSpace.path.length - 1 && (
+                              <BreadcrumbSeparator className="text-foreground [&>svg]:size-2.5" />
+                            )}
+                          </React.Fragment>
+                        ))
+                      ) : (
+                        <BreadcrumbItem>
+                          <BreadcrumbPage className="text-xs font-medium">
+                            {activeSpace.name}
+                          </BreadcrumbPage>
+                        </BreadcrumbItem>
+                      )}
                     </BreadcrumbList>
                   </Breadcrumb>
                 </HoverCardContent>
@@ -433,7 +441,7 @@ export function SpaceSwitcher() {
             <ContextMenu>
               <DropdownMenuContent
                 onCloseAutoFocus={(e) => e.preventDefault()}
-                className="w-[--radix-dropdown-menu-trigger-width] max-w-[280px] md:max-w-[360px] min-w-56 max-h-80 rounded-lg p-1 flex flex-col overflow-hidden"
+                className="w-[--radix-dropdown-menu-trigger-width] max-w-70 md:max-w-90 min-w-56 max-h-80 rounded-lg p-1 flex flex-col overflow-hidden"
                 align="start"
                 side={isMobile ? 'bottom' : 'right'}
                 sideOffset={4}

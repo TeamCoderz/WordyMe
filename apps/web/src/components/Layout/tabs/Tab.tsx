@@ -136,8 +136,9 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
           if (tab.isPreview) promoteTab(tab.id);
         }}
         className={cn(
-          'group group/tab relative flex h-full min-w-32 w-48 cursor-grab items-center gap-1.5 border-r px-3 transition-colors',
+          'group group/tab relative flex h-full min-w-32 w-48 cursor-grab items-center gap-1.5 border-r border-b px-3 transition-colors bg-sidebar',
           'hover:bg-muted/50',
+          isActive && 'bg-background border-b-0',
         )}
         {...attributes}
         {...listeners}
@@ -147,7 +148,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
       >
         <TabDropSlot pane={pane} index={index} />
         {/* Tab icon */}
-        <span className="shrink-0 text-muted-foreground">
+        <span className={cn('shrink-0 text-muted-foreground', isActiveTab && 'text-foreground')}>
           <TabIcon name={icon ?? undefined} />
         </span>
 
@@ -227,7 +228,7 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
         {isActive && (
           <span
             className={cn(
-              'absolute bottom-0 left-0 right-0 h-0.5',
+              'absolute top-0 left-0 right-0 h-0.5',
               pane === activePane ? 'bg-primary' : 'bg-primary/20',
             )}
           />

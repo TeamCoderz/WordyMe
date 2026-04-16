@@ -159,7 +159,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
   return (
     <div
       className={cn(
-        'flex h-14 justify-between items-center border-b select-none overflow-hidden',
+        'flex h-10 justify-between items-center select-none overflow-x-hidden bg-sidebar',
         className,
       )}
     >
@@ -170,7 +170,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
       >
         <div
           data-pane-tabbar={pane}
-          className="relative flex w-full h-14"
+          className="relative flex w-full h-10"
           role="tablist"
           aria-label={`${pane} pane tabs`}
           {...dropHandlers}
@@ -193,7 +193,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
           <TabBarContextMenu pane={pane}>
             <div
               ref={setTabBarEndSlotRef}
-              className={cn('flex-1 -translate-x-px z-50 border-l border-transparent', {
+              className={cn('flex-1 z-50 border-l border-b border-l-transparent ', {
                 'border-l-primary': isOverTabBarEndSlot,
               })}
               aria-hidden
@@ -201,7 +201,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
           </TabBarContextMenu>
         </div>
       </ScrollArea>
-      <div className="flex items-center gap-2 px-2 justify-center min-w-14 h-full border-l">
+      <div className="flex items-center gap-2 px-2 justify-center min-w-14 h-full border-l border-b ">
         <Tooltip>
           <TooltipTrigger asChild>
             {pane === 'primary' ? (
