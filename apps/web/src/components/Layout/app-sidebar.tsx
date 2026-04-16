@@ -25,6 +25,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       {...props}
     >
       <SidebarHeader className="h-10 p-0! justify-center">
+        {/* Absorbs auto-focus when the mobile sheet opens, preventing HoverCard trigger */}
+        <span tabIndex={0} aria-hidden className="sr-only" />
         <SpaceSwitcher />
       </SidebarHeader>
       <SidebarSeparator className="mx-0 h-[calc(var(--spacing)/4)]! bg-border" />
