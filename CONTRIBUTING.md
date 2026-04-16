@@ -50,13 +50,42 @@ Note: For large contributions, our automated assistant will prompt you to digita
 
 ## Legal Headers (SPDX)
 
-To ensure the license stays with the code, every new source file must include this 4-line header at the very top:
+To ensure the license stays with the code, applicable files are now handled automatically.
+
+The canonical SPDX header is:
 
 ```bash
 /**
  * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
+```
+
+### Automated workflow
+
+- Pre-commit runs SPDX automation on staged files and re-stages changes automatically.
+- CI runs a repository-wide SPDX check, so bypassed hooks are still caught.
+- Existing compliant files are left unchanged.
+
+### Coverage and exclusions
+
+SPDX automation currently targets:
+
+- Source files under `apps/**/src` and `packages/**/src` with extensions `ts`, `tsx`, `js`, `jsx`
+
+SPDX automation skips generated and non-meaningful targets, including:
+
+- `*.gen.ts`, `node_modules`, `dist`, `.turbo`, `coverage`
+- Type declaration files (`*.d.ts`)
+- `*.mjs`, `*.cjs`, and tooling/config filename patterns: `*.config.{ts,js,tsx,jsx}`, `*.rc.{ts,js,tsx,jsx}`, `.*.rc.{ts,js,tsx,jsx}`, plus `drizzle.config.*` (examples: `vite.config.ts`, `tailwind.config.js`, `foo.rc.ts`, `.eslintrc.ts`; these mirror `TOOLING_CONFIG_PATTERNS` used by the automation)
+- Binary/media/archive assets
+- JSON files and lockfiles
+
+### Manual commands
+
+```bash
+pnpm license:fix       # add missing headers across tracked and untracked applicable files (full-repo mode uses git ls-files --cached --others --exclude-standard)
+pnpm license:check     # check tracked and untracked applicable files (full-repo mode uses git ls-files --cached --others --exclude-standard) and fail on missing headers
 ```
 
 ---
