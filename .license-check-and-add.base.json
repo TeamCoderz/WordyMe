@@ -1,0 +1,30 @@
+{
+  "license": ".license-header.txt",
+  "ignoreFile": ".gitignore",
+  "trailingWhitespace": "TRIM",
+  "defaultFormat": {
+    "prepend": "/**",
+    "append": " */",
+    "eachLine": {
+      "prepend": " * "
+    }
+  },
+  "licenseFormats": {
+    "js|jsx|ts|tsx": {
+      "prepend": "/**",
+      "append": " */",
+      "eachLine": {
+        "prepend": " * "
+      }
+    },
+    "md": {
+      "prepend": "<!--",
+      "append": "-->"
+    },
+    "yml|yaml": {
+      "eachLine": {
+        "prepend": "# "
+      }
+    }
+  }
+}

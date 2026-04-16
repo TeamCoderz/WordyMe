@@ -7,6 +7,10 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "license:fix": "node scripts/spdx-license-cli.mjs add",
+    "license:check": "node scripts/spdx-license-cli.mjs check",
+    "license:fix:staged": "node scripts/spdx-license-cli.mjs add",
+    "license:check:staged": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
     "start": "turbo start",
     "release": "release-it --ci --no-increment"
@@ -14,6 +18,7 @@
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.6",
     "lefthook": "^2.1.4",
+    "license-check-and-add": "^4.0.5",
     "prettier": "^3.8.1",
     "release-it": "^19.2.4",
     "turbo": "^2.9.3",

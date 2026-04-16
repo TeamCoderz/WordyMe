@@ -1,3 +1,7 @@
+/**
+ * SPDX-FileCopyrightText: 2026 TeamCoderz Ltd <legal@teamcoderz.org>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ */
 import { keepPreviousData, skipToken, useQuery } from '@tanstack/react-query';
 import type { Tab, TabMetadata } from '@repo/types';
 import { useEffect } from 'react';
