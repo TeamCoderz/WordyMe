@@ -182,10 +182,12 @@ export const Tab = ({ tab, isActive, pane, index }: TabProps) => {
                 void confirmAndClose();
               }
             }}
-            title={isEditTab && tab.isDirty ? 'Save' : 'Close'}
+            title={isSaving ? 'Saving' : isEditTab && tab.isDirty ? 'Save' : 'Close'}
           >
             {isEditTab ? (
-              isSaving || isJustSaved ? (
+              isSaving ? (
+                <CheckCheckIcon className="size-3 text-muted-foreground" />
+              ) : isJustSaved ? (
                 <CheckCheckIcon className="size-3 text-green-500" />
               ) : !tab.isDirty ? (
                 <XIcon className="size-3" />

@@ -142,6 +142,8 @@ export const createTabsSlice: StateCreator<
                       search: input.search,
                       hash: input.hash,
                       isDirty: false,
+                      isSaving: false,
+                      isJustSaved: false,
                       isPreview: true,
                     }
                   : t,

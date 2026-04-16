@@ -63,24 +63,20 @@ export function useDocumentActions(
     !revisions?.length ||
     (isPreviouslySaved && cloudRevision.documentId !== document.id);
 
-  const [localIsSaving, setLocalIsSaving] = useState(false);
-  const [localIsJustSaved, setLocalIsJustSaved] = useState(false);
   const tab = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId));
   const isViewTab = tab && tab.pathname.startsWith('/view/');
   const isEditTab = tab && tab.pathname.startsWith('/edit/');
   const isDocumentTab = isEditTab || isViewTab;
   const { setTabDirty, setTabSaving, setTabJustSaved } = useActions();
 
-  const isSaving = tabId ? !!tab?.isSaving : localIsSaving;
-  const isJustSaved = tabId ? !!tab?.isJustSaved : localIsJustSaved;
+  const isSaving = !!tab?.isSaving;
+  const isJustSaved = !!tab?.isJustSaved;
 
   const setIsSaving = (v: boolean) => {
     if (tabId) setTabSaving(tabId, v);
-    else setLocalIsSaving(v);
   };
   const setIsJustSaved = (v: boolean) => {
     if (tabId) setTabJustSaved(tabId, v);
-    else setLocalIsJustSaved(v);
   };
 
   const isDisabled = isLoading || isSaving || isJustSaved || isUpToDate;
