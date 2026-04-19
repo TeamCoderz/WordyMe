@@ -3,13 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { ListDocumentResult } from '@/queries/documents';
-
-// Simplified type alias for document data
-export type DocumentData = ListDocumentResult[number];
+import type { ListDocumentRow } from '@repo/types';
 
 export interface DocumentItemProps {
-  document: DocumentData;
+  document: ListDocumentRow;
   children?: DocumentItemProps[];
   isActive: boolean;
   isExpanded: boolean;
@@ -23,7 +20,7 @@ export interface DocumentItemProps {
 }
 
 export interface DocumentContextMenuProps {
-  document: DocumentData;
+  document: ListDocumentRow;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
   onChangeIcon: () => void;
@@ -44,6 +41,6 @@ export interface DocumentContextMenuProps {
 
 // Type for the tree node structure
 export interface TreeNode {
-  data: DocumentData;
+  data: ListDocumentRow;
   children: TreeNode[];
 }

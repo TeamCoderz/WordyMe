@@ -26,15 +26,16 @@ import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { format, differenceInSeconds, formatDistanceToNowStrict } from 'date-fns';
 import { useEffect, useRef, useState } from 'react';
 import { alert } from '../Layout/alert';
-import { ListSpaceResult, useDeleteSpaceMutation } from '@/queries/spaces';
+import type { Document } from '@repo/types';
+import { useDeleteSpaceMutation } from '@/queries/spaces';
 import { useActions } from '@/store';
 
 interface SpaceRowProps {
-  space: ListSpaceResult[number];
+  space: Document;
   isRemoving: boolean;
   pendingRemoveId: string | null;
   onRemove: (spaceId: string) => Promise<void>;
-  onRename: (space: any) => void;
+  onRename: (space: Document) => void;
   onUpdateSpaceName: (spaceId: string, newName: string) => Promise<void>;
   onUpdateSpaceIcon: (spaceId: string, newIcon: string) => Promise<void>;
   openDropdownId: string | null;
@@ -61,7 +62,7 @@ export function SpaceRow({
   const { setActiveSpaceBySpaceId } = useActions();
   const deleteSpaceMutation = useDeleteSpaceMutation({ space });
 
-  const handleRename = (space: any) => {
+  const handleRename = (space: Document) => {
     onRename(space);
     setRenameValue(space.name);
     setOpenDropdownId(null);
@@ -75,7 +76,7 @@ export function SpaceRow({
         await onUpdateSpaceName(spaceId, renameValue.trim());
         setRenameValue('');
       }
-    } catch (error) {
+    } catch {
       // Error handling is done in the parent component
     } finally {
       isSubmittingRef.current = false;
@@ -96,7 +97,7 @@ export function SpaceRow({
     try {
       await onUpdateSpaceIcon(spaceId, newIcon);
       setIsIconPickerOpen(false);
-    } catch (error) {
+    } catch {
       // Error handling is done in the parent component
     }
   };
@@ -128,7 +129,7 @@ export function SpaceRow({
       onConfirm: async () => {
         try {
           await deleteSpaceMutation.mutateAsync({ spaceId: space.id });
-        } catch (error) {
+        } catch {
           // Error handling is done in the mutation
         }
       },
@@ -139,7 +140,6 @@ export function SpaceRow({
   // Update renameValue when renamingSpaceId changes
   useEffect(() => {
     if (renamingSpaceId === space.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRenameValue(space.name);
     }
   }, [renamingSpaceId, space.id, space.name]);

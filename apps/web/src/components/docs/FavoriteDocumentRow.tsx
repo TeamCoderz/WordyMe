@@ -24,22 +24,23 @@ import {
 } from '@repo/ui/components/icons';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { format, differenceInSeconds, formatDistanceToNowStrict } from 'date-fns';
+import type { ListDocumentRow, ListDocumentRenameSignal } from '@repo/types';
 import {
-  ListDocumentResult,
   useRenameDocumentMutation,
   useUpdateDocumentIconMutation,
   useDeleteDocumentMutation,
+  type DocumentFavoriteCacheTarget,
 } from '../../queries/documents';
 import { useEffect, useRef, useState } from 'react';
 import { alert } from '../Layout/alert';
 import { Link } from '@tanstack/react-router';
 
 interface FavoriteDocumentRowProps {
-  document: ListDocumentResult[number];
+  document: ListDocumentRow;
   isRemoving: boolean;
   pendingRemoveId: string | null;
-  onRemove: (documentId: string) => Promise<void>;
-  onRename: (document: any) => void;
+  onRemove: (target: DocumentFavoriteCacheTarget) => Promise<void>;
+  onRename: (document: ListDocumentRenameSignal) => void;
   openDropdownId: string | null;
   setOpenDropdownId: (id: string | null) => void;
   renamingDocumentId: string | null;
@@ -66,9 +67,11 @@ export function FavoriteDocumentRow({
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({ document });
   const { mutate: deleteDocument, isPending: isDeleting } = useDeleteDocumentMutation({ document });
 
-  const handleRename = (document: any) => {
+  const handleRename = (document: ListDocumentRenameSignal) => {
     onRename(document);
-    setRenameValue(document.name);
+    if (document.id !== null) {
+      setRenameValue(document.name);
+    }
     setOpenDropdownId(null);
   };
 
@@ -81,7 +84,7 @@ export function FavoriteDocumentRow({
         setRenameValue('');
         onRename({ id: null }); // This will set renamingDocumentId to null in parent
       }
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation
     } finally {
       isSubmittingRef.current = false;
@@ -103,7 +106,7 @@ export function FavoriteDocumentRow({
     try {
       await updateDocumentIcon(documentId, newIcon);
       setIsIconPickerOpen(false);
-    } catch (error) {
+    } catch {
       // Error handling is done in the mutation
     }
   };
@@ -133,7 +136,10 @@ export function FavoriteDocumentRow({
       confirmText: 'Remove',
       cancelText: 'Cancel',
       onConfirm: () => {
-        onRemove(document.id);
+        onRemove({
+          documentId: document.id,
+          spaceId: document.spaceId ?? '',
+        });
       },
       buttonVariant: 'destructive',
     });
@@ -142,7 +148,6 @@ export function FavoriteDocumentRow({
   // Update renameValue when renamingDocumentId changes
   useEffect(() => {
     if (renamingDocumentId === document.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRenameValue(document.name);
     }
   }, [renamingDocumentId, document.id, document.name]);
@@ -228,7 +233,7 @@ export function FavoriteDocumentRow({
             ) : (
               <Link
                 to="/view/$handle"
-                params={{ handle: (document as any).handle ?? document.id }}
+                params={{ handle: document.handle ?? document.id }}
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
@@ -277,7 +282,14 @@ export function FavoriteDocumentRow({
                   Change Icon
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onRemove(document.id)}>
+                <DropdownMenuItem
+                  onClick={() =>
+                    onRemove({
+                      documentId: document.id,
+                      spaceId: document.spaceId ?? '',
+                    })
+                  }
+                >
                   <StarOff className="mr-2 h-4 w-4" />
                   Remove from Favorites
                 </DropdownMenuItem>

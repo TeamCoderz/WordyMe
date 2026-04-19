@@ -16,12 +16,12 @@ import {
 } from '@repo/ui/components/context-menu';
 import { FolderPlus, Clipboard, FolderInput, BriefcaseMedical } from '@repo/ui/components/icons';
 import { useSelector } from '@/store';
+import type { DocumentList } from '@repo/types';
 import {
   useCopySpaceMutation,
   useMoveSpaceMutation,
   useImportSpaceMutation,
   getAllSpacesQueryOptions,
-  ListSpaceResult,
 } from '@/queries/spaces';
 import { useQueryClient } from '@tanstack/react-query';
 import { sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
@@ -33,7 +33,7 @@ export const ManageSpacesTable = React.forwardRef<
   },
   {
     rootSpaceId?: string;
-    spaces?: ListSpaceResult;
+    spaces?: DocumentList;
     onInsertPlaceholder?: (params: {
       parentId: string | null;
       type: 'space' | 'folder';
@@ -99,7 +99,7 @@ export const ManageSpacesTable = React.forwardRef<
     // Get current spaces to calculate position at the end
     const currentSpaces = queryClient.getQueryData(
       getAllSpacesQueryOptions.queryKey,
-    ) as ListSpaceResult;
+    ) as DocumentList;
 
     // Get root-level spaces (those with parentId = null)
     const rootSpaces = currentSpaces?.filter((s) => s.parentId === null) || [];

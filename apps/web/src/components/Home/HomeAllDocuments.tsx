@@ -4,8 +4,13 @@
  */
 
 import { DocumentRow } from '@/components/docs/DocumentRow';
-import { getHomeAllDocumentsQueryOptions, useDocumentFavoritesMutation } from '@/queries/documents';
-import { SortOptions } from '@/types/sort';
+import {
+  getHomeAllDocumentsQueryOptions,
+  useDocumentFavoritesMutation,
+  type DocumentFavoriteCacheTarget,
+} from '@/queries/documents';
+import type { ListDocumentRenameSignal } from '@repo/types';
+import type { SortOptions } from '@/types';
 import {
   Select,
   SelectContent,
@@ -35,23 +40,21 @@ export const HomeAllDocuments = ({
   setAllDocumentsSort,
 }: HomeAllDocumentsProps) => {
   const { data, isLoading } = useQuery(getHomeAllDocumentsQueryOptions(allDocumentsSort));
-  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation({
-    document: data?.[0] || ({} as any),
-  });
+  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation();
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingDocumentId, setRenamingDocumentId] = useState<string | null>(null);
 
-  const handleRemove = async (documentId: string) => {
+  const handleRemove = async (target: DocumentFavoriteCacheTarget) => {
     try {
-      setPendingRemoveId(documentId);
-      await removeDocumentFromFavorites(documentId);
+      setPendingRemoveId(target.documentId);
+      await removeDocumentFromFavorites(target);
     } finally {
       setPendingRemoveId(null);
     }
   };
 
-  const handleRename = (document: any) => {
+  const handleRename = (document: ListDocumentRenameSignal) => {
     if (document.id === null) {
       setRenamingDocumentId(null);
     } else {

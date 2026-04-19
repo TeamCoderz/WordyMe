@@ -5,7 +5,8 @@
 
 import { RouterProvider, createRouter } from '@tanstack/react-router';
 import { ThemeProvider } from '@repo/ui/theme/theme-provider';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/queries/query-client';
 // Import the generated route tree
 import { routeTree } from './routeTree.gen';
 import { authClient } from '@repo/sdk/auth';
@@ -18,15 +19,6 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import './App.css';
-
-// Create a new router instance
-export const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 15 * 60 * 1000,
-    },
-  },
-});
 
 const router = createRouter({
   routeTree,
@@ -48,8 +40,6 @@ declare module '@tanstack/react-router' {
     router: typeof router;
   }
 }
-
-// eslint-disable-next-line react-refresh/only-export-components
 
 export const App = () => {
   const { data: session, isPending, isRefetching } = authClient.useSession();

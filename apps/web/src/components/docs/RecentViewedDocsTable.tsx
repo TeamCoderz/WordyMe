@@ -24,10 +24,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route } from '@/routes/_authed/docs/recent-viewed';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
-import { getRecentViewedDocumentsQueryOptions } from '@/queries/documents';
+import {
+  getRecentViewedDocumentsQueryOptions,
+  useDocumentFavoritesMutation,
+  type DocumentFavoriteCacheTarget,
+} from '@/queries/documents';
 import { FavoriteDocumentRow } from './FavoriteDocumentRow';
-import { useDocumentFavoritesMutation } from '@/queries/documents';
 import { useState } from 'react';
+import { ListDocumentRenameSignal } from '@repo/types';
 
 export function RecentViewedDocsTable() {
   const searchParams = Route.useSearch();
@@ -37,22 +41,20 @@ export function RecentViewedDocsTable() {
   const paginationMeta = query.data?.meta ?? {
     total: 0,
     page: 1,
-    last_page: 1,
+    totalPages: 1,
     limit: 10,
   };
   const queryClient = useQueryClient();
-  const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.total ?? 1;
+  const currentPage = paginationMeta?.page;
+  const lastPage = paginationMeta?.totalPages;
   const visualLastPage = Math.max(lastPage, 1);
-  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation({
-    document: documents[0] || ({} as any),
-  });
+  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation();
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingDocumentId, setRenamingDocumentId] = useState<string | null>(null);
 
   useEffect(() => {
-    const page = searchParams.page ?? 1;
+    const page = searchParams.page;
     if (page > 1) {
       queryClient.prefetchQuery(
         getRecentViewedDocumentsQueryOptions({
@@ -78,16 +80,16 @@ export function RecentViewedDocsTable() {
     }
   }, [documents?.length, currentPage, lastPage, navigate, searchParams]);
 
-  const handleRemove = async (documentId: string) => {
+  const handleRemove = async (target: DocumentFavoriteCacheTarget) => {
     try {
-      setPendingRemoveId(documentId);
-      await removeDocumentFromFavorites(documentId);
+      setPendingRemoveId(target.documentId);
+      await removeDocumentFromFavorites(target);
     } finally {
       setPendingRemoveId(null);
     }
   };
 
-  const handleRename = (document: any) => {
+  const handleRename = (document: ListDocumentRenameSignal) => {
     if (document.id === null) {
       setRenamingDocumentId(null);
     } else {
@@ -197,7 +199,7 @@ export function RecentViewedDocsTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              documents?.map((doc: any) => (
+              documents?.map((doc) => (
                 <FavoriteDocumentRow
                   key={doc.id}
                   document={doc}

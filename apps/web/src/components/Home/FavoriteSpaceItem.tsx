@@ -8,13 +8,10 @@ import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { Star } from '@repo/ui/components/icons';
 import { useSpaceFavoritesMutation } from '@/queries/spaces';
 import { useActions } from '@/store';
+import type { Document } from '@repo/types';
 
 interface FavoriteSpaceItemProps {
-  space: {
-    id: string;
-    name: string;
-    icon: string | null;
-  };
+  space: Pick<Document, 'id' | 'name' | 'icon'>;
 }
 
 export function FavoriteSpaceItem({ space }: FavoriteSpaceItemProps) {

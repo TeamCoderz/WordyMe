@@ -10,7 +10,8 @@ import { ManageDocumentsTopbar } from '@/components/documents/manage/Topbar';
 import { ManageDocumentsTable } from '@/components/documents/manage/Table';
 import { useQuery } from '@tanstack/react-query';
 import { useSelector } from '@/store';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
+import type { ListDocumentRow } from '@repo/types';
+import { getAllDocumentsQueryOptions } from '@/queries/documents';
 import { toast } from 'sonner';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { v4 as uuidv4 } from 'uuid';
@@ -37,7 +38,7 @@ function ManageDocumentsPage() {
     enabled: !!spaceID,
   });
 
-  const [placeholder, setPlaceholder] = React.useState<ListDocumentResult[number] | null>(null);
+  const [placeholder, setPlaceholder] = React.useState<ListDocumentRow | null>(null);
 
   // Merge placeholder with documents data
   const documentsWithPlaceholder = React.useMemo(() => {
@@ -65,12 +66,12 @@ function ManageDocumentsPage() {
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
       const clientId = uuidv4();
-      const newPlaceholder: ListDocumentResult[number] = {
+      const newPlaceholder: ListDocumentRow = {
         id: 'new-doc',
-        clientId: clientId as any,
+        clientId,
         name: params.name?.trim() || (params.type === 'folder' ? 'New Folder' : 'New Document'),
         handle: 'new-doc',
-        icon: params.type === 'folder' ? ('folder' as any) : ('file' as any),
+        icon: params.type === 'folder' ? 'folder' : 'file',
         position,
         parentId: resolvedParentId,
         spaceId: spaceID,
@@ -79,7 +80,7 @@ function ManageDocumentsPage() {
         isContainer: params.type === 'folder',
         updatedAt: new Date(),
         lastViewedAt: null,
-        documentType: params.type === 'folder' ? ('folder' as any) : ('note' as any),
+        documentType: params.type === 'folder' ? 'folder' : 'note',
         from: 'manage',
         userId: '',
         currentRevisionId: null,
@@ -96,7 +97,7 @@ function ManageDocumentsPage() {
 
   const effectiveRootId = React.useMemo(() => {
     if (!rootDocumentId || !Array.isArray(documentsWithPlaceholder)) return rootDocumentId;
-    const byId = new Map((documentsWithPlaceholder as any[]).map((d) => [d.id, d] as const));
+    const byId = new Map(documentsWithPlaceholder.map((d) => [d.id, d]));
     let current = byId.get(rootDocumentId);
     if (!current) return rootDocumentId;
     // If selected is not a container, climb to nearest ancestor container
@@ -132,7 +133,7 @@ function ManageDocumentsPage() {
   React.useEffect(() => {
     if (isLoading) return;
     if (!rootDocumentId) return;
-    const documents = (documentsWithPlaceholder as any[]) ?? [];
+    const documents = documentsWithPlaceholder ?? [];
     const exists = documents.some((d) => d.id === rootDocumentId);
     if (!exists) {
       navigate({ to: '/docs/manage', search: {}, replace: true });

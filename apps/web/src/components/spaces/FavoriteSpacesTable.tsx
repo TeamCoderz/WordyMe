@@ -32,16 +32,17 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { getFavoriteSpacesQueryOptions } from '../../queries/spaces';
 import { SpaceRow } from './SpaceRow';
+import type { Document } from '@repo/types';
 
 export function FavoriteSpacesTable() {
   const searchParams = Route.useSearch();
   const navigate = useNavigate();
   const query = useQuery(getFavoriteSpacesQueryOptions(searchParams));
-  const spaces = query.data?.items ?? [];
+  const spaces = (query.data?.items ?? []) as Document[];
   const paginationMeta = query.data?.meta ?? {
     total: 0,
     page: 1,
-    last_page: 1,
+    totalPages: 1,
     limit: 10,
   };
   const { removeFromFavorites, isRemoving } = useSpaceFavoritesMutation();
@@ -50,8 +51,8 @@ export function FavoriteSpacesTable() {
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingSpaceId, setRenamingSpaceId] = useState<string | null>(null);
-  const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.total ?? 1;
+  const currentPage = paginationMeta?.page;
+  const lastPage = paginationMeta?.totalPages;
   const visualLastPage = Math.max(lastPage, 1);
   const queryClient = useQueryClient();
   const handleRemove = async (spaceId: string) => {
@@ -63,7 +64,7 @@ export function FavoriteSpacesTable() {
     }
   };
 
-  const handleRename = (space: any) => {
+  const handleRename = (space: Document) => {
     setRenamingSpaceId(space.id);
     setOpenDropdownId(null);
   };
@@ -72,7 +73,7 @@ export function FavoriteSpacesTable() {
     try {
       await updateSpaceName(spaceId, newName);
       setRenamingSpaceId(null);
-    } catch (error) {
+    } catch {
       toast.error('Failed to rename space');
     }
   };
@@ -80,12 +81,13 @@ export function FavoriteSpacesTable() {
   const handleUpdateSpaceIcon = async (spaceId: string, newIcon: string) => {
     try {
       await updateSpaceIcon(spaceId, newIcon);
-    } catch (error) {
+    } catch {
       toast.error('Failed to update space icon');
     }
   };
   useEffect(() => {
-    const page = searchParams.page ?? 1;
+    const page = searchParams.page;
+    if (!page || !lastPage) return;
     if (page > 1) {
       queryClient.prefetchQuery(
         getFavoriteSpacesQueryOptions({

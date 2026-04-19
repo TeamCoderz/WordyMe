@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import type { Space } from '@repo/types';
+import type { Document } from '@repo/types';
 
-export function calculateSpacePath(spaceId: string, allSpaces: Space[]): Space[] {
-  const path: Space[] = [];
+export function calculateSpacePath(spaceId: string, allSpaces: readonly Document[]): Document[] {
+  const path: Document[] = [];
   let currentSpaceId = spaceId;
 
   while (currentSpaceId) {

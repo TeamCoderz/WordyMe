@@ -3,24 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { User } from './user';
-export interface EditorRevision {
-  id: string;
-  createdAt: string;
-  updatedAt: string;
-  documentId: string;
-  userId: string;
-  revisionName: string | null;
-  text: string;
-  checksum: string | null;
-  url: string;
-  content: string;
-}
+import type { PlainRevision, RevisionDetails } from '@repo/backend/revisions.js';
 
-export type Revision = Omit<EditorRevision, 'content'> & { author: User };
+import type { User } from './user';
+import { Pretty } from './utils/pretty';
 
-export type RevisionCreateInput = Omit<EditorRevision, 'author'>;
+/** Full revision including stored content (matches `revisionDetailsSchema` / rich fetch). */
+export type EditorRevision = RevisionDetails;
 
-export type RevisionUpdateInput = Partial<{
-  name: string | null;
-}>;
+/**
+ * Revision as returned in document-centric lists where the API joins author metadata.
+ * Base shape is inferred from the backend revision row schema; `author` is composed with `User`.
+ */
+export type Revision = Pretty<PlainRevision & { author: User }>;

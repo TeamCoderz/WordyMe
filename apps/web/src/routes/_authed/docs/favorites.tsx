@@ -9,9 +9,9 @@ import { FavoriteDocsTopbar } from '../../../components/docs/FavoriteDocsTopbar'
 import { FavoriteDocsTable } from '../../../components/docs/FavoriteDocsTable';
 
 const validateSearch = z.object({
-  search: z.string().optional(),
+  search: z.string().optional().catch(''),
   sort: z.enum(['a-z', 'z-a', 'newest', 'lastViewed']).optional(),
-  page: z.number().optional(),
+  page: z.coerce.number().min(1).default(1).catch(1),
 });
 
 export const Route = createFileRoute('/_authed/docs/favorites')({

@@ -16,6 +16,10 @@ export default function AvatarControls() {
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL;
+  const avatarUrl =
+    backendUrl && user?.avatar_image?.url ? `${backendUrl}/${user.avatar_image.url}` : null;
+
   return (
     <div className="@container/avatar-controls">
       <div className="flex items-center gap-6 -mt-6 px-8 max-w-7xl mx-auto relative z-10">
@@ -30,9 +34,7 @@ export default function AvatarControls() {
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent>
             <AvatarCropper
-              image={
-                `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user?.avatar_image?.url ?? ''}` || null
-              }
+              image={avatarUrl}
               isNewUpload={false}
               onClose={() => setEditOpen(false)}
             />

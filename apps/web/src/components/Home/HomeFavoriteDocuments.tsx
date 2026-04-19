@@ -5,7 +5,7 @@
 
 import { FavoriteDocumentItem } from '@/components/Home/FavoriteDocumentItem';
 import { getHomeFavoriteDocumentsQueryOptions } from '@/queries/documents';
-import { SortOptions } from '@/types/sort';
+import type { SortOptions } from '@/types';
 import { Button } from '@repo/ui/components/button';
 import {
   Select,

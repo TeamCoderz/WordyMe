@@ -3,36 +3,53 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { EditorRevision } from './revisions';
+import type {
+  CreateDocumentInput,
+  CreateDocumentWithRevisionInput,
+  DocumentDetails,
+  DocumentFilters,
+  DocumentIdentifier,
+  DocumentListItem,
+  PlainDocument,
+  SearchDocumentResult,
+  UpdateDocumentInput,
+} from '@repo/backend/documents.js';
+import { Pretty } from './utils/pretty';
 
-export interface EditorDocument {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  name: string;
-  handle: string;
-  icon: string | null;
-  position: string | null;
-  currentRevisionId: string | null;
-  userId: string;
-  parentId: string | null;
-  documentType: 'space' | 'folder' | 'note';
-  spaceId: string | null;
-  isContainer: boolean;
-  clientId: string | null;
-  isFavorite: boolean;
-  lastViewedAt: Date | null;
-  revision: EditorRevision;
-}
+export type {
+  CreateDocumentInput,
+  CreateDocumentWithRevisionInput,
+  DocumentDetails,
+  DocumentFilters,
+  DocumentIdentifier,
+  DocumentListItem,
+  PlainDocument,
+  SearchDocumentResult,
+  UpdateDocumentInput,
+};
 
-export type Document = Omit<EditorDocument, 'revision'>;
+export type Document = DocumentListItem;
 
-export type DocumentCreateInput = Omit<EditorDocument, 'author' | 'revision'>;
-
-export type DocumentUpdateInput = Partial<Omit<EditorDocument, 'author' | 'revision'>>;
+export type EditorDocument = DocumentDetails;
 
 export interface DocumentStorageUsage {
   id: string;
   name: string;
   size: number;
 }
+
+export type ListDocumentRow = Pretty<
+  DocumentListItem & {
+    from?: 'sidebar' | 'manage';
+  }
+>;
+
+export type DocumentList = ListDocumentRow[];
+
+export type ListDocumentRenameSignal = ListDocumentRow | { id: null };
+
+export type ListDocumentParentRef = Pick<DocumentListItem, 'spaceId'>;
+
+export type ListDocumentOrParentRef = ListDocumentRow | ListDocumentParentRef;
+
+export type DocumentType = DocumentListItem['documentType'];

@@ -5,10 +5,10 @@
 
 import { StateCreator } from 'zustand/vanilla';
 import type { Store } from './store';
-import { TopBarFormValues } from '@/schemas/top-bar-form.schema';
+import type { TopBarFormValues } from '@/schemas/top-bar-form.schema';
 
 export type AppState = {
-  topBarSettings: any; // TODO: Add proper type
+  topBarSettings: TopBarFormValues | null;
   instanceSettings: TopBarFormValues | null;
   version: string | null;
   deployment_id: string | null;

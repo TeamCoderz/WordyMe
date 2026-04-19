@@ -6,7 +6,6 @@
 import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { useActions, useSelector } from '@/store';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
-import { Space } from '@repo/types';
 import { Button } from '@repo/ui/components/button';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -209,7 +208,7 @@ function ActiveSpaceLoader() {
     if (!isLoading && spaces) {
       const freshActiveSpace = spaces?.find((space) => space.id === activeSpace?.id);
       if (freshActiveSpace && Boolean(freshActiveSpace.isContainer) == false) {
-        const path = calculateSpacePath(freshActiveSpace.id, spaces as Space[]);
+        const path = calculateSpacePath(freshActiveSpace.id, spaces);
         setActiveSpace({
           ...freshActiveSpace,
           icon: freshActiveSpace.icon || 'briefcase',
@@ -218,7 +217,7 @@ function ActiveSpaceLoader() {
       } else {
         const space = spaces.find((s) => Boolean(s.isContainer) == false);
         if (!space) return;
-        const path = calculateSpacePath(space.id, spaces as Space[]);
+        const path = calculateSpacePath(space.id, spaces);
         setActiveSpace({
           ...space,
           icon: space.icon || 'briefcase',
@@ -234,7 +233,7 @@ function ActiveSpaceLoader() {
         if (activeSpaceFullData && activeSpaceFullData.isContainer) {
           const space = spaces.find((s) => Boolean(s.isContainer) == false);
           if (!space) return;
-          const path = calculateSpacePath(space.id, spaces as Space[]);
+          const path = calculateSpacePath(space.id, spaces);
           setActiveSpace({
             ...space,
             icon: space.icon || 'briefcase',

@@ -9,12 +9,12 @@ import { ManageDocumentsHeader } from './Header';
 import { ManageDocumentsTableContent } from './TableContent';
 import type { ManageDocumentsTableContentHandle } from './TableContent';
 import { useSelector } from '@/store';
+import type { DocumentList } from '@repo/types';
 import {
   useCopyDocumentMutation,
   useMoveDocumentMutation,
   useImportDocumentMutation,
   getAllDocumentsQueryOptions,
-  ListDocumentResult,
 } from '@/queries/documents';
 import { Skeleton } from '@repo/ui/components/skeleton';
 import {
@@ -37,7 +37,7 @@ export const ManageDocumentsTable = React.forwardRef<
   },
   {
     rootDocumentId?: string;
-    documents?: ListDocumentResult;
+    documents?: DocumentList;
     onInsertPlaceholder?: (params: {
       parentId: string | null;
       type: 'note' | 'folder';
@@ -113,7 +113,7 @@ export const ManageDocumentsTable = React.forwardRef<
     // Get current documents to calculate position at the end
     const currentDocuments = queryClient.getQueryData(
       getAllDocumentsQueryOptions(activeSpace?.id ?? '').queryKey,
-    ) as ListDocumentResult;
+    ) as DocumentList;
 
     // Get root-level documents (those with parentId = null)
     const rootDocuments = currentDocuments?.filter((d) => d.parentId === null) || [];

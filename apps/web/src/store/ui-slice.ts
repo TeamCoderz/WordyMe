@@ -4,7 +4,7 @@
  */
 
 import { StateCreator } from 'zustand';
-import type { SortOptions } from '@/types/sort';
+import type { SortOptions } from '@/types';
 import type { Store } from './store';
 
 export type AppSidebarState = 'expanded' | 'collapsed' | 'remember';

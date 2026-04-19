@@ -18,11 +18,8 @@ import { Tree, TreeDragLine } from '@repo/ui/components/tree';
 import { ManageDocumentsTableRow } from './TableRow';
 import { arrayToTree, TreeNode } from '@repo/lib/data/tree';
 import { generatePositionKeysBetween } from '@repo/lib/utils/position';
-import {
-  getAllDocumentsQueryOptions,
-  ListDocumentResult,
-  ListDocumentResultItem,
-} from '@/queries/documents';
+import type { ListDocumentRow, DocumentList } from '@repo/types';
+import { getAllDocumentsQueryOptions } from '@/queries/documents';
 import { updateDocument } from '@repo/sdk/documents.ts';
 import { useSelector } from '@/store';
 import { useRouteContext } from '@tanstack/react-router';
@@ -38,7 +35,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
   ManageDocumentsTableContentHandle,
   {
     rootDocumentId?: string;
-    documents?: ListDocumentResult;
+    documents?: DocumentList;
     onInsertPlaceholder?: (params: {
       parentId: string | null;
       type: 'note' | 'folder';
@@ -64,7 +61,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
   const queryOptions = React.useMemo(() => {
     const options = getAllDocumentsQueryOptions(spaceID!);
     delete options.enabled;
-    return options as UseSuspenseQueryOptions<ListDocumentResult>;
+    return options as UseSuspenseQueryOptions<DocumentList>;
   }, [spaceID]);
   const { data: documentsFromQuery } = useSuspenseQuery(queryOptions);
 
@@ -72,7 +69,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
   const documents = documentsFromProps || documentsFromQuery;
   const [draggingId, setDraggingId] = React.useState<string | null>(null);
   // Inline create rows are no longer used in Manage; we insert placeholders instead
-  type DocumentTreeNode = TreeNode<ListDocumentResultItem>;
+  type DocumentTreeNode = TreeNode<ListDocumentRow>;
   const documentsTree = React.useMemo<DocumentTreeNode>(() => {
     const filtered = documents.filter((d) => !(d.from === 'sidebar' && d.id === 'new-doc'));
 
@@ -168,7 +165,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
           try {
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(spaceID!).queryKey,
-              (old: ListDocumentResult) => {
+              (old: DocumentList) => {
                 return old?.map((d) => {
                   if (d.id === child.id) {
                     return { ...d, parentId, position: newPosition };
@@ -186,10 +183,10 @@ export const ManageDocumentsTableContent = React.forwardRef<
             if (error) throw error;
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(spaceID!).queryKey,
-              (old: ListDocumentResult) => {
+              (old: DocumentList) => {
                 return old?.map((d) => {
                   if (d.id === child.id) {
-                    return data as ListDocumentResultItem;
+                    return data as ListDocumentRow;
                   }
                   return d;
                 });
@@ -199,13 +196,13 @@ export const ManageDocumentsTableContent = React.forwardRef<
               id: loadingToast,
             });
             tree.rebuildTree();
-          } catch (error) {
+          } catch {
             toast.error('Failed to update document position', {
               id: loadingToast,
             });
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(spaceID!).queryKey,
-              (old: ListDocumentResult) => {
+              (old: DocumentList) => {
                 return old?.map((d) => {
                   if (d.id === child.id) {
                     return { ...d, parentId, position: child.position };
@@ -232,7 +229,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
             return null;
           }
           return node;
-        } catch (error) {
+        } catch {
           return null;
         }
       },
@@ -247,7 +244,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
               ?.filter((c: DocumentTreeNode) => c.id !== 'new')
               ?.map((c: DocumentTreeNode) => c.id) ?? []
           );
-        } catch (error) {
+        } catch {
           return [];
         }
       },
@@ -278,16 +275,10 @@ export const ManageDocumentsTableContent = React.forwardRef<
         try {
           const items = tree.getItems();
           const item = items.find((it) => typeof it.getId === 'function' && it.getId() === itemId);
-          if (item) {
-            if (typeof (item as any).setExpanded === 'function') {
-              (item as any).setExpanded(true);
-            } else if (typeof (item as any).expand === 'function') {
-              (item as any).expand();
-            }
-          }
-        } catch (error) {
+          if (item) item.expand();
+        } catch {
           // Item might not be in tree or not expandable
-          console.warn('Could not expand item:', itemId, error);
+          console.warn('Could not expand item:', itemId);
         }
       },
     }),
@@ -352,7 +343,7 @@ export const ManageDocumentsTableContent = React.forwardRef<
               />
             </React.Fragment>
           );
-        } catch (error) {
+        } catch {
           return null;
         }
       }),

@@ -9,10 +9,10 @@ import { RecentViewedDocsTopbar } from '../../../components/docs/RecentViewedDoc
 import { RecentViewedDocsTable } from '../../../components/docs/RecentViewedDocsTable';
 
 const validateSearch = z.object({
-  search: z.string().optional(),
+  search: z.string().optional().catch(''),
   sort: z.enum(['a-z', 'z-a', 'newest', 'lastViewed']).optional(),
-  page: z.number().optional(),
-  days: z.number().optional(),
+  page: z.coerce.number().min(1).default(1).catch(1),
+  days: z.coerce.number().min(1).default(14).catch(14),
 });
 
 export const Route = createFileRoute('/_authed/docs/recent-viewed')({

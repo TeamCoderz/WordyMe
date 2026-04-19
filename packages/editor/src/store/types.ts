@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { Document, Revision, EditorRevision, Space } from '@repo/types';
+import { Document, Revision, EditorRevision } from '@repo/types';
 export type Services = {
   uploadImage: (file: File) => Promise<{
     error: unknown;
@@ -34,7 +34,7 @@ export type Services = {
     } | null;
   }>;
   navigate: (path: string) => void;
-  getSpaces: () => Promise<Space[]>;
+  getSpaces: () => Promise<Document[]>;
   getDocumentsBySpaceId: (spaceId: string) => Promise<Document[]>;
   getDocumentById: (documentId: string) => Promise<Document | null>;
   getDocumentByHandle: (handle: string) => Promise<Document | null>;

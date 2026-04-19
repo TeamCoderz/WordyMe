@@ -4,21 +4,20 @@
  */
 
 import { StateCreator } from 'zustand/vanilla';
-import { queryClient } from '@/App';
+import { queryClient } from '@/queries/query-client';
 import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
-import type { ListDocumentResult } from '@/queries/documents';
-import type { ListSpaceResult } from '@/queries/spaces';
-import type { Space, ActiveSpace } from '@repo/types';
+import type { Document, ListDocumentRow, ActiveSpace } from '@repo/types';
 import type { Store } from './store';
+import type { TopBarFormValues } from '@/schemas/top-bar-form.schema';
 
 export interface WordyState {
   documentsClipboard: {
-    document: ListDocumentResult[number];
+    document: ListDocumentRow;
     type: 'copy' | 'move';
   } | null;
   spacesClipboard: {
-    space: ListSpaceResult[number];
+    space: Document;
     type: 'copy' | 'move';
   } | null;
   activeSpace: {
@@ -33,12 +32,12 @@ export interface WordyState {
 }
 
 export type WordyActions = {
-  setTopBarSettings: (settings: any) => void;
+  setTopBarSettings: (settings: TopBarFormValues) => void;
   setActiveSpace: (space: ActiveSpace | null, pane?: 'primary' | 'secondary' | null) => void;
   setActiveSpaceBySpaceId: (spaceId: string, pane?: 'primary' | 'secondary' | null) => void;
-  setDocumentsClipboard: (document: ListDocumentResult[number], type: 'copy' | 'move') => void;
+  setDocumentsClipboard: (document: ListDocumentRow, type: 'copy' | 'move') => void;
   clearDocumentsClipboard: () => void;
-  setSpacesClipboard: (space: ListSpaceResult[number], type: 'copy' | 'move') => void;
+  setSpacesClipboard: (space: Document, type: 'copy' | 'move') => void;
   clearSpacesClipboard: () => void;
   setInlineCreate: (payload: NonNullable<WordyState['inlineCreate']>) => void;
   clearInlineCreate: () => void;
@@ -98,7 +97,7 @@ export const createWordySlice: StateCreator<
         if (!spaces) return;
         const space = spaces.find((space) => space.id === spaceId);
         if (space) {
-          const path = calculateSpacePath(spaceId, spaces as Space[]);
+          const path = calculateSpacePath(spaceId, spaces);
           set((state) => ({
             wordy: {
               ...state.wordy,

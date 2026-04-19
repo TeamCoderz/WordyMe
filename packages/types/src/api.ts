@@ -6,7 +6,6 @@
 import type { Document, DocumentStorageUsage, EditorDocument } from './documents';
 import type { Revision, EditorRevision } from './revisions';
 import type { User } from './user';
-import type { Space } from './spaces';
 import type { InstanceSettings } from './instance';
 
 export type APIError = { title: string; subtitle?: string };
@@ -58,17 +57,13 @@ export type PatchRevisionResponse = APIResponse<Revision>;
 
 export type Pix2textResponse = APIResponse<{ generated_text: string }>;
 
-export type GetSpacesResponse = APIResponse<Space[]>;
+export type GetSpacesResponse = APIResponse<Document[]>;
 
-export type GetSpaceResponse = APIResponse<Space>;
+export type GetSpaceResponse = APIResponse<Document>;
 
-export type CreateSpaceInput = Omit<Space, 'id' | 'createdAt' | 'updatedAt'> & {
-  userId: string;
-};
+export type PostSpaceResponse = APIResponse<Document>;
 
-export type PostSpaceResponse = APIResponse<Space>;
-
-export type PatchSpaceResponse = APIResponse<Space>;
+export type PatchSpaceResponse = APIResponse<Document>;
 
 export type DeleteSpaceResponse = APIResponse<string>;
 

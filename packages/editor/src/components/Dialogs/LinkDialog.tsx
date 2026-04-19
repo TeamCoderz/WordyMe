@@ -49,7 +49,7 @@ import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { formatId } from '@repo/lib/utils/id';
 import { $generateHtmlFromNodes } from '@lexical/html';
 import { cn } from '@repo/ui/lib/utils';
-import { Document, Revision, Space } from '@repo/types';
+import { Document, Revision } from '@repo/types';
 import { sortByPosition } from '@repo/lib/utils/position';
 import { generateToc, type TableOfContentsEntry } from '@repo/editor/utils/generateToc';
 
@@ -87,7 +87,7 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
   const [internalLinkType, setInternalLinkType] = useState<'figure' | 'document'>('figure');
   const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
   const [selectedDocumentId, setSelectedDocumentId] = useState<string>('');
-  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spaces, setSpaces] = useState<Document[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [revisions, setRevisions] = useState<Revision[]>([]);
   const [spaceComboboxOpen, setSpaceComboboxOpen] = useState(false);
@@ -357,7 +357,7 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
     manualExpandedDocumentIds.has(id) ||
     searchExpandedDocumentIds.has(id);
 
-  const isSpaceVisible = (space: Space & { depth: number }) => {
+  const isSpaceVisible = (space: Document) => {
     let parentId = space.parentId ?? null;
     while (parentId) {
       if (!isSpaceExpanded(parentId)) return false;
@@ -368,7 +368,7 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
     return true;
   };
 
-  const isDocumentVisible = (document: Document & { depth: number }) => {
+  const isDocumentVisible = (document: Document) => {
     let parentId = document.parentId ?? null;
     while (parentId) {
       if (!isDocumentExpanded(parentId)) return false;
@@ -733,13 +733,10 @@ function LinkDialog({ node }: { node: LinkNode | null }) {
                               <CommandEmpty>No space found.</CommandEmpty>
                               <CommandGroup>
                                 {spaceTree.map((spaceWithDepth) => {
-                                  const { depth, ...space } = spaceWithDepth as Space & {
-                                    depth: number;
-                                  };
+                                  const { depth, ...space } = spaceWithDepth;
+
                                   const visible =
-                                    spaceSearch.trim().length > 0
-                                      ? true
-                                      : isSpaceVisible(space as Space & { depth: number });
+                                    spaceSearch.trim().length > 0 ? true : isSpaceVisible(space);
                                   if (!visible) return null;
 
                                   if (space.isContainer) {

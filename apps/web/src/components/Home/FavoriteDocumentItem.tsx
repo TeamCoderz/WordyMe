@@ -6,22 +6,24 @@
 import { Button } from '@repo/ui/components/button';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { Star } from '@repo/ui/components/icons';
-import { ListDocumentResult, useDocumentFavoritesMutation } from '@/queries/documents';
+import type { ListDocumentRow } from '@repo/types';
+import { useDocumentFavoritesMutation } from '@/queries/documents';
 import { Link } from '@tanstack/react-router';
 
 interface FavoriteDocumentItemProps {
-  document: ListDocumentResult[number];
+  document: ListDocumentRow;
 }
 
 export function FavoriteDocumentItem({ document }: FavoriteDocumentItemProps) {
-  const { removeDocumentFromFavorites } = useDocumentFavoritesMutation({
-    document,
-  });
+  const { removeDocumentFromFavorites } = useDocumentFavoritesMutation();
 
   const handleRemoveFromFavorites = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    removeDocumentFromFavorites(document.id);
+    removeDocumentFromFavorites({
+      documentId: document.id,
+      spaceId: document.spaceId ?? '',
+    });
   };
 
   return (

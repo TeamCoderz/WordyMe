@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-router';
 import { routeTree } from '@/routeTree.gen';
 import { store, useSelector } from '@/store';
-import { queryClient } from '@/App';
+import { queryClient } from '@/queries/query-client';
 import { matchTabLocation } from './tabs/utils';
 import { authClient } from '@repo/sdk/auth';
 

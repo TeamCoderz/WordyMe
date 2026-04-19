@@ -3,13 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import type { ActiveSpace } from '@repo/types';
-import { getUserDocuments } from '@repo/sdk/documents.ts';
+import type { ActiveSpace, Document, DocumentList } from '@repo/types';
 import { TreeNode } from '@repo/lib/data/tree';
-import { ListSpaceResultItem } from '@/queries/spaces';
 
-// Simplified type alias for space data
-export type SpaceData = NonNullable<Awaited<ReturnType<typeof getUserDocuments>>['data']>[number];
+/** Row in the space switcher / manage tree (`documentType: 'space'` from API). */
+export type SpaceData = Document;
 
 export interface SpaceItemProps {
   space: SpaceData;
@@ -55,8 +53,8 @@ export interface SpaceContextMenuProps {
 }
 
 export interface UseSpaceSwitcherReturn {
-  spaces: NonNullable<Awaited<ReturnType<typeof getUserDocuments>>['data']>;
-  spacesTree: TreeNode<ListSpaceResultItem>;
+  spaces: DocumentList;
+  spacesTree: TreeNode<Document>;
   activeSpace: ActiveSpace | null;
   expandedSpaces: Set<string>;
   openMenuSpaceId: string | null;

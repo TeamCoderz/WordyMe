@@ -25,9 +25,13 @@ import { Route } from '../../routes/_authed/docs/favorites';
 import { useNavigate } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { getFavoriteDocumentsQueryOptions } from '../../queries/documents';
+import {
+  getFavoriteDocumentsQueryOptions,
+  useDocumentFavoritesMutation,
+  type DocumentFavoriteCacheTarget,
+} from '@/queries/documents';
 import { FavoriteDocumentRow } from './FavoriteDocumentRow';
-import { useDocumentFavoritesMutation } from '../../queries/documents';
+import type { ListDocumentRenameSignal } from '@repo/types';
 
 export function FavoriteDocsTable() {
   const searchParams = Route.useSearch();
@@ -37,31 +41,29 @@ export function FavoriteDocsTable() {
   const paginationMeta = query.data?.meta ?? {
     total: 0,
     page: 1,
-    last_page: 1,
+    totalPages: 1,
     limit: 10,
   };
 
-  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation({
-    document: documents[0] || ({} as any),
-  });
+  const { removeDocumentFromFavorites, isRemoving } = useDocumentFavoritesMutation();
   const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [renamingDocumentId, setRenamingDocumentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
-  const currentPage = paginationMeta?.page ?? 1;
-  const lastPage = paginationMeta?.total ?? 1;
+  const currentPage = paginationMeta?.page;
+  const lastPage = paginationMeta?.totalPages;
   const visualLastPage = Math.max(lastPage, 1);
 
-  const handleRemove = async (documentId: string) => {
+  const handleRemove = async (target: DocumentFavoriteCacheTarget) => {
     try {
-      setPendingRemoveId(documentId);
-      await removeDocumentFromFavorites(documentId);
+      setPendingRemoveId(target.documentId);
+      await removeDocumentFromFavorites(target);
     } finally {
       setPendingRemoveId(null);
     }
   };
 
-  const handleRename = (document: any) => {
+  const handleRename = (document: ListDocumentRenameSignal) => {
     if (document.id === null) {
       setRenamingDocumentId(null);
     } else {
@@ -71,7 +73,8 @@ export function FavoriteDocsTable() {
   };
 
   useEffect(() => {
-    const page = searchParams.page ?? 1;
+    const page = searchParams.page;
+    if (!page || !lastPage) return;
     if (page > 1) {
       queryClient.prefetchQuery(
         getFavoriteDocumentsQueryOptions({
