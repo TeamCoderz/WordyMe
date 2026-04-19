@@ -189,7 +189,7 @@ export const resolveTabAction = ({
     return { type: 'activate-and-update', tabId: existingGroupTab.id, pathname, search, hash };
   } else if (existingTabSamePath && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingTabSamePath.id, pathname, search, hash };
-  } else if (existingTab && !shouldOpenNewTab && !shouldSplitTab) {
+  } else if (existingTab && !shouldOpenNewTab) {
     return { type: 'activate', tabId: existingTab.id };
   } else if (isPreviewEligible) {
     return { type: 'preview', pane: activePane, pathname, search, hash };

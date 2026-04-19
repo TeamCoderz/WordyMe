@@ -5,7 +5,6 @@
 
 import * as React from 'react';
 import {
-  useNavigate,
   useRouter,
   type AnyRouter,
   type RegisteredRouter,
@@ -72,7 +71,6 @@ function LinkButtonFn<
   }: LinkButtonProps<TRouter, TFrom, TTo>,
   ref: React.ForwardedRef<HTMLButtonElement>,
 ) {
-  const navigate = useNavigate();
   const router = useRouter();
   const { openTab, updateTab, setActiveTab } = useActions();
 
@@ -150,7 +148,7 @@ function LinkButtonFn<
           hash: action.hash,
           isDirty: action.isDirty,
         });
-        navigate({ to: action.pathname, search: action.search, hash: action.hash });
+        // No explicit navigate() — the Tab→URL sync effect handles navigation
         break;
       case 'open-new':
         openTab({
