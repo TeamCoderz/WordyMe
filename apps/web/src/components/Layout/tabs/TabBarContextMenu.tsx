@@ -20,7 +20,7 @@ import {
   PanelTopCloseIcon,
 } from '@repo/ui/components/icons';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
-import { matchTabLocation } from './utils';
+import { findTabInPane } from './utils';
 
 export interface TabBarContextMenuProps {
   pane: 'primary' | 'secondary';
@@ -51,10 +51,12 @@ export function TabBarContextMenu({ pane, children }: TabBarContextMenuProps) {
   const handleOpenInSplit = useCallback(() => {
     if (!activeTab) return;
     // If the same location already exists in the target pane, just switch to it
-    const existing = tabs.tabList.find(
-      (t) =>
-        tabs.paneTabIds[targetPane].includes(t.id) &&
-        matchTabLocation(t, activeTab.pathname, activeTab.search ?? {}, activeTab.hash ?? ''),
+    const existing = findTabInPane(
+      tabs.tabList,
+      tabs.paneTabIds[targetPane],
+      activeTab.pathname,
+      activeTab.search ?? {},
+      activeTab.hash ?? '',
     );
     if (existing) {
       setActiveTab(existing.id);

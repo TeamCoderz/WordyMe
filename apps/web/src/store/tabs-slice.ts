@@ -598,12 +598,13 @@ export const createTabsSlice: StateCreator<
           const secondaryIds = state.tabs.paneTabIds.secondary;
           const primaryTabs = state.tabs.tabList.filter((t) => primaryIds.includes(t.id));
 
-          // Drop secondary tabs whose full location already exists in primary to avoid true duplicates
+          // Drop secondary tabs whose full location already exists in primary to avoid true duplicates.
+          // Preserve dirty secondary tabs so unsaved work is not silently lost.
           const duplicateSecondaryIds = new Set<string>();
           for (const secId of secondaryIds) {
             const secTab = state.tabs.tabList.find((t) => t.id === secId);
             if (!secTab) continue;
-            if (primaryTabs.some((pt) => tabsMatchLocation(pt, secTab))) {
+            if (!secTab.isDirty && primaryTabs.some((pt) => tabsMatchLocation(pt, secTab))) {
               duplicateSecondaryIds.add(secId);
             }
           }
