@@ -462,7 +462,7 @@ export function SpaceSwitcher() {
                   <DropdownMenuItem asChild disabled={shouldDisableManage}>
                     <LinkButton
                       to="/spaces/manage"
-                      className="flex h-8 w-full items-center gap-2 overflow-hidden rounded-md border border-dashed p-2 text-sm select-none bg-accent/50 data-highlighted:bg-accent/70 text-muted-foreground shrink-0 mb-1 cursor-pointer"
+                      className="flex h-8 w-full items-center gap-2 overflow-hidden rounded-md border border-dashed p-2 text-sm select-none bg-accent/50 data-highlighted:bg-accent/70 text-muted-foreground shrink-0 mb-1 cursor-pointer data-disabled:pointer-events-none"
                       newTab
                     >
                       <Settings2 className="h-4 w-4 shrink-0" />

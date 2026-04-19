@@ -592,20 +592,52 @@ export const createTabsSlice: StateCreator<
       },
 
       closeSplit: () => {
-        set((state) => ({
-          tabs: {
-            ...state.tabs,
-            paneTabIds: {
-              primary: [...state.tabs.paneTabIds.primary, ...state.tabs.paneTabIds.secondary],
-              secondary: [],
+        set((state) => {
+          const primaryIds = state.tabs.paneTabIds.primary;
+          const secondaryIds = state.tabs.paneTabIds.secondary;
+          const primaryTabs = state.tabs.tabList.filter((t) => primaryIds.includes(t.id));
+
+          // Drop secondary tabs whose pathname already exists in primary to avoid duplicates
+          const duplicateSecondaryIds = new Set<string>();
+          for (const secId of secondaryIds) {
+            const secTab = state.tabs.tabList.find((t) => t.id === secId);
+            if (!secTab) continue;
+            if (primaryTabs.some((pt) => pt.pathname === secTab.pathname)) {
+              duplicateSecondaryIds.add(secId);
+            }
+          }
+
+          const mergedIds = [
+            ...primaryIds,
+            ...secondaryIds.filter((id) => !duplicateSecondaryIds.has(id)),
+          ];
+          const newTabList = state.tabs.tabList.filter((t) => !duplicateSecondaryIds.has(t.id));
+
+          // Resolve which primary tab to activate
+          const activeSecondary = state.tabs.activeTabId.secondary;
+          let newActivePrimary = state.tabs.activeTabId.primary;
+          if (activeSecondary && duplicateSecondaryIds.has(activeSecondary)) {
+            // Active secondary was a duplicate — switch to its primary counterpart
+            const secTab = state.tabs.tabList.find((t) => t.id === activeSecondary);
+            if (secTab) {
+              const match = primaryTabs.find((pt) => pt.pathname === secTab.pathname);
+              if (match) newActivePrimary = match.id;
+            }
+          } else if (activeSecondary && !duplicateSecondaryIds.has(activeSecondary)) {
+            // Active secondary survived the merge — make it the active primary tab
+            newActivePrimary = activeSecondary;
+          }
+
+          return {
+            tabs: {
+              ...state.tabs,
+              tabList: newTabList,
+              paneTabIds: { primary: mergedIds, secondary: [] },
+              activeTabId: { primary: newActivePrimary, secondary: null },
+              activePane: 'primary',
             },
-            activeTabId: {
-              ...state.tabs.activeTabId,
-              secondary: null,
-            },
-            activePane: 'primary',
-          },
-        }));
+          };
+        });
       },
 
       setSplitRatio: (ratio: number) => {

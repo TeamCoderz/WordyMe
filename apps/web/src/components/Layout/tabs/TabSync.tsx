@@ -7,7 +7,7 @@ import { useSelector, useActions } from '@/store';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { resolveModifier, useKeyHold } from '@tanstack/react-hotkeys';
-import { matchTabLocation, findGroupTab } from './utils';
+import { matchTabLocation, findGroupTab, resolveTabAction } from './utils';
 
 /**
  * Headless component that handles:
@@ -66,74 +66,69 @@ export function TabSync() {
       if (origin !== location.origin) return;
       if (link.download) return;
       const search = Object.fromEntries(searchParams.entries());
-      const primaryTabList = primaryTabListRef.current;
-      const secondaryTabList = secondaryTabListRef.current;
-      const activePane = activePaneRef.current;
-      const activePaneTabList = activePane === 'secondary' ? secondaryTabList : primaryTabList;
-      const oppositePaneTabList = activePane === 'secondary' ? primaryTabList : secondaryTabList;
-      const activeTab = activeTabRef.current;
-      const isModifierHeld = isModifierHeldRef.current;
-      const isShiftHeld = isShiftHeldRef.current;
-      const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
-      const allTabs = [...primaryTabListRef.current, ...secondaryTabListRef.current];
-      const existingTab = targetTabList.find((t) => matchTabLocation(t, pathname, search, hash));
-      const existingGroupTab = !existingTab ? findGroupTab(allTabs, pathname) : null;
-      const existingTabSamePath =
-        !existingTab && !existingGroupTab && allTabs.find((t) => t.pathname === pathname);
-      const shouldOpenNewTab = isModifierHeld || link.dataset.newTab === 'true';
-      const shouldSplitTab = isShiftHeld || link.dataset.newSplitTab === 'true';
-      const isViewLink = pathname.startsWith('/view/');
-      const isPreviewEligible =
-        isViewLink &&
-        !isModifierHeld &&
-        !isShiftHeld &&
-        link.dataset.newTab !== 'true' &&
-        link.dataset.newSplitTab !== 'true';
+      const normalizedHash = hash.slice(1);
+
+      const action = resolveTabAction({
+        pathname,
+        search,
+        hash: normalizedHash,
+        primaryTabList: primaryTabListRef.current,
+        secondaryTabList: secondaryTabListRef.current,
+        activePane: activePaneRef.current,
+        activeTab: activeTabRef.current,
+        isModifierHeld: isModifierHeldRef.current,
+        isShiftHeld: isShiftHeldRef.current,
+        newTab: link.dataset.newTab === 'true',
+        newSplitTab: link.dataset.newSplitTab === 'true',
+      });
+
       event.preventDefault();
-      if (existingGroupTab && !isModifierHeld && !shouldSplitTab) {
-        setActiveTab(existingGroupTab.id);
-        updateTab(existingGroupTab.id, { pathname, search, hash: hash.slice(1) });
-      } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
-        setActiveTab(existingTabSamePath.id);
-        updateTab(existingTabSamePath.id, { search, hash: hash.slice(1) });
-      } else if (existingTab && !isModifierHeld) {
-        setActiveTab(existingTab.id);
-      } else if (isPreviewEligible) {
-        openTab({
-          pathname,
-          search,
-          hash: hash.slice(1),
-          pane: activePane,
-          preview: true,
-        });
-      } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
-        const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
-        // Path-C: autosave if leaving a dirty edit tab for a different location
-        const isLeavingDirtyEditTab =
-          activeTab.pathname.startsWith('/edit/') &&
-          activeTab.isDirty &&
-          pathname !== activeTab.pathname;
-        if (isLeavingDirtyEditTab) {
-          window.dispatchEvent(
-            new CustomEvent('save-request', {
-              detail: { tabId: activeTab.id, isAutosave: true },
-            }),
-          );
-        }
-        updateTab(activeTab.id, {
-          pathname,
-          search,
-          hash: hash.slice(1),
-          isDirty: isDocumentLink ? undefined : activeTab.isDirty,
-        });
-      } else {
-        const pane = shouldSplitTab ? 'opposite' : activePane;
-        openTab({
-          pathname,
-          search,
-          hash: hash.slice(1),
-          pane,
-        });
+
+      switch (action.type) {
+        case 'activate':
+          setActiveTab(action.tabId);
+          break;
+        case 'activate-and-update':
+          setActiveTab(action.tabId);
+          updateTab(action.tabId, {
+            pathname: action.pathname,
+            search: action.search,
+            hash: action.hash,
+          });
+          break;
+        case 'preview':
+          openTab({
+            pathname: action.pathname,
+            search: action.search,
+            hash: action.hash,
+            pane: action.pane,
+            preview: true,
+          });
+          break;
+        case 'navigate-in-place':
+          if (action.requiresAutosave) {
+            window.dispatchEvent(
+              new CustomEvent('save-request', {
+                detail: { tabId: action.tabId, isAutosave: true },
+              }),
+            );
+          }
+          updateTab(action.tabId, {
+            pathname: action.pathname,
+            search: action.search,
+            hash: action.hash,
+            isDirty: action.isDirty,
+          });
+          // No explicit navigate() — the Tab→URL sync effect handles navigation
+          break;
+        case 'open-new':
+          openTab({
+            pathname: action.pathname,
+            search: action.search,
+            hash: action.hash,
+            pane: action.pane,
+          });
+          break;
       }
     };
 

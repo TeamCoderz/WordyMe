@@ -92,7 +92,8 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
     }
   }, [activeTab]);
 
-  const { openTab, closeSplit } = useActions();
+  const { openTab, closeSplit, setActiveTab } = useActions();
+  const tabs = useSelector((state) => state.tabs);
   const isPortrait = useMediaQuery('(orientation: portrait)');
   const targetPane = pane === 'primary' ? 'secondary' : 'primary';
   const splitLabel =
@@ -100,13 +101,21 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
 
   const handleOpenInSplit = useCallback(() => {
     if (!activeTab) return;
+    // If the same pathname already exists in the target pane, just switch to it
+    const existing = tabs.tabList.find(
+      (t) => tabs.paneTabIds[targetPane].includes(t.id) && t.pathname === activeTab.pathname,
+    );
+    if (existing) {
+      setActiveTab(existing.id);
+      return;
+    }
     openTab({
       pathname: activeTab.pathname,
       search: activeTab.search,
       hash: activeTab.hash,
       pane: targetPane,
     });
-  }, [activeTab, openTab, targetPane]);
+  }, [activeTab, openTab, targetPane, tabs, setActiveTab]);
 
   // Copy link with search params and hash
   const handleCopyPath = useCallback(() => {
