@@ -67,7 +67,8 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
   } = useActions();
   const isActive = useSelector((state) => state.tabs.activeTabId[pane] === tab.id);
   const hasMultipleTabs = useSelector((state) => state.tabs.paneTabIds[pane].length > 1);
-  const tabs = useSelector((state) => state.tabs);
+  const tabList = useSelector((state) => state.tabs.tabList);
+  const paneTabIds = useSelector((state) => state.tabs.paneTabIds);
   const hasTabsToRight = useSelector((state) => {
     const paneTabIds = state.tabs.paneTabIds[pane];
     const tabIndex = paneTabIds.indexOf(tab.id);
@@ -128,8 +129,8 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
 
   const handleOpenInSplit = useCallback(() => {
     // If the same pathname already exists in the target pane, just switch to it
-    const existing = tabs.tabList.find(
-      (t) => tabs.paneTabIds[targetPane].includes(t.id) && t.pathname === tab.pathname,
+    const existing = tabList.find(
+      (t) => paneTabIds[targetPane].includes(t.id) && t.pathname === tab.pathname,
     );
     if (existing) {
       setActiveTab(existing.id);
@@ -141,7 +142,7 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
       hash: tab.hash,
       pane: targetPane,
     });
-  }, [tab, openTab, targetPane, tabs, setActiveTab]);
+  }, [tab, openTab, targetPane, tabList, paneTabIds, setActiveTab]);
 
   const moveLabel =
     pane === 'primary'

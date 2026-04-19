@@ -93,17 +93,18 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
   }, [activeTab]);
 
   const { openTab, closeSplit, setActiveTab } = useActions();
-  const tabs = useSelector((state) => state.tabs);
-  const isPortrait = useMediaQuery('(orientation: portrait)');
   const targetPane = pane === 'primary' ? 'secondary' : 'primary';
+  const tabList = useSelector((state) => state.tabs.tabList);
+  const targetPaneTabIds = useSelector((state) => state.tabs.paneTabIds[targetPane]);
+  const isPortrait = useMediaQuery('(orientation: portrait)');
   const splitLabel =
     pane === 'primary' ? (isPortrait ? 'Split Bottom' : 'Split Right') : 'Close Split View';
 
   const handleOpenInSplit = useCallback(() => {
     if (!activeTab) return;
     // If the same pathname already exists in the target pane, just switch to it
-    const existing = tabs.tabList.find(
-      (t) => tabs.paneTabIds[targetPane].includes(t.id) && t.pathname === activeTab.pathname,
+    const existing = tabList.find(
+      (t) => targetPaneTabIds.includes(t.id) && t.pathname === activeTab.pathname,
     );
     if (existing) {
       setActiveTab(existing.id);
@@ -115,7 +116,7 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
       hash: activeTab.hash,
       pane: targetPane,
     });
-  }, [activeTab, openTab, targetPane, tabs, setActiveTab]);
+  }, [activeTab, openTab, targetPane, tabList, targetPaneTabIds, setActiveTab]);
 
   // Copy link with search params and hash
   const handleCopyPath = useCallback(() => {
