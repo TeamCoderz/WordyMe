@@ -21,6 +21,10 @@ export const matchTabLocation = (
   );
 };
 
+/** Compare two Tab objects by full location (pathname + search + hash). */
+export const tabsMatchLocation = (a: Tab, b: Tab): boolean =>
+  matchTabLocation(a, b.pathname, b.search ?? {}, b.hash ?? '');
+
 export const getLocationFromDragEvent = (event: React.DragEvent | DragEvent) => {
   const target = event.target as HTMLElement | null;
   if (!target) return null;
@@ -184,7 +188,9 @@ export const resolveTabAction = ({
         null)
       : null;
 
-  // Fix: gate all reuse branches on !shouldOpenNewTab so newTab prop is honoured
+  // Honor new-tab/new-split-tab requests across group and same-path reuse branches.
+  // Exact-match tabs may still be activated when splitting — only forced new-tab (Ctrl/newTab)
+  // blocks that, because the existing tab is already in the target pane.
   if (existingGroupTab && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingGroupTab.id, pathname, search, hash };
   } else if (existingTabSamePath && !shouldOpenNewTab && !shouldSplitTab) {

@@ -15,6 +15,7 @@ import { useActions, useSelector } from '@/store';
 import { useCallback, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import type { Tab } from '@repo/types';
+import { matchTabLocation } from './utils';
 import {
   X,
   XCircle,
@@ -128,9 +129,11 @@ export function TabContextMenu({ tab, pane, children }: TabContextMenuProps) {
         : 'Split Left';
 
   const handleOpenInSplit = useCallback(() => {
-    // If the same pathname already exists in the target pane, just switch to it
+    // If the same location already exists in the target pane, just switch to it
     const existing = tabList.find(
-      (t) => paneTabIds[targetPane].includes(t.id) && t.pathname === tab.pathname,
+      (t) =>
+        paneTabIds[targetPane].includes(t.id) &&
+        matchTabLocation(t, tab.pathname, tab.search ?? {}, tab.hash ?? ''),
     );
     if (existing) {
       setActiveTab(existing.id);

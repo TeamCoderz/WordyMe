@@ -13,6 +13,7 @@ import { useDroppable } from '@dnd-kit/core';
 import type { Tab as TabType } from '@repo/types';
 import { Button } from '@repo/ui/components/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/components/tooltip';
+import { matchTabLocation } from './utils';
 import {
   PanelRightCloseIcon,
   PanelTopCloseIcon,
@@ -102,9 +103,11 @@ export function PaneTabBar({ pane, className }: PaneTabBarProps) {
 
   const handleOpenInSplit = useCallback(() => {
     if (!activeTab) return;
-    // If the same pathname already exists in the target pane, just switch to it
+    // If the same location already exists in the target pane, just switch to it
     const existing = tabList.find(
-      (t) => targetPaneTabIds.includes(t.id) && t.pathname === activeTab.pathname,
+      (t) =>
+        targetPaneTabIds.includes(t.id) &&
+        matchTabLocation(t, activeTab.pathname, activeTab.search ?? {}, activeTab.hash ?? ''),
     );
     if (existing) {
       setActiveTab(existing.id);
