@@ -4,6 +4,8 @@
  */
 
 export { Tab } from './Tab';
+export { LinkButton } from './LinkButton';
+export type { LinkButtonProps } from './LinkButton';
 export { TabSync } from './TabSync';
 export { TabAutoSave } from './TabAutoSave';
 export { TabDndProvider } from './TabDndProvider';

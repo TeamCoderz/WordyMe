@@ -45,7 +45,7 @@ import { SpaceItem } from './SpaceItem';
 import { useSpaceSwitcher } from './hooks';
 import { SpaceData, SpaceItemProps } from './types';
 import { useNavigate } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
+import { LinkButton } from '@/components/Layout/tabs';
 import {
   ContextMenu,
   ContextMenuContent,
@@ -65,7 +65,6 @@ import {
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { toast } from 'sonner';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
-import { cn } from '@repo/ui/lib/utils';
 import { v4 as uuidv4 } from 'uuid';
 
 export function SpaceSwitcher() {
@@ -461,25 +460,14 @@ export function SpaceSwitcher() {
               >
                 <ContextMenuTrigger>
                   <DropdownMenuItem asChild disabled={shouldDisableManage}>
-                    <SidebarMenuButton
-                      className="border border-dashed rounded-md select-none bg-accent/50 hover:bg-accent/70 flex items-center gap-2 text-muted-foreground"
-                      asChild
+                    <LinkButton
+                      to="/spaces/manage"
+                      className="flex h-8 w-full items-center gap-2 overflow-hidden rounded-md border border-dashed p-2 text-sm select-none bg-accent/50 data-highlighted:bg-accent/70 text-muted-foreground shrink-0 mb-1 cursor-pointer"
+                      newTab
                     >
-                      <Link
-                        to="/spaces/manage"
-                        data-new-tab="true"
-                        className={cn('shrink-0 mb-1 cursor-pointer', {
-                          'cursor-default pointer-events-none': shouldDisableManage,
-                        })}
-                        tabIndex={shouldDisableManage ? -1 : 0}
-                        onMouseDown={(e) => {
-                          if (shouldDisableManage) e.preventDefault();
-                        }}
-                      >
-                        <Settings2 className="mr-2 h-4 w-4" />
-                        Manage Spaces
-                      </Link>
-                    </SidebarMenuButton>
+                      <Settings2 className="h-4 w-4 shrink-0" />
+                      Manage Spaces
+                    </LinkButton>
                   </DropdownMenuItem>
 
                   {/* Scrollable space items */}
