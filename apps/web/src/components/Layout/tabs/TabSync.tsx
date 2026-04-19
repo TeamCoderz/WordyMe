@@ -208,7 +208,6 @@ export function TabSync() {
           search,
           hash,
           pane: activePane,
-          index: 0,
         });
       });
       return () => cancelAnimationFrame(rafId);
