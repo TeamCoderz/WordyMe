@@ -86,10 +86,10 @@ function LinkButtonFn<
   );
 
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    onClick?.(event);
-    if (event.defaultPrevented) return;
     // Respect Radix's disabled state when this button is a Slot child (asChild)
     if (event.currentTarget.hasAttribute('data-disabled')) return;
+    onClick?.(event);
+    if (event.defaultPrevented) return;
 
     const resolved = router.buildLocation({
       to,

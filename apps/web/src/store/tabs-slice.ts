@@ -6,6 +6,7 @@
 import { StateCreator } from 'zustand/vanilla';
 import type { Tab } from '@repo/types';
 import type { Store } from './store';
+import { tabsMatchLocation } from '@/components/Layout/tabs/utils';
 /**
  * State for the tabs system with VS Code-like editor groups (panes).
  * Tabs live in a single flat array. Pane membership and order are tracked
@@ -597,12 +598,12 @@ export const createTabsSlice: StateCreator<
           const secondaryIds = state.tabs.paneTabIds.secondary;
           const primaryTabs = state.tabs.tabList.filter((t) => primaryIds.includes(t.id));
 
-          // Drop secondary tabs whose pathname already exists in primary to avoid duplicates
+          // Drop secondary tabs whose full location already exists in primary to avoid true duplicates
           const duplicateSecondaryIds = new Set<string>();
           for (const secId of secondaryIds) {
             const secTab = state.tabs.tabList.find((t) => t.id === secId);
             if (!secTab) continue;
-            if (primaryTabs.some((pt) => pt.pathname === secTab.pathname)) {
+            if (primaryTabs.some((pt) => tabsMatchLocation(pt, secTab))) {
               duplicateSecondaryIds.add(secId);
             }
           }
@@ -620,7 +621,7 @@ export const createTabsSlice: StateCreator<
             // Active secondary was a duplicate — switch to its primary counterpart
             const secTab = state.tabs.tabList.find((t) => t.id === activeSecondary);
             if (secTab) {
-              const match = primaryTabs.find((pt) => pt.pathname === secTab.pathname);
+              const match = primaryTabs.find((pt) => tabsMatchLocation(pt, secTab));
               if (match) newActivePrimary = match.id;
             }
           } else if (activeSecondary && !duplicateSecondaryIds.has(activeSecondary)) {
