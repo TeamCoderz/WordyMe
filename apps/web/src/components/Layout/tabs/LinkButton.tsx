@@ -12,7 +12,7 @@ import {
   type LinkOptions,
 } from '@tanstack/react-router';
 import { useSelector, useActions } from '@/store';
-import { matchTabLocation, findGroupTab } from './utils';
+import { resolveTabAction } from './utils';
 
 type ValidRouteProps<
   TRouter extends AnyRouter = RegisteredRouter,
@@ -90,6 +90,8 @@ function LinkButtonFn<
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
     onClick?.(event);
     if (event.defaultPrevented) return;
+    // Respect Radix's disabled state when this button is a Slot child (asChild)
+    if (event.currentTarget.hasAttribute('data-disabled')) return;
 
     const resolved = router.buildLocation({
       to,
@@ -101,70 +103,63 @@ function LinkButtonFn<
     const targetSearch = resolved.search as Record<string, unknown>;
     const targetHash = resolved.hash ?? '';
 
-    const isModifierHeld = event.metaKey || event.ctrlKey;
-    const isShiftHeld = event.shiftKey;
+    const action = resolveTabAction({
+      pathname: toStr,
+      search: targetSearch,
+      hash: targetHash,
+      primaryTabList,
+      secondaryTabList,
+      activePane,
+      activeTab,
+      isModifierHeld: event.metaKey || event.ctrlKey,
+      isShiftHeld: event.shiftKey,
+      newTab,
+      newSplitTab,
+    });
 
-    const activePaneTabList = activePane === 'secondary' ? secondaryTabList : primaryTabList;
-    const oppositePaneTabList = activePane === 'secondary' ? primaryTabList : secondaryTabList;
-    const targetTabList = isShiftHeld ? oppositePaneTabList : activePaneTabList;
-    const allTabs = [...primaryTabList, ...secondaryTabList];
-
-    const shouldOpenNewTab = isModifierHeld || newTab;
-    const shouldSplitTab = isShiftHeld || newSplitTab;
-    const isViewLink = toStr.startsWith('/view/');
-    const isPreviewEligible =
-      isViewLink && !isModifierHeld && !isShiftHeld && !newTab && !newSplitTab;
-
-    const existingTab = targetTabList.find((t) =>
-      matchTabLocation(t, toStr, targetSearch, targetHash),
-    );
-    const existingGroupTab = !existingTab ? findGroupTab(allTabs, toStr) : null;
-    const existingTabSamePath =
-      !existingTab && !existingGroupTab
-        ? (allTabs.find((t) => t.pathname === toStr) ?? null)
-        : null;
-
-    if (existingGroupTab && !isModifierHeld && !shouldSplitTab) {
-      setActiveTab(existingGroupTab.id);
-      updateTab(existingGroupTab.id, {
-        pathname: toStr,
-        search: targetSearch,
-        hash: targetHash,
-      });
-    } else if (existingTabSamePath && !isModifierHeld && !shouldSplitTab) {
-      setActiveTab(existingTabSamePath.id);
-      updateTab(existingTabSamePath.id, { search: targetSearch, hash: targetHash });
-    } else if (existingTab && !isModifierHeld) {
-      setActiveTab(existingTab.id);
-    } else if (isPreviewEligible) {
-      openTab({
-        pathname: toStr,
-        search: targetSearch,
-        hash: targetHash,
-        pane: activePane,
-        preview: true,
-      });
-    } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
-      const isDocumentLink = toStr.startsWith('/edit/') || toStr.startsWith('/view/');
-      const isLeavingDirtyEditTab =
-        activeTab.pathname.startsWith('/edit/') &&
-        activeTab.isDirty &&
-        toStr !== activeTab.pathname;
-      if (isLeavingDirtyEditTab) {
-        window.dispatchEvent(
-          new CustomEvent('save-request', { detail: { tabId: activeTab.id, isAutosave: true } }),
-        );
-      }
-      updateTab(activeTab.id, {
-        pathname: toStr,
-        search: targetSearch,
-        hash: targetHash,
-        isDirty: isDocumentLink ? undefined : activeTab.isDirty,
-      });
-      navigate({ to: toStr, search: targetSearch, hash: targetHash });
-    } else {
-      const pane = shouldSplitTab ? 'opposite' : activePane;
-      openTab({ pathname: toStr, search: targetSearch, hash: targetHash, pane });
+    switch (action.type) {
+      case 'activate':
+        setActiveTab(action.tabId);
+        break;
+      case 'activate-and-update':
+        setActiveTab(action.tabId);
+        updateTab(action.tabId, {
+          pathname: action.pathname,
+          search: action.search,
+          hash: action.hash,
+        });
+        break;
+      case 'preview':
+        openTab({
+          pathname: action.pathname,
+          search: action.search,
+          hash: action.hash,
+          pane: action.pane,
+          preview: true,
+        });
+        break;
+      case 'navigate-in-place':
+        if (action.requiresAutosave) {
+          window.dispatchEvent(
+            new CustomEvent('save-request', { detail: { tabId: action.tabId, isAutosave: true } }),
+          );
+        }
+        updateTab(action.tabId, {
+          pathname: action.pathname,
+          search: action.search,
+          hash: action.hash,
+          isDirty: action.isDirty,
+        });
+        navigate({ to: action.pathname, search: action.search, hash: action.hash });
+        break;
+      case 'open-new':
+        openTab({
+          pathname: action.pathname,
+          search: action.search,
+          hash: action.hash,
+          pane: action.pane,
+        });
+        break;
     }
   };
 

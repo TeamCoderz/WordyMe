@@ -27,7 +27,7 @@ export interface TabBarContextMenuProps {
 }
 
 export function TabBarContextMenu({ pane, children }: TabBarContextMenuProps) {
-  const { openTab, closeAllTabs, closeSplit } = useActions();
+  const { openTab, closeAllTabs, closeSplit, setActiveTab } = useActions();
   const tabs = useSelector((state) => state.tabs);
   const activeTabId = tabs.activeTabId[pane];
   const activeTab = tabs.tabList.find((t) => t.id === activeTabId);
@@ -49,13 +49,21 @@ export function TabBarContextMenu({ pane, children }: TabBarContextMenuProps) {
 
   const handleOpenInSplit = useCallback(() => {
     if (!activeTab) return;
+    // If the same pathname already exists in the target pane, just switch to it
+    const existing = tabs.tabList.find(
+      (t) => tabs.paneTabIds[targetPane].includes(t.id) && t.pathname === activeTab.pathname,
+    );
+    if (existing) {
+      setActiveTab(existing.id);
+      return;
+    }
     openTab({
       pathname: activeTab.pathname,
       search: activeTab.search,
       hash: activeTab.hash,
       pane: targetPane,
     });
-  }, [activeTab, openTab, targetPane]);
+  }, [activeTab, openTab, targetPane, tabs, setActiveTab]);
 
   const handleNewTab = useCallback(() => {
     openTab({ pathname: '/', pane });

@@ -81,3 +81,135 @@ export const matchAppLink = (tab: Tab, pathname: string) => {
 export const matchAppLocation = (tab: Tab, pathname: string) => {
   return tab.pathname.split('/')[1] === pathname.split('/')[1];
 };
+
+// ---------------------------------------------------------------------------
+// resolveTabAction — shared tab-routing decision logic
+// Used by both LinkButton and TabSync so behaviour stays in sync.
+// ---------------------------------------------------------------------------
+
+export interface ResolveTabActionInput {
+  pathname: string;
+  search: Record<string, unknown>;
+  hash: string;
+  primaryTabList: Tab[];
+  secondaryTabList: Tab[];
+  activePane: 'primary' | 'secondary';
+  activeTab: Tab | undefined;
+  isModifierHeld: boolean;
+  isShiftHeld: boolean;
+  newTab: boolean;
+  newSplitTab: boolean;
+}
+
+export type TabAction =
+  | { type: 'activate'; tabId: string }
+  | {
+      type: 'activate-and-update';
+      tabId: string;
+      pathname: string;
+      search: Record<string, unknown>;
+      hash: string;
+    }
+  | {
+      type: 'preview';
+      pane: 'primary' | 'secondary';
+      pathname: string;
+      search: Record<string, unknown>;
+      hash: string;
+    }
+  | {
+      type: 'navigate-in-place';
+      tabId: string;
+      pathname: string;
+      search: Record<string, unknown>;
+      hash: string;
+      isDirty: boolean | undefined;
+      requiresAutosave: boolean;
+    }
+  | {
+      type: 'open-new';
+      pane: 'primary' | 'secondary' | 'opposite';
+      pathname: string;
+      search: Record<string, unknown>;
+      hash: string;
+    };
+
+/**
+ * Pure function that resolves which tab action should be taken for a given
+ * navigation intent. Contains the single source of truth for all tab routing
+ * decisions — used by both LinkButton and TabSync.
+ *
+ * Fixes applied relative to the original per-callsite logic:
+ * - `targetTabList` is derived from `shouldSplitTab` (not bare `isShiftHeld`)
+ *   so the `newSplitTab` prop correctly influences which pane is searched.
+ * - All three existing-tab reuse branches are gated on `!shouldOpenNewTab &&
+ *   !shouldSplitTab` so `newTab`/`newSplitTab` props always force new-tab
+ *   creation even when a matching tab already exists.
+ */
+export const resolveTabAction = ({
+  pathname,
+  search,
+  hash,
+  primaryTabList,
+  secondaryTabList,
+  activePane,
+  activeTab,
+  isModifierHeld,
+  isShiftHeld,
+  newTab,
+  newSplitTab,
+}: ResolveTabActionInput): TabAction => {
+  const shouldOpenNewTab = isModifierHeld || newTab;
+  const shouldSplitTab = isShiftHeld || newSplitTab;
+
+  const activePaneTabList = activePane === 'secondary' ? secondaryTabList : primaryTabList;
+  const oppositePaneTabList = activePane === 'secondary' ? primaryTabList : secondaryTabList;
+  // Fix: use shouldSplitTab so newSplitTab prop influences which pane is searched
+  const targetTabList = shouldSplitTab ? oppositePaneTabList : activePaneTabList;
+
+  const isViewLink = pathname.startsWith('/view/');
+  const isPreviewEligible = isViewLink && !shouldOpenNewTab && !shouldSplitTab;
+
+  const existingTab =
+    targetTabList.find((t) => matchTabLocation(t, pathname, search, hash)) ?? null;
+  // Prioritise the target pane when looking for group / same-path tabs so that
+  // navigation in the secondary pane doesn't accidentally update a primary-pane tab.
+  const existingGroupTab = !existingTab
+    ? (findGroupTab(targetTabList, pathname) ?? findGroupTab(oppositePaneTabList, pathname))
+    : null;
+  const existingTabSamePath =
+    !existingTab && !existingGroupTab
+      ? (targetTabList.find((t) => t.pathname === pathname) ??
+        oppositePaneTabList.find((t) => t.pathname === pathname) ??
+        null)
+      : null;
+
+  // Fix: gate all reuse branches on !shouldOpenNewTab so newTab prop is honoured
+  if (existingGroupTab && !shouldOpenNewTab && !shouldSplitTab) {
+    return { type: 'activate-and-update', tabId: existingGroupTab.id, pathname, search, hash };
+  } else if (existingTabSamePath && !shouldOpenNewTab && !shouldSplitTab) {
+    return { type: 'activate-and-update', tabId: existingTabSamePath.id, pathname, search, hash };
+  } else if (existingTab && !shouldOpenNewTab && !shouldSplitTab) {
+    return { type: 'activate', tabId: existingTab.id };
+  } else if (isPreviewEligible) {
+    return { type: 'preview', pane: activePane, pathname, search, hash };
+  } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
+    const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
+    const requiresAutosave =
+      activeTab.pathname.startsWith('/edit/') &&
+      !!activeTab.isDirty &&
+      pathname !== activeTab.pathname;
+    return {
+      type: 'navigate-in-place',
+      tabId: activeTab.id,
+      pathname,
+      search,
+      hash,
+      isDirty: isDocumentLink ? undefined : activeTab.isDirty,
+      requiresAutosave,
+    };
+  } else {
+    const pane = shouldSplitTab ? 'opposite' : activePane;
+    return { type: 'open-new', pane, pathname, search, hash };
+  }
+};
