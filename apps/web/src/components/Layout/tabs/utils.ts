@@ -25,6 +25,16 @@ export const matchTabLocation = (
 export const tabsMatchLocation = (a: Tab, b: Tab): boolean =>
   matchTabLocation(a, b.pathname, b.search ?? {}, b.hash ?? '');
 
+/** Find a tab in a specific pane that matches a full location. */
+export const findTabInPane = (
+  tabList: Tab[],
+  paneTabIds: string[],
+  pathname: string,
+  search: Record<string, unknown> = {},
+  hash: string = '',
+): Tab | undefined =>
+  tabList.find((t) => paneTabIds.includes(t.id) && matchTabLocation(t, pathname, search, hash));
+
 export const getLocationFromDragEvent = (event: React.DragEvent | DragEvent) => {
   const target = event.target as HTMLElement | null;
   if (!target) return null;
@@ -176,16 +186,12 @@ export const resolveTabAction = ({
 
   const existingTab =
     targetTabList.find((t) => matchTabLocation(t, pathname, search, hash)) ?? null;
-  // Prioritise the target pane when looking for group / same-path tabs so that
-  // navigation in the secondary pane doesn't accidentally update a primary-pane tab.
-  const existingGroupTab = !existingTab
-    ? (findGroupTab(targetTabList, pathname) ?? findGroupTab(oppositePaneTabList, pathname))
-    : null;
+  // Restrict group / same-path reuse to targetTabList only so that a normal click
+  // never activates-and-updates a tab in the opposite pane.
+  const existingGroupTab = !existingTab ? findGroupTab(targetTabList, pathname) : null;
   const existingTabSamePath =
     !existingTab && !existingGroupTab
-      ? (targetTabList.find((t) => t.pathname === pathname) ??
-        oppositePaneTabList.find((t) => t.pathname === pathname) ??
-        null)
+      ? (targetTabList.find((t) => t.pathname === pathname) ?? null)
       : null;
 
   // Honor new-tab/new-split-tab requests across group and same-path reuse branches.
