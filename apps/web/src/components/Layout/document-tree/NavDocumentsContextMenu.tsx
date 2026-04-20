@@ -27,6 +27,7 @@ import {
 } from '@/queries/documents';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { dispatchEscapeKey } from '@/utils/keyboard';
+import type { DocumentList } from '@repo/types';
 
 type NavDocumentsContextMenuProps = {
   children: React.ReactNode;
@@ -92,7 +93,7 @@ export function NavDocumentsContextMenu({ children }: NavDocumentsContextMenuPro
         // Calculate position at the end
         const currentDocuments = queryClient.getQueryData(
           getAllDocumentsQueryOptions(activeSpace?.id ?? '').queryKey,
-        ) as any[];
+        ) as DocumentList | undefined;
 
         if (!currentDocuments) {
           importDocumentMutation.mutate({ file });

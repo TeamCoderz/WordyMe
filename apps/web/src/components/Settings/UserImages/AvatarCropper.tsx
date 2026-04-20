@@ -7,6 +7,7 @@ import { Button } from '@repo/ui/components/button';
 import { DialogFooter, DialogTitle } from '@repo/ui/components/dialog';
 import { Slider } from '@repo/ui/components/slider';
 import Cropper from 'react-easy-crop';
+import type { Area } from 'react-easy-crop';
 import React, { useCallback, useState } from 'react';
 import { Minus, Plus, RotateCw } from '@repo/ui/components/icons';
 import { useChangeAvatarMutation, useUpdateAvatarMetadataMutation } from '@/queries/profile';
@@ -32,12 +33,7 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [sizeRatio, setSizeRatio] = useState(0.7);
   const prevSizeRatioRef = React.useRef(0.7);
-  const [croppedAreaPixels, setCroppedAreaPixels] = useState<{
-    width: number;
-    height: number;
-    x: number;
-    y: number;
-  } | null>(null);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [containerSize, setContainerSize] = useState<{
     width: number;
     height: number;
@@ -91,7 +87,7 @@ export default function AvatarCropper({ image, isNewUpload, onBack, onClose }: A
     [],
   );
 
-  const onCropComplete = useCallback((_: any, areaPixels: any) => {
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
     setCroppedAreaPixels(areaPixels);
   }, []);
 

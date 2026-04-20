@@ -106,7 +106,7 @@ function UserForm({ roles, user }: UserFormProps) {
     },
   });
   // const router = useRouter();
-  async function onSubmit(_data: UserFormData) {
+  function onSubmit() {
     // const result = !user
     //   ? await createUser({
     //       email: data.email,
@@ -311,7 +311,7 @@ function UserForm({ roles, user }: UserFormProps) {
         {/* Action Buttons */}
         <div className="flex justify-end space-x-4 pt-4">
           <Button asChild type="button" variant="outline">
-            <Link to={'/settings/users' as any}>Cancel</Link>
+            <Link to={'/settings/profile'}>Cancel</Link>
           </Button>
           {user && (
             <Button

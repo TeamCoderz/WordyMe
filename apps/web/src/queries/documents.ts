@@ -40,6 +40,7 @@ import type {
   DocumentList,
   ListDocumentOrParentRef,
   SearchDocumentResult,
+  DocumentListItem,
 } from '@repo/types';
 import type { SortOptions } from '@/types';
 import { DOCUMENTS_QUERY_KEYS } from './query-keys';
@@ -575,7 +576,7 @@ export const useCreateDocumentMutation = ({
       return { toastId: toast.loading('Creating document...') };
     },
     onSuccess: async (data, { clientId }, { toastId }) => {
-      const { currentRevision, ...documentRow } = data;
+      const documentRow: DocumentListItem = data;
 
       if (!isDocumentCached(clientId)) {
         queryClient.setQueryData(

@@ -8,6 +8,7 @@ import {
   isDocumentCached,
   removeDocumentFromCache,
 } from '@/queries/caches/documents';
+import { RealtimeContext } from '@/contexts/RealtimeContext';
 import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from '@/queries/caches/spaces';
 import type { DocumentList } from '@repo/types';
 import { getAllDocumentsQueryOptions } from '@/queries/documents';
@@ -28,19 +29,12 @@ import {
 } from '@repo/sdk/realtime/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 /** Prefer invalidating the space tree when `spaceId` is known; otherwise invalidate all document lists. */
 function documentListInvalidateKey(spaceId: string | null | undefined) {
   return spaceId ? DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceId) : DOCUMENTS_QUERY_KEYS.LIST_BASE;
 }
-
-interface RealtimeProviderContextType {
-  isConnected: boolean;
-}
-const RealtimeProviderContext = createContext<RealtimeProviderContextType>({
-  isConnected: false,
-});
 
 export const RealtimeProvider = ({ children }: { children: React.ReactNode }) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -349,17 +343,5 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     }
     return;
   }, [isConnected, queryClient]);
-  return (
-    <RealtimeProviderContext.Provider value={{ isConnected }}>
-      {children}
-    </RealtimeProviderContext.Provider>
-  );
-};
-
-export const useRealtime = () => {
-  const context = useContext(RealtimeProviderContext);
-  if (!context) {
-    throw new Error('useRealtime must be used within a RealtimeProvider');
-  }
-  return context;
+  return <RealtimeContext.Provider value={{ isConnected }}>{children}</RealtimeContext.Provider>;
 };

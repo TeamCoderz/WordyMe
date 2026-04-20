@@ -13,17 +13,36 @@ import { Link } from '@tanstack/react-router';
 import { IS_MOBILE } from '@repo/shared/environment';
 import SearchDocuments from './SearchDocuments';
 
+type VirtualKeyboardLike = EventTarget & {
+  boundingRect: DOMRectReadOnly;
+  overlaysContent: boolean;
+};
+
+type NavigatorWithVirtualKeyboard = Navigator & {
+  virtualKeyboard?: VirtualKeyboardLike;
+};
+
+const getVirtualKeyboard = () => {
+  return (navigator as NavigatorWithVirtualKeyboard).virtualKeyboard;
+};
+
 export const AppHeader = () => {
-  const handleGeometryChange = (event: any) => {
-    const { height } = event.target.boundingRect;
+  const updateKeyboardInsetHeight = (height: number) => {
     document.documentElement.style.setProperty('--keyboard-inset-height', `${height}px`);
   };
 
   useEffect(() => {
-    if (!('virtualKeyboard' in navigator)) return;
-    const virtualKeyboard = navigator.virtualKeyboard as any;
+    const virtualKeyboard = getVirtualKeyboard();
+    if (!virtualKeyboard) return;
+
     virtualKeyboard.overlaysContent = true;
+    const handleGeometryChange = () => {
+      updateKeyboardInsetHeight(Math.ceil(virtualKeyboard.boundingRect.height));
+    };
+
+    handleGeometryChange();
     virtualKeyboard.addEventListener('geometrychange', handleGeometryChange);
+
     return () => {
       virtualKeyboard.removeEventListener('geometrychange', handleGeometryChange);
     };
@@ -40,7 +59,7 @@ export const AppHeader = () => {
   };
 
   useEffect(() => {
-    if ('virtualKeyboard' in navigator) return;
+    if (getVirtualKeyboard()) return;
     if (!IS_MOBILE) return;
     if (!window.visualViewport) return;
     window.visualViewport.addEventListener('resize', handleResize);

@@ -4,10 +4,13 @@
  */
 
 'use client';
-export const debounce = <F extends (...args: any[]) => any>(func: F, waitFor: number) => {
+export const debounce = <Args extends unknown[], Return>(
+  func: (...args: Args) => Return,
+  waitFor: number,
+) => {
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
-  return (...args: Parameters<F>): void => {
+  return (...args: Args): void => {
     if (timeout !== null) {
       clearTimeout(timeout);
     }

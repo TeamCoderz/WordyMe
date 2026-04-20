@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/components/dropdown-menu';
 import { useRouteContext } from '@tanstack/react-router';
+import type { Document } from '@repo/types';
 
 export function ManageDocumentsHeader() {
   const { splitPaneType } = useRouteContext({ from: '__root__' });
@@ -35,7 +36,7 @@ export function ManageDocumentsHeader() {
       <Breadcrumb>
         <BreadcrumbList>
           {(() => {
-            const ancestors = (activeSpace.path ?? []) as any[];
+            const ancestors = (activeSpace.path ?? []) as Document[];
             const totalCount = ancestors.length + 1;
 
             if (totalCount <= 4) {
@@ -89,7 +90,7 @@ export function ManageDocumentsHeader() {
                       align="start"
                       sideOffset={6}
                     >
-                      {ancestors.slice(2).map((hidden: any) => (
+                      {ancestors.slice(2).map((hidden) => (
                         <DropdownMenuItem key={hidden.id} className="text-sm hover:font-medium">
                           {hidden.name}
                         </DropdownMenuItem>

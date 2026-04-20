@@ -51,7 +51,7 @@ export function TableOfContentsList({
       })
       .filter(Boolean) as Array<{ key: NodeKey; element: HTMLElement }>;
 
-    const handleIntersection: IntersectionObserverCallback = (entries, _observer) => {
+    const handleIntersection: IntersectionObserverCallback = (entries) => {
       if (!shouldObserveRef.current) return;
       // Find the first visible heading
       const visibleEntries = entries

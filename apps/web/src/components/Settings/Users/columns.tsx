@@ -17,7 +17,7 @@ export const userColumns: ColumnDef<SettingsUser>[] = [
       const user = row.original;
       return (
         <Link
-          to={`/settings/users/${user.id}` as any}
+          to={`/settings/profile`} // TODO: revisit this when we have user profiles
           data-new-tab="true"
           className="flex items-center gap-3 group"
         >
@@ -50,7 +50,7 @@ export const userColumns: ColumnDef<SettingsUser>[] = [
       const role = row.original.role;
       return (
         <Link
-          to={`/settings/roles/${role.id}` as any}
+          to={`/settings/profile`} // TODO: revisit this when we have role management
           data-new-tab="true"
           className="text-blue-400 hover:underline decoration-blue-400 font-medium"
         >

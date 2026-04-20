@@ -5,9 +5,15 @@
 
 import type { TabMetadata } from '@repo/types';
 import { getDocumentByHandleQueryOptions } from '@/queries/documents';
-import type { UseQueryOptions } from '@tanstack/react-query';
 
-export type TabMetadataQueryOption = UseQueryOptions<any, any, TabMetadata>;
+type DocumentByHandleQueryOption = ReturnType<typeof getDocumentByHandleQueryOptions>;
+type DocumentByHandleData = Awaited<
+  ReturnType<NonNullable<DocumentByHandleQueryOption['queryFn']>>
+>;
+
+export type TabMetadataQueryOption = Omit<DocumentByHandleQueryOption, 'select'> & {
+  select: (doc: DocumentByHandleData) => TabMetadata;
+};
 /**
  * Static metadata lookup for fixed routes.
  * These tabs always display the same title & icon.
@@ -75,15 +81,17 @@ export function resolveTabMetadata(
   const handle = getDocumentHandle(pathname);
   if (handle) {
     const docQueryOpts = getDocumentByHandleQueryOptions(handle);
+    const queryOption: TabMetadataQueryOption = {
+      ...docQueryOpts,
+      select: (doc) => ({
+        title: doc?.name ?? '',
+        icon: doc?.icon ?? null,
+      }),
+    };
+
     return {
       metadata: { title: '', icon: null }, // fallback while loading
-      queryOption: {
-        ...docQueryOpts,
-        select: (doc: { name?: string; icon?: string | null }) => ({
-          title: doc?.name ?? '',
-          icon: doc?.icon ?? null,
-        }),
-      } as TabMetadataQueryOption,
+      queryOption,
     };
   }
 

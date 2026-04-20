@@ -61,7 +61,7 @@ export function removeWithDescendantsFromCache<T extends { id: string; parentId?
   const stack: string[] = [rootId];
   while (stack.length) {
     const current = stack.pop()!;
-    const children = childrenByParent.get(current as any) ?? [];
+    const children = childrenByParent.get(current) ?? [];
     for (const child of children) {
       if (!toRemove.has(child.id)) {
         toRemove.add(child.id);

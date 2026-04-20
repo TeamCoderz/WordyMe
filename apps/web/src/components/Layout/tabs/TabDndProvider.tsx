@@ -17,10 +17,10 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useActions, useSelector } from '@/store';
-import { parseTabSlotId } from './TabDropSlot';
 import { PANE_CONTENT_SPLIT_PRIMARY, PANE_CONTENT_SPLIT_SECONDARY } from './PaneContent';
 import { TabDragPreview } from './Tab';
 import type { Tab as TabType } from '@repo/types';
+import { parseTabSlotId } from './utils';
 
 interface TabDndProviderProps {
   children: ReactNode;

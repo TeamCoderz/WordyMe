@@ -16,7 +16,7 @@ export const roleColumns: ColumnDef<SettingsRole>[] = [
       const role = row.original;
       return (
         <Link
-          to={`/settings/roles/${role.id}` as any}
+          to={`/settings/profile`} // TODO: revisit this when we have role management
           data-new-tab="true"
           className="flex items-center gap-3 group"
         >

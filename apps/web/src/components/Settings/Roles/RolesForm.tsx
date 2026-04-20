@@ -123,7 +123,7 @@ export default function CreateRoleForm({ role }: PermissionsFormProps) {
     resolver: zodResolver(PermissionsFormSchema),
   });
   // const router = useRouter();
-  async function onSubmit(_data: PermissionsFormData) {
+  function onSubmit() {
     // const result = role
     //   ? await updateRole({
     //       id: role.id,

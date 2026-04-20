@@ -65,16 +65,17 @@ export function useSpaceSwitcher(overrideSpaces?: DocumentList): UseSpaceSwitche
   };
 
   const handleEditSpace = (_space: SpaceData) => {
-    // TODO: Implement edit space functionality
-    console.log('Tried to edit space', _space);
+    void _space;
+    // TODO: Implement edit space functionality.
   };
 
   const handleDeleteSpace = (_space: SpaceData) => {
-    // TODO: Implement delete space functionality
-    console.log('Tried to delete space', _space);
+    void _space;
+    // TODO: Implement delete space functionality.
   };
 
   const handleAddChildSpace = (_parentSpace: SpaceData) => {
+    void _parentSpace;
     // Close the context menu first
     setOpenMenuSpaceId(null);
     // Navigate to spaces manage page

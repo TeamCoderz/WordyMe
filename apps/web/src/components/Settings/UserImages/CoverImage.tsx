@@ -4,7 +4,7 @@
  */
 
 import { Button } from '@repo/ui/components/button';
-import Cropper from 'react-easy-crop';
+import Cropper, { type Area } from 'react-easy-crop';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import CoverPlacholder from '@/assets/cover-placeholder.png';
 import { useSelector } from '@/store';
@@ -55,7 +55,7 @@ export default function CoverImage() {
     setCrop({ x: 0, y: 0 });
   }, []);
 
-  const onCropComplete = useCallback((_: any, areaPixels: any) => {
+  const onCropComplete = useCallback((_: Area, areaPixels: Area) => {
     setCroppedAreaPixels(areaPixels);
   }, []);
 

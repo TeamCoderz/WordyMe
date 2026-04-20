@@ -5,24 +5,7 @@
 
 import { cn } from '@repo/ui/lib/utils';
 import { useDroppable } from '@dnd-kit/core';
-
-export const TAB_SLOT_PREFIX = 'tab-slot-';
-
-export function tabSlotId(pane: 'primary' | 'secondary', index: number, side: 'left' | 'right') {
-  return `${TAB_SLOT_PREFIX}${pane}-${index}-${side}`;
-}
-
-export function parseTabSlotId(
-  id: string,
-): { pane: 'primary' | 'secondary'; index: number } | null {
-  if (!id.startsWith(TAB_SLOT_PREFIX)) return null;
-  const rest = id.slice(TAB_SLOT_PREFIX.length);
-  const [pane, indexStr] = rest.split('-');
-  if (pane !== 'primary' && pane !== 'secondary') return null;
-  const index = parseInt(indexStr ?? '', 10);
-  if (Number.isNaN(index) || index < 0) return null;
-  return { pane, index };
-}
+import { tabSlotId } from './utils';
 
 export interface TabDropSlotProps {
   pane: 'primary' | 'secondary';
