@@ -52,6 +52,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify workspace (lint, types, build)
+        run: pnpm lint && pnpm check-types && pnpm build
+
       - name: Configure Git user
         run: |
           git config --global user.name "github-actions[bot]"
