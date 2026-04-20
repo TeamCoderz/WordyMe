@@ -596,13 +596,16 @@ export const createTabsSlice: StateCreator<
         set((state) => {
           const primaryIds = state.tabs.paneTabIds.primary;
           const secondaryIds = state.tabs.paneTabIds.secondary;
-          const primaryTabs = state.tabs.tabList.filter((t) => primaryIds.includes(t.id));
+          const tabById = new Map(state.tabs.tabList.map((t) => [t.id, t] as const));
+          const primaryTabs = primaryIds
+            .map((id) => tabById.get(id))
+            .filter((t): t is Tab => Boolean(t));
 
           // Drop secondary tabs whose full location already exists in primary to avoid true duplicates.
           // Preserve dirty secondary tabs so unsaved work is not silently lost.
           const duplicateSecondaryIds = new Set<string>();
           for (const secId of secondaryIds) {
-            const secTab = state.tabs.tabList.find((t) => t.id === secId);
+            const secTab = tabById.get(secId);
             if (!secTab) continue;
             if (!secTab.isDirty && primaryTabs.some((pt) => tabsMatchLocation(pt, secTab))) {
               duplicateSecondaryIds.add(secId);
@@ -620,7 +623,7 @@ export const createTabsSlice: StateCreator<
           let newActivePrimary = state.tabs.activeTabId.primary;
           if (activeSecondary && duplicateSecondaryIds.has(activeSecondary)) {
             // Active secondary was a duplicate — switch to its primary counterpart
-            const secTab = state.tabs.tabList.find((t) => t.id === activeSecondary);
+            const secTab = tabById.get(activeSecondary);
             if (secTab) {
               const match = primaryTabs.find((pt) => tabsMatchLocation(pt, secTab));
               if (match) newActivePrimary = match.id;
