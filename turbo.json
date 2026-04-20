@@ -1,6 +1,6 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalEnv": ["VITE_BACKEND_URL"],
+  "globalEnv": ["VITE_BACKEND_URL", "DB_FILE_NAME"],
   "ui": "tui",
   "tasks": {
     "build": {
