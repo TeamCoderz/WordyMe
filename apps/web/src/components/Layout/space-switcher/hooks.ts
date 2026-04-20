@@ -8,17 +8,17 @@ import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { arrayToTree } from '@repo/lib/data/tree';
 import { useSelector, useActions } from '@/store';
-import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
-import { Space } from '@repo/types/spaces';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
+import type { DocumentList } from '@repo/types';
 import { UseSpaceSwitcherReturn, SpaceData } from './types';
 import { calculateSpacePath } from '@/utils/calculateSpacePath';
 
-export function useSpaceSwitcher(overrideSpaces?: ListSpaceResult): UseSpaceSwitcherReturn {
+export function useSpaceSwitcher(overrideSpaces?: DocumentList): UseSpaceSwitcherReturn {
   const { setActiveSpace } = useActions();
   const navigate = useNavigate();
   const { data, isLoading } = useQuery(getAllSpacesQueryOptions);
   const spaces = overrideSpaces ?? data ?? [];
-  const spacesTree = React.useMemo(() => arrayToTree(spaces as Space[]), [spaces]);
+  const spacesTree = React.useMemo(() => arrayToTree(spaces), [spaces]);
   const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
 
   const [expandedSpaces, setExpandedSpaces] = React.useState<Set<string>>(new Set([]));
@@ -39,10 +39,10 @@ export function useSpaceSwitcher(overrideSpaces?: ListSpaceResult): UseSpaceSwit
   const handleSelectSpace = (spaceId: string) => {
     const space = spaces.find((space) => space.id === spaceId);
     if (space) {
-      const path = calculateSpacePath(spaceId, spaces as Space[]);
+      const path = calculateSpacePath(spaceId, spaces);
       setActiveSpace({
         ...space,
-        icon: space.icon as Space['icon'],
+        icon: space.icon,
         path,
       });
     } else {
@@ -66,19 +66,19 @@ export function useSpaceSwitcher(overrideSpaces?: ListSpaceResult): UseSpaceSwit
 
   const handleEditSpace = (_space: SpaceData) => {
     // TODO: Implement edit space functionality
+    console.log('Tried to edit space', _space);
   };
 
   const handleDeleteSpace = (_space: SpaceData) => {
     // TODO: Implement delete space functionality
+    console.log('Tried to delete space', _space);
   };
 
   const handleAddChildSpace = (_parentSpace: SpaceData) => {
     // Close the context menu first
     setOpenMenuSpaceId(null);
     // Navigate to spaces manage page
-    navigate({
-      to: '/spaces/manage',
-    });
+    navigate({ to: '/spaces/manage' });
   };
 
   React.useEffect(() => {

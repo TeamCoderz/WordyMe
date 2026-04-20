@@ -3,17 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import {
-  createDocument,
-  deleteDocument,
-  updateDocument, // listSpaces,
-  // updateSpace,
-  // addSpaceToFavorites,
-  // removeSpaceFromFavorites,
-  // createSpace,
-  // listFavoriteSpaces,
-  // deleteSpace,
-} from '@repo/sdk/documents.ts';
+import { createDocument, deleteDocument, updateDocument } from '@repo/sdk/documents.ts';
 import { useMutation, useQueryClient, UseSuspenseQueryOptions } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -25,7 +15,8 @@ import {
   useAllQueriesInvalidate,
   useRemoveWithDescendantsFromCache,
 } from './utils';
-import { SortOptions } from '../types/sort';
+import type { Document, DocumentList } from '@repo/types';
+import type { SortOptions } from '@/types';
 import { SPACES_QUERY_KEYS } from './query-keys';
 import { useActions, useSelector } from '@/store';
 import {
@@ -42,25 +33,20 @@ import {
   removeDocumentFromFavorites,
 } from '@repo/sdk/favorites.ts';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
+
 const listSpaces = async () => {
   return getUserDocuments({ documentType: 'space' });
 };
-export type ListSpaceResultItem = NonNullable<
-  Awaited<ReturnType<typeof listSpaces>>['data']
->[number] & {
-  from?: 'sidebar' | 'manage';
-};
-export type ListSpaceResult = ListSpaceResultItem[];
 
-export const getAllSpacesQueryOptions: UseSuspenseQueryOptions<ListSpaceResult> = {
+export const getAllSpacesQueryOptions: UseSuspenseQueryOptions<DocumentList> = {
   queryKey: SPACES_QUERY_KEYS.HOME.BASE,
   queryFn: async () => {
     const { data, error } = await listSpaces();
     if (error) throw error;
-    const filteredData = filterValidHierarchy(data ?? []);
-    return filteredData;
+    return filterValidHierarchy(data ?? []);
   },
 };
+
 async function listFavoriteSpaces(
   filters: Omit<Parameters<typeof getFavorites>[0], 'documentType'>,
 ) {
@@ -135,10 +121,10 @@ export const useRenameSpaceMutation = () => {
   });
   const updateSpaceName = async (spaceId: string, name: string) => {
     const oldName = (
-      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as ListSpaceResult
+      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as DocumentList | undefined
     )?.find((space) => space.id === spaceId)?.name;
 
-    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
       return old?.map((space) => {
         if (space.id === spaceId) {
           return { ...space, name };
@@ -150,21 +136,21 @@ export const useRenameSpaceMutation = () => {
       { spaceId, name },
       {
         onSuccess: (data) => {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-            return old?.map((space) => {
-              if (space.id === spaceId) {
-                return data;
-              }
-              return space;
-            });
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
+            return old?.map((row) =>
+              row.id === spaceId ? { ...row, ...data, documentType: 'space' } : row,
+            );
           });
         },
         onError: () => {
           queryClient.setQueryData(
             getAllSpacesQueryOptions.queryKey,
-            (old: Awaited<ReturnType<typeof listSpaces>>['data']) => {
-              return old?.map((space) => {
-                return { ...space, name: oldName };
+            (old: DocumentList | undefined) => {
+              return old?.map((row) => {
+                if (row.id === spaceId) {
+                  return { ...row, name: oldName };
+                }
+                return row;
               });
             },
           );
@@ -202,10 +188,10 @@ export const useUpdateSpaceIconMutation = () => {
   });
   const updateSpaceIcon = async (spaceId: string, icon: string) => {
     const oldIcon = (
-      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as ListSpaceResult
+      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as DocumentList
     )?.find((space) => space.id === spaceId)?.icon;
 
-    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
       return old?.map((space) => {
         if (space.id === spaceId) {
           return { ...space, icon };
@@ -217,21 +203,21 @@ export const useUpdateSpaceIconMutation = () => {
       { spaceId, icon },
       {
         onSuccess: (data) => {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-            return old?.map((space) => {
-              if (space.id === spaceId) {
-                return data;
-              }
-              return space;
-            });
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
+            return old?.map((row) =>
+              row.id === spaceId ? { ...row, ...data, documentType: 'space' } : row,
+            );
           });
         },
         onError: () => {
           queryClient.setQueryData(
             getAllSpacesQueryOptions.queryKey,
-            (old: Awaited<ReturnType<typeof listSpaces>>['data']) => {
-              return old?.map((space) => {
-                return { ...space, icon: oldIcon };
+            (old: DocumentList | undefined) => {
+              return old?.map((row) => {
+                if (row.id === spaceId) {
+                  return { ...row, icon: oldIcon };
+                }
+                return row;
               });
             },
           );
@@ -292,9 +278,9 @@ export const useSpaceFavoritesMutation = () => {
 
   const addToFavorites = async (spaceId: string) => {
     const oldFavorites = (
-      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as ListSpaceResult
+      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as DocumentList
     )?.find((space) => space.id === spaceId)?.isFavorite;
-    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
       return old?.map((space) => {
         if (space.id === spaceId) {
           return { ...space, isFavorite: true };
@@ -304,7 +290,7 @@ export const useSpaceFavoritesMutation = () => {
     });
     await addMutation.mutateAsync(spaceId, {
       onSuccess: () => {
-        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
           return old?.map((space) => {
             if (space.id === spaceId) {
               return {
@@ -317,7 +303,7 @@ export const useSpaceFavoritesMutation = () => {
         });
       },
       onError: () => {
-        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+        queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
           return old?.map((space) => {
             if (space.id === spaceId) {
               return { ...space, isFavorite: oldFavorites };
@@ -331,9 +317,9 @@ export const useSpaceFavoritesMutation = () => {
 
   const removeFromFavorites = async (spaceId: string) => {
     const oldFavorites = (
-      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as ListSpaceResult
+      queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as DocumentList
     )?.find((space) => space.id === spaceId)?.isFavorite;
-    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
       return old?.map((space) => {
         if (space.id === spaceId) {
           return { ...space, isFavorite: false };
@@ -345,12 +331,12 @@ export const useSpaceFavoritesMutation = () => {
       onError: () => {
         queryClient.setQueryData(
           getAllSpacesQueryOptions.queryKey,
-          (old: Awaited<ReturnType<typeof listSpaces>>['data']) => {
-            return old?.map((space) => {
-              if (space.id === spaceId) {
-                return { ...space, favorites: oldFavorites };
+          (old: DocumentList | undefined) => {
+            return old?.map((row) => {
+              if (row.id === spaceId) {
+                return { ...row, isFavorite: oldFavorites ?? false };
               }
-              return space;
+              return row;
             });
           },
         );
@@ -366,11 +352,11 @@ export const useSpaceFavoritesMutation = () => {
   };
 };
 
-export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage' }) => {
+export const useCreateSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
-    mutationKey: ['createSpace'],
+    mutationKey: ['createSpace', from],
     mutationFn: async ({
       parentId,
       spaceId,
@@ -383,9 +369,9 @@ export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage'
       clientId: string;
     }) => {
       // Get current spaces from cache to calculate position
-      const currentSpaces = queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as Awaited<
-        ReturnType<typeof listSpaces>
-      >['data'];
+      const currentSpaces = queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as
+        | DocumentList
+        | undefined;
 
       if (!currentSpaces) {
         throw new Error('No spaces data available');
@@ -431,10 +417,10 @@ export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage'
     onSuccess: (data, _, toastId) => {
       if (data) {
         if (!isSpaceCached(data?.clientId)) {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
             if (old) {
               addSpaceToCache(data?.clientId);
-              return [...old, data];
+              return [...old, { ...data, documentType: 'space' }];
             }
             return old;
           });
@@ -445,7 +431,7 @@ export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage'
       });
     },
     onError: (error, { clientId }, toastId) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         return old?.filter((space) => {
           return space.id !== clientId;
         });
@@ -459,11 +445,11 @@ export const useCreateSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage'
 
   return mutation;
 };
-export const useCreateContainerSpaceMutation = ({ from: _ }: { from: 'sidebar' | 'manage' }) => {
+export const useCreateContainerSpaceMutation = ({ from }: { from: 'sidebar' | 'manage' }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
-    mutationKey: ['createContainerSpace'],
+    mutationKey: ['createContainerSpace', from],
     mutationFn: async ({
       parentId,
       spaceId,
@@ -476,9 +462,9 @@ export const useCreateContainerSpaceMutation = ({ from: _ }: { from: 'sidebar' |
       clientId: string;
     }) => {
       // Get current spaces from cache to calculate position
-      const currentSpaces = queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as Awaited<
-        ReturnType<typeof listSpaces>
-      >['data'];
+      const currentSpaces = queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as
+        | DocumentList
+        | undefined;
 
       if (!currentSpaces) {
         throw new Error('No spaces data available');
@@ -523,10 +509,10 @@ export const useCreateContainerSpaceMutation = ({ from: _ }: { from: 'sidebar' |
     onSuccess: (data, _, toastId) => {
       if (data) {
         if (!isSpaceCached(data?.clientId)) {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
             if (old) {
               addSpaceToCache(data?.clientId);
-              return [...old, data];
+              return [...old, { ...data, documentType: 'space' }];
             }
             return old;
           });
@@ -538,7 +524,7 @@ export const useCreateContainerSpaceMutation = ({ from: _ }: { from: 'sidebar' |
       });
     },
     onError: (error, { clientId }, toastId) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         return old?.filter((space) => {
           return space.id !== clientId;
         });
@@ -564,7 +550,7 @@ export const useUpdateSpacePositionMutation = () => {
     }: {
       parentId: string | null;
       position: string;
-      space: ListSpaceResult[number];
+      space: Document;
     }) => {
       const { data, error } = await updateDocument(space.id, {
         parentId: parentId,
@@ -595,31 +581,30 @@ export const useUpdateSpacePositionMutation = () => {
   }: {
     parentId: string | null;
     position: string;
-    space: ListSpaceResult[number];
+    space: Document;
   }) => {
-    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-      return old?.map((space) => {
-        if (space.id === space.id) {
-          return { ...space, parentId, position };
+    queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
+      return old?.map((row) => {
+        if (row.id === space.id) {
+          return { ...row, parentId, position };
         }
-        return space;
+        return row;
       });
     });
     mutation.mutate(
       { parentId, position, space },
       {
         onSuccess: (data) => {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-            return old?.map((s) => {
-              if (s.id === space.id) {
-                return data;
-              }
-              return s;
-            });
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
+            return old?.map((row) =>
+              row.id === space.id
+                ? ({ ...row, ...data, documentType: 'space' as const } as Document)
+                : row,
+            );
           });
         },
         onError: () => {
-          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+          queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
             return old?.map((s) => {
               if (s.id === space.id) {
                 return space;
@@ -633,11 +618,11 @@ export const useUpdateSpacePositionMutation = () => {
   };
   return { updateSpacePosition, ...mutation };
 };
-export const useDeleteSpaceMutation = ({ space }: { space: ListSpaceResult[number] }) => {
+export const useDeleteSpaceMutation = ({ space }: { space: Document }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const descendantSpaces = getDescendants(
-    queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as ListSpaceResult,
+    queryClient.getQueryData(getAllSpacesQueryOptions.queryKey) as DocumentList,
     space.id,
   );
   const removeFromCache = useRemoveWithDescendantsFromCache();
@@ -665,9 +650,13 @@ export const useDeleteSpaceMutation = ({ space }: { space: ListSpaceResult[numbe
       });
     },
     onError: (error, __, toastId) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
-        return [...old, space, ...descendantSpaces];
-      });
+      queryClient.setQueryData(
+        getAllSpacesQueryOptions.queryKey,
+        (old: DocumentList | undefined) => {
+          if (!old) return [space, ...descendantSpaces];
+          return [...old, space, ...descendantSpaces];
+        },
+      );
       toast.error(error.message || `Failed to delete ${label}: ${space.name}`, {
         id: toastId ?? undefined,
       });
@@ -695,7 +684,7 @@ export const getHomeFavoriteSpacesQueryOptions = (orderBy: SortOptions) => {
     },
   };
 };
-export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | null) {
+export function useCopySpaceMutation(newParentSpace: Document | null) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
@@ -712,7 +701,7 @@ export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | n
       }
       const currentSpaces = queryClient.getQueryData(
         getAllSpacesQueryOptions.queryKey,
-      ) as ListSpaceResult;
+      ) as DocumentList;
       if (!currentSpaces) {
         throw new Error('No spaces data available');
       }
@@ -761,7 +750,7 @@ export function useCopySpaceMutation(newParentSpace: ListSpaceResult[number] | n
   });
   return mutation;
 }
-export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | null) => {
+export const useMoveSpaceMutation = (newParentSpace: Document | null) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
@@ -778,7 +767,7 @@ export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | n
       }
       const currentSpaces = queryClient.getQueryData(
         getAllSpacesQueryOptions.queryKey,
-      ) as ListSpaceResult;
+      ) as DocumentList;
       if (!currentSpaces) {
         throw new Error('No spaces data available');
       }
@@ -813,7 +802,7 @@ export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | n
       return toast.loading('Moving space...');
     },
     onSuccess: (_, __, toastId) => {
-      toast.success('Document moved successfully', {
+      toast.success('Space moved successfully', {
         id: toastId ?? undefined,
       });
       clearSpacesClipboard();
@@ -827,7 +816,7 @@ export const useMoveSpaceMutation = (newParentSpace: ListSpaceResult[number] | n
   return mutation;
 };
 
-export function useDuplicateSpaceMutation({ space }: { space: ListSpaceResult[number] }) {
+export function useDuplicateSpaceMutation({ space }: { space: Document }) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
@@ -835,7 +824,7 @@ export function useDuplicateSpaceMutation({ space }: { space: ListSpaceResult[nu
     mutationFn: async () => {
       const currentSpaces = queryClient.getQueryData(
         getAllSpacesQueryOptions.queryKey,
-      ) as ListSpaceResult;
+      ) as DocumentList;
       if (!currentSpaces) {
         throw new Error('No spaces data available');
       }

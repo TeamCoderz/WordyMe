@@ -44,10 +44,9 @@ import {
   useDuplicateSpaceMutation,
   useExportSpaceMutation,
   useImportSpaceMutation,
-  ListSpaceResultItem,
   getAllSpacesQueryOptions,
-  ListSpaceResult,
 } from '@/queries/spaces';
+import type { DocumentList, ListDocumentRow } from '@repo/types';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,16 +70,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { generatePositionKeyBetween, getSiblings, sortByPosition } from '@repo/lib/utils/position';
 import { isSpaceCached } from '@/queries/caches/spaces';
 import { v4 as uuidv4 } from 'uuid';
-
-type AnyItem = any;
+import { ItemInstance, TreeInstance } from '@headless-tree/core';
 
 export interface ManageSpacesTableRowProps {
-  item: AnyItem;
+  item: ItemInstance<ListDocumentRow>;
   index: number; // kept for future use if needed
   isLast: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  tree: any;
+  tree: TreeInstance<ListDocumentRow | null>;
   getDescendantIds: (nodeId: string) => string[];
   onBeginInlineCreate?: (type: 'space' | 'folder') => void;
   onRemovePlaceholder?: () => void;
@@ -98,7 +96,10 @@ export function ManageSpacesTableRow({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageSpacesTableRowProps) {
-  const space = item.getItemData()?.data as ListSpaceResultItem;
+  const space = item.getItemData();
+  const isContainerLike = space.isContainer === true || (item.getChildren()?.length ?? 0) > 0;
+  const resolvedIconName =
+    space.icon || (space.isContainer === true ? 'folder-closed' : 'briefcase');
   const isCreating = space?.id === space?.clientId || space?.id === 'new-space';
   const isPlaceholder = space?.id === 'new-space';
   const [placeholderName, setPlaceholderName] = React.useState<string>(space?.name ?? '');
@@ -109,22 +110,18 @@ export function ManageSpacesTableRow({
   const { setActiveSpaceBySpaceId, setSpacesClipboard } = useActions();
   const { updateSpaceName, isPending: isRenamePending } = useRenameSpaceMutation();
   const { updateSpaceIcon: updateIcon } = useUpdateSpaceIconMutation();
-  const createSpaceMutation = useCreateSpaceMutation({
-    from: 'manage',
-  });
+  const createSpaceMutation = useCreateSpaceMutation({ from: 'manage' });
   const { addToFavorites, removeFromFavorites } = useSpaceFavoritesMutation();
   const copySpaceMutation = useCopySpaceMutation(space);
   const moveSpaceMutation = useMoveSpaceMutation(space);
-  const createContainerSpaceMutation = useCreateContainerSpaceMutation({
-    from: 'manage',
-  });
+  const createContainerSpaceMutation = useCreateContainerSpaceMutation({ from: 'manage' });
   const clipboardSpace = useSelector((state) => state.wordy.spacesClipboard);
   const isCutThisItem =
     clipboardSpace?.type === 'move' && clipboardSpace.space.id === (space?.id ?? '');
   const [isRenaming, setIsRenaming] = React.useState(false);
 
   const [isMenuIconPickerOpen, setIsMenuIconPickerOpen] = React.useState(false);
-  const [renameName, setRenameName] = React.useState<string>(item.getItemData()?.data.name ?? '');
+  const [renameName, setRenameName] = React.useState<string>(space.name ?? '');
   const renameInputRef = React.useRef<HTMLInputElement>(null);
   const dragImageRef = React.useRef<HTMLImageElement | null>(null);
   const deleteSpaceMutation = useDeleteSpaceMutation({ space });
@@ -163,13 +160,13 @@ export function ManageSpacesTableRow({
   // Scroll into view when isCreating and from manage
   React.useEffect(() => {
     if (!isCreating || isPlaceholder) return;
-    const createdFrom = (space as any).from;
+    const createdFrom = space.from;
     if (createdFrom === 'manage') {
       try {
         // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
           const el = document.querySelector(
-            `[data-manage-space-id="${space?.id ?? ''}"]`,
+            `[data-manage-space-id="${space.id}"]`,
           ) as HTMLElement | null;
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -179,7 +176,7 @@ export function ManageSpacesTableRow({
         console.error('Scroll error:', error);
       }
     }
-  }, [isCreating, isPlaceholder, space?.id, space]);
+  }, [isCreating, isPlaceholder, space.id, space.from]);
 
   const handleRename = () => {
     setIsRenaming(true);
@@ -221,13 +218,7 @@ export function ManageSpacesTableRow({
   const handleAddChildSpace = () => {
     if (!space?.id) return;
     // Expand the item first if it's not already expanded
-    if (!item.isExpanded()) {
-      if (typeof (item as any).setExpanded === 'function') {
-        (item as any).setExpanded(true);
-      } else if (typeof (item as any).expand === 'function') {
-        (item as any).expand();
-      }
-    }
+    if (!item.isExpanded()) item.expand();
     if (onBeginInlineCreate) {
       onBeginInlineCreate('space');
     } else {
@@ -241,13 +232,7 @@ export function ManageSpacesTableRow({
   const handleAddChildFolder = () => {
     if (!space?.id) return;
     // Expand the item first if it's not already expanded
-    if (!item.isExpanded()) {
-      if (typeof (item as any).setExpanded === 'function') {
-        (item as any).setExpanded(true);
-      } else if (typeof (item as any).expand === 'function') {
-        (item as any).expand();
-      }
-    }
+    if (!item.isExpanded()) item.expand();
     if (onBeginInlineCreate) {
       onBeginInlineCreate('folder');
     } else {
@@ -283,7 +268,7 @@ export function ManageSpacesTableRow({
         {
           onSuccess: (data) => {
             // Add to query cache if not already there
-            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
               removePlaceholderHandler();
               if (old) {
                 if (!isSpaceCached(data?.clientId as string) && data) {
@@ -312,7 +297,7 @@ export function ManageSpacesTableRow({
         {
           onSuccess: (data) => {
             // Add to query cache if not already there
-            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
               removePlaceholderHandler();
               if (old) {
                 if (!isSpaceCached(data?.clientId as string) && data) {
@@ -407,7 +392,7 @@ export function ManageSpacesTableRow({
       // Calculate position at the end of children
       const currentSpaces = queryClient.getQueryData(
         getAllSpacesQueryOptions.queryKey,
-      ) as ListSpaceResult;
+      ) as DocumentList;
       if (!currentSpaces) return;
 
       const siblings = getSiblings(currentSpaces, space.id);
@@ -429,13 +414,7 @@ export function ManageSpacesTableRow({
   const handlePaste = () => {
     if (!clipboardSpace || !space?.id) return;
     // Expand the item first if it's not already expanded
-    if (!item.isExpanded()) {
-      if (typeof (item as any).setExpanded === 'function') {
-        (item as any).setExpanded(true);
-      } else if (typeof (item as any).expand === 'function') {
-        (item as any).expand();
-      }
-    }
+    if (!item.isExpanded()) item.expand();
     if (clipboardSpace.type === 'move') {
       // Use move mutation for cut operation
       moveSpaceMutation.mutate();
@@ -457,13 +436,9 @@ export function ManageSpacesTableRow({
           asChild
           className="ps-0"
           onDragStartCapture={(e) => {
-            const node = e.target as unknown as Node | null;
-            const el =
-              node && (node as any).nodeType === 1
-                ? (node as unknown as Element)
-                : node && (node as any).parentElement
-                  ? ((node as any).parentElement as Element)
-                  : null;
+            const t = e.target;
+            const el = t instanceof Element ? t : t instanceof Node ? t.parentElement : null;
+
             if (!el) return;
             if (!el.closest('[data-drag-handle="true"]')) {
               e.preventDefault();
@@ -476,9 +451,7 @@ export function ManageSpacesTableRow({
               `grid grid-cols-[minmax(16rem,2fr)_minmax(8rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] ps-0 gap-4 py-3 hover:bg-accent/50 group group/item`,
               !isLast && 'border-b border-dashed border-border/50',
               draggingId === item.getId() && 'opacity-50',
-              typeof (item as any).isDragTarget === 'function' &&
-                (item as any).isDragTarget() &&
-                'bg-muted/50',
+              typeof item.isDragTarget === 'function' && item.isDragTarget() && 'bg-muted/50',
               isCutThisItem && 'bg-muted border border-dashed border-border/60',
               isCreating && !isPlaceholder && 'bg-accent/30',
             )}
@@ -512,7 +485,7 @@ export function ManageSpacesTableRow({
               </div>
               <div className="flex items-center gap-2 ps-[clamp(0px,var(--tree-padding),calc(var(--spacing)*32))]">
                 <div className="flex items-center justify-center">
-                  {(item.getItemData()?.data as any)?.isContainer === true ? (
+                  {isContainerLike ? (
                     <button
                       data-expand-toggle="true"
                       className="p-1 hover:bg-accent/50 rounded-sm"
@@ -525,30 +498,16 @@ export function ManageSpacesTableRow({
                         const items = typeof tree.getItems === 'function' ? tree.getItems() : [];
                         if (isOpen) {
                           // Collapse this item and all descendants
-                          if (typeof (item as any).setExpanded === 'function') {
-                            (item as any).setExpanded(false);
-                          } else if (typeof (item as any).collapse === 'function') {
-                            (item as any).collapse();
-                          }
+                          item.collapse();
                           const ids = getDescendantIds(item.getId());
                           for (const id of ids) {
-                            const child = items.find(
-                              (it: any) => typeof it.getId === 'function' && it.getId() === id,
-                            );
+                            const child = items.find((it) => it.getId() === id);
                             if (!child) continue;
-                            if (typeof (child as any).setExpanded === 'function') {
-                              (child as any).setExpanded(false);
-                            } else if (typeof (child as any).collapse === 'function') {
-                              (child as any).collapse();
-                            }
+                            child.collapse();
                           }
                         } else {
                           // Expand this item
-                          if (typeof (item as any).setExpanded === 'function') {
-                            (item as any).setExpanded(true);
-                          } else if (typeof (item as any).expand === 'function') {
-                            (item as any).expand();
-                          }
+                          item.expand();
                         }
                       }}
                     >
@@ -564,12 +523,7 @@ export function ManageSpacesTableRow({
                   )}
                 </div>
                 <IconPicker
-                  value={
-                    space.icon ??
-                    ((item.getItemData()?.data as any)?.isContainer === true
-                      ? 'folder-closed'
-                      : 'briefcase')
-                  }
+                  value={resolvedIconName}
                   onValueChange={handleIconChange}
                   side="right"
                   align="start"
@@ -585,15 +539,7 @@ export function ManageSpacesTableRow({
                       e.stopPropagation();
                     }}
                   >
-                    <DynamicIcon
-                      className="size-4"
-                      name={
-                        space.icon ??
-                        ((item.getItemData()?.data as any)?.isContainer === true
-                          ? 'folder-closed'
-                          : 'briefcase')
-                      }
-                    />
+                    <DynamicIcon className="size-4" name={resolvedIconName} />
                   </button>
                 </IconPicker>
                 {isPlaceholder ? (
@@ -645,10 +591,7 @@ export function ManageSpacesTableRow({
                   />
                 ) : (
                   (() => {
-                    const isContainer =
-                      (item.getItemData()?.data as any)?.isContainer === true ||
-                      (item.getItemData()?.children?.length ?? 0) > 0;
-                    if (isContainer) {
+                    if (isContainerLike) {
                       return (
                         <button
                           type="button"
@@ -656,14 +599,11 @@ export function ManageSpacesTableRow({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const isOpen =
-                              typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-                            if (typeof (item as any).setExpanded === 'function') {
-                              (item as any).setExpanded(!isOpen);
-                            } else if (isOpen && typeof (item as any).collapse === 'function') {
-                              (item as any).collapse();
-                            } else if (!isOpen && typeof (item as any).expand === 'function') {
-                              (item as any).expand();
+                            const isOpen = item.isExpanded();
+                            if (isOpen) {
+                              item.collapse();
+                            } else {
+                              item.expand();
                             }
                           }}
                         >
@@ -692,23 +632,23 @@ export function ManageSpacesTableRow({
                 ? space.isContainer === true
                   ? 'folder'
                   : 'space'
-                : (item.getItemData()?.data as any)?.isContainer === true
+                : space.isContainer === true
                   ? 'folder'
-                  : item.getItemData()?.data.type}
+                  : space.documentType}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : item.getItemData()?.data.createdAt
-                  ? format(new Date(item.getItemData().data.createdAt), 'MMMM d, yyyy')
+                : space.createdAt
+                  ? format(new Date(space.createdAt), 'MMMM d, yyyy')
                   : '—'}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {isPlaceholder
                 ? '—'
-                : item.getItemData()?.data.updatedAt
+                : space.updatedAt
                   ? (() => {
-                      const date = new Date(item.getItemData().data.updatedAt);
+                      const date = new Date(space.updatedAt);
                       const now = new Date();
                       const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
                       if (diffInSeconds < 60) {
@@ -751,13 +691,12 @@ export function ManageSpacesTableRow({
                           input.focus();
                           // Do not select on menu close to avoid overwriting user typing
                         }
-                      } catch (err) {
+                      } catch {
                         // ignore focus errors
                       }
                     }}
                   >
-                    {((item.getItemData()?.data as any)?.isContainer === true ||
-                      (item.getItemData()?.children?.length ?? 0) > 0) && (
+                    {isContainerLike && (
                       <>
                         <DropdownMenuItem className="group" onSelect={handleAddChildSpace}>
                           <BriefcaseMedical className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -790,7 +729,7 @@ export function ManageSpacesTableRow({
                       <FolderOutput className="mr-2 h-4 w-4 group-hover:text-foreground" />
                       Export
                     </DropdownMenuItem>
-                    {(item.getItemData()?.data.isContainer ?? false) && (
+                    {space.isContainer === true && (
                       <DropdownMenuItem className="group" onSelect={handleImport}>
                         <FolderInput className="mr-2 h-4 w-4 group-hover:text-foreground" />
                         Import
@@ -805,7 +744,7 @@ export function ManageSpacesTableRow({
                       <Scissors className="mr-2 h-4 w-4 group-hover:text-foreground" />
                       Cut
                     </DropdownMenuItem>
-                    {(item.getItemData()?.data.isContainer ?? false) && (
+                    {space.isContainer === true && (
                       <DropdownMenuItem
                         className={cn('group', !canPaste && 'opacity-50 cursor-not-allowed')}
                         onSelect={canPaste ? handlePaste : undefined}
@@ -820,8 +759,8 @@ export function ManageSpacesTableRow({
                       Duplicate
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {(item.getItemData()?.data as any)?.isContainer !== true &&
-                      (item.getItemData()?.data.isFavorite ? (
+                    {space.isContainer !== true &&
+                      (space.isFavorite ? (
                         <>
                           <DropdownMenuItem
                             className="group"
@@ -862,11 +801,7 @@ export function ManageSpacesTableRow({
               )}
               {!isPlaceholder && (
                 <IconPicker
-                  value={
-                    space.icon || (item.getItemData()?.data as any)?.isContainer === true
-                      ? 'folder-closed'
-                      : 'briefcase'
-                  }
+                  value={resolvedIconName}
                   onValueChange={handleIconChange}
                   open={isMenuIconPickerOpen}
                   onOpenChange={(open) => {
@@ -901,13 +836,12 @@ export function ManageSpacesTableRow({
                 input.focus();
                 // Do not select on menu close to avoid overwriting user typing
               }
-            } catch (err) {
+            } catch {
               // ignore focus errors
             }
           }}
         >
-          {((item.getItemData()?.data as any)?.isContainer === true ||
-            (item.getItemData()?.children?.length ?? 0) > 0) && (
+          {isContainerLike && (
             <>
               <ContextMenuItem onSelect={handleAddChildSpace}>
                 <BriefcaseMedical className="mr-2 h-4 w-4" />
@@ -952,7 +886,7 @@ export function ManageSpacesTableRow({
             <FolderOutput className="mr-2 h-4 w-4" />
             Export
           </ContextMenuItem>
-          {item.getItemData()?.data.isContainer && (
+          {space.isContainer === true && (
             <ContextMenuItem onSelect={handleImport}>
               <FolderInput className="mr-2 h-4 w-4" />
               Import
@@ -968,7 +902,7 @@ export function ManageSpacesTableRow({
             <Scissors className="mr-2 h-4 w-4" />
             Cut
           </ContextMenuItem>
-          {item.getItemData()?.data.isContainer && (
+          {space.isContainer === true && (
             <ContextMenuItem
               className={cn(!canPaste && 'opacity-50 cursor-not-allowed')}
               onSelect={canPaste ? handlePaste : undefined}
@@ -983,8 +917,8 @@ export function ManageSpacesTableRow({
             Duplicate
           </ContextMenuItem>
           <ContextMenuSeparator />
-          {(item.getItemData()?.data as any)?.isContainer !== true &&
-            (item.getItemData()?.data.isFavorite ? (
+          {space.isContainer !== true &&
+            (space.isFavorite ? (
               <>
                 <ContextMenuItem onSelect={() => handleRemoveFromFavorites()}>
                   <Star className={cn('mr-2 h-4 w-4', 'fill-amber-400')} />

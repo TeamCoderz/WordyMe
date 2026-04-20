@@ -22,7 +22,7 @@ import {
 } from '@repo/ui/components/icons';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { cn } from '@repo/ui/lib/utils';
-import { DocumentData } from './types';
+import type { ListDocumentRow } from '@repo/types';
 import { useSelector, useActions } from '@/store';
 import { IconPicker } from '@repo/ui/components/icon-picker';
 import { DocumentNameInput } from './DocumentItem';
@@ -58,7 +58,7 @@ import {
 import { dispatchEscapeKey } from '@/utils/keyboard';
 
 interface ContainerDocumentItemProps {
-  document: DocumentData;
+  document: ListDocumentRow;
   children: React.ReactNode;
   isExpanded: boolean;
   isAncestor?: boolean;
@@ -102,25 +102,19 @@ export function ContainerDocumentItem({
   const highlightAsAncestorCollapsed = !!isAncestor && !isExpanded;
 
   // Use the update document icon mutation
-  const { updateDocumentIcon } = useUpdateDocumentIconMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
+  const { updateDocumentIcon } = useUpdateDocumentIconMutation({ document });
 
   // Use the delete document mutation
-  const deleteDocumentMutation = useDeleteDocumentMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
+  const deleteDocumentMutation = useDeleteDocumentMutation({ document });
 
   // Use the duplicate document mutation
-  const duplicateDocumentMutation = useDuplicateDocumentMutation({
-    document: document as any,
-  });
+  const duplicateDocumentMutation = useDuplicateDocumentMutation({ document });
 
   // Use the copy document mutation
-  const copyDocumentMutation = useCopyDocumentMutation(document as any);
+  const copyDocumentMutation = useCopyDocumentMutation(document);
 
   // Use the move document mutation
-  const moveDocumentMutation = useMoveDocumentMutation(document as any);
+  const moveDocumentMutation = useMoveDocumentMutation(document);
 
   // Clipboard state management
   const { setDocumentsClipboard } = useActions();
@@ -163,7 +157,7 @@ export function ContainerDocumentItem({
       onConfirm: async () => {
         try {
           await deleteDocumentMutation.mutateAsync({ documentId: document.id });
-        } catch (error) {
+        } catch {
           // Error handling is done in the mutation
         }
       },
@@ -174,11 +168,11 @@ export function ContainerDocumentItem({
   const handleCreateChildFolder = () => beginInlineCreate('folder');
 
   const handleCopy = () => {
-    setDocumentsClipboard(document as any, 'copy');
+    setDocumentsClipboard(document, 'copy');
   };
 
   const handleCut = () => {
-    setDocumentsClipboard(document as any, 'move');
+    setDocumentsClipboard(document, 'move');
   };
 
   const handlePaste = () => {
@@ -205,11 +199,11 @@ export function ContainerDocumentItem({
       }
     };
     if (clipboardDocument.type === 'move') {
-      moveDocumentMutation.mutate(undefined as any, {
+      moveDocumentMutation.mutate(undefined, {
         onSuccess: expandAndScrollToEnd,
       });
     } else {
-      copyDocumentMutation.mutate(undefined as any, {
+      copyDocumentMutation.mutate(undefined, {
         onSuccess: expandAndScrollToEnd,
       });
     }

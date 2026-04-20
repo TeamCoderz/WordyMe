@@ -8,20 +8,22 @@
 import * as React from 'react';
 import { useRouteContext } from '@tanstack/react-router';
 import { arrayToTree } from '@repo/lib/data/tree';
-import { ListDocumentResult } from '@/queries/documents';
+import type { DocumentList } from '@repo/types';
 import { useSelector } from '@/store';
 
-export function useDocumentTree(documents?: ListDocumentResult) {
+export function useDocumentTree(documents?: DocumentList) {
   const isLoading = !documents;
 
   const filteredDocuments = React.useMemo(
-    () => (documents ?? []).filter((d: any) => d.from !== 'manage'),
+    () => (documents ?? []).filter((d) => d.from !== 'manage'),
     [documents],
   );
+
   const documentsTree = React.useMemo(
     () => arrayToTree(filteredDocuments ?? []),
     [filteredDocuments],
   );
+
   const { splitPaneType } = useRouteContext({ from: '__root__' });
   const activeTab = useSelector((state) =>
     state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId[splitPaneType ?? 'primary']),
@@ -45,6 +47,7 @@ export function useDocumentTree(documents?: ListDocumentResult) {
 
   const handleSelectDocument = (_documentId: string) => {
     // TODO: Implement document selection logic
+    console.log('Tried to select document', _documentId);
   };
 
   const toggleExpanded = (documentId?: string) => {

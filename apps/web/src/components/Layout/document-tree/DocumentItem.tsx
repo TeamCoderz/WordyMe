@@ -9,21 +9,21 @@ import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@repo/ui/components/input-group';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import type { ListDocumentRow, DocumentList } from '@repo/types';
 import {
   useRenameDocumentMutation,
   useCreateDocumentMutation,
   useCreateContainerDocumentMutation,
   getAllDocumentsQueryOptions,
-  ListDocumentResult,
 } from '@/queries/documents';
 import { isDocumentCached } from '@/queries/caches/documents';
 import { ContainerDocumentItem } from './ContainerDocumentItem';
 import { RegularDocumentItem } from './RegularDocumentItem';
-import { DocumentItemProps, DocumentData } from './types';
+import { DocumentItemProps } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface DocumentNameInputProps {
-  document: DocumentData;
+  document: ListDocumentRow;
   mode: 'placeholder' | 'renaming';
   onRemovePlaceholder?: () => void;
   onRenameComplete?: () => void;
@@ -46,14 +46,14 @@ function DocumentNameInput({
 
   // Mutations
   const { updateDocumentName, isPending: isRenamingPending } = useRenameDocumentMutation({
-    document: document as any,
+    document,
   });
   const createContainerDocumentMutation = useCreateContainerDocumentMutation({
-    document: document as any,
+    document,
     from: 'sidebar',
   });
   const createDocumentMutation = useCreateDocumentMutation({
-    document: document as any,
+    document,
     from: 'sidebar',
   });
 
@@ -84,7 +84,7 @@ function DocumentNameInput({
             isSubmittingRef.current = false;
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-              (old: ListDocumentResult | undefined) => {
+              (old: DocumentList | undefined) => {
                 onRemovePlaceholder?.();
                 if (old) {
                   if (data && !isDocumentCached(data.clientId as string)) {
@@ -115,7 +115,7 @@ function DocumentNameInput({
             if (data) {
               queryClient.setQueryData(
                 getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-                (old: ListDocumentResult | undefined) => {
+                (old: DocumentList | undefined) => {
                   onRemovePlaceholder?.();
                   if (old) {
                     if (data && !isDocumentCached(data.clientId as string)) {
@@ -303,6 +303,8 @@ export const DocumentItem = React.memo(function DocumentItem({
               key={childProps.document.id}
               {...childProps}
               onCloseContextMenu={onCloseContextMenu}
+              onInsertPlaceholder={onInsertPlaceholder}
+              onRemovePlaceholder={onRemovePlaceholder}
               placeholderClientId={placeholderClientId}
             />
           ))}

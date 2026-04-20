@@ -41,9 +41,9 @@ import {
   useCreateContainerDocumentMutation,
   useExportDocumentMutation,
   useImportDocumentMutation,
-  ListDocumentResult,
   getAllDocumentsQueryOptions,
 } from '@/queries/documents';
+import type { ListDocumentRow, DocumentList } from '@repo/types';
 import { Link } from '@tanstack/react-router';
 import {
   DropdownMenu,
@@ -67,12 +67,10 @@ import {
 import { useSelector, useActions } from '@/store';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDocumentCached } from '@/queries/caches/documents';
-import { ItemInstance } from '@headless-tree/core';
+import { ItemInstance, TreeInstance } from '@headless-tree/core';
 import { TreeNode } from '@repo/lib/data/tree';
-import { ListDocumentResultItem } from '@/queries/documents';
-
-type DocumentTreeNode = TreeNode<ListDocumentResultItem>;
-type DocumentTreeItem = ItemInstance<DocumentTreeNode | null>;
+type DocumentTreeNode = TreeNode<ListDocumentRow>;
+type DocumentTreeItem = ItemInstance<DocumentTreeNode>;
 
 export interface ManageDocumentsTableRowProps {
   item: DocumentTreeItem;
@@ -80,7 +78,7 @@ export interface ManageDocumentsTableRowProps {
   isLast: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  tree: ReturnType<typeof import('@headless-tree/react').useTree<DocumentTreeNode | null>>;
+  tree: TreeInstance<DocumentTreeNode>;
   getDescendantIds: (nodeId: string) => string[];
   spaceID: string;
   onBeginInlineCreate?: (type: 'note' | 'folder') => void;
@@ -100,9 +98,7 @@ export function ManageDocumentsTableRow({
   onRemovePlaceholder,
   placeholderClientId,
 }: ManageDocumentsTableRowProps) {
-  const doc = item.getItemData()?.data as ListDocumentResult[number] & {
-    clientId: string | null;
-  };
+  const doc = item.getItemData().data;
   const isCreating = doc?.id === doc?.clientId || doc?.id === 'new-doc';
   const isPlaceholder = doc?.id === 'new-doc';
   const [placeholderName, setPlaceholderName] = React.useState<string>(doc?.name ?? '');
@@ -110,23 +106,26 @@ export function ManageDocumentsTableRow({
   const queryClient = useQueryClient();
   const isSubmittingPlaceholderRef = React.useRef<boolean>(false);
   const isSubmittingRenameRef = React.useRef<boolean>(false);
+
   const { updateDocumentName, isPending: isRenamePending } = useRenameDocumentMutation({
     document: doc,
   });
+
   const { updateDocumentIcon: updateIcon } = useUpdateDocumentIconMutation({
     document: doc,
   });
+
   const createDocumentMutation = useCreateDocumentMutation({
     document: doc,
     from: 'manage',
   });
+
   const createFolderMutation = useCreateContainerDocumentMutation({
     document: doc,
     from: 'manage',
   });
-  const { addToDocumentFavorites, removeDocumentFromFavorites } = useDocumentFavoritesMutation({
-    document: doc,
-  });
+
+  const { addToDocumentFavorites, removeDocumentFromFavorites } = useDocumentFavoritesMutation();
   const deleteDocumentMutation = useDeleteDocumentMutation({ document: doc });
   const duplicateDocumentMutation = useDuplicateDocumentMutation({
     document: doc,
@@ -134,18 +133,18 @@ export function ManageDocumentsTableRow({
   const copyDocumentMutation = useCopyDocumentMutation(doc);
   const moveDocumentMutation = useMoveDocumentMutation(doc);
   const { mutate: exportDocument, isPending: isExportingDocument } = useExportDocumentMutation(
-    doc?.id ?? '',
-    doc?.name,
+    doc.id,
+    doc.name,
   );
-  const importDocumentMutation = useImportDocumentMutation(doc?.id ?? null, spaceID);
+  const importDocumentMutation = useImportDocumentMutation(doc.id, spaceID);
   const { setDocumentsClipboard } = useActions();
   const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
   const isCutThisItem =
-    clipboardDocument?.type === 'move' && clipboardDocument.document.id === (doc?.id ?? '');
+    clipboardDocument?.type === 'move' && clipboardDocument.document.id === doc.id;
 
   const [isRenaming, setIsRenaming] = React.useState(false);
   const [isMenuIconPickerOpen, setIsMenuIconPickerOpen] = React.useState(false);
-  const [renameName, setRenameName] = React.useState<string>(item.getItemData()?.data.name ?? '');
+  const [renameName, setRenameName] = React.useState<string>(doc.name);
   const renameInputRef = React.useRef<HTMLInputElement>(null);
   const dragImageRef = React.useRef<HTMLImageElement | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -181,13 +180,13 @@ export function ManageDocumentsTableRow({
   // Scroll into view when isCreating and from manage
   React.useEffect(() => {
     if (!isCreating || isPlaceholder) return;
-    const createdFrom = (doc as any).from;
+    const createdFrom = doc.from;
     if (createdFrom === 'manage') {
       try {
         // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
           const el = document.querySelector(
-            `[data-manage-document-id="${doc?.id ?? ''}"]`,
+            `[data-manage-document-id="${doc.id}"]`,
           ) as HTMLElement | null;
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -197,7 +196,7 @@ export function ManageDocumentsTableRow({
         console.error('Scroll error:', error);
       }
     }
-  }, [isCreating, isPlaceholder, doc?.id, doc]);
+  }, [isCreating, isPlaceholder, doc.id, doc.from]);
 
   const handleRename = () => {
     setIsRenaming(true);
@@ -254,7 +253,7 @@ export function ManageDocumentsTableRow({
     // Get current documents to calculate position
     const currentDocuments = queryClient.getQueryData(
       getAllDocumentsQueryOptions(spaceID).queryKey,
-    ) as ListDocumentResult;
+    ) as DocumentList;
     if (!currentDocuments) {
       toast.error('Unable to get current documents');
       return;
@@ -289,13 +288,7 @@ export function ManageDocumentsTableRow({
     // Ensure this folder row is expanded before adding child
     try {
       const isOpen = typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-      if (!isOpen) {
-        if (typeof (item as any).setExpanded === 'function') {
-          (item as any).setExpanded(true);
-        } else if (typeof (item as any).expand === 'function') {
-          (item as any).expand();
-        }
-      }
+      if (!isOpen) item.expand();
     } catch {
       // ignore
     }
@@ -315,13 +308,7 @@ export function ManageDocumentsTableRow({
     // Ensure this folder row is expanded before adding child
     try {
       const isOpen = typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-      if (!isOpen) {
-        if (typeof (item as any).setExpanded === 'function') {
-          (item as any).setExpanded(true);
-        } else if (typeof (item as any).expand === 'function') {
-          (item as any).expand();
-        }
-      }
+      if (!isOpen) item.expand();
     } catch {
       // ignore
     }
@@ -355,13 +342,13 @@ export function ManageDocumentsTableRow({
           parentId: doc.parentId ?? null,
           spaceId: spaceID,
           name,
-          clientId: doc.clientId as string,
+          clientId: doc.clientId ?? '',
         },
         {
           onSuccess: (data) => {
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(spaceID).queryKey,
-              (old: ListDocumentResult) => {
+              (old: DocumentList) => {
                 removePlaceholderHandler();
                 if (old) {
                   if (!isDocumentCached(data?.clientId as string) && data) {
@@ -393,12 +380,11 @@ export function ManageDocumentsTableRow({
             // Add to query cache if not already there
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(spaceID).queryKey,
-              (old: ListDocumentResult) => {
+              (old: DocumentList) => {
                 removePlaceholderHandler();
                 if (old && data) {
-                  const { currentRevision, ...document } = data;
-                  if (!isDocumentCached(document.clientId as string)) {
-                    return [...old, document as ListDocumentResultItem];
+                  if (!isDocumentCached(data.clientId as string)) {
+                    return [...old, data];
                   }
                 }
                 return old;
@@ -435,19 +421,23 @@ export function ManageDocumentsTableRow({
 
   const handleAddToFavorites = () => {
     if (!doc?.id) return;
-    addToDocumentFavorites(doc.id);
+    addToDocumentFavorites({
+      documentId: doc.id,
+      spaceId: doc.spaceId ?? spaceID,
+    });
   };
   const handleRemoveFromFavorites = () => {
     if (!doc?.id) return;
-    removeDocumentFromFavorites(doc.id);
+    removeDocumentFromFavorites({
+      documentId: doc.id,
+      spaceId: doc.spaceId ?? spaceID,
+    });
   };
   const handleDelete = () => {
     if (!doc?.id) return;
-    const isFolder = (item.getItemData()?.data as any)?.isContainer === true;
+    const isFolder = doc.isContainer === true;
     alert({
-      title: isFolder
-        ? `Delete Folder: ${item.getItemData()?.data.name ?? ''}`
-        : `Delete Document: ${item.getItemData()?.data.name ?? ''}`,
+      title: isFolder ? `Delete Folder: ${doc.name}` : `Delete Document: ${doc.name}`,
       description: isFolder
         ? 'Are you sure you want to delete this folder? deleting this folder will also delete all of its children.'
         : 'Are you sure you want to delete this document? This action cannot be undone.',
@@ -480,13 +470,7 @@ export function ManageDocumentsTableRow({
     // Expand the item first if it's not already expanded
     try {
       const isOpen = typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-      if (!isOpen) {
-        if (typeof (item as any).setExpanded === 'function') {
-          (item as any).setExpanded(true);
-        } else if (typeof (item as any).expand === 'function') {
-          (item as any).expand();
-        }
-      }
+      if (!isOpen) item.expand();
     } catch {
       // ignore
     }
@@ -508,17 +492,17 @@ export function ManageDocumentsTableRow({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <TreeItem
-          key={item.getItemData()?.data.clientId ?? item.getId()}
+          key={doc.clientId ?? item.getId()}
           item={item}
           asChild
           className="ps-0"
           onDragStartCapture={(e) => {
             const node = e.target as unknown as Node | null;
             const el =
-              node && (node as any).nodeType === 1
+              node && node.nodeType === 1
                 ? (node as unknown as Element)
-                : node && (node as any).parentElement
-                  ? ((node as any).parentElement as Element)
+                : node && node.parentElement
+                  ? (node.parentElement as Element)
                   : null;
             if (!el) return;
             if (!el.closest('[data-drag-handle="true"]')) {
@@ -533,9 +517,7 @@ export function ManageDocumentsTableRow({
               `grid grid-cols-[minmax(16rem,2fr)_minmax(8rem,1fr)_minmax(10rem,1fr)_minmax(10rem,1fr)_auto] ps-0 gap-4 py-3 hover:bg-accent/50 group group/item`,
               !isLast && 'border-b border-dashed border-border/50',
               draggingId === item.getId() && 'opacity-50',
-              typeof (item as any).isDragTarget === 'function' &&
-                (item as any).isDragTarget() &&
-                'bg-muted/50',
+              typeof item.isDragTarget === 'function' && item.isDragTarget() && 'bg-muted/50',
               isCutThisItem && 'bg-muted border border-dashed border-border/60',
               isCreating && !isPlaceholder && 'bg-accent/30',
             )}
@@ -569,11 +551,7 @@ export function ManageDocumentsTableRow({
               <div className="flex items-center gap-2 ps-[clamp(0px,var(--tree-padding),calc(var(--spacing)*32))] min-w-0 flex-1">
                 <div className="flex items-center justify-center">
                   {(() => {
-                    const itemData = item.getItemData() as DocumentTreeNode | null;
-                    return (
-                      (itemData?.data as any)?.isContainer === true ||
-                      (itemData?.children.length ?? 0) > 0
-                    );
+                    return doc.isContainer === true || item.getChildren()?.length > 0;
                   })() ? (
                     <button
                       data-expand-toggle="true"
@@ -582,33 +560,18 @@ export function ManageDocumentsTableRow({
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        const isOpen =
-                          typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-                        const items = typeof tree.getItems === 'function' ? tree.getItems() : [];
+                        const isOpen = item.isExpanded();
+                        const items = tree.getItems();
                         if (isOpen) {
-                          if (typeof (item as any).setExpanded === 'function') {
-                            (item as any).setExpanded(false);
-                          } else if (typeof (item as any).collapse === 'function') {
-                            (item as any).collapse();
-                          }
+                          item.collapse();
                           const ids = getDescendantIds(item.getId());
                           for (const id of ids) {
-                            const child = items.find(
-                              (it: any) => typeof it.getId === 'function' && it.getId() === id,
-                            );
+                            const child = items.find((it) => it.getId() === id);
                             if (!child) continue;
-                            if (typeof (child as any).setExpanded === 'function') {
-                              (child as any).setExpanded(false);
-                            } else if (typeof (child as any).collapse === 'function') {
-                              (child as any).collapse();
-                            }
+                            child.collapse();
                           }
                         } else {
-                          if (typeof (item as any).setExpanded === 'function') {
-                            (item as any).setExpanded(true);
-                          } else if (typeof (item as any).expand === 'function') {
-                            (item as any).expand();
-                          }
+                          item.expand();
                         }
                       }}
                     >
@@ -641,10 +604,7 @@ export function ManageDocumentsTableRow({
                     }}
                     disabled={isCreating}
                   >
-                    <DynamicIcon
-                      className="size-4"
-                      name={item.getItemData()?.data.icon || 'file'}
-                    />
+                    <DynamicIcon className="size-4" name={doc.icon || 'file'} />
                   </button>
                 </IconPicker>
                 {isPlaceholder ? (
@@ -697,7 +657,7 @@ export function ManageDocumentsTableRow({
                   />
                 ) : (
                   (() => {
-                    const isContainer = (item.getItemData()?.data as any)?.isContainer === true;
+                    const isContainer = doc.isContainer === true;
                     if (isContainer) {
                       return (
                         <button
@@ -705,15 +665,9 @@ export function ManageDocumentsTableRow({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            const isOpen =
-                              typeof item.isExpanded === 'function' ? item.isExpanded() : false;
-                            if (typeof (item as any).setExpanded === 'function') {
-                              (item as any).setExpanded(!isOpen);
-                            } else if (isOpen && typeof (item as any).collapse === 'function') {
-                              (item as any).collapse();
-                            } else if (!isOpen && typeof (item as any).expand === 'function') {
-                              (item as any).expand();
-                            }
+                            const isOpen = item.isExpanded();
+                            if (isOpen) item.collapse();
+                            else item.expand();
                           }}
                         >
                           {doc.name}
@@ -723,7 +677,7 @@ export function ManageDocumentsTableRow({
                     return (
                       <Link
                         to="/view/$handle"
-                        params={{ handle: (doc as any).handle ?? doc.id }}
+                        params={{ handle: doc.handle ?? doc.id }}
                         onClick={(e) => {
                           // Avoid interfering with tree selection mechanics
                           e.stopPropagation();
@@ -738,22 +692,18 @@ export function ManageDocumentsTableRow({
               </div>
             </div>
             <div className="capitalize text-muted-foreground text-sm px-2 h-10 select-text flex items-center">
-              {(item.getItemData()?.data as any)?.isContainer === true ? 'folder' : 'note'}
+              {doc.isContainer === true ? 'folder' : 'note'}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {(() => {
-                const itemData = item.getItemData() as DocumentTreeNode | null;
-                return itemData?.data?.createdAt
-                  ? format(new Date(itemData.data.createdAt), 'MMMM d, yyyy')
-                  : '—';
+                return doc?.createdAt ? format(new Date(doc.createdAt), 'MMMM d, yyyy') : '—';
               })()}
             </div>
             <div className="text-sm text-muted-foreground px-2 h-10 select-text flex items-center text-nowrap">
               {(() => {
-                const itemData = item.getItemData() as DocumentTreeNode | null;
-                return itemData?.data?.updatedAt
+                return doc?.updatedAt
                   ? (() => {
-                      const date = new Date(itemData.data.updatedAt);
+                      const date = new Date(doc.updatedAt);
                       const now = new Date();
                       const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
                       if (diffInSeconds < 60) {
@@ -790,9 +740,9 @@ export function ManageDocumentsTableRow({
                     onCloseAutoFocus={(e: Event) => {
                       e.preventDefault();
                       try {
-                        const input = document.querySelector(
+                        const input = document.querySelector<HTMLInputElement>(
                           '[data-inline-create-input="true"]',
-                        ) as HTMLInputElement | null;
+                        );
                         if (input) {
                           input.focus();
                           input.select();
@@ -802,7 +752,7 @@ export function ManageDocumentsTableRow({
                       }
                     }}
                   >
-                    {(item.getItemData()?.data as any)?.isContainer === true && (
+                    {doc.isContainer === true && (
                       <>
                         <DropdownMenuItem className="group" onSelect={handleAddChildDocument}>
                           <FilePlus className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -839,7 +789,7 @@ export function ManageDocumentsTableRow({
                       <FolderOutput className="mr-2 h-4 w-4 group-hover:text-foreground" />
                       Export
                     </DropdownMenuItem>
-                    {(item.getItemData()?.data as any)?.isContainer === true && (
+                    {doc.isContainer === true && (
                       <DropdownMenuItem
                         disabled={importDocumentMutation.isPending}
                         onSelect={handleImport}
@@ -854,13 +804,13 @@ export function ManageDocumentsTableRow({
                       <Copy className="mr-2 h-4 w-4 group-hover:text-foreground" />
                       Copy
                     </DropdownMenuItem>
-                    {(item.getItemData()?.data as any)?.isContainer !== true && (
+                    {doc.isContainer !== true && (
                       <DropdownMenuItem className="group" onSelect={handleCut}>
                         <Scissors className="mr-2 h-4 w-4 group-hover:text-foreground" />
                         Cut
                       </DropdownMenuItem>
                     )}
-                    {(item.getItemData()?.data as any)?.isContainer === true && (
+                    {doc.isContainer === true && (
                       <>
                         <DropdownMenuItem className="group" onSelect={handleCut}>
                           <Scissors className="mr-2 h-4 w-4 group-hover:text-foreground" />
@@ -881,8 +831,8 @@ export function ManageDocumentsTableRow({
                       Duplicate
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    {(item.getItemData()?.data as any)?.isContainer !== true &&
-                      (item.getItemData()?.data.isFavorite ? (
+                    {doc.isContainer !== true &&
+                      (doc.isFavorite ? (
                         <>
                           {' '}
                           <DropdownMenuItem
@@ -958,7 +908,7 @@ export function ManageDocumentsTableRow({
             }
           }}
         >
-          {(item.getItemData()?.data as any)?.isContainer === true && (
+          {doc.isContainer === true && (
             <>
               <ContextMenuItem onSelect={handleAddChildDocument}>
                 <FilePlus className="mr-2 h-4 w-4" />
@@ -1003,7 +953,7 @@ export function ManageDocumentsTableRow({
             <FolderOutput className="mr-2 h-4 w-4" />
             Export
           </ContextMenuItem>
-          {(item.getItemData()?.data as any)?.isContainer === true && (
+          {doc.isContainer === true && (
             <ContextMenuItem disabled={importDocumentMutation.isPending} onSelect={handleImport}>
               <FolderInput className="mr-2 h-4 w-4" />
               Import
@@ -1014,13 +964,13 @@ export function ManageDocumentsTableRow({
             <Copy className="mr-2 h-4 w-4" />
             Copy
           </ContextMenuItem>
-          {(item.getItemData()?.data as any)?.isContainer !== true && (
+          {doc.isContainer !== true && (
             <ContextMenuItem onSelect={handleCut}>
               <Scissors className="mr-2 h-4 w-4" />
               Cut
             </ContextMenuItem>
           )}
-          {(item.getItemData()?.data as any)?.isContainer === true && (
+          {doc.isContainer === true && (
             <>
               <ContextMenuItem onSelect={handleCut}>
                 <Scissors className="mr-2 h-4 w-4" />
@@ -1041,8 +991,8 @@ export function ManageDocumentsTableRow({
             Duplicate
           </ContextMenuItem>
           <ContextMenuSeparator />
-          {(item.getItemData()?.data as any)?.isContainer !== true &&
-            (item.getItemData()?.data.isFavorite ? (
+          {doc.isContainer !== true &&
+            (doc.isFavorite ? (
               <>
                 <ContextMenuItem onSelect={handleRemoveFromFavorites}>
                   <Star className={cn('mr-2 h-4 w-4', 'fill-amber-400')} />
@@ -1066,7 +1016,7 @@ export function ManageDocumentsTableRow({
         </ContextMenuContent>
       )}
       {/* Hidden file input for import */}
-      {(item.getItemData()?.data as any)?.isContainer === true && (
+      {doc.isContainer === true && (
         <input
           ref={fileInputRef}
           type="file"

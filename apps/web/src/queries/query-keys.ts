@@ -16,7 +16,8 @@ export const DOCUMENTS_QUERY_KEYS = {
   SEARCH_DOCUMENTS: (search: string, spaceId?: string) => ['docs', 'search', { search, spaceId }],
 
   /** Full hierarchy for a space (`listDocuments`). */
-  LIST_BY_SPACE: (spaceId: string) => ['documents', spaceId] as const,
+  LIST_BASE: ['documents'],
+  LIST_BY_SPACE: (spaceId: string) => [...DOCUMENTS_QUERY_KEYS.LIST_BASE, spaceId] as const,
 
   /** One document loaded by id (third segment distinguishes from handle). */
   DETAIL_BY_ID: (id: string) => ['document', id, { id: true as const }] as const,

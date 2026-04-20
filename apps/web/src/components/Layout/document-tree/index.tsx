@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-'use client';
-
 import { DocumentItem } from './DocumentItem';
 import { CreateDocumentSection } from './CreateDocumentSection';
 import { useDocumentTree } from './useDocumentTree';
@@ -12,17 +10,19 @@ import { SidebarMenu, SidebarMenuSkeleton } from '@repo/ui/components/sidebar';
 import { useActions, useSelector } from '@/store';
 import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
+import type { DocumentType, ListDocumentRow } from '@repo/types';
+import { getAllDocumentsQueryOptions } from '@/queries/documents';
 import { getSiblings, sortByPosition, generatePositionKeyBetween } from '@repo/lib/utils/position';
 import { ScrollArea } from '@repo/ui/components/scroll-area';
 import { v4 as uuidv4 } from 'uuid';
+import { DocumentItemProps, TreeNode } from './types';
 
 export function DocumentTree() {
   const activeSpace = useSelector((state) => state.wordy.activeSpace[state.tabs.activePane]);
   const spaceId = activeSpace?.id ?? '';
   const { data: documentsData } = useQuery(getAllDocumentsQueryOptions(spaceId!));
 
-  const [placeholder, setPlaceholder] = React.useState<ListDocumentResult[number] | null>(null);
+  const [placeholder, setPlaceholder] = React.useState<ListDocumentRow | null>(null);
 
   // Merge placeholder with documents data
   const documentsWithPlaceholder = React.useMemo(() => {
@@ -47,7 +47,7 @@ export function DocumentTree() {
   const { clearInlineCreate } = useActions();
 
   const insertPlaceholder = React.useCallback(
-    (params: { type: 'note' | 'folder'; name?: string; parentId: string | null }) => {
+    (params: { type: DocumentType; name?: string; parentId: string | null }) => {
       if (!documentsData) return;
 
       const resolvedParentId = params.parentId === 'root' ? null : params.parentId;
@@ -59,12 +59,12 @@ export function DocumentTree() {
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
       const clientId = uuidv4();
-      const newPlaceholder: ListDocumentResult[number] = {
+      const newPlaceholder: ListDocumentRow = {
         id: 'new-doc',
-        clientId: clientId as any,
+        clientId,
         name: params.name?.trim() || (params.type === 'folder' ? 'New Folder' : 'New Document'),
         handle: 'new-doc',
-        icon: params.type === 'folder' ? ('folder' as any) : ('file' as any),
+        icon: params.type === 'folder' ? 'folder' : 'file',
         position,
         parentId: resolvedParentId,
         spaceId,
@@ -73,7 +73,7 @@ export function DocumentTree() {
         isContainer: params.type === 'folder',
         updatedAt: new Date(),
         lastViewedAt: null,
-        documentType: params.type === 'folder' ? ('folder' as any) : ('note' as any),
+        documentType: params.type === 'folder' ? 'folder' : 'note',
         from: 'sidebar',
         currentRevisionId: null,
         userId: '',
@@ -117,15 +117,18 @@ export function DocumentTree() {
 
   // Memoize renderDocumentItem to prevent recreation on every render
   const renderDocumentItem = React.useCallback(
-    ({ data: document, children }: Pick<{ data: any; children: any[] }, 'data' | 'children'>) => {
-      const mapNode = (node: any, depth: number): any => {
-        const mappedChildren = node.children.map((child: any) => mapNode(child, depth + 1));
-        const hasActiveInChildren = mappedChildren.some((c: any) => c.isActive || c.isAncestor);
+    (data: TreeNode) => {
+      const mapNode = (node: TreeNode, depth: number): DocumentItemProps => {
+        const mappedChildren = node.children.map((child: TreeNode) => mapNode(child, depth + 1));
+        const hasActiveInChildren = mappedChildren.some(
+          (c: DocumentItemProps) => c.isActive || c.isAncestor,
+        );
         const isNodeActive = node.data.id === activeId;
         const isNodeAncestor = !isNodeActive && hasActiveInChildren;
-        // Only include placeholderClientId for the root level, not in children
-        // This prevents unnecessary prop object recreation for all children
-        const nodeProps: any = {
+        // Tree nodes only carry `DocumentItemProps`; placeholder handlers and
+        // `placeholderClientId` are supplied by the root `DocumentItem` and forwarded
+        // in `DocumentItem` for nested rows.
+        const nodeProps: DocumentItemProps = {
           document: node.data,
           children: mappedChildren,
           isActive: isNodeActive,
@@ -136,20 +139,15 @@ export function DocumentTree() {
           onSelectDocument: handleSelectDocument,
           onToggleExpanded: toggleExpanded,
           onOpenContextMenu: setOpenMenuDocumentId,
-          onInsertPlaceholder: insertPlaceholder,
-          onRemovePlaceholder: removePlaceholder,
         };
-        // Only add placeholderClientId at root level (depth 0)
-        if (depth === 0) {
-          nodeProps.placeholderClientId = placeholderClientId;
-        }
+
         return nodeProps;
       };
 
       return (
         <DocumentItem
-          key={(document as any).clientId ?? document.id}
-          {...mapNode({ data: document, children }, 0)}
+          key={data.data.clientId ?? data.data.id}
+          {...mapNode(data, 0)}
           openMenuDocumentId={openMenuDocumentId}
           onSelectDocument={handleSelectDocument}
           onToggleExpanded={toggleExpanded}
@@ -178,11 +176,7 @@ export function DocumentTree() {
   return (
     <ScrollArea className="h-full [&>[data-radix-scroll-area-viewport]>div[style]]:block!">
       <SidebarMenu className="min-h-0 max-w-full gap-0.5 pr-0.5">
-        {isLoading ? (
-          <SidebarMenuSkeleton showIcon />
-        ) : (
-          rootDocuments.map((document: any) => renderDocumentItem(document))
-        )}
+        {isLoading ? <SidebarMenuSkeleton showIcon /> : rootDocuments.map(renderDocumentItem)}
       </SidebarMenu>
       {!isLoading && <CreateDocumentSection />}
     </ScrollArea>

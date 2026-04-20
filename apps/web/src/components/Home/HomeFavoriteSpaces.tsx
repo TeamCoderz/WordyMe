@@ -4,7 +4,7 @@
  */
 
 import { FavoriteSpaceItem } from '@/components/Home/FavoriteSpaceItem';
-import { SortOptions } from '@/types/sort';
+import type { SortOptions } from '@/types';
 import { getHomeFavoriteSpacesQueryOptions } from '@/queries/spaces';
 import { Button } from '@repo/ui/components/button';
 import {

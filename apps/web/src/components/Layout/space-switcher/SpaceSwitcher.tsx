@@ -55,7 +55,8 @@ import {
 } from '@repo/ui/components/context-menu';
 import { useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
-import { getAllSpacesQueryOptions, ListSpaceResult, ListSpaceResultItem } from '@/queries/spaces';
+import type { DocumentList, ListDocumentRow } from '@repo/types';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { useSelector } from '@/store';
 import {
   useCopySpaceMutation,
@@ -72,7 +73,7 @@ export function SpaceSwitcher() {
   const [isSwitcherOpen, setIsSwitcherOpen] = React.useState(false);
   const [isManageDisabled, setIsManageDisabled] = React.useState(false);
   const [canCloseDropdown, setCanCloseDropdown] = React.useState(true);
-  const [placeholder, setPlaceholder] = React.useState<ListSpaceResultItem | null>(null);
+  const [placeholder, setPlaceholder] = React.useState<ListDocumentRow | null>(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: spacesData } = useQuery(getAllSpacesQueryOptions);
@@ -124,7 +125,7 @@ export function SpaceSwitcher() {
     // Calculate position at the end of root spaces
     const currentSpaces = queryClient.getQueryData(
       getAllSpacesQueryOptions.queryKey,
-    ) as ListSpaceResult;
+    ) as DocumentList;
 
     if (!currentSpaces) {
       toast.error('No spaces data available');
@@ -171,9 +172,9 @@ export function SpaceSwitcher() {
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
       const clientId = uuidv4();
-      const newPlaceholder: ListSpaceResultItem = {
+      const newPlaceholder: ListDocumentRow = {
         id: 'new-space',
-        clientId: clientId as any,
+        clientId,
         name: params.name?.trim() || (params.type === 'folder' ? 'New Folder' : 'New Space'),
         handle: 'new-space',
         icon: params.type === 'space' ? 'briefcase' : 'folder-closed',

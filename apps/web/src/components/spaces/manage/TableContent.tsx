@@ -10,15 +10,17 @@ import { AssistiveTreeDescription, useTree } from '@headless-tree/react';
 import {
   dragAndDropFeature,
   hotkeysCoreFeature,
+  ItemInstance,
   keyboardDragAndDropFeature,
   selectionFeature,
   syncDataLoaderFeature,
 } from '@headless-tree/core';
 import { Tree, TreeDragLine } from '@repo/ui/components/tree';
 import { ManageSpacesTableRow } from './TableRow';
-import { arrayToTree } from '@repo/lib/data/tree';
+import { arrayToTree, type TreeNode } from '@repo/lib/data/tree';
 import { generatePositionKeysBetween } from '@repo/lib/utils/position';
-import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
+import type { DocumentList, ListDocumentRow } from '@repo/types';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { updateDocument } from '@repo/sdk/documents.ts';
 
 export type ManageSpacesTableContentHandle = {
@@ -30,7 +32,7 @@ export const ManageSpacesTableContent = React.forwardRef<
   ManageSpacesTableContentHandle,
   {
     rootSpaceId?: string;
-    spaces?: ListSpaceResult;
+    spaces?: DocumentList;
     onInsertPlaceholder?: (params: {
       parentId: string | null;
       type: 'space' | 'folder';
@@ -85,20 +87,21 @@ export const ManageSpacesTableContent = React.forwardRef<
     return arrayToTree(normalized);
   }, [spaces, rootSpaceId]);
 
-  const tree = useTree<any | null>({
+  const tree = useTree<ListDocumentRow | null>({
     initialState: {
       expandedItems: [],
       selectedItems: [],
     },
     indent: 4,
     rootItemId: 'root',
-    getItemName: (item) => item.getItemData()?.data.name ?? '',
+    getItemName: (item) => item.getItemData()?.name ?? '',
     isItemFolder: (item) => {
       try {
         const data = item.getItemData();
-        const hasChildren = Array.isArray(data?.children) && data.children.length > 0;
-        const isContainer = (data?.data as any)?.isContainer === true;
-        return isContainer || hasChildren;
+        if (!data) return false;
+        const node = spacesTree.findNodeById(data.id);
+        const hasChildren = (node?.children?.length ?? 0) > 0;
+        return data.isContainer === true || hasChildren;
       } catch {
         return false;
       }
@@ -116,15 +119,14 @@ export const ManageSpacesTableContent = React.forwardRef<
         }
         // Disallow dropping inside non-container spaces (except implicit root handling above)
         const parentItem = target.item.getItemData?.();
-        const parentData = parentItem?.data ?? parentItem;
+        const parentNode = parentItem ? spacesTree.findNodeById(parentItem.id) : null;
         const isContainer =
-          parentData?.isContainer === true ||
-          (Array.isArray(parentItem?.children) && parentItem.children.length > 0);
+          parentItem?.isContainer === true || (parentNode?.children?.length ?? 0) > 0;
         if (parentItem && parentItem.id !== 'root' && !isContainer) {
           return false;
         }
         return true;
-      } catch (e) {
+      } catch {
         return true;
       }
     },
@@ -132,10 +134,9 @@ export const ManageSpacesTableContent = React.forwardRef<
       const parentItem = target.item.getItemData();
       // Guard again at runtime: prevent drop into non-container spaces
       try {
-        const parentData = parentItem?.data ?? parentItem;
+        const parentNode = parentItem ? spacesTree.findNodeById(parentItem.id) : null;
         const isContainer =
-          parentData?.isContainer === true ||
-          (Array.isArray(parentItem?.children) && parentItem.children.length > 0);
+          parentItem?.isContainer === true || (parentNode?.children?.length ?? 0) > 0;
         if (parentItem && parentItem.id !== 'root' && !isContainer) {
           return;
         }
@@ -148,20 +149,21 @@ export const ManageSpacesTableContent = React.forwardRef<
       if (rootSpaceId && parentItem?.id === 'root') {
         return;
       }
-      const children = parentItem?.children ?? [];
-      const childIndex = (target as any).childIndex ?? children.length;
+      const parentNodeForChildren = parentItem ? spacesTree.findNodeById(parentItem.id) : null;
+      const children = parentNodeForChildren?.children ?? [];
+      const childIndex = (target as { childIndex?: number }).childIndex ?? children.length;
 
       const prevKey = children[childIndex - 1]?.data.position;
       const nextKey = children[childIndex]?.data.position;
       const positionKeys = generatePositionKeysBetween(prevKey, nextKey, items.length);
       for (const [index, item] of items.entries()) {
-        const child = item.getItemData()?.data;
+        const child = item.getItemData();
         if (!child) continue;
         const newPosition = positionKeys[index];
         if (child.parentId !== parentId || child.position !== newPosition) {
           const loadingToast = toast.loading('Updating space position...');
           try {
-            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
               return old?.map((s) => {
                 if (s.id === child.id) {
                   return { ...s, parentId, position: newPosition };
@@ -176,7 +178,7 @@ export const ManageSpacesTableContent = React.forwardRef<
               position: newPosition,
             });
             if (error) throw error;
-            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
               return old?.map((s) => {
                 if (s.id === child.id) {
                   return data;
@@ -188,11 +190,11 @@ export const ManageSpacesTableContent = React.forwardRef<
               id: loadingToast,
             });
             tree.rebuildTree();
-          } catch (error) {
+          } catch {
             toast.error('Failed to update space position', {
               id: loadingToast,
             });
-            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+            queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
               return old?.map((s) => {
                 if (s.id === child.id) {
                   return { ...s, parentId, position: child.position };
@@ -215,7 +217,7 @@ export const ManageSpacesTableContent = React.forwardRef<
             console.warn(`Item not found: ${itemId}`);
             return null;
           }
-          return node;
+          return node.data;
         } catch (error) {
           console.error(`Error getting item ${itemId}:`, error);
           return null;
@@ -229,12 +231,10 @@ export const ManageSpacesTableContent = React.forwardRef<
             return [];
           }
           return (
-            node.children
-              ?.filter((child: any) => child.id !== 'new')
-              ?.map((child: any) => child.id) ?? []
+            node.children?.filter((child) => child.id !== 'new')?.map((child) => child.id) ?? []
           );
-        } catch (error) {
-          console.error(`Error getting children for ${itemId}:`, error);
+        } catch {
+          console.error(`Error getting children for ${itemId}`);
           return [];
         }
       },
@@ -261,13 +261,7 @@ export const ManageSpacesTableContent = React.forwardRef<
         try {
           const items = tree.getItems();
           const item = items.find((it) => typeof it.getId === 'function' && it.getId() === itemId);
-          if (item) {
-            if (typeof (item as any).setExpanded === 'function') {
-              (item as any).setExpanded(true);
-            } else if (typeof (item as any).expand === 'function') {
-              (item as any).expand();
-            }
-          }
+          if (item) item.expand();
         } catch (error) {
           // Item might not be in tree or not expandable
           console.warn('Could not expand item:', itemId, error);
@@ -286,7 +280,7 @@ export const ManageSpacesTableContent = React.forwardRef<
       const ids: string[] = [];
       const node = spacesTree.findNodeById(nodeId);
       if (!node) return ids;
-      const walk = (n: any) => {
+      const walk = (n: TreeNode<ListDocumentRow>) => {
         const children = n.children ?? [];
         for (const child of children) {
           if (!child?.id) continue;
@@ -300,7 +294,11 @@ export const ManageSpacesTableContent = React.forwardRef<
     [spacesTree],
   );
 
-  const itemsToRender = tree.getItems().filter((item) => item.getId() !== 'root');
+  const itemsToRender = tree
+    .getItems()
+    .filter(
+      (item) => item.getId() !== 'root' && item.getItemData() !== null,
+    ) as ItemInstance<ListDocumentRow>[];
 
   return (
     <div className="min-w-fit w-full select-none">
@@ -324,11 +322,6 @@ export const ManageSpacesTableContent = React.forwardRef<
         <AssistiveTreeDescription tree={tree} />
         {itemsToRender.map((item, index) => {
           try {
-            const itemData = item?.getItemData?.();
-            if (!itemData) {
-              console.warn(`Item data not found for: ${item.getId()}`);
-              return null;
-            }
             const nodeId = item.getId();
             return (
               <ManageSpacesTableRow

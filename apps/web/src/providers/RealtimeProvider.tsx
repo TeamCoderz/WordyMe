@@ -9,9 +9,10 @@ import {
   removeDocumentFromCache,
 } from '@/queries/caches/documents';
 import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from '@/queries/caches/spaces';
-import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
+import type { DocumentList } from '@repo/types';
+import { getAllDocumentsQueryOptions } from '@/queries/documents';
 import { DOCUMENTS_QUERY_KEYS, SPACES_QUERY_KEYS } from '@/queries/query-keys';
-import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { useAllQueriesInvalidate } from '@/queries/utils';
 import { useSelector } from '@/store';
 import { PlainDocument } from '@repo/backend/documents.js';
@@ -28,6 +29,12 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouteContext } from '@tanstack/react-router';
 import { createContext, useContext, useEffect, useState } from 'react';
+
+/** Prefer invalidating the space tree when `spaceId` is known; otherwise invalidate all document lists. */
+function documentListInvalidateKey(spaceId: string | null | undefined) {
+  return spaceId ? DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceId) : DOCUMENTS_QUERY_KEYS.LIST_BASE;
+}
+
 interface RealtimeProviderContextType {
   isConnected: boolean;
 }
@@ -89,11 +96,11 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
   useEffect(() => {
     // handle space created
     const handleSpaceCreated = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         if (old) {
           if (!isSpaceCached(data.clientId)) {
             addSpaceToCache(data.clientId);
-            return [...old, data];
+            return [...old, { ...data, documentType: 'space' }];
           }
         }
         return old;
@@ -103,11 +110,11 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     on('space:created', handleSpaceCreated);
     // handle space updated
     const handleSpaceUpdated = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         if (old) {
           return old.map((space) => {
             if (space.id === data.id) {
-              return data;
+              return { ...space, ...data, documentType: 'space' };
             }
             return space;
           });
@@ -119,7 +126,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     on('space:updated', handleSpaceUpdated);
     // handle space deleted
     const handleSpaceDeleted = (data: PlainDocument) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         if (old) {
           removeSpaceFromCache(data.clientId);
           return old.filter((space) => space.id !== data.id);
@@ -131,7 +138,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     on('space:deleted', handleSpaceDeleted);
     // handle space favorited
     const handleSpaceFavorited = (data: { id: string; userId: string; documentId: string }) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         if (old) {
           return old.map((space) => {
             if (space.id === data.documentId) {
@@ -147,7 +154,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     on('space:favorited', handleSpaceFavorited);
     // handle space unfavorited
     const handleSpaceUnfavorited = (data: { id: string; userId: string; documentId: string }) => {
-      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: ListSpaceResult) => {
+      queryClient.setQueryData(getAllSpacesQueryOptions.queryKey, (old: DocumentList) => {
         if (old) {
           return old.map((space) => {
             if (space.id === data.documentId) {
@@ -176,7 +183,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
       if (data.spaceId) {
         queryClient.setQueryData(
           getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
+          (old: DocumentList) => {
             if (old) {
               if (!isDocumentCached(data.clientId)) {
                 addDocumentToCache(data.clientId, 'real-time');
@@ -191,6 +198,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        documentListInvalidateKey(data.spaceId),
       ]);
     };
     on('document:created', handleDocumentCreated);
@@ -200,12 +208,12 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         const spaceHasDocument = (
           queryClient.getQueryData(
             getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          ) as ListDocumentResult
+          ) as DocumentList
         )?.find((document) => document.id === data.id);
         if (spaceHasDocument) {
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(data.spaceId).queryKey,
-            (old: ListDocumentResult) => {
+            (old: DocumentList) => {
               if (old) {
                 return old.map((document) => {
                   if (document.id === data.id) {
@@ -220,7 +228,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         } else {
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(data.spaceId).queryKey,
-            (old: ListDocumentResult) => {
+            (old: DocumentList) => {
               if (old) {
                 return [...old, data];
               }
@@ -233,6 +241,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        documentListInvalidateKey(data.spaceId),
       ]);
     };
     on('document:updated', handleDocumentUpdated);
@@ -241,7 +250,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
       if (data.spaceId) {
         queryClient.setQueryData(
           getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
+          (old: DocumentList) => {
             if (old) {
               removeDocumentFromCache(data.clientId);
               return old.filter((document) => document.id !== data.id);
@@ -254,6 +263,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        documentListInvalidateKey(data.spaceId),
       ]);
     };
     on('document:deleted', handleDocumentDeleted);
@@ -267,7 +277,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
       if (data.spaceId) {
         queryClient.setQueryData(
           getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
+          (old: DocumentList) => {
             if (old) {
               return old.map((document) => {
                 if (document.id === data.documentId) {
@@ -284,6 +294,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        documentListInvalidateKey(data.spaceId),
       ]);
     };
     on('document:favorited', handleDocumentFavorited);
@@ -297,7 +308,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
       if (data.spaceId) {
         queryClient.setQueryData(
           getAllDocumentsQueryOptions(data.spaceId).queryKey,
-          (old: ListDocumentResult) => {
+          (old: DocumentList) => {
             if (old) {
               return old.map((document) => {
                 if (document.id === data.documentId) {
@@ -314,6 +325,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        documentListInvalidateKey(data.spaceId),
       ]);
     };
     on('document:unfavorited', handleDocumentUnfavorited);
@@ -343,6 +355,7 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
     </RealtimeProviderContext.Provider>
   );
 };
+
 export const useRealtime = () => {
   const context = useContext(RealtimeProviderContext);
   if (!context) {

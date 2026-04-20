@@ -48,10 +48,10 @@ import {
   useMoveSpaceMutation,
   useDuplicateSpaceMutation,
   getAllSpacesQueryOptions,
-  ListSpaceResult,
   useExportSpaceMutation,
   useImportSpaceMutation,
 } from '@/queries/spaces';
+import type { DocumentList } from '@repo/types';
 import { alert } from '../alert';
 import {
   ContextMenu,
@@ -126,11 +126,11 @@ function SpaceNameInput({
           isSubmittingRef.current = false;
           queryClient.setQueryData(
             getAllSpacesQueryOptions.queryKey,
-            (old: ListSpaceResult | undefined) => {
+            (old: DocumentList | undefined) => {
               onRemovePlaceholder?.();
               if (old) {
-                if (!isSpaceCached(data?.clientId as string)) {
-                  addSpaceToCache(data?.clientId as string);
+                if (!isSpaceCached(data.clientId)) {
+                  addSpaceToCache(data.clientId);
                   return [...old, data];
                 }
               }
@@ -390,12 +390,10 @@ function ContainerSpaceItem({
     !!clipboardSpace &&
     (clipboardSpace.type === 'copy' || clipboardSpace.type === 'move') &&
     clipboardSpace.space.id !== space.id;
-  const duplicateSpaceMutation = useDuplicateSpaceMutation({
-    space: space as any,
-  });
-  const copySpaceMutation = useCopySpaceMutation(space as any);
-  const moveSpaceMutation = useMoveSpaceMutation(space as any);
-  const deleteSpaceMutation = useDeleteSpaceMutation({ space: space as any });
+  const duplicateSpaceMutation = useDuplicateSpaceMutation({ space });
+  const copySpaceMutation = useCopySpaceMutation(space);
+  const moveSpaceMutation = useMoveSpaceMutation(space);
+  const deleteSpaceMutation = useDeleteSpaceMutation({ space });
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
 
   const isPlaceholder = space.id === 'new-space';
@@ -526,7 +524,7 @@ function ContainerSpaceItem({
     // Get current spaces to calculate position
     const currentSpaces = queryClient.getQueryData(
       getAllSpacesQueryOptions.queryKey,
-    ) as ListSpaceResult;
+    ) as DocumentList;
     if (!currentSpaces) {
       toast.error('Unable to get current spaces');
       return;
@@ -751,14 +749,14 @@ function ContainerSpaceItem({
                 <ContextMenuSeparator />
                 <ContextMenuItem
                   className="group"
-                  onSelect={() => setSpacesClipboard(space as any, 'copy')}
+                  onSelect={() => setSpacesClipboard(space, 'copy')}
                 >
                   <Copy className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Copy
                 </ContextMenuItem>
                 <ContextMenuItem
                   className="group"
-                  onSelect={() => setSpacesClipboard(space as any, 'move')}
+                  onSelect={() => setSpacesClipboard(space, 'move')}
                 >
                   <Scissors className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Cut
@@ -792,11 +790,11 @@ function ContainerSpaceItem({
                             }
                           };
                           if (clipboardSpace.type === 'move') {
-                            moveSpaceMutation.mutate(undefined as any, {
+                            moveSpaceMutation.mutate(undefined, {
                               onSuccess: expandAndScrollToEnd,
                             });
                           } else {
-                            copySpaceMutation.mutate(undefined as any, {
+                            copySpaceMutation.mutate(undefined, {
                               onSuccess: expandAndScrollToEnd,
                             });
                           }
@@ -900,10 +898,8 @@ function RegularSpaceItem({
   );
   const isCreating = space.id === (space.clientId ?? '');
   const { setSpacesClipboard } = useActions();
-  const deleteSpaceMutation = useDeleteSpaceMutation({ space: space as any });
-  const duplicateSpaceMutationRegular = useDuplicateSpaceMutation({
-    space: space as any,
-  });
+  const deleteSpaceMutation = useDeleteSpaceMutation({ space });
+  const duplicateSpaceMutationRegular = useDuplicateSpaceMutation({ space });
   const contextMenuContentRef = React.useRef<HTMLDivElement>(null);
   const clipboardSpaceRegular = useSelector((state) => state.wordy.spacesClipboard);
   const isCutThisSpaceRegular =
@@ -1120,17 +1116,11 @@ function RegularSpaceItem({
                 Manage
               </ContextMenuItem>
               <ContextMenuSeparator />
-              <ContextMenuItem
-                className="group"
-                onSelect={() => setSpacesClipboard(space as any, 'copy')}
-              >
+              <ContextMenuItem className="group" onSelect={() => setSpacesClipboard(space, 'copy')}>
                 <Copy className="mr-2 h-4 w-4 group-hover:text-foreground" />
                 Copy
               </ContextMenuItem>
-              <ContextMenuItem
-                className="group"
-                onSelect={() => setSpacesClipboard(space as any, 'move')}
-              >
+              <ContextMenuItem className="group" onSelect={() => setSpacesClipboard(space, 'move')}>
                 <Scissors className="mr-2 h-4 w-4 group-hover:text-foreground" />
                 Cut
               </ContextMenuItem>

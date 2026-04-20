@@ -4,10 +4,6 @@
  */
 
 import {
-  // getRevisionsByDocumentId,
-  // createNewRevision,
-  // deleteRevisionById,
-  // getRevisionWithContent,
   updateRevisionName,
   createRevision,
   deleteRevision,
@@ -150,11 +146,11 @@ export function useUpdateRevisionNameMutation({
         invalidate([
           getDocumentByHandleQueryOptions(document?.handle ?? '').queryKey,
           getLocalRevisionByDocumentIdQueryOptions(document?.id, document?.currentRevisionId, true)
-            .queryKey as string[],
+            .queryKey,
         ]);
       }
     },
-    onError: (error: any, __, toastId) => {
+    onError: (error, __, toastId) => {
       toast.error(error?.message || 'Error renaming revision', {
         id: toastId ?? undefined,
       });
@@ -178,7 +174,6 @@ export function useSaveDocumentMutation({
       checksum,
       revisionName,
       keepPreviousRevision,
-      isAutosave: _ = false,
     }: {
       document: Document;
       serializedEditorState: SerializedEditorState;
@@ -272,7 +267,7 @@ export function getLocalRevisionByDocumentIdQueryOptions(
         return {
           content: JSON.stringify(localDocument),
         };
-      } catch (error) {
+      } catch {
         const revision = await getRevisionByIdQueryOptions(head, true).queryFn();
 
         await saveLocalDocument(documentId, JSON.parse(revision.content));

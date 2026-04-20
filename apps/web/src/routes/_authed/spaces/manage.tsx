@@ -10,7 +10,8 @@ import z from 'zod';
 import { ManageSpacesTopbar } from '@/components/spaces/manage/Topbar';
 import { ManageSpacesTable as SpacesManageTable } from '@/components/spaces/manage/Table';
 import { useQuery } from '@tanstack/react-query';
-import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
+import type { DocumentList, ListDocumentRow } from '@repo/types';
+import { getAllSpacesQueryOptions } from '@/queries/spaces';
 import { toast } from 'sonner';
 import { Suspense } from 'react';
 import { Skeleton } from '@repo/ui/components/skeleton';
@@ -34,7 +35,7 @@ function ManageSpacesPage() {
   const navigate = useNavigate();
   const { data: spacesData, isLoading } = useQuery(getAllSpacesQueryOptions);
 
-  const [placeholder, setPlaceholder] = React.useState<ListSpaceResult[number] | null>(null);
+  const [placeholder, setPlaceholder] = React.useState<ListDocumentRow | null>(null);
 
   // Merge placeholder with spaces data
   const spacesWithPlaceholder = React.useMemo(() => {
@@ -63,12 +64,12 @@ function ManageSpacesPage() {
       else position = generatePositionKeyBetween(sorted.at(-1)?.position || 'a0', null);
 
       const clientId = uuidv4();
-      const newPlaceholder: ListSpaceResult[number] = {
+      const newPlaceholder: ListDocumentRow = {
         id: 'new-space',
-        clientId: clientId as any,
+        clientId: clientId,
         name: params.name?.trim() || (params.type === 'folder' ? 'New Folder' : 'New Space'),
         handle: 'new-space',
-        icon: params.type === 'folder' ? ('folder-closed' as any) : ('briefcase' as any),
+        icon: params.type === 'folder' ? 'folder-closed' : 'briefcase',
         position,
         parentId: resolvedParentId,
         spaceId: null,
@@ -96,7 +97,7 @@ function ManageSpacesPage() {
     // Calculate position at the end of root spaces
     const currentSpaces = queryClient.getQueryData(
       getAllSpacesQueryOptions.queryKey,
-    ) as ListSpaceResult;
+    ) as DocumentList;
 
     if (!currentSpaces) {
       toast.error('No spaces data available');
@@ -130,7 +131,7 @@ function ManageSpacesPage() {
 
   const effectiveRootId = React.useMemo(() => {
     if (!rootSpaceId || !Array.isArray(spacesWithPlaceholder)) return rootSpaceId;
-    const byId = new Map((spacesWithPlaceholder as ListSpaceResult).map((s) => [s.id, s] as const));
+    const byId = new Map(spacesWithPlaceholder.map((s) => [s.id, s] as const));
     let current = byId.get(rootSpaceId);
     if (!current) return rootSpaceId;
     if (current.isContainer !== true) {
@@ -151,7 +152,7 @@ function ManageSpacesPage() {
   React.useEffect(() => {
     if (isLoading) return;
     if (!rootSpaceId) return;
-    const allSpaces = (spacesWithPlaceholder as ListSpaceResult) ?? [];
+    const allSpaces = spacesWithPlaceholder ?? [];
     const exists = allSpaces.some((s) => s.id === rootSpaceId);
     if (!exists) {
       navigate({ to: '/spaces/manage', search: {}, replace: true });
@@ -198,7 +199,7 @@ const ManageSpacesTable = React.forwardRef<
   },
   {
     rootSpaceId?: string;
-    spaces?: ListSpaceResult;
+    spaces?: DocumentList;
     onInsertPlaceholder?: (params: {
       parentId: string | null;
       type: 'space' | 'folder';

@@ -34,7 +34,14 @@ import {
   useAllQueriesInvalidate,
   useRemoveWithDescendantsFromCache,
 } from './utils';
-import { SortOptions } from '../types/sort';
+import type {
+  EditorDocument,
+  ListDocumentRow,
+  DocumentList,
+  ListDocumentOrParentRef,
+  SearchDocumentResult,
+} from '@repo/types';
+import type { SortOptions } from '@/types';
 import { DOCUMENTS_QUERY_KEYS } from './query-keys';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
 import { format } from 'date-fns';
@@ -52,26 +59,22 @@ import { getRevisionsByDocumentIdQueryOptions } from './revisions';
 import { addDocumentToCache, isDocumentCached, removeDocumentFromCache } from './caches/documents';
 import { createLocalDocument, deleteLocalDocument } from '@repo/editor/indexeddb';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
+
+/** Prefer invalidating the space tree when `spaceId` is known; otherwise invalidate all document lists. */
+function documentListInvalidateKey(spaceId: string | null | undefined) {
+  return spaceId ? DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceId) : DOCUMENTS_QUERY_KEYS.LIST_BASE;
+}
+
 const listDocuments = async ({ spaceId }: { spaceId: string }) => {
   return await getUserDocuments({ spaceId, documentType: 'note' });
 };
-export type ListDocumentResultItem = NonNullable<
-  Awaited<ReturnType<typeof listDocuments>>['data']
->[number] & {
-  from?: 'sidebar' | 'manage';
-};
-export type ListDocumentResult = ListDocumentResultItem[];
-
-export type SearchDocumentsResult = NonNullable<
-  Awaited<ReturnType<typeof searchDocuments>>['data']
->;
 
 export const searchDocumentsQueryOptions = (search: string, spaceId?: string, limit = 20) => {
   const trimmedSearch = search.trim();
 
   return {
     queryKey: DOCUMENTS_QUERY_KEYS.SEARCH_DOCUMENTS(trimmedSearch, spaceId),
-    queryFn: async (): Promise<SearchDocumentsResult> => {
+    queryFn: async (): Promise<SearchDocumentResult[]> => {
       if (!trimmedSearch) {
         return [];
       }
@@ -88,7 +91,7 @@ export const searchDocumentsQueryOptions = (search: string, spaceId?: string, li
   };
 };
 
-export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<ListDocumentResult> {
+export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<DocumentList> {
   return {
     queryKey: DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceID),
     queryFn: async () => {
@@ -103,11 +106,7 @@ export function getAllDocumentsQueryOptions(spaceID: string): UseQueryOptions<Li
   };
 }
 
-export const useRenameDocumentMutation = ({
-  document,
-}: {
-  document: ListDocumentResult[number];
-}) => {
+export const useRenameDocumentMutation = ({ document }: { document: ListDocumentRow }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const { updateTab } = useActions();
@@ -131,6 +130,7 @@ export const useRenameDocumentMutation = ({
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
       return data;
     },
@@ -154,7 +154,7 @@ export const useRenameDocumentMutation = ({
     // Update getAllDocuments cache
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      (old: ListDocumentResult) => {
+      (old: DocumentList) => {
         return old?.map((document) => {
           if (document.id === documentId) {
             return { ...document, name };
@@ -166,7 +166,7 @@ export const useRenameDocumentMutation = ({
     // Update getDocumentByHandle cache for tab metadata reactivity
     queryClient.setQueryData(
       getDocumentByHandleQueryOptions(document.handle).queryKey,
-      (old: any) => (old ? { ...old, name } : old),
+      (old: EditorDocument | undefined) => (old ? { ...old, name } : old),
     );
     await mutation.mutateAsync(
       { documentId, name },
@@ -204,15 +204,18 @@ export const useRenameDocumentMutation = ({
         onError: () => {
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
+            (old: DocumentList) => {
               return old?.map((doc) => {
-                return { ...doc, name: oldName };
+                if (doc.id === documentId) {
+                  return { ...doc, name: oldName };
+                }
+                return doc;
               });
             },
           );
           queryClient.setQueryData(
             getDocumentByHandleQueryOptions(document.handle).queryKey,
-            (old: any) => (old ? { ...old, name: oldName } : old),
+            (old: EditorDocument | undefined) => (old ? { ...old, name: oldName } : old),
           );
         },
       },
@@ -220,11 +223,7 @@ export const useRenameDocumentMutation = ({
   };
   return { updateDocumentName, ...mutation };
 };
-export const useUpdateDocumentIconMutation = ({
-  document,
-}: {
-  document: ListDocumentResult[number];
-}) => {
+export const useUpdateDocumentIconMutation = ({ document }: { document: ListDocumentRow }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
@@ -236,6 +235,7 @@ export const useUpdateDocumentIconMutation = ({
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
       return data;
     },
@@ -258,7 +258,7 @@ export const useUpdateDocumentIconMutation = ({
 
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      (old: ListDocumentResult) => {
+      (old: DocumentList) => {
         return old?.map((document) => {
           if (document.id === documentId) {
             return { ...document, icon };
@@ -270,7 +270,7 @@ export const useUpdateDocumentIconMutation = ({
     // Update getDocumentByHandle cache for tab metadata reactivity
     queryClient.setQueryData(
       getDocumentByHandleQueryOptions(document.handle).queryKey,
-      (old: any) => (old ? { ...old, icon } : old),
+      (old: EditorDocument | undefined) => (old ? { ...old, icon } : old),
     );
     mutation.mutateAsync(
       { documentId, icon },
@@ -278,15 +278,18 @@ export const useUpdateDocumentIconMutation = ({
         onError: () => {
           queryClient.setQueryData(
             getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
+            (old: DocumentList) => {
               return old?.map((document) => {
-                return { ...document, icon: oldIcon };
+                if (document.id === documentId) {
+                  return { ...document, icon: oldIcon };
+                }
+                return document;
               });
             },
           );
           queryClient.setQueryData(
             getDocumentByHandleQueryOptions(document.handle).queryKey,
-            (old: any) => (old ? { ...old, icon: oldIcon } : old),
+            (old: EditorDocument | undefined) => (old ? { ...old, icon: oldIcon } : old),
           );
         },
       },
@@ -343,21 +346,25 @@ export function getFavoriteDocumentsQueryOptions(searchParams: {
   };
 }
 
-export const useDocumentFavoritesMutation = ({
-  document,
-}: {
-  document: ListDocumentResult[number];
-}) => {
+/** Space-scoped document tree cache (`getAllDocumentsQueryOptions`) for optimistic favorite toggles. */
+export type DocumentFavoriteCacheTarget = {
+  documentId: string;
+  /** When set, list invalidation is scoped to this space; otherwise all document lists are invalidated. */
+  spaceId?: string;
+};
+
+export const useDocumentFavoritesMutation = () => {
   const invalidate = useAllQueriesInvalidate();
   const addMutation = useMutation({
     mutationKey: ['addDocumentToFavorites'],
-    mutationFn: async (documentId: string) => {
+    mutationFn: async ({ documentId, spaceId }: { documentId: string; spaceId?: string }) => {
       const { data, error } = await addDocumentToFavorites(documentId);
       if (error) throw error;
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(spaceId),
       ]);
       return data;
     },
@@ -378,16 +385,22 @@ export const useDocumentFavoritesMutation = ({
   const queryClient = useQueryClient();
   const removeMutation = useMutation({
     mutationKey: ['removeDocumentFromFavorites'],
-    mutationFn: async (documentId: string) => {
-      await deleteDocumentFromFavorites(documentId);
+    mutationFn: async ({ documentId, spaceId }: { documentId: string; spaceId?: string }) => {
+      const { error } = await deleteDocumentFromFavorites(documentId);
+      if (error) throw error;
+
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(spaceId),
+      ]);
     },
     onMutate() {
       return toast.loading('Removing from favorites...');
     },
     onSuccess: (_, __, toastId) => {
-      toast.success('Removed from favorites', {
-        id: toastId,
-      });
+      toast.success('Removed from favorites', { id: toastId });
     },
     onError: (error, __, toastId) => {
       toast.error(error.message || 'Failed to remove from favorites', {
@@ -396,68 +409,75 @@ export const useDocumentFavoritesMutation = ({
     },
   });
 
-  const addToDocumentFavorites = async (documentId: string) => {
-    const oldFavorites = document.isFavorite;
-    queryClient.setQueryData(
-      getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      (old: ListDocumentResult) => {
-        return old?.map((document) => {
-          if (document.id === documentId) {
-            return { ...document, isFavorite: true };
-          }
-          return document;
-        });
+  const addToDocumentFavorites = async ({ documentId, spaceId }: DocumentFavoriteCacheTarget) => {
+    if (!spaceId) {
+      await addMutation.mutateAsync({ documentId });
+      return;
+    }
+    const listKey = getAllDocumentsQueryOptions(spaceId).queryKey;
+    const oldFavorites = (queryClient.getQueryData(listKey) as DocumentList | undefined)?.find(
+      (row) => row.id === documentId,
+    )?.isFavorite;
+    queryClient.setQueryData(listKey, (old: DocumentList) => {
+      return old?.map((row) => {
+        if (row.id === documentId) {
+          return { ...row, isFavorite: true };
+        }
+        return row;
+      });
+    });
+    await addMutation.mutateAsync(
+      { documentId, spaceId },
+      {
+        onError: () => {
+          queryClient.setQueryData(listKey, (old: DocumentList) => {
+            return old?.map((row) => {
+              if (row.id === documentId) {
+                return { ...row, isFavorite: oldFavorites };
+              }
+              return row;
+            });
+          });
+        },
       },
     );
-    await addMutation.mutateAsync(documentId, {
-      onError: () => {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-          (old: ListDocumentResult) => {
-            return old?.map((document) => {
-              if (document.id === documentId) {
-                return { ...document, isFavorite: oldFavorites };
-              }
-              return document;
-            });
-          },
-        );
-      },
-    });
   };
 
-  const removeDocumentFromFavorites = async (documentId: string) => {
-    const oldFavorites = (
-      queryClient.getQueryData(getAllDocumentsQueryOptions(document.spaceId!).queryKey) as Awaited<
-        ReturnType<typeof listDocuments>
-      >['data']
-    )?.find((document) => document.id === documentId)?.isFavorite;
-    queryClient.setQueryData(
-      getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      (old: ListDocumentResult) => {
-        return old?.map((document) => {
-          if (document.id === documentId) {
-            return { ...document, isFavorite: false };
-          }
-          return document;
-        });
+  const removeDocumentFromFavorites = async ({
+    documentId,
+    spaceId,
+  }: DocumentFavoriteCacheTarget) => {
+    if (!spaceId) {
+      await removeMutation.mutateAsync({ documentId });
+      return;
+    }
+    const listKey = getAllDocumentsQueryOptions(spaceId).queryKey;
+    const oldFavorites = (queryClient.getQueryData(listKey) as DocumentList | undefined)?.find(
+      (row) => row.id === documentId,
+    )?.isFavorite;
+    queryClient.setQueryData(listKey, (old: DocumentList) => {
+      return old?.map((row) => {
+        if (row.id === documentId) {
+          return { ...row, isFavorite: false };
+        }
+        return row;
+      });
+    });
+    await removeMutation.mutateAsync(
+      { documentId, spaceId },
+      {
+        onError: () => {
+          queryClient.setQueryData(listKey, (old: DocumentList) => {
+            return old?.map((row) => {
+              if (row.id === documentId) {
+                return { ...row, isFavorite: oldFavorites };
+              }
+              return row;
+            });
+          });
+        },
       },
     );
-    await removeMutation.mutateAsync(documentId, {
-      onError: () => {
-        queryClient.setQueryData(
-          getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-          (old: ListDocumentResult) => {
-            return old?.map((document) => {
-              if (document.id === documentId) {
-                return { ...document, isFavorite: oldFavorites };
-              }
-              return document;
-            });
-          },
-        );
-      },
-    });
   };
 
   return {
@@ -472,7 +492,7 @@ export const useCreateDocumentMutation = ({
   document,
   from,
 }: {
-  document: ListDocumentResult[number];
+  document: ListDocumentRow;
   from: 'sidebar' | 'manage';
 }) => {
   const queryClient = useQueryClient();
@@ -492,7 +512,7 @@ export const useCreateDocumentMutation = ({
     }) => {
       const currentDocuments = queryClient.getQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      ) as ListDocumentResult;
+      ) as DocumentList;
 
       if (!currentDocuments) {
         throw new Error('No documents data available');
@@ -538,14 +558,16 @@ export const useCreateDocumentMutation = ({
 
       if (error) throw error;
       if (data) {
-        const { currentRevision, ...document } = data;
-        createLocalDocument(document.id, document.name);
+        createLocalDocument(data.id, data.name);
       }
+
       invalidate([
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
+
       return data;
     },
     onMutate() {
@@ -553,14 +575,15 @@ export const useCreateDocumentMutation = ({
       return { toastId: toast.loading('Creating document...') };
     },
     onSuccess: async (data, { clientId }, { toastId }) => {
-      const { currentRevision, ...document } = data;
+      const { currentRevision, ...documentRow } = data;
+
       if (!isDocumentCached(clientId)) {
         queryClient.setQueryData(
-          getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-          (old: ListDocumentResult) => {
+          getAllDocumentsQueryOptions(data.spaceId!).queryKey,
+          (old: DocumentList) => {
             if (old) {
               addDocumentToCache(clientId, from);
-              return [...old, document];
+              return [...old, documentRow];
             }
             return old;
           },
@@ -573,7 +596,7 @@ export const useCreateDocumentMutation = ({
     onError: (error, { clientId }, context) => {
       queryClient.setQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
+        (old: DocumentList) => {
           return old?.filter((document) => {
             return document.id !== clientId;
           });
@@ -592,7 +615,7 @@ export const useCreateContainerDocumentMutation = ({
   document,
   from,
 }: {
-  document: ListDocumentResult[number];
+  document: ListDocumentRow;
   from: 'sidebar' | 'manage';
 }) => {
   const queryClient = useQueryClient();
@@ -613,7 +636,7 @@ export const useCreateContainerDocumentMutation = ({
     }) => {
       const currentDocuments = queryClient.getQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      ) as ListDocumentResult;
+      ) as DocumentList;
 
       if (!currentDocuments) {
         throw new Error('No documents data available');
@@ -654,6 +677,7 @@ export const useCreateContainerDocumentMutation = ({
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
       return data;
     },
@@ -665,7 +689,7 @@ export const useCreateContainerDocumentMutation = ({
       if (!isDocumentCached(clientId)) {
         queryClient.setQueryData(
           getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-          (old: ListDocumentResult) => {
+          (old: DocumentList) => {
             if (old) {
               addDocumentToCache(data?.clientId ?? '', from);
               return [...old, data];
@@ -681,7 +705,7 @@ export const useCreateContainerDocumentMutation = ({
     onError: (error, { clientId }, toastId) => {
       queryClient.setQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-        (old: ListDocumentResult) => {
+        (old: DocumentList) => {
           return old?.filter((document) => {
             return document.id !== clientId;
           });
@@ -696,11 +720,7 @@ export const useCreateContainerDocumentMutation = ({
 
   return mutation;
 };
-export const useDeleteDocumentMutation = ({
-  document,
-}: {
-  document: ListDocumentResult[number];
-}) => {
+export const useDeleteDocumentMutation = ({ document }: { document: ListDocumentRow }) => {
   const invalidate = useAllQueriesInvalidate();
   const { closeTab } = useActions();
   const tabs = useSelector((state) => state.tabs.tabList);
@@ -727,6 +747,7 @@ export const useDeleteDocumentMutation = ({
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
       return;
     },
@@ -875,11 +896,7 @@ export const getRecentViewedDocumentsQueryOptions = (searchParams: {
   };
 };
 
-export function useDuplicateDocumentMutation({
-  document,
-}: {
-  document: ListDocumentResult[number];
-}) {
+export function useDuplicateDocumentMutation({ document }: { document: ListDocumentRow }) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
@@ -887,7 +904,7 @@ export function useDuplicateDocumentMutation({
     mutationFn: async () => {
       const currentDocuments = queryClient.getQueryData(
         getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-      ) as ListDocumentResult;
+      ) as DocumentList;
       if (!currentDocuments) {
         throw new Error('No documents data available');
       }
@@ -921,6 +938,7 @@ export function useDuplicateDocumentMutation({
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(document.spaceId),
       ]);
       return data;
     },
@@ -982,11 +1000,7 @@ export const getDocumentByHandleQueryOptions = (handle: string) => {
   };
 };
 
-export function useUpdateDocumentHeadMutation({
-  doc,
-}: {
-  doc: Awaited<ReturnType<ReturnType<typeof getDocumentByHandleQueryOptions>['queryFn']>> | null;
-}) {
+export function useUpdateDocumentHeadMutation({ doc }: { doc: EditorDocument | null }) {
   const invalidate = useAllQueriesInvalidate();
   const mutation = useMutation({
     mutationKey: ['updateDocumentHead', doc?.id],
@@ -1007,9 +1021,7 @@ export function useUpdateDocumentHeadMutation({
   return mutation;
 }
 
-export function useCopyDocumentMutation(
-  newParentDocument: ListDocumentResult[number] | { spaceId: string },
-) {
+export function useCopyDocumentMutation(newParentDocument: ListDocumentOrParentRef) {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
@@ -1026,7 +1038,7 @@ export function useCopyDocumentMutation(
       }
       const currentDocuments = queryClient.getQueryData(
         getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      ) as ListDocumentResult;
+      ) as DocumentList;
       if (!currentDocuments) {
         throw new Error('No documents data available');
       }
@@ -1060,6 +1072,7 @@ export function useCopyDocumentMutation(
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(newParentDocument.spaceId),
       ]);
       return data;
     },
@@ -1081,9 +1094,7 @@ export function useCopyDocumentMutation(
   return mutation;
 }
 
-export const useMoveDocumentMutation = (
-  newParentDocument: ListDocumentResult[number] | { spaceId: string },
-) => {
+export const useMoveDocumentMutation = (newParentDocument: ListDocumentOrParentRef) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
   const clipboardDocument = useSelector((state) => state.wordy.documentsClipboard);
@@ -1101,7 +1112,7 @@ export const useMoveDocumentMutation = (
 
       const currentDocuments = queryClient.getQueryData(
         getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      ) as ListDocumentResult;
+      ) as DocumentList;
       if (!currentDocuments) {
         throw new Error('No documents data available');
       }
@@ -1133,6 +1144,7 @@ export const useMoveDocumentMutation = (
         DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
         DOCUMENTS_QUERY_KEYS.FAVORITES,
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
+        documentListInvalidateKey(newParentDocument.spaceId),
       ]);
       return data;
     },
@@ -1151,9 +1163,9 @@ export const useMoveDocumentMutation = (
       //         getAllDocumentsQueryOptions(
       //           clipboardDocument?.document.spaceId ?? ""
       //         ).queryKey
-      //       ) as ListDocumentResult,
+      //       ) as DocumentList,
       //       clipboardDocument?.document.id ?? ""
-      //     ) as ListDocumentResult),
+      //     ) as DocumentList),
       //   ];
       //   const removedDocumentsIds = removedDocuments.map(
       //     (document) => document?.id ?? ""
@@ -1161,7 +1173,7 @@ export const useMoveDocumentMutation = (
       //   queryClient.setQueryData(
       //     getAllDocumentsQueryOptions(clipboardDocument?.document.spaceId ?? "")
       //       .queryKey,
-      //     (old: ListDocumentResult) => {
+      //     (old: DocumentList) => {
       //       return old?.filter(
       //         (document) => !removedDocumentsIds.includes(document.id)
       //       );
@@ -1169,7 +1181,7 @@ export const useMoveDocumentMutation = (
       //   );
       //   queryClient.setQueryData(
       //     getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      //     (old: ListDocumentResult) => {
+      //     (old: DocumentList) => {
       //       return [
       //         ...old,
       //         ...removedDocuments.map((document, index) => {
@@ -1189,7 +1201,7 @@ export const useMoveDocumentMutation = (
       // } else {
       //   queryClient.setQueryData(
       //     getAllDocumentsQueryOptions(newParentDocument.spaceId!).queryKey,
-      //     (old: ListDocumentResult) => {
+      //     (old: DocumentList) => {
       //       return old?.map((document) => {
       //         if (document.id === clipboardDocument?.document.id) {
       //           return {
@@ -1223,10 +1235,17 @@ export function useExportDocumentMutation(itemId: string, documentName?: string)
         throw error;
       }
       if (data) {
-        // Parse the content as JSON
-        (data as any).revision.content = JSON.parse((data as any).revision.content);
-        // Stringify the data
-        const jsonString = JSON.stringify(data, null, 2);
+        const forDownload =
+          data.revision?.content != null
+            ? {
+                ...data,
+                revision: {
+                  ...data.revision,
+                  content: JSON.parse(data.revision.content),
+                },
+              }
+            : data;
+        const jsonString = JSON.stringify(forDownload, null, 2);
 
         // Create a blob from the JSON string
         const blob = new Blob([jsonString], { type: 'application/json' });
@@ -1294,12 +1313,9 @@ export function useImportDocumentMutation(parentId?: string | null, spaceId?: st
       if (error) {
         throw error;
       }
-      // Invalidate the documents query for the space
-      if (spaceId) {
-        queryClient.invalidateQueries({
-          queryKey: DOCUMENTS_QUERY_KEYS.LIST_BY_SPACE(spaceId),
-        });
-      }
+      queryClient.invalidateQueries({
+        queryKey: documentListInvalidateKey(spaceId),
+      });
       return data;
     },
     onMutate() {

@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-'use client';
-
 import * as React from 'react';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { cn } from '@repo/ui/lib/utils';
-import { DocumentData } from './types';
+import type { ListDocumentRow } from '@repo/types';
 import { useSelector, useActions } from '@/store';
 import { IconPicker } from '@repo/ui/components/icon-picker';
 import { DocumentNameInput } from './DocumentItem';
@@ -52,7 +50,7 @@ import { IS_APPLE } from '@repo/shared/environment';
 import { useMediaQuery } from '@repo/ui/hooks/use-media-query';
 
 interface RegularDocumentItemProps {
-  document: DocumentData;
+  document: ListDocumentRow;
   depth?: number;
   openMenuDocumentId: string | null;
   onSelectDocument: (documentId: string) => void;
@@ -92,23 +90,17 @@ export function RegularDocumentItem({
 
   // Use the update document icon mutation
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({
-    document: document as any, // Cast to match ListDocumentResult type
+    document: document as ListDocumentRow,
   });
 
   // Use the document favorites mutation
-  const { addToDocumentFavorites, removeDocumentFromFavorites } = useDocumentFavoritesMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
+  const { addToDocumentFavorites, removeDocumentFromFavorites } = useDocumentFavoritesMutation();
 
   // Use the delete document mutation
-  const deleteDocumentMutation = useDeleteDocumentMutation({
-    document: document as any, // Cast to match ListDocumentResult type
-  });
+  const deleteDocumentMutation = useDeleteDocumentMutation({ document });
 
   // Use the duplicate document mutation
-  const duplicateDocumentMutation = useDuplicateDocumentMutation({
-    document: document as any,
-  });
+  const duplicateDocumentMutation = useDuplicateDocumentMutation({ document });
 
   // Clipboard state management
   const { setDocumentsClipboard, openTab } = useActions();
@@ -127,8 +119,8 @@ export function RegularDocumentItem({
       onConfirm: async () => {
         try {
           await deleteDocumentMutation.mutateAsync({ documentId: document.id });
-        } catch (error) {
-          // Error handling is done in the mutation
+        } catch {
+          // Error handling is done in the mutation; ignore
         }
       },
       buttonVariant: 'destructive',
@@ -136,11 +128,11 @@ export function RegularDocumentItem({
   };
 
   const handleCopy = () => {
-    setDocumentsClipboard(document as any, 'copy');
+    setDocumentsClipboard(document, 'copy');
   };
 
   const handleCut = () => {
-    setDocumentsClipboard(document as any, 'move');
+    setDocumentsClipboard(document, 'move');
   };
 
   const handleDuplicate = () => {
@@ -455,7 +447,12 @@ export function RegularDocumentItem({
               {document.isFavorite ? (
                 <ContextMenuItem
                   className="group"
-                  onSelect={() => removeDocumentFromFavorites(document.id)}
+                  onSelect={() =>
+                    removeDocumentFromFavorites({
+                      documentId: document.id,
+                      spaceId: document.spaceId ?? '',
+                    })
+                  }
                 >
                   <Star className="mr-2 h-4 w-4 group-hover:text-foreground fill-amber-400" />
                   Remove from Favorites
@@ -463,7 +460,12 @@ export function RegularDocumentItem({
               ) : (
                 <ContextMenuItem
                   className="group"
-                  onSelect={() => addToDocumentFavorites(document.id)}
+                  onSelect={() =>
+                    addToDocumentFavorites({
+                      documentId: document.id,
+                      spaceId: document.spaceId ?? '',
+                    })
+                  }
                 >
                   <Star className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Add to Favorites

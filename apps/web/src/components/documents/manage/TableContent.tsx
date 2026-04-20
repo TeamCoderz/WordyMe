@@ -10,9 +10,11 @@ import { AssistiveTreeDescription, useTree } from '@headless-tree/react';
 import {
   dragAndDropFeature,
   hotkeysCoreFeature,
+  ItemInstance,
   keyboardDragAndDropFeature,
   selectionFeature,
   syncDataLoaderFeature,
+  TreeInstance,
 } from '@headless-tree/core';
 import { Tree, TreeDragLine } from '@repo/ui/components/tree';
 import { ManageDocumentsTableRow } from './TableRow';
@@ -323,18 +325,21 @@ export const ManageDocumentsTableContent = React.forwardRef<
           if (!itemData) {
             return null;
           }
+
+          const passedItem = item as ItemInstance<DocumentTreeNode>;
+
           const nodeId = item.getId();
           const fragmentKey = itemData.data?.clientId ?? item.getId();
 
           return (
             <React.Fragment key={fragmentKey}>
               <ManageDocumentsTableRow
-                item={item}
+                item={passedItem}
                 index={index}
                 isLast={index === itemsToRender.length - 1}
                 draggingId={draggingId}
                 setDraggingId={setDraggingId}
-                tree={tree}
+                tree={tree as TreeInstance<DocumentTreeNode>}
                 getDescendantIds={getDescendantIds}
                 spaceID={spaceID}
                 onBeginInlineCreate={(type) => insertPlaceholderHandler({ parentId: nodeId, type })}
