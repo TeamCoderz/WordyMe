@@ -14,7 +14,7 @@ export const enumType = <T extends readonly string[]>(values: T, name?: string) 
       return 'text';
     },
     toDriver(value) {
-      if (!values.includes(value as any)) {
+      if (!(values as readonly string[]).includes(value)) {
         throw new Error(`Invalid enum value: ${value}. Allowed values are: ${values.join(', ')}`);
       }
       return value;

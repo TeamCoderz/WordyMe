@@ -6,7 +6,8 @@
   "exports": {
     "./base": "./base.js",
     "./next-js": "./next.js",
-    "./react-internal": "./react-internal.js"
+    "./react-internal": "./react-internal.js",
+    "./vite": "./vite.js"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -19,6 +20,6 @@
     "eslint-plugin-turbo": "^2.8.16",
     "globals": "^17.4.0",
     "typescript": "^6.0.2",
-    "typescript-eslint": "^8.57.0"
+    "typescript-eslint": "^8.58.2"
   }
 }
