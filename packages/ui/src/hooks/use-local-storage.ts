@@ -9,7 +9,7 @@ function dispatchStorageEvent(key: string, newValue: string | null) {
   window.dispatchEvent(new StorageEvent('storage', { key, newValue }));
 }
 
-const setLocalStorageItem = (key: string, value: any) => {
+const setLocalStorageItem = <T>(key: string, value: T) => {
   const stringifiedValue = JSON.stringify(value);
   window.localStorage.setItem(key, stringifiedValue);
   dispatchStorageEvent(key, stringifiedValue);
@@ -57,7 +57,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, Dispatch<S
         console.warn(e);
       }
     },
-    [key, store],
+    [initialValue, key, store],
   );
 
   useEffect(() => {

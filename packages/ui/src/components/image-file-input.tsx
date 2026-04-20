@@ -207,7 +207,7 @@ export const FileUploader = forwardRef<
         return;
       }
       setIsLOF(false);
-    }, [value, maxFiles]);
+    }, [value, maxFiles, multiple]);
 
     const opts = dropzoneOptions ? dropzoneOptions : { accept, maxFiles, maxSize, multiple };
 
@@ -309,10 +309,13 @@ export const FileUploaderItem = forwardRef<
 
 FileUploaderItem.displayName = 'FileUploaderItem';
 
+/* eslint-disable react-hooks/refs */
 export const FileInput = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, children, ...props }, ref) => {
     const { dropzoneState, isFileTooBig, isLOF } = useFileUpload();
     const rootProps = isLOF ? {} : dropzoneState.getRootProps();
+    const inputRef = dropzoneState.inputRef;
+    const inputProps = dropzoneState.getInputProps();
     return (
       <div
         ref={ref}
@@ -338,14 +341,15 @@ export const FileInput = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
           {children}
         </div>
         <Input
-          ref={dropzoneState.inputRef}
+          ref={inputRef}
           disabled={isLOF}
-          {...dropzoneState.getInputProps()}
+          {...inputProps}
           className={`${isLOF ? 'cursor-not-allowed' : ''}`}
         />
       </div>
     );
   },
 );
+/* eslint-enable react-hooks/refs */
 
 FileInput.displayName = 'FileInput';

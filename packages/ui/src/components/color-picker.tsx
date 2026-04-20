@@ -184,6 +184,7 @@ function ColorPicker({
     getColorAsHsva(borderColor || defaultBorderColor),
   );
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setTextColorHsv(getColorAsHsva(textColor || defaultTextColor));
     setBgColorHsv(getColorAsHsva(backgroundColor || defaultBackgroundColor));
@@ -196,6 +197,7 @@ function ColorPicker({
     defaultBackgroundColor,
     defaultBorderColor,
   ]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleValueChange = (
     key: 'color' | 'background-color' | 'border-color',

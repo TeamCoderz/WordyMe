@@ -33,7 +33,7 @@ export function useContainerQuery(
   const queryList = useMemo(() => {
     if (!hasMatchContainer) return undefined;
     return containerElement.matchContainer(query);
-  }, [containerElement, query]);
+  }, [containerElement, query, hasMatchContainer]);
 
   const [matches, setMatches] = React.useState(queryList?.matches ?? undefined);
 

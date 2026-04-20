@@ -46,9 +46,11 @@ export function SchemaMenu({ schema, documentId, anchorEl, onClose }: MenuRender
   ]);
 
   // Reset stack when schema changes
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setMenuStack([{ menuId: schema.id, schema, title: undefined }]);
   }, [schema]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const currentMenu = menuStack[menuStack.length - 1];
 
@@ -84,7 +86,7 @@ export function SchemaMenu({ schema, documentId, anchorEl, onClose }: MenuRender
       const rect = anchorEl.getBoundingClientRect();
       const menuWidth = menuRef.current?.offsetWidth || 200;
 
-      let top = rect.bottom + 4;
+      const top = rect.bottom + 4;
       let left = rect.left;
 
       if (left + menuWidth > window.innerWidth) {

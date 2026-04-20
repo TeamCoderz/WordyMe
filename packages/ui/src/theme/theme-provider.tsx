@@ -101,12 +101,18 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const storedConfig = getStoredConfig(storageKey);
+  const initialTheme =
+    storedConfig?.theme && THEME_BY_VALUE[storedConfig.theme]
+      ? storedConfig.theme
+      : THEME_BY_VALUE[defaultTheme]
+        ? defaultTheme
+        : DEFAULT_THEME;
 
   const [mode, setModeState] = useState<ModeValue>(storedConfig?.mode || defaultMode);
   const [scale, setScaleState] = useState<ScaleValue>(storedConfig?.scale || defaultScale);
-  const [theme, setThemeState] = useState<ThemeValue>(storedConfig?.theme || defaultTheme);
+  const [theme, setThemeState] = useState<ThemeValue>(initialTheme);
   const [color, setColorState] = useState<ThemeConfig['color']>(
-    storedConfig?.color || THEME_BY_VALUE[theme]['color-variants'][0].value,
+    storedConfig?.color || THEME_BY_VALUE[initialTheme]['color-variants'][0].value,
   );
   const [animations, setAnimations] = useState<'on' | 'off'>(
     storedConfig?.animations || defaultAnimations,
@@ -115,9 +121,6 @@ export function ThemeProvider({
   useEffect(() => {
     setStoredConfig(storageKey, { theme, scale, mode, color, animations });
   }, [theme, scale, mode, color, animations, storageKey]);
-  useEffect(() => {
-    if (!THEME_BY_VALUE[theme]) setThemeState('new-york');
-  }, [theme]);
   useEffect(() => {
     const root = window.document.documentElement;
 

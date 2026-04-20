@@ -12,10 +12,15 @@ import { Slot } from 'radix-ui';
 
 import { cn } from '@repo/ui/lib/utils';
 
-interface TreeContextValue<T = any> {
+interface TreeInstance {
+  getContainerProps?: () => Record<string, unknown>;
+  getDragLineStyle?: () => React.CSSProperties;
+}
+
+interface TreeContextValue<T = unknown> {
   indent: number;
   currentItem?: ItemInstance<T>;
-  tree?: any;
+  tree?: TreeInstance;
 }
 
 const TreeContext = React.createContext<TreeContextValue>({
@@ -24,13 +29,13 @@ const TreeContext = React.createContext<TreeContextValue>({
   tree: undefined,
 });
 
-function useTreeContext<T = any>() {
+function useTreeContext<T = unknown>() {
   return React.useContext(TreeContext) as TreeContextValue<T>;
 }
 
 interface TreeProps extends React.HTMLAttributes<HTMLDivElement> {
   indent?: number;
-  tree?: any;
+  tree?: TreeInstance;
 }
 
 function Tree({ indent = 20, tree, className, ...props }: TreeProps) {
@@ -59,13 +64,13 @@ function Tree({ indent = 20, tree, className, ...props }: TreeProps) {
   );
 }
 
-interface TreeItemProps<T = any> extends React.HTMLAttributes<HTMLButtonElement> {
+interface TreeItemProps<T = unknown> extends React.HTMLAttributes<HTMLButtonElement> {
   item: ItemInstance<T>;
   indent?: number;
   asChild?: boolean;
 }
 
-function TreeItem<T = any>({
+function TreeItem<T = unknown>({
   item,
   className,
   asChild,
@@ -89,7 +94,7 @@ function TreeItem<T = any>({
   const Comp = asChild ? Slot.Root : 'button';
 
   return (
-    <TreeContext.Provider value={{ indent, currentItem: item }}>
+    <TreeContext.Provider value={{ indent, currentItem: item as ItemInstance<unknown> }}>
       <Comp
         data-slot="tree-item"
         style={mergedStyle}
@@ -117,11 +122,11 @@ function TreeItem<T = any>({
   );
 }
 
-interface TreeItemLabelProps<T = any> extends React.HTMLAttributes<HTMLSpanElement> {
+interface TreeItemLabelProps<T = unknown> extends React.HTMLAttributes<HTMLSpanElement> {
   item?: ItemInstance<T>;
 }
 
-function TreeItemLabel<T = any>({
+function TreeItemLabel<T = unknown>({
   item: propItem,
   children,
   className,

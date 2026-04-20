@@ -47,7 +47,7 @@ export function PageControls({ documentId }: PageControlsProps) {
         startHideTimer();
       }
     });
-  }, [viewport, startHideTimer]);
+  }, [viewport, documentId, startHideTimer]);
 
   useEffect(() => {
     return () => {

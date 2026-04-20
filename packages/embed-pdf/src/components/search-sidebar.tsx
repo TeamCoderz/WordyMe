@@ -5,7 +5,7 @@
 
 import { useSearch } from '@embedpdf/plugin-search/react';
 import { useScrollCapability } from '@embedpdf/plugin-scroll/react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { MatchFlag } from '@embedpdf/models';
 import { SearchResult } from '@embedpdf/models';
 import { SearchIcon, CloseIcon, ChevronRightIcon, ChevronLeftIcon } from './icons';
@@ -70,11 +70,32 @@ export function SearchSidebar({ documentId, onClose }: SearchSidebarProps) {
     }
   }, [provides]);
 
+  const scrollToItem = useCallback(
+    (index: number) => {
+      const item = state.results[index];
+      if (!item) return;
+
+      const minCoordinates = item.rects.reduce(
+        (min, rect) => ({
+          x: Math.min(min.x, rect.origin.x),
+          y: Math.min(min.y, rect.origin.y),
+        }),
+        { x: Infinity, y: Infinity },
+      );
+
+      scroll?.forDocument(documentId).scrollToPage({
+        pageNumber: item.pageIndex + 1,
+        pageCoordinates: minCoordinates,
+      });
+    },
+    [documentId, scroll, state.results],
+  );
+
   useEffect(() => {
     if (state.activeResultIndex !== undefined && state.activeResultIndex >= 0 && !state.loading) {
       scrollToItem(state.activeResultIndex);
     }
-  }, [state.activeResultIndex, state.loading, state.query, state.flags]);
+  }, [state.activeResultIndex, state.loading, scrollToItem]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -102,24 +123,6 @@ export function SearchSidebar({ documentId, onClose }: SearchSidebarProps) {
     if (inputRef.current) {
       inputRef.current.focus();
     }
-  };
-
-  const scrollToItem = (index: number) => {
-    const item = state.results[index];
-    if (!item) return;
-
-    const minCoordinates = item.rects.reduce(
-      (min, rect) => ({
-        x: Math.min(min.x, rect.origin.x),
-        y: Math.min(min.y, rect.origin.y),
-      }),
-      { x: Infinity, y: Infinity },
-    );
-
-    scroll?.forDocument(documentId).scrollToPage({
-      pageNumber: item.pageIndex + 1,
-      pageCoordinates: minCoordinates,
-    });
   };
 
   const groupByPage = (results: typeof state.results) => {

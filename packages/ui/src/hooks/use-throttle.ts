@@ -11,16 +11,13 @@ export function useThrottle<T>(value: T, interval = 500) {
 
   useEffect(() => {
     const now = Date.now();
-
-    if (lastUpdated.current && now >= lastUpdated.current + interval) {
-      lastUpdated.current = now;
-      return setThrottledValue(value);
-    }
+    const wait =
+      lastUpdated.current === null ? 0 : Math.max(lastUpdated.current + interval - now, 0);
 
     const id = window.setTimeout(() => {
-      lastUpdated.current = now;
+      lastUpdated.current = Date.now();
       setThrottledValue(value);
-    }, interval);
+    }, wait);
 
     return () => window.clearTimeout(id);
   }, [value, interval]);

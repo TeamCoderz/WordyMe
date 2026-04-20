@@ -9,7 +9,7 @@ import {
   useUIState,
   useItemRenderer,
 } from '@embedpdf/plugin-ui/react';
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Icons from '../components/icons';
 
 /**
@@ -25,12 +25,12 @@ import * as Icons from '../components/icons';
 type BottomSheetHeight = 'half' | 'full';
 
 export function SchemaPanel({ schema, documentId, isOpen, onClose }: SidebarRendererProps) {
-  // Only render if open (allows for animation in the future)
-  if (!isOpen) return null;
   const { position, content, width } = schema;
   const { provides } = useUICapability();
   const uiState = useUIState(documentId);
   const { renderCustomComponent } = useItemRenderer();
+  const tabsContent = content.type === 'tabs' ? content : null;
+  const availableTabs = useMemo(() => tabsContent?.tabs ?? [], [tabsContent]);
 
   // Mobile detection - initialize immediately to prevent flash
   const [isMobile, setIsMobile] = useState(() => {
@@ -59,6 +59,36 @@ export function SchemaPanel({ schema, documentId, isOpen, onClose }: SidebarRend
   const scope = useMemo(
     () => (provides ? provides.forDocument(documentId) : null),
     [provides, documentId],
+  );
+  const resolvedActiveTabId = useMemo(() => {
+    if (!tabsContent) return null;
+    const stateActive = uiState?.sidebarTabs?.[schema.id];
+    if (stateActive) return stateActive;
+    const scopeActive = scope?.getSidebarTab?.(schema.id);
+    if (scopeActive) return scopeActive;
+    return tabsContent.defaultTab ?? availableTabs[0]?.id ?? null;
+  }, [availableTabs, scope, schema.id, tabsContent, uiState?.sidebarTabs]);
+  const [localActiveTabId, setLocalActiveTabId] = useState<string | null>(null);
+  const activeTabId =
+    localActiveTabId && localActiveTabId !== resolvedActiveTabId
+      ? localActiveTabId
+      : resolvedActiveTabId;
+  const activeTab = useMemo(() => {
+    if (!tabsContent) return null;
+    return (
+      availableTabs.find((tab) => tab.id === activeTabId) ??
+      availableTabs.find((tab) => tab.id === resolvedActiveTabId) ??
+      availableTabs[0] ??
+      null
+    );
+  }, [activeTabId, availableTabs, resolvedActiveTabId, tabsContent]);
+  const handleTabSelect = useCallback(
+    (tabId: string) => {
+      if (tabId === activeTabId) return;
+      setLocalActiveTabId(tabId);
+      scope?.setSidebarTab(schema.id, tabId);
+    },
+    [activeTabId, scope, schema.id],
   );
 
   // Swipe gesture handlers
@@ -105,12 +135,15 @@ export function SchemaPanel({ schema, documentId, isOpen, onClose }: SidebarRend
     setCurrentY(e.clientY);
   };
 
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    setCurrentY(e.clientY);
-  };
+  const handleMouseMove = useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return;
+      setCurrentY(e.clientY);
+    },
+    [isDragging],
+  );
 
-  const handleMouseUp = () => {
+  const handleMouseUp = useCallback(() => {
     if (!isDragging) return;
     setIsDragging(false);
 
@@ -131,61 +164,28 @@ export function SchemaPanel({ schema, documentId, isOpen, onClose }: SidebarRend
 
     setStartY(0);
     setCurrentY(0);
-  };
+  }, [currentY, isDragging, onClose, sheetHeight, startY]);
 
   // Mouse event listeners
   useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-    return undefined;
-  }, [isDragging, currentY, startY, sheetHeight]);
+    if (!isOpen || !isDragging) return undefined;
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [handleMouseMove, handleMouseUp, isDragging, isOpen]);
+
+  if (!isOpen) return null;
 
   // Render mobile bottom sheet
   if (isMobile) {
     const heightClass = sheetHeight === 'full' ? 'h-[100vh]' : 'h-[50vh]';
     const dragOffset = isDragging ? Math.max(0, currentY - startY) : 0;
 
-    if (content.type === 'tabs') {
-      const availableTabs = content.tabs ?? [];
-
-      const resolvedActiveTabId = useMemo(() => {
-        const stateActive = uiState?.sidebarTabs?.[schema.id];
-        if (stateActive) return stateActive;
-        const scopeActive = scope?.getSidebarTab?.(schema.id);
-        if (scopeActive) return scopeActive;
-        return stateActive ?? content.defaultTab ?? availableTabs[0]?.id ?? null;
-      }, [uiState?.sidebarTabs, scope, schema.id, content.defaultTab, availableTabs]);
-
-      const [localActiveTabId, setLocalActiveTabId] = useState<string | null>(null);
-
-      useEffect(() => {
-        if (localActiveTabId !== null && resolvedActiveTabId === localActiveTabId) {
-          setLocalActiveTabId(null);
-        }
-      }, [resolvedActiveTabId, localActiveTabId]);
-
-      const activeTabId = localActiveTabId ?? resolvedActiveTabId;
-
-      const handleTabSelect = (tabId: string) => {
-        if (tabId === activeTabId) return;
-        setLocalActiveTabId(tabId);
-
-        if (scope) {
-          scope.setSidebarTab(schema.id, tabId);
-        }
-      };
-
-      const activeTab =
-        availableTabs.find((tab) => tab.id === activeTabId) ??
-        availableTabs.find((tab) => tab.id === resolvedActiveTabId) ??
-        availableTabs[0];
-
+    if (tabsContent) {
       if (!activeTab) {
         console.warn(`No tabs defined for panel ${schema.id}`);
         return null;
@@ -315,41 +315,7 @@ export function SchemaPanel({ schema, documentId, isOpen, onClose }: SidebarRend
   }
 
   // Desktop rendering
-  if (content.type === 'tabs') {
-    const availableTabs = content.tabs ?? [];
-
-    const resolvedActiveTabId = useMemo(() => {
-      const stateActive = uiState?.sidebarTabs?.[schema.id];
-      if (stateActive) return stateActive;
-      const scopeActive = scope?.getSidebarTab?.(schema.id);
-      if (scopeActive) return scopeActive;
-      return stateActive ?? content.defaultTab ?? availableTabs[0]?.id ?? null;
-    }, [uiState?.sidebarTabs, scope, schema.id, content.defaultTab, availableTabs]);
-
-    const [localActiveTabId, setLocalActiveTabId] = useState<string | null>(null);
-
-    useEffect(() => {
-      if (localActiveTabId !== null && resolvedActiveTabId === localActiveTabId) {
-        setLocalActiveTabId(null);
-      }
-    }, [resolvedActiveTabId, localActiveTabId]);
-
-    const activeTabId = localActiveTabId ?? resolvedActiveTabId;
-
-    const handleTabSelect = (tabId: string) => {
-      if (tabId === activeTabId) return;
-      setLocalActiveTabId(tabId);
-
-      if (scope) {
-        scope.setSidebarTab(schema.id, tabId);
-      }
-    };
-
-    const activeTab =
-      availableTabs.find((tab) => tab.id === activeTabId) ??
-      availableTabs.find((tab) => tab.id === resolvedActiveTabId) ??
-      availableTabs[0];
-
+  if (tabsContent) {
     if (!activeTab) {
       console.warn(`No tabs defined for panel ${schema.id}`);
       return null;

@@ -55,6 +55,7 @@ const LucideDynamicIcon = forwardRef<SVGSVGElement, DynamicIconComponentProps>(
     return <LucideIcon ref={ref} {...props} />;
   },
 );
+LucideDynamicIcon.displayName = 'LucideDynamicIcon';
 
 export default DynamicIcon;
 
