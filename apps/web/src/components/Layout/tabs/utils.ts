@@ -156,9 +156,12 @@ export type TabAction =
  * Fixes applied relative to the original per-callsite logic:
  * - `targetTabList` is derived from `shouldSplitTab` (not bare `isShiftHeld`)
  *   so the `newSplitTab` prop correctly influences which pane is searched.
- * - All three existing-tab reuse branches are gated on `!shouldOpenNewTab &&
+ * - Group and same-path reuse branches are gated on `!shouldOpenNewTab &&
  *   !shouldSplitTab` so `newTab`/`newSplitTab` props always force new-tab
  *   creation even when a matching tab already exists.
+ * - The exact-match (`existingTab`) branch is only gated on `!shouldOpenNewTab`,
+ *   allowing split navigation to activate an existing tab in the target pane
+ *   rather than creating a duplicate.
  */
 export const resolveTabAction = ({
   pathname,
