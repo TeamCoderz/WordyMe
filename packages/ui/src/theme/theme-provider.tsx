@@ -116,7 +116,10 @@ export function ThemeProvider({
     setStoredConfig(storageKey, { theme, scale, mode, color, animations });
   }, [theme, scale, mode, color, animations, storageKey]);
   useEffect(() => {
-    if (!THEME_BY_VALUE[theme]) setThemeState('new-york');
+    if (THEME_BY_VALUE[theme]) return;
+    queueMicrotask(() => {
+      setThemeState('new-york');
+    });
   }, [theme]);
   useEffect(() => {
     const root = window.document.documentElement;

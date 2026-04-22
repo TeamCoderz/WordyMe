@@ -14,7 +14,10 @@ export function useThrottle<T>(value: T, interval = 500) {
 
     if (lastUpdated.current && now >= lastUpdated.current + interval) {
       lastUpdated.current = now;
-      return setThrottledValue(value);
+      queueMicrotask(() => {
+        setThrottledValue(value);
+      });
+      return;
     }
 
     const id = window.setTimeout(() => {

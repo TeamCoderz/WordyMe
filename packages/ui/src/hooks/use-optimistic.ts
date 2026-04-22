@@ -16,7 +16,7 @@ export function useOptimistic<T, P>(passthrough: T, reducer: (state: T, payload:
   const reducerRef = useRef(reducer);
   useLayoutEffect(() => {
     reducerRef.current = reducer;
-  }, []);
+  }, [reducer]);
 
   const dispatch = useCallback(
     (payload: P) => {

@@ -185,9 +185,14 @@ function ColorPicker({
   );
 
   useEffect(() => {
-    setTextColorHsv(getColorAsHsva(textColor || defaultTextColor));
-    setBgColorHsv(getColorAsHsva(backgroundColor || defaultBackgroundColor));
-    setBorderColorHsv(getColorAsHsva(borderColor || defaultBorderColor));
+    const text = getColorAsHsva(textColor || defaultTextColor);
+    const bg = getColorAsHsva(backgroundColor || defaultBackgroundColor);
+    const border = getColorAsHsva(borderColor || defaultBorderColor);
+    queueMicrotask(() => {
+      setTextColorHsv(text);
+      setBgColorHsv(bg);
+      setBorderColorHsv(border);
+    });
   }, [
     textColor,
     backgroundColor,

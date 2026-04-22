@@ -207,7 +207,7 @@ export const FileUploader = forwardRef<
         return;
       }
       setIsLOF(false);
-    }, [value, maxFiles]);
+    }, [value, maxFiles, multiple]);
 
     const opts = dropzoneOptions ? dropzoneOptions : { accept, maxFiles, maxSize, multiple };
 
@@ -338,9 +338,8 @@ export const FileInput = forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
           {children}
         </div>
         <Input
-          ref={dropzoneState.inputRef}
           disabled={isLOF}
-          {...dropzoneState.getInputProps()}
+          {...dropzoneState.getInputProps({ refKey: 'ref' })}
           className={`${isLOF ? 'cursor-not-allowed' : ''}`}
         />
       </div>

@@ -34,7 +34,7 @@ async function getLucideIcon(name: string) {
 }
 
 const LucideDynamicIcon = forwardRef<SVGSVGElement, DynamicIconComponentProps>(
-  ({ name, fallback: Fallback, ...props }, ref) => {
+  function LucideDynamicIcon({ name, fallback: Fallback, ...props }, ref) {
     const [LucideIcon, setLucideIcon] = useState<LucideIcon>();
 
     useEffect(() => {
@@ -55,8 +55,6 @@ const LucideDynamicIcon = forwardRef<SVGSVGElement, DynamicIconComponentProps>(
     return <LucideIcon ref={ref} {...props} />;
   },
 );
-
-export default DynamicIcon;
 
 type DynamicIconProps = React.ComponentProps<typeof LucideDynamicIcon>;
 
@@ -79,3 +77,5 @@ export function DynamicIcon(
     />
   );
 }
+
+export default DynamicIcon;

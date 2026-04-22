@@ -21,7 +21,7 @@ export const useHash = () => {
     return () => {
       window.removeEventListener('hashchange', onHashChange);
     };
-  }, []);
+  }, [onHashChange]);
 
   const _setHash = useCallback(
     (newHash: string) => {

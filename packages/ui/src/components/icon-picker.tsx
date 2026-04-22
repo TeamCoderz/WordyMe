@@ -2011,6 +2011,7 @@ const IconPicker = React.forwardRef<
 
     const parentRef = React.useRef<HTMLDivElement>(null);
 
+    // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual useVirtualizer is incompatible with React Compiler memoization
     const virtualizer = useVirtualizer({
       count: virtualItems.length,
       getScrollElement: () => parentRef.current,
