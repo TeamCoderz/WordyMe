@@ -1,5 +1,57 @@
 # Changelog
 
+## [1.0.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.1-beta.0...v0.2.0-beta.0) (2026-04-22)
+
+### Features
+
+* add preview tabs and inactive-tab close button ([3b6be71](https://github.com/TeamCoderz/WordyMe/commit/3b6be717033d553fda9bfab683989e61b21b20a1))
+* **tab:** remove saving loader, show checkmark only on save success ([620293e](https://github.com/TeamCoderz/WordyMe/commit/620293e3561330fe10a15f2ac829b38b8c1a0394))
+* **tabs:** add generic LinkButton and fix tab/dropdown navigation ([a667371](https://github.com/TeamCoderz/WordyMe/commit/a667371fb93474f5b686cd88bfd2c53bf9a4b92d))
+* **tabs:** autosave on tab leave and unify save indicator across actions ([cbf1138](https://github.com/TeamCoderz/WordyMe/commit/cbf1138107f6c9aa8d2eb0544ca5941e2c2fcd12))
+* **tabs:** refine tab bar and space switcher styling ([7b1a804](https://github.com/TeamCoderz/WordyMe/commit/7b1a8044d821d018cdc110ba4f7b9c9a1ae88fea))
+* **tabs:** show saving indicator and persist preview/saving state cleanly ([8d24709](https://github.com/TeamCoderz/WordyMe/commit/8d24709d591af2cf2b7859a83b13f842195984d3))
+* **TEA-71:** implement automated SPDX header management ([#36](https://github.com/TeamCoderz/WordyMe/issues/36)) ([4b8cda0](https://github.com/TeamCoderz/WordyMe/commit/4b8cda003d9b4d5d2752703454701b4199361c20))
+
+### Bug Fixes
+
+* **backend:** resolve lint warnings and stabilize Turbo env cache for DB_FILE_NAME ([#39](https://github.com/TeamCoderz/WordyMe/issues/39)) ([9d63f63](https://github.com/TeamCoderz/WordyMe/commit/9d63f634a850617c07116326d882f513fa8d8790))
+* **Dockerfile:** update run-migrations.mjs path to reflect new directory structure ([9992311](https://github.com/TeamCoderz/WordyMe/commit/9992311f0452e7bb7345cb26e6db30faa065faee))
+* **errors:** enhance error handling for payload size limits and improve express error detection ([0d9a353](https://github.com/TeamCoderz/WordyMe/commit/0d9a353d32fecd0e1582587d5103e042cd5d9fac))
+* **errors:** improve error handling in document and profile mutations ([d29dacf](https://github.com/TeamCoderz/WordyMe/commit/d29dacf19721ec129c6ceb7b1fd070aef11280d0))
+* **space-switcher:** include active space in breadcrumb and prevent mobile sheet auto-focus ([630ec16](https://github.com/TeamCoderz/WordyMe/commit/630ec16fbda2abb1f3d951b572dfca50fc818380))
+* **tabs:** correct resolveTabAction JSDoc and optimize closeSplit lookups ([065f9dd](https://github.com/TeamCoderz/WordyMe/commit/065f9dddc137748073bbb327b3d6d78589406590))
+* **tabs:** extract shared routing logic, prevent split-pane duplicates, fix pane-aware navigation ([cbef5d4](https://github.com/TeamCoderz/WordyMe/commit/cbef5d4efe81424e177de710b73232f79960f084))
+* **tabs:** narrow Zustand selectors and fix split-tab dedup ([4178176](https://github.com/TeamCoderz/WordyMe/commit/4178176157a638598573e3710b2441916772cc72))
+* **tabs:** use full location matching for split dedup and closeSplit ([c838b5c](https://github.com/TeamCoderz/WordyMe/commit/c838b5c65eabbf4b08c1af9dae43776753b874d5))
+
+## [0.2.0-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.1-beta.0...v0.2.0-beta.0) (2026-04-15)
+
+### Features
+
+* create document search index table and related triggers ([1bb9484](https://github.com/TeamCoderz/WordyMe/commit/1bb948422b2fda7334958df7d4578548e41ce218))
+* **database:** implement full-text search for documents with FTS5 ([0f4274e](https://github.com/TeamCoderz/WordyMe/commit/0f4274e254d044b29681f89b589bddba88336fa3))
+* **search-ui:** match Wordy search dialog UI and wire global document search ([7927120](https://github.com/TeamCoderz/WordyMe/commit/7927120af656fb238e34067950935da3f7c6023b))
+* **search:** add full-text search endpoint for user documents ([dc46805](https://github.com/TeamCoderz/WordyMe/commit/dc46805206e6ca970bc6d76ebb4a9c55705f81ed))
+* **search:** add searchDocuments function the SDK ([1554477](https://github.com/TeamCoderz/WordyMe/commit/15544774fcd1c71350b5ca5a902fb5f55850cd8c))
+* **search:** enhance full-text search to support optional spaceId filtering ([c8f59e7](https://github.com/TeamCoderz/WordyMe/commit/c8f59e7317e6841ecbc3da864d7592a68db00698))
+* **search:** implement full-text search functionality and query utilities ([a899896](https://github.com/TeamCoderz/WordyMe/commit/a899896bf9fee8e39d1ab6ff82bbaf202cf918ce))
+* **search:** pass spaceId through search query options ([eabdd9b](https://github.com/TeamCoderz/WordyMe/commit/eabdd9bbed37e5f5b5ab62fe4a9000c6a337945a))
+* **space-switcher:** add hover card showing full breadcrumb path for nested spaces ([e4c82ba](https://github.com/TeamCoderz/WordyMe/commit/e4c82ba540dfbc1366c214c2b767c908102dc76b))
+* **TEA-69:** disable signups after the first account exists ([#33](https://github.com/TeamCoderz/WordyMe/issues/33)) ([bc0bfe9](https://github.com/TeamCoderz/WordyMe/commit/bc0bfe9c4858946a30264b35219a2e570e861dbc))
+
+### Bug Fixes
+
+* **deps:** resolve 5 CVEs via dependency upgrades and pnpm overrides ([6f6a649](https://github.com/TeamCoderz/WordyMe/commit/6f6a64969d5fe077329daed0e13236b6e311c02e))
+* **docker:** run database migrations at container startup instead of build time ([a64c4b9](https://github.com/TeamCoderz/WordyMe/commit/a64c4b973f269189e854360b3500b780d1170a83))
+* **editor:** refresh checksum event deps ([e24969a](https://github.com/TeamCoderz/WordyMe/commit/e24969a1e0ecad017ba86dc9f67f5ba7a138621c))
+* **inputs:** prevent Firefox double-submit on inline create/rename inputs ([73d9a65](https://github.com/TeamCoderz/WordyMe/commit/73d9a651f5141033568ac1bd552f0eb542184e73))
+* **layout:** responsive on small screens ([7758824](https://github.com/TeamCoderz/WordyMe/commit/77588240e5c507358811812ec697f86c5c21914b))
+* **search:** pass spaceId to SDK, singleton hotkey, and safe cloneElement ([acaaf55](https://github.com/TeamCoderz/WordyMe/commit/acaaf55054a33e3a912c067b962bb246d57fe449))
+* **security:** resolve transitive vulnerabilities via pnpm overrides ([dee948e](https://github.com/TeamCoderz/WordyMe/commit/dee948e41d3803e6c7e0ea6ffaf1d4d980c3b9fa))
+* **tabs:** fix tabs save button error ([674f781](https://github.com/TeamCoderz/WordyMe/commit/674f781a711d74105ed790063d9639942f1b40b6))
+* **web:** allow empty last name and guard invalid profile section ([544950f](https://github.com/TeamCoderz/WordyMe/commit/544950ffd9cf1ce9f37a17bf66abaeca3463cf9f))
+* **web:** improve settings tab reuse and close user menu on navigation ([35bf4b2](https://github.com/TeamCoderz/WordyMe/commit/35bf4b2172161d91a5be02b299773fe67e5f928d))
+
 ## [0.2.0-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.0-beta.0...v0.1.1-beta.0) (2026-04-15)
 
 ### Features
