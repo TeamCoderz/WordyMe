@@ -9,7 +9,12 @@ export interface TreeNodeData {
   id: string;
   parentId?: string | null;
   position?: string | null;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+interface TreeNodeJson<T extends TreeNodeData> {
+  data: T;
+  children?: TreeNodeJson<T>[];
 }
 
 export interface SerializedTreeNode<T extends TreeNodeData = TreeNodeData> {
@@ -147,10 +152,10 @@ export class TreeNode<T extends TreeNodeData = TreeNodeData> {
 /**
  * Creates a tree from a serialized object
  */
-export function jsonToTree<T extends TreeNodeData>(obj: any): TreeNode<T> {
+export function jsonToTree<T extends TreeNodeData>(obj: TreeNodeJson<T>): TreeNode<T> {
   const node = new TreeNode<T>(obj.data as T);
   if (Array.isArray(obj.children)) {
-    obj.children.forEach((childObj: any) => {
+    obj.children.forEach((childObj) => {
       const childNode = jsonToTree<T>(childObj);
       node.addChild(childNode);
     });
