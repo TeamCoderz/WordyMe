@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "@excalidraw/common": "0.18.0-f0063e113",
-    "@excalidraw/excalidraw": "^0.18.0",
+    "@excalidraw/excalidraw": "^0.18.1",
     "@excalidraw/math": "0.18.0-f0063e113",
     "@lexical/clipboard": "^0.41.0",
     "@lexical/code": "^0.41.0",
