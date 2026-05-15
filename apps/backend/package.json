@@ -23,7 +23,7 @@
     "@httpx/exception": "^3.1.8",
     "@libsql/client": "^0.17.0",
     "@scalar/express-api-reference": "^0.9.2",
-    "better-auth": "^1.5.6",
+    "better-auth": "^1.6.2",
     "cors": "^2.8.6",
     "dotenv": "^17.3.1",
     "drizzle-orm": "^0.45.2",
