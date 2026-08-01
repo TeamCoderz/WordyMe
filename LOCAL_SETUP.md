@@ -7,7 +7,7 @@ This guide will help you set up and run WordyMe on your local machine.
 Before you begin, ensure you have the following installed:
 
 - **Node.js** >= 18 ([Download](https://nodejs.org/))
-- **pnpm** 9.0.0 ([Installation Guide](https://pnpm.io/installation))
+- **pnpm** 10.33.0 ([Installation Guide](https://pnpm.io/installation))
 
 ### Installing pnpm
 
@@ -15,7 +15,7 @@ If you don't have pnpm installed:
 
 ```bash
 # Using npm
-npm install -g pnpm@9.0.0
+npm install -g pnpm@10.33.0
 
 # Using Homebrew (macOS)
 brew install pnpm

@@ -210,21 +210,36 @@ Then edit `.env` with your values. The `.env.example` file contains all availabl
 
 ### What's Excluded from Docker Builds
 
-The `.dockerignore` file excludes the following from Docker builds:
+The `.dockerignore` file excludes the following from Docker builds, **at every
+directory depth**:
 
-- **Dependencies**: `node_modules`, `.pnpm-store`
-- **Build outputs**: `dist`, `build`, `.turbo`
-- **Environment files**: `.env`, `.env.local`, `.env.*` (but keeps `.env.example`)
-- **Database files**: `*.db`, `*.sqlite`, `*.sqlite-journal` (prevents copying local dev databases)
-- **Version control**: `.git`
-- **Logs**: `npm-debug.log*`, `yarn-debug.log*`, `pnpm-debug.log*`
-- **System files**: `.DS_Store`
+- **Dependencies**: `**/node_modules`, `.pnpm-store`
+- **Build outputs**: `**/dist`, `**/build`, `**/.turbo`, `**/*.tsbuildinfo`, `**/coverage`
+- **Environment files**: `**/.env`, `**/.env.*` (but keeps every `**/.env.example`)
+- **Databases**: `**/*.db`, `**/*.db-wal`, `**/*.db-shm`, `**/*.db-journal`, `**/*.sqlite`, `**/*.sqlite3`
+- **User uploads**: the whole `storage/` and `apps/backend/storage/` directories
+- **Version control & tooling**: `.git`, `.gitignore`, `.github`, `.husky`, `.vscode`, `.idea`
+- **Logs and OS cruft**: `**/*.log`, `**/.DS_Store`
+- **Docker's own files**: `Dockerfile*`, `docker-compose*.yml`, `.dockerignore`
+
+> **Important — `.dockerignore` is not `.gitignore`.** In a `.dockerignore`, a
+> bare pattern such as `dist` matches **only** the root-level path; it does not
+> match `apps/web/dist`. That is why every pattern above is written with a
+> `**/` prefix. When the last matching pattern is a negation (`!`), the file is
+> re-included — which is how `.env.example` survives the `**/.env.*` rule.
+
+> **Do not add these to `.dockerignore`:** `patches/` (pnpm applies the Lexical
+> patches listed in `pnpm-workspace.yaml` during install — excluding this
+> directory breaks the build), `.npmrc`, `pnpm-workspace.yaml`, `turbo.json`,
+> and `pnpm-lock.yaml`.
 
 This ensures:
 
 - Smaller build context and faster builds
-- No accidental inclusion of secrets or local databases
+- No accidental inclusion of secrets, local databases, or user uploads
 - Clean production images
+- Stable Docker layer caching (stale `dist/` output no longer invalidates the
+  cache on every local build)
 
 ### Method 2: Directly in `docker-compose.yml`
 
@@ -389,7 +404,7 @@ The `Dockerfile` uses a multi-stage build process optimized for a monorepo:
 ### Stage 2: Builder
 
 - **Base**: `node:20-alpine` with `sqlite` and `libc6-compat`
-- **Package Manager**: pnpm 9.0.0 (via Corepack)
+- **Package Manager**: pnpm (via Corepack, version resolved from the `packageManager` field in the root `package.json` — currently 10.33.0)
 - **Process**:
   1. Copies pruned files from pruner stage
   2. Installs dependencies with `pnpm install --frozen-lockfile`
