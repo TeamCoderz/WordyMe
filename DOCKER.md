@@ -23,18 +23,17 @@ docker compose version
    cd WordyMe
    ```
 
-2. **Set up environment variables** (optional):
-   Copy the example environment file and customize as needed:
+2. **Set up environment variables** (required):
+   Copy the example environment file:
 
    ```bash
    cp .env.example .env
    ```
 
-   Then edit `.env` and update the values, especially `BETTER_AUTH_SECRET` for production:
+   Then set `BETTER_AUTH_SECRET`. It has no default and startup fails without it:
 
    ```bash
-   # Generate a secure secret for production
-   openssl rand -base64 32
+   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> .env
    ```
 
    > **Note**:
@@ -48,50 +47,67 @@ docker compose version
    docker compose up -d
    ```
 
-4. **Access the application**:
-   - **Web Application**: http://localhost:5173
-   - **Backend API**: http://localhost:3000
+4. **Access the application**: http://localhost:8080
 
-## Docker Compose Services
+   The web app and the API are served from the same origin and the same port.
+   There is no separate frontend URL.
 
-The `docker-compose.yml` file defines two services:
+## Architecture: one image, one process
 
-### Backend Service
+WordyMe ships as a **single all-in-one image**. Express serves the API, the
+Socket.io WebSocket, uploaded files, and the built web bundle — all from one
+port, in one process.
 
-- **Container Name**: `wordyme-backend`
-- **Port**: `3000:3000`
-- **Image**: Built from `Dockerfile` (target: `backend`)
+This is a deliberate choice, not a shortcut:
+
+- **SQLite is single-writer.** Splitting web and backend into separate
+  containers buys no scaling, because every write still funnels through one
+  process holding one database file.
+- **Same-origin removes the baked-in URL problem.** Vite inlines
+  `import.meta.env.*` into the JavaScript bundle at build time. If the frontend
+  had to be told where the backend lives, that address would be frozen into the
+  image and a published image could never be pointed at your own domain. Serving
+  both from one origin makes every API call relative, so the image works
+  unmodified behind any hostname.
+- **No hardcoded service hostname.** The old split used an Nginx proxy pointing
+  at `http://backend:3000`, which broke the moment the service was renamed or
+  run outside compose.
+- **A smaller image**, with one process to supervise instead of two.
+
+## Docker Compose Service
+
+`docker-compose.yml` defines a single service, `wordyme`:
+
+- **Image**: `teamcoderz/wordyme:latest`, built from `Dockerfile`
+- **Port**: `8080:8080` — override the host side with `HOST_PORT`
 - **Environment Variables**:
   - `NODE_ENV=production`
-  - `PORT=3000`
-  - `DB_FILE_NAME=file:storage/local.db`
-  - `CLIENT_URL=http://localhost:5173`
-  - `BETTER_AUTH_SECRET` (from `.env` or default)
+  - `PORT=8080`
+  - `DB_FILE_NAME=file:/app/storage/local.db`
+  - `CLIENT_URL` (defaults to `http://localhost:8080`)
+  - `BETTER_AUTH_URL` (optional)
+  - `BETTER_AUTH_SECRET` — **required, no default**, see below
 - **Volumes**:
-  - `wordyme-storage` - Persists SQLite database and uploaded files
+  - `wordyme-storage` → `/app/storage` — SQLite database and uploaded files
 - **Restart Policy**: `unless-stopped`
-- **Health Check**:
-  - Tests HTTP endpoint every 30 seconds
-  - Timeout: 10 seconds
-  - Retries: 3
-  - Start period: 40 seconds
+- **Health Check**: defined in the image itself, so `docker run` users get it
+  too. Probes `/api/health` every 30s (5s timeout, 3 retries, 40s start period).
 
-### Web Service
+There is deliberately **no `container_name`**, so you can run two stacks side by
+side without a name collision.
 
-- **Container Name**: `wordyme-web`
-- **Port**: `5173:80` (maps to Nginx port 80)
-- **Image**: Built from `Dockerfile` (target: `web`)
-- **Build Args**:
-  - `VITE_BACKEND_URL` - Backend URL for the frontend (from `.env` or empty for same-origin)
-- **Depends On**: `backend` service
-- **Restart Policy**: `unless-stopped`
-- **Features**:
-  - Serves static files via Nginx
-  - Proxies `/api/` requests to the backend
-  - Proxies `/storage/` requests to the backend (for file uploads and downloads, max 10MB upload size)
-  - Proxies `/socket.io/` WebSocket connections to the backend (for real-time updates, 24h timeout)
-  - Gzip compression enabled
-  - SPA routing support with fallback to `index.html`
+### `BETTER_AUTH_SECRET` is required
+
+The compose file has no default for `BETTER_AUTH_SECRET`. `docker compose up`
+will fail with a clear message until you set one:
+
+```bash
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+```
+
+This is intentional. A default value committed to a public repository is a
+published secret — anyone running the stack unchanged would be exposed to
+session forgery by someone who simply read the repo.
 
 ## Common Commands
 
@@ -124,9 +140,8 @@ docker compose down -v --rmi all
 # View all logs
 docker compose logs
 
-# View logs for a specific service
-docker compose logs backend
-docker compose logs web
+# View logs for the service
+docker compose logs wordyme
 
 # Follow logs in real-time
 docker compose logs -f
@@ -164,26 +179,31 @@ The application uses Docker volumes to persist data:
 - **Contains**:
   - SQLite database (`local.db`)
   - Uploaded files and user content
-- **Mount Point**: `/app/storage` in the backend container
+- **Mount Point**: `/app/storage` in the container
 
 ### Backup Database
 
 ```bash
 # Create a backup
-docker compose exec backend cp storage/local.db storage/local.db.backup
+docker compose exec wordyme cp /app/storage/local.db /app/storage/local.db.backup
 
 # Copy database from container to host
-docker compose cp backend:/app/storage/local.db ./backup-local.db
+docker compose cp wordyme:/app/storage/local.db ./backup-local.db
 ```
+
+> **Note**: libSQL runs in WAL mode, so recent writes may live in
+> `local.db-wal` rather than in `local.db`. For a guaranteed-consistent backup,
+> stop the container first (`docker compose stop`) and copy all three of
+> `local.db`, `local.db-wal` and `local.db-shm`.
 
 ### Restore Database
 
 ```bash
 # Copy database from host to container
-docker compose cp ./backup-local.db backend:/app/storage/local.db
+docker compose cp ./backup-local.db wordyme:/app/storage/local.db
 
-# Restart the backend service
-docker compose restart backend
+# Restart the service
+docker compose restart wordyme
 ```
 
 ## Environment Variables
@@ -204,8 +224,8 @@ Then edit `.env` with your values. The `.env.example` file contains all availabl
 
 - The `.env` file is excluded from Docker builds (via `.dockerignore`) for security - it won't be copied into the image
 - Docker Compose automatically reads `.env` files from the project root for variable substitution in `docker-compose.yml`
-- **Runtime variables** (backend) are passed to containers through the `environment` section in `docker-compose.yml`
-- **Build-time variables** (web app and backend secrets) are passed as build args and embedded during the Docker build
+- All variables are **runtime** variables, passed to the container through the `environment` section in `docker-compose.yml`. Change one and restart — no rebuild needed.
+- Nothing is baked into the image at build time any more. `VITE_BACKEND_URL` used to be, which is why the image is now built same-origin instead.
 - See `.env.example` for a complete list of all environment variables with descriptions
 
 ### What's Excluded from Docker Builds
@@ -248,61 +268,59 @@ You can also modify the `environment` section directly in `docker-compose.yml`:
 ```yaml
 environment:
   - BETTER_AUTH_SECRET=your-secret-key-here
-  - CLIENT_URL=http://localhost:5173
+  - CLIENT_URL=http://localhost:8080
 ```
 
 ### Available Environment Variables
 
-#### Backend (Runtime Variables)
+All variables are read at runtime and can be changed without rebuilding the image:
 
-These variables are available at runtime and can be changed without rebuilding:
+| Variable             | Description                                                      | Default                         |
+| -------------------- | ---------------------------------------------------------------- | ------------------------------- |
+| `BETTER_AUTH_SECRET` | Secret key for authentication. **Required — no default.**        | _(none; startup fails without)_ |
+| `CLIENT_URL`         | Comma-separated origins for CORS and Better Auth trusted origins | `http://localhost:8080`         |
+| `BETTER_AUTH_URL`    | Public origin, when it differs from the first `CLIENT_URL`       | _(unset)_                       |
+| `NODE_ENV`           | Node environment                                                 | `production`                    |
+| `PORT`               | Port the app listens on, inside the container                    | `8080`                          |
+| `DB_FILE_NAME`       | Database file path (absolute)                                    | `file:/app/storage/local.db`    |
+| `HOST_PORT`          | Host port compose publishes to (compose only)                    | `8080`                          |
 
-| Variable             | Description                   | Default                                              |
-| -------------------- | ----------------------------- | ---------------------------------------------------- |
-| `BETTER_AUTH_SECRET` | Secret key for authentication | `change-me-in-production-use-openssl-rand-base64-32` |
-| `CLIENT_URL`         | Frontend URL for CORS         | `http://localhost:5173`                              |
-| `NODE_ENV`           | Node environment              | `production`                                         |
-| `PORT`               | Backend port                  | `3000`                                               |
-| `DB_FILE_NAME`       | Database file path            | `file:storage/local.db`                              |
+To reach the app from another machine on your LAN, add that origin to
+`CLIENT_URL`:
 
-#### Web App (Build-time Variables)
+```bash
+CLIENT_URL=http://localhost:8080,http://192.168.1.20:8080
+```
 
-These variables are embedded into the JavaScript bundle at build time. To change them, you must rebuild the Docker image:
-
-| Variable           | Description                                                                           | Default |
-| ------------------ | ------------------------------------------------------------------------------------- | ------- |
-| `VITE_BACKEND_URL` | Backend URL for API calls. Leave empty for same-origin (recommended with Nginx proxy) | Empty   |
-
-> **Note**: Since `VITE_BACKEND_URL` is a build-time variable, if you change it in `.env`, you need to rebuild the web service:
->
-> ```bash
-> docker compose build web
-> docker compose up -d
-> ```
+> **`VITE_BACKEND_URL` is no longer used when running under Docker.** The web
+> bundle is served by the backend from the same origin, so API calls are
+> relative and nothing needs to be baked into the JavaScript. It remains
+> available for the unusual case of hosting the frontend on a different origin
+> from the API, but note that Vite inlines it at build time — set that way, an
+> image is pinned to one hostname and cannot be repointed later.
 
 ## Troubleshooting
 
 ### Port Already in Use
 
-If you get an error that ports 3000 or 5173 are already in use:
+If port 8080 is already in use, publish a different host port — no rebuild needed:
 
-1. **Change ports in `docker-compose.yml`**:
+```bash
+HOST_PORT=9090 docker compose up -d
+```
 
-   ```yaml
-   ports:
-     - '3001:3000' # Change host port to 3001
-     - '5174:80' # Change host port to 5174
-   ```
+Then set `CLIENT_URL` to match (`http://localhost:9090`), so CORS and the auth
+cookie origin agree with the address you actually use.
 
-2. **Or stop the conflicting service**:
+To find what is holding the port:
 
-   ```bash
-   # Find what's using the port (Windows)
-   netstat -ano | findstr :3000
+```bash
+# Linux/Mac
+lsof -i :8080
 
-   # Find what's using the port (Linux/Mac)
-   lsof -i :3000
-   ```
+# Windows
+netstat -ano | findstr :8080
+```
 
 ### Database Issues
 
@@ -311,8 +329,12 @@ If you encounter database errors:
 1. **Check volume permissions**:
 
    ```bash
-   docker compose exec backend ls -la storage/
+   docker compose exec wordyme ls -la /app/storage/
    ```
+
+   The files should be owned by `nodejs`. If they are owned by `root`, you are
+   most likely using a bind mount instead of the named volume — Docker creates
+   those root-owned, and the non-root container user cannot write to them.
 
 2. **Reset the database** (⚠️ **WARNING**: This deletes all data):
    ```bash
@@ -341,8 +363,7 @@ If the build fails:
 1. **Check logs**:
 
    ```bash
-   docker compose logs backend
-   docker compose logs web
+   docker compose logs wordyme
    ```
 
 2. **Verify health status**:
@@ -362,15 +383,13 @@ If the build fails:
 
 The Docker setup is optimized for production:
 
-- **Multi-stage builds** for smaller images (pruner → builder → backend/web)
+- **Multi-stage builds** for smaller images (pruner → builder → runner)
 - **Turbo pruning** to include only necessary monorepo packages
 - **Production dependencies only** (via `pnpm --prod deploy`)
-- **Database migrations** run during build for faster startup
-- **Seed database** created during build
-- **Optimized Nginx configuration** with gzip and proper proxying
-- **Health checks enabled** for backend service
+- **Database migrations** run at container start, before the server listens
+- **Health check baked into the image**, so `docker run` users get it too
 - **Automatic restarts** on failure (`unless-stopped` restart policy)
-- **Non-root user** for backend security
+- **Non-root user** (`nodejs`, UID 1001)
 
 ### Development
 
@@ -403,86 +422,89 @@ The `Dockerfile` uses a multi-stage build process optimized for a monorepo:
 
 ### Stage 2: Builder
 
-- **Base**: `node:20-alpine` with `sqlite` and `libc6-compat`
+- **Base**: `node:20-alpine` with `libc6-compat`
 - **Package Manager**: pnpm (via Corepack, version resolved from the `packageManager` field in the root `package.json` — currently 10.33.0)
 - **Process**:
   1. Copies pruned files from pruner stage
   2. Installs dependencies with `pnpm install --frozen-lockfile`
-  3. Runs database migrations (`pnpm drizzle-kit migrate`)
-  4. Builds both backend and frontend applications
-  5. Creates production deployment for backend
-- **Build Args**:
-  - `VITE_BACKEND_URL` - Embedded into web app bundle
-- **Output**: Built applications and a seed database (`local.db`)
+  3. Builds both the backend and the web app
+  4. Creates a production-only deployment of the backend (`pnpm --prod deploy`)
+- **Output**: compiled backend (`apps/backend/dist`) and web bundle (`apps/web/dist`)
 
-### Stage 3: Backend Runner
+`VITE_BACKEND_URL` is pinned to the empty string here, so the bundle uses
+relative URLs and no hostname is inlined into the JavaScript.
 
-- **Base**: `node:20-alpine` with `sqlite`
+### Stage 3: Runner (all-in-one)
+
+- **Base**: `node:20-alpine` with `libc6-compat`
 - **User**: Runs as non-root user (`nodejs`, UID 1001)
-- **Features**:
-  - Copies production backend from builder
-  - Copies seed database to `storage/local.db`
-  - Creates `storage` directory with proper permissions
-  - Exposes port 3000
-- **Command**: `node dist/index.js`
+- **Contents**:
+  - Production backend dependencies and compiled `dist/`
+  - Drizzle migrations and `run-migrations.mjs`
+  - The web bundle at `/app/web`, served by Express
+  - `/app/storage` for the database and uploads
+- **Exposes**: port 8080
+- **Health check**: `GET /api/health` — a liveness probe that does no database
+  work, so a container running startup migrations is not marked unhealthy
+- **Command**: runs migrations, then starts the server
 
-### Stage 4: Web Runner
+Request handling inside the single process:
 
-- **Base**: `nginx:alpine`
-- **Features**:
-  - Serves static files from `/usr/share/nginx/html`
-  - Nginx configuration with:
-    - Gzip compression for text-based files
-    - SPA routing (fallback to `index.html`)
-    - Proxy `/api/` → `http://backend:3000`
-    - Proxy `/storage/` → `http://backend:3000` (10MB max upload)
-    - Proxy `/socket.io/` → `http://backend:3000` (WebSocket with 24h timeout)
-  - Exposes port 80
+| Path            | Handled by                                                             |
+| --------------- | ---------------------------------------------------------------------- |
+| `/api/*`        | Express API routers                                                    |
+| `/storage/*`    | Express file routes (uploads, avatars, attachments)                    |
+| `/socket.io/`   | Socket.io, attached to the same HTTP server                            |
+| `/docs`         | Scalar API reference                                                   |
+| everything else | Static web bundle, falling back to `index.html` for client-side routes |
+
+Caching is set per file type: fingerprinted assets under `/assets/` are
+immutable for a year, while `index.html` and the service worker are never
+cached for long — otherwise clients would pin themselves to an old build.
 
 This approach results in:
 
-- **Smaller final images**: Only production dependencies and built artifacts
+- **Smaller final images**: one runtime, only production dependencies
 - **Faster builds**: Turbo pruning reduces build context, layer caching optimizes rebuilds
-- **Better security**: Minimal base images, non-root user for backend
-- **Separation of concerns**: Backend and frontend in separate containers
-- **Efficient proxying**: All backend endpoints accessible through Nginx
-- **Database initialization**: Seed database created during build for faster startup
+- **Better security**: minimal base image, non-root user
+- **Portability**: no hostname baked into the bundle, so one image works behind any domain
 
 ## Advanced Usage
 
-### Running Individual Services
+### Running without Compose
+
+The image is self-contained, so `docker run` works too:
 
 ```bash
-# Start only the backend
-docker compose up -d backend
-
-# Start only the web frontend
-docker compose up -d web
+docker run -d \
+  -p 8080:8080 \
+  -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+  -e CLIENT_URL=http://localhost:8080 \
+  -v wordyme-storage:/app/storage \
+  teamcoderz/wordyme:latest
 ```
 
-### Executing Commands in Containers
+The health check is part of the image, so `docker ps` reports health here just
+as it does under compose.
+
+### Executing Commands in the Container
 
 ```bash
-# Access backend container shell
-docker compose exec backend sh
+# Shell into the container
+docker compose exec wordyme sh
 
-# Run a command in backend
-docker compose exec backend node -v
-
-# Access web container shell
-docker compose exec web sh
+# Run a one-off command
+docker compose exec wordyme node -v
 ```
 
 ### Custom Network Configuration
 
-The services automatically create a Docker network. To use a custom network, modify `docker-compose.yml`:
+Compose creates a network automatically. To use a custom one, modify
+`docker-compose.yml`:
 
 ```yaml
 services:
-  backend:
-    networks:
-      - wordyme-network
-  web:
+  wordyme:
     networks:
       - wordyme-network
 
@@ -491,29 +513,54 @@ networks:
     driver: bridge
 ```
 
+### Running Behind a Reverse Proxy
+
+Because everything is same-origin, there is only one upstream to point at.
+Forward all traffic — including `/socket.io/` with WebSocket upgrade headers —
+to the single container port, then set `CLIENT_URL` to your public URL:
+
+```bash
+CLIENT_URL=https://notes.example.com
+```
+
 ## Security Considerations
 
-1. **Change Default Secrets**: Always set `BETTER_AUTH_SECRET` in production using a secure random value:
+1. **Set `BETTER_AUTH_SECRET`**: it has no default and startup fails without it, by design. Generate one with:
 
    ```bash
    openssl rand -base64 32
    ```
 
-2. **Environment Files**: `.env` files are excluded from Docker builds (via `.dockerignore`) to prevent secrets from being baked into images. Docker Compose still reads them for variable substitution, but they remain on the host system only.
+2. **Environment Files**: `.env` files are excluded from Docker builds at every directory depth (via `.dockerignore`), so no secret is copied into the image. Docker Compose still reads them for variable substitution, but they remain on the host only.
 
-3. **Non-Root User**: The backend container runs as a non-root user (`nodejs`, UID 1001) for better security isolation.
+3. **Non-Root User**: the container runs as a non-root user (`nodejs`, UID 1001).
 
-4. **Minimal Base Images**: Uses Alpine Linux base images for smaller attack surface.
+4. **Minimal Base Images**: Alpine Linux base images, for a smaller attack surface.
 
-5. **Use HTTPS**: In production, use a reverse proxy (e.g., Traefik, Nginx) with SSL certificates.
+5. **Use HTTPS**: in production, terminate TLS at a reverse proxy (Traefik, Caddy, Nginx) in front of the container.
 
-6. **Limit Port Exposure**: Only expose necessary ports (3000 for backend, 5173 for web).
+6. **Limit Port Exposure**: only one port (8080) needs publishing. Behind a reverse proxy, bind it to loopback — `127.0.0.1:8080:8080` — so it is not reachable directly.
 
-7. **Regular Updates**: Keep Docker images and base images updated with security patches.
+7. **Regular Updates**: keep the image and its base image patched.
 
-8. **Volume Permissions**: The `storage` directory is created with proper ownership for the `nodejs` user.
+8. **Volume Permissions**: `/app/storage` is created owned by the `nodejs` user.
 
-9. **Database Isolation**: Local development databases are excluded from builds to prevent accidental data leaks.
+9. **Database Isolation**: local development databases and uploads are excluded from builds, so they cannot leak into a published image.
+
+### Known gaps
+
+These are tracked and not yet addressed:
+
+- The container does not yet handle `SIGTERM` gracefully. `docker stop` will wait
+  for the timeout and then kill the process, which is not safe for a live SQLite
+  writer. Prefer stopping when the app is idle until this is fixed.
+- The base image is `node:20-alpine`; Node 20 reached end of life on 30 April 2026.
+- Compose does not yet set `no-new-privileges`, `cap_drop`, memory limits, or log
+  rotation. On a small device, unbounded JSON logs can fill the disk — consider
+  adding a `logging` block with `max-size` and `max-file`.
+- A bind mount (`./data:/app/storage`) is created root-owned by Docker, which the
+  non-root container user cannot write to. Named volumes, as used in
+  `docker-compose.yml`, do not have this problem.
 
 ## Support
 

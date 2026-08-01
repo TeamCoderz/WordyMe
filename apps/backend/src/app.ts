@@ -12,6 +12,7 @@ import { toNodeHandler } from 'better-auth/node';
 import { auth } from './lib/auth.js';
 import { openApiDocument } from './lib/docs.js';
 import { initializeSocket } from './lib/socket.js';
+import { hasWebBundle, webFallback, webStatic } from './lib/web.js';
 import { env } from './env.js';
 
 // Error Middlewares
@@ -67,9 +68,17 @@ app.get(
   }),
 );
 
-app.get('/', (req, res) => {
-  res.send('Hello, World!');
-});
+// Serve the built web bundle from the same origin as the API. Mounted after
+// every server route so it can never shadow one. When no bundle is present
+// (`pnpm dev`), Vite serves the web app separately and this is skipped.
+if (hasWebBundle()) {
+  app.use(webStatic);
+  app.get('/{*any}', webFallback);
+} else {
+  app.get('/', (_req, res) => {
+    res.type('text').send('WordyMe API. No web bundle present; run the web app separately.');
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);

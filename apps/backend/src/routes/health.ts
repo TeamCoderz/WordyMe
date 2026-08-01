@@ -8,6 +8,16 @@ import { db } from '../lib/db.js';
 
 export const healthRouter = Router();
 
+/**
+ * Liveness probe. Deliberately touches nothing — no database, no filesystem — so
+ * that a container still running startup migrations is not reported as broken.
+ * Use `/api/health/db` when you actually want to know about the database.
+ */
+healthRouter.get('/', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(200).json({ status: 'ok' });
+});
+
 healthRouter.get('/db', async (_req, res) => {
   const start = Date.now();
 
