@@ -4,6 +4,20 @@ packages:
 
 minimumReleaseAge: 5760
 
+# better-auth and drizzle-orm declare optional peer dependencies for every
+# database and framework they support (prisma, pglite, mysql2, postgres,
+# mongodb, svelte, vue, preact, drizzle-kit...). With auto-install these all get
+# installed and, because `pnpm deploy` copies a package's whole peer closure,
+# they end up in the production image: 225MB of database drivers, framework
+# adapters and build tooling the app never imports.
+#
+# Peers that ARE needed must now be declared explicitly. Today that is
+# `@opentelemetry/api` in apps/backend: @better-auth/core imports it at the top
+# of its tracer module, so the server crashes on boot without it. The remaining
+# missing-peer warnings (vue, svelte, preact, yjs) are framework and CRDT
+# adapters this app does not import.
+autoInstallPeers: false
+
 onlyBuiltDependencies:
   - bun
   - core-js
