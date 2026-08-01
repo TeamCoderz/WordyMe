@@ -130,7 +130,7 @@ If you have questions about implementation details or need help:
 Before you begin, ensure you have the following installed:
 
 - [Node.js](https://nodejs.org/) >= 18
-- [pnpm](https://pnpm.io/) 9.0.0
+- [pnpm](https://pnpm.io/) 10.33.0
 
 ### Getting Started
 

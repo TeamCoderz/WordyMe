@@ -15,7 +15,10 @@ FROM node:20-alpine AS builder
 RUN apk add --no-cache libc6-compat sqlite
 WORKDIR /app
 
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+# Corepack resolves the pnpm version from the `packageManager` field in
+# package.json (including its integrity hash), so do not pin a version here —
+# a version pinned in this file is silently ignored and only wastes a download.
+RUN corepack enable
 
 # Copy pruned files
 COPY --from=pruner /app/out/json/ .
