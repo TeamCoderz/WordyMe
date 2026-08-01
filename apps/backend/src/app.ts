@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import express, { type Express } from 'express';
+import express, { type Express, type Request, type Response } from 'express';
 import { createServer } from 'node:http';
 import morgan from 'morgan';
 import cors from 'cors';
@@ -17,6 +17,7 @@ import { env } from './env.js';
 
 // Error Middlewares
 import { errorHandler, notFoundHandler } from './middlewares/errors.js';
+import { clientIp } from './middlewares/client-ip.js';
 
 // REST Routers
 import { documentsRouter } from './routes/documents.js';
@@ -32,6 +33,9 @@ const server = createServer(app);
 
 initializeSocket(server);
 
+// Only takes effect when TRUST_PROXY is set; see apps/backend/src/env.ts.
+app.set('trust proxy', env.TRUST_PROXY);
+
 app.use(
   cors({
     origin: env.CLIENT_URL,
@@ -39,9 +43,21 @@ app.use(
   }),
 );
 
+// Must run before the auth handler, which is what consumes the client IP.
+app.use(clientIp);
+
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
-app.use(morgan('dev'));
+app.use(
+  morgan<Request, Response>('dev', {
+    // The container health check polls this every 30s. Logging it buries real
+    // traffic and, on a device logging to an SD card, adds ~2,900 lines a day
+    // that say nothing. Use originalUrl: Express rewrites req.url when a
+    // request enters a mounted router, so by the time morgan evaluates this the
+    // path would read as '/' rather than '/api/health'.
+    skip: (req) => req.originalUrl.split('?')[0] === '/api/health',
+  }),
+);
 app.use(express.json({ limit: '5mb' }));
 
 app.use('/api/documents', documentsRouter);

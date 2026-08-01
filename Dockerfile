@@ -50,7 +50,11 @@ RUN pnpm --filter @repo/backend --prod deploy --legacy pruned-backend
 FROM node:20-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache libc6-compat
+# tini becomes PID 1. A process running as PID 1 does not get the kernel's
+# default signal handling, so without an init the container ignores SIGTERM and
+# `docker stop` waits out its timeout before SIGKILL — killing a live SQLite
+# writer. tini forwards signals properly and reaps zombies.
+RUN apk add --no-cache libc6-compat tini
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
@@ -90,4 +94,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||8080)+'/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
-CMD ["sh", "-c", "node run-migrations.mjs && node dist/index.js"]
+ENTRYPOINT ["/sbin/tini", "--"]
+
+# `exec` matters: without it the shell stays alive as the parent, and the signal
+# tini forwards would reach sh rather than Node.
+CMD ["sh", "-c", "node run-migrations.mjs && exec node dist/index.js"]

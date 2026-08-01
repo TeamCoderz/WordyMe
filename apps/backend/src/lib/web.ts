@@ -33,8 +33,16 @@ export const hasWebBundle = (): boolean => existsSync(path.join(WEB_DIR, 'index.
  */
 const NEVER_CACHE = new Set(['index.html', 'sw.js', 'registerSW.js', 'manifest.webmanifest']);
 
-/** Paths owned by the server. They must keep their own 404s instead of the app shell. */
-const SERVER_PREFIXES = ['/api/', '/storage/', '/docs'];
+/**
+ * Paths owned by the server. They must keep their own responses instead of the
+ * app shell. Matched as the exact path or a child of it, so that bare `/api`
+ * is still server-owned while a client route like `/docs-for-beginners` is not
+ * swallowed by a `startsWith('/docs')` test.
+ */
+const SERVER_PREFIXES = ['/api', '/storage', '/docs'];
+
+const isServerPath = (pathname: string): boolean =>
+  SERVER_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 
 /**
  * Extensions that identify a request for a static file rather than a client-side
@@ -70,10 +78,7 @@ export const webStatic: RequestHandler = express.static(WEB_DIR, {
  * leaving unmatched server paths to the normal JSON 404 handler.
  */
 export const webFallback: RequestHandler = (req, res, next) => {
-  if (
-    SERVER_PREFIXES.some((prefix) => req.path.startsWith(prefix)) ||
-    STATIC_ASSET.test(req.path)
-  ) {
+  if (isServerPath(req.path) || STATIC_ASSET.test(req.path)) {
     return next();
   }
 
