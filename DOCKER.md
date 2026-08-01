@@ -87,8 +87,13 @@ This is a deliberate choice, not a shortcut:
   - `CLIENT_URL` (defaults to `http://localhost:8080`)
   - `BETTER_AUTH_URL` (optional)
   - `BETTER_AUTH_SECRET` — **required, no default**, see below
+  - `TRUST_PROXY` (optional; set only behind a reverse proxy)
 - **Volumes**:
   - `wordyme-storage` → `/app/storage` — SQLite database and uploaded files
+- **Logging**: capped at 3 files of 10 MB. Without this, JSON logs grow until the
+  disk is full — a real failure mode on a Pi writing to an SD card
+- **Hardening**: `no-new-privileges`, all Linux capabilities dropped, and a 1 GB
+  memory limit. The app idles around 55 MB, so the limit only catches a runaway
 - **Restart Policy**: `unless-stopped`
 - **Health Check**: defined in the image itself, so `docker run` users get it
   too. Probes `/api/health` every 30s (5s timeout, 3 retries, 40s start period).
@@ -183,28 +188,79 @@ The application uses Docker volumes to persist data:
 
 ### Backup Database
 
-```bash
-# Create a backup
-docker compose exec wordyme cp /app/storage/local.db /app/storage/local.db.backup
+The database is a single file. It runs in SQLite's rollback-journal mode
+(`journal_mode=delete`, verifiable with `PRAGMA journal_mode`), **not** WAL, so
+there are no persistent `-wal` or `-shm` companion files to collect. A copy of
+`local.db` is the whole database.
 
-# Copy database from container to host
+The safest backup is taken with the service stopped, so no write can land
+mid-copy:
+
+```bash
+docker compose stop wordyme
+```
+
+```bash
 docker compose cp wordyme:/app/storage/local.db ./backup-local.db
 ```
 
-> **Note**: libSQL runs in WAL mode, so recent writes may live in
-> `local.db-wal` rather than in `local.db`. For a guaranteed-consistent backup,
-> stop the container first (`docker compose stop`) and copy all three of
-> `local.db`, `local.db-wal` and `local.db-shm`.
+```bash
+docker compose start wordyme
+```
+
+Stopping costs almost nothing — shutdown completes in well under a second.
+
+Copying while the service is running usually works, but a write landing during
+the copy can produce a torn file that only reveals itself when you try to
+restore it. If you take live backups, verify them.
 
 ### Restore Database
 
-```bash
-# Copy database from host to container
-docker compose cp ./backup-local.db wordyme:/app/storage/local.db
+Restoring takes three steps, and skipping either of the last two fails in ways
+that are hard to spot:
 
-# Restart the service
-docker compose restart wordyme
+- **Stop the service first.** Replacing `local.db` underneath a running SQLite
+  is not safe.
+- **Clear any leftover journal.** If the process was killed mid-write, a
+  `local.db-journal` can survive. On the next open SQLite treats it as an
+  interrupted transaction and rolls part of it back — into the file you just
+  restored. The command below removes it, along with `-wal`/`-shm`, which this
+  configuration does not use but which would matter if the journal mode ever
+  changed.
+- **Fix the file ownership.** `docker cp` preserves the ownership of the file on
+  your machine, so the restored database arrives owned by your host user rather
+  than the container's `nodejs` user. The result is a container that looks
+  completely healthy — it starts, reports `healthy`, and even `/api/health/db`
+  passes, because reads still work — while **every write silently fails** with
+  `SQLITE_READONLY`.
+
+```bash
+# 1. Stop the service so nothing is writing.
+docker compose stop wordyme
 ```
+
+```bash
+# 2. Clear any leftover journal and stream the backup in. Streaming rather than
+#    `docker compose cp` means the file is written by the container's own user,
+#    so the ownership is correct and no chown is needed.
+docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.db-journal /app/storage/local.db-wal /app/storage/local.db-shm && cat > /app/storage/local.db' < ./backup-local.db
+```
+
+```bash
+# 3. Start again.
+docker compose start wordyme
+```
+
+Then **verify by signing in**, not by checking that the container is healthy —
+it reports healthy either way.
+
+> **Why not `docker compose cp`?** It preserves the ownership of the file on
+> your machine, so the database arrives owned by your host user instead of the
+> container's `nodejs`. The container then starts, reports healthy, and passes
+> `/api/health/db` (reads still work) while every write fails with
+> `SQLITE_READONLY`. Streaming the bytes in avoids this entirely. Note also that
+> `chown` inside the container is not an option here: `cap_drop: ALL` removes
+> `CAP_CHOWN` and `CAP_DAC_OVERRIDE`, so not even root can do it.
 
 ## Environment Variables
 
@@ -236,7 +292,7 @@ directory depth**:
 - **Dependencies**: `**/node_modules`, `.pnpm-store`
 - **Build outputs**: `**/dist`, `**/build`, `**/.turbo`, `**/*.tsbuildinfo`, `**/coverage`
 - **Environment files**: `**/.env`, `**/.env.*` (but keeps every `**/.env.example`)
-- **Databases**: `**/*.db`, `**/*.db-wal`, `**/*.db-shm`, `**/*.db-journal`, `**/*.sqlite`, `**/*.sqlite3`
+- **Databases**: `**/*.db`, `**/*.sqlite`, `**/*.sqlite3`, and their WAL sidecars (`-wal`, `-shm`, `-journal`) for each
 - **User uploads**: the whole `storage/` and `apps/backend/storage/` directories
 - **Version control & tooling**: `.git`, `.gitignore`, `.github`, `.husky`, `.vscode`, `.idea`
 - **Logs and OS cruft**: `**/*.log`, `**/.DS_Store`
@@ -247,7 +303,7 @@ directory depth**:
 > match `apps/web/dist`. That is why every pattern above is written with a
 > `**/` prefix. When the last matching pattern is a negation (`!`), the file is
 > re-included — which is how `.env.example` survives the `**/.env.*` rule.
-
+>
 > **Do not add these to `.dockerignore`:** `patches/` (pnpm applies the Lexical
 > patches listed in `pnpm-workspace.yaml` during install — excluding this
 > directory breaks the build), `.npmrc`, `pnpm-workspace.yaml`, `turbo.json`,
@@ -283,7 +339,43 @@ All variables are read at runtime and can be changed without rebuilding the imag
 | `NODE_ENV`           | Node environment                                                 | `production`                    |
 | `PORT`               | Port the app listens on, inside the container                    | `8080`                          |
 | `DB_FILE_NAME`       | Database file path (absolute)                                    | `file:/app/storage/local.db`    |
+| `TRUST_PROXY`        | Set **only** behind a reverse proxy — see below                  | _(unset; not behind a proxy)_   |
 | `HOST_PORT`          | Host port compose publishes to (compose only)                    | `8080`                          |
+
+#### `TRUST_PROXY` and login rate limiting
+
+Leave this unset unless a reverse proxy sits in front of the container.
+
+The app rate-limits login attempts, and to do that it needs to know who is
+making the request. It reads the client address from the `X-Forwarded-For`
+header, which is set by a reverse proxy. When the container's port is reached
+directly there is no proxy and no such header, so the app falls back to the real
+connection address instead — otherwise rate limiting would silently do nothing
+and repeated password guesses would go unthrottled.
+
+Set `TRUST_PROXY` when a proxy really is in front, so the address it reports is
+used instead:
+
+```bash
+TRUST_PROXY=1           # trust one proxy hop (most common)
+TRUST_PROXY=2           # two proxies in front, e.g. Cloudflare then nginx
+TRUST_PROXY=10.0.0.0/8  # trust only these addresses
+```
+
+> **`TRUST_PROXY=true` is rejected at startup, on purpose.** It would make
+> Express take the left-most `X-Forwarded-For` entry, and any client can prepend
+> one. Because proxies normally _append_ to that chain rather than replacing it,
+> a forged entry stays on the left and wins — so an attacker could present a
+> different address on every request and get a fresh rate-limit allowance each
+> time. A hop count or an address list is resolved from the right instead, which
+> a client cannot influence.
+
+Whatever the setting, the client address is resolved by the server and the
+`X-Forwarded-For` header is then **overwritten** with the result, so no raw
+client-supplied value ever reaches the rate limiter.
+
+> **Do not set this when the port is exposed directly** — there is no proxy to
+> trust, and the default already uses the real connection address.
 
 To reach the app from another machine on your LAN, add that origin to
 `CLIENT_URL`:
@@ -537,30 +629,39 @@ CLIENT_URL=https://notes.example.com
 
 4. **Minimal Base Images**: Alpine Linux base images, for a smaller attack surface.
 
-5. **Use HTTPS**: in production, terminate TLS at a reverse proxy (Traefik, Caddy, Nginx) in front of the container.
+5. **Use HTTPS**: in production, terminate TLS at a reverse proxy (Traefik, Caddy, Nginx) in front of the container. When you do, set `TRUST_PROXY` so login rate limiting sees the real client address.
 
 6. **Limit Port Exposure**: only one port (8080) needs publishing. Behind a reverse proxy, bind it to loopback — `127.0.0.1:8080:8080` — so it is not reachable directly.
 
-7. **Regular Updates**: keep the image and its base image patched.
+7. **Reduced Privileges**: the container runs with `no-new-privileges` and every Linux capability dropped (`cap_drop: ALL`). It needs none — it listens on a high port as a non-root user and only reads and writes files. Note this also means `chown` cannot be run inside the container, which affects how you restore a backup (see above).
 
-8. **Volume Permissions**: `/app/storage` is created owned by the `nodejs` user.
+8. **Bounded Logs and Memory**: logs are capped at 3 × 10 MB and memory at 1 GB, so neither a log flood nor a runaway process can take down the host.
 
-9. **Database Isolation**: local development databases and uploads are excluded from builds, so they cannot leak into a published image.
+9. **Regular Updates**: keep the image and its base image patched.
+
+10. **Volume Permissions**: `/app/storage` is created owned by the `nodejs` user.
+
+11. **Database Isolation**: local development databases and uploads are excluded from builds, so they cannot leak into a published image.
 
 ### Known gaps
 
 These are tracked and not yet addressed:
 
-- The container does not yet handle `SIGTERM` gracefully. `docker stop` will wait
-  for the timeout and then kill the process, which is not safe for a live SQLite
-  writer. Prefer stopping when the app is idle until this is fixed.
-- The base image is `node:20-alpine`; Node 20 reached end of life on 30 April 2026.
-- Compose does not yet set `no-new-privileges`, `cap_drop`, memory limits, or log
-  rotation. On a small device, unbounded JSON logs can fill the disk — consider
-  adding a `logging` block with `max-size` and `max-file`.
-- A bind mount (`./data:/app/storage`) is created root-owned by Docker, which the
-  non-root container user cannot write to. Named volumes, as used in
-  `docker-compose.yml`, do not have this problem.
+- **The base image is `node:20-alpine`**, and Node 20 reached end of life on
+  30 April 2026. Upgrading is the next planned change.
+- **Bind mounts do not work out of the box.** Docker creates a bind mount
+  (`./data:/app/storage`) owned by root, which the non-root container user
+  cannot write to. Use the named volume in `docker-compose.yml`, which does not
+  have this problem.
+
+### Shutdown behaviour
+
+`docker stop` shuts down cleanly in well under a second. The container runs
+`tini` as PID 1 so signals actually arrive, and on `SIGTERM` the app stops
+accepting connections, disconnects clients, and waits for queued database writes
+to finish before exiting — SQLite is single-writer, so being killed mid-write is
+the failure worth avoiding. If shutdown ever takes longer than 8 seconds, the
+process exits anyway rather than waiting to be killed.
 
 ## Support
 

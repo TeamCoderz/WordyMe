@@ -16,12 +16,38 @@ services:
       # Deliberately has no default. A default committed to a public repo is a
       # published secret, and anyone running it unchanged could forge sessions.
       - 'BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:?must be set in .env — generate one with "openssl rand -base64 32"}'
+      # Set only when a reverse proxy terminates TLS in front of this container.
+      # Leave empty when the port is reached directly, or clients can forge
+      # X-Forwarded-For and evade login rate limiting.
+      - TRUST_PROXY=${TRUST_PROXY:-}
     volumes:
       # Persists the SQLite database and uploaded files.
       - wordyme-storage:/app/storage
     restart: unless-stopped
     # Healthcheck comes from the image (see HEALTHCHECK in the Dockerfile), so
     # `docker run` users get the same behaviour as compose users.
+
+    # Without rotation, JSON logs grow until the disk is full. That is a real
+    # failure mode on a Raspberry Pi writing to an SD card.
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+    security_opt:
+      # Stops a process inside the container gaining privileges via setuid
+      # binaries — nothing here needs to.
+      - no-new-privileges:true
+
+    cap_drop:
+      # The app listens on 8080 as a non-root user and only reads and writes
+      # files, so it needs none of the default Linux capabilities.
+      - ALL
+
+    # Caps runaway memory rather than letting it take the host down with it.
+    # Raise this if you import very large documents; the app idles far below it.
+    mem_limit: 1g
 
 volumes:
   wordyme-storage:
