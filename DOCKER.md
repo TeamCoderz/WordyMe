@@ -188,18 +188,31 @@ The application uses Docker volumes to persist data:
 
 ### Backup Database
 
-```bash
-# Create a backup
-docker compose exec wordyme cp /app/storage/local.db /app/storage/local.db.backup
+The database is a single file. It runs in SQLite's rollback-journal mode
+(`journal_mode=delete`, verifiable with `PRAGMA journal_mode`), **not** WAL, so
+there are no persistent `-wal` or `-shm` companion files to collect. A copy of
+`local.db` is the whole database.
 
-# Copy database from container to host
+The safest backup is taken with the service stopped, so no write can land
+mid-copy:
+
+```bash
+docker compose stop wordyme
+```
+
+```bash
 docker compose cp wordyme:/app/storage/local.db ./backup-local.db
 ```
 
-> **Note**: libSQL runs in WAL mode, so recent writes may live in
-> `local.db-wal` rather than in `local.db`. For a guaranteed-consistent backup,
-> stop the container first (`docker compose stop`) and copy all three of
-> `local.db`, `local.db-wal` and `local.db-shm`.
+```bash
+docker compose start wordyme
+```
+
+Stopping costs almost nothing — shutdown completes in well under a second.
+
+Copying while the service is running usually works, but a write landing during
+the copy can produce a torn file that only reveals itself when you try to
+restore it. If you take live backups, verify them.
 
 ### Restore Database
 
@@ -208,9 +221,12 @@ that are hard to spot:
 
 - **Stop the service first.** Replacing `local.db` underneath a running SQLite
   is not safe.
-- **Delete the stale sidecars.** WAL mode leaves `local.db-wal` and
-  `local.db-shm` beside the database. SQLite will replay a leftover `-wal`
-  against the file you just restored, corrupting it.
+- **Clear any leftover journal.** If the process was killed mid-write, a
+  `local.db-journal` can survive. On the next open SQLite treats it as an
+  interrupted transaction and rolls part of it back — into the file you just
+  restored. The command below removes it, along with `-wal`/`-shm`, which this
+  configuration does not use but which would matter if the journal mode ever
+  changed.
 - **Fix the file ownership.** `docker cp` preserves the ownership of the file on
   your machine, so the restored database arrives owned by your host user rather
   than the container's `nodejs` user. The result is a container that looks
@@ -224,10 +240,10 @@ docker compose stop wordyme
 ```
 
 ```bash
-# 2. Remove the stale sidecars and stream the backup in. Streaming rather than
+# 2. Clear any leftover journal and stream the backup in. Streaming rather than
 #    `docker compose cp` means the file is written by the container's own user,
 #    so the ownership is correct and no chown is needed.
-docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.db-wal /app/storage/local.db-shm && cat > /app/storage/local.db' < ./backup-local.db
+docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.db-journal /app/storage/local.db-wal /app/storage/local.db-shm && cat > /app/storage/local.db' < ./backup-local.db
 ```
 
 ```bash
@@ -341,15 +357,25 @@ Set `TRUST_PROXY` when a proxy really is in front, so the address it reports is
 used instead:
 
 ```bash
-TRUST_PROXY=1          # trust one proxy hop (most common)
-TRUST_PROXY=true       # trust whatever X-Forwarded-For says
-TRUST_PROXY=10.0.0.0/8 # trust only these addresses
+TRUST_PROXY=1           # trust one proxy hop (most common)
+TRUST_PROXY=2           # two proxies in front, e.g. Cloudflare then nginx
+TRUST_PROXY=10.0.0.0/8  # trust only these addresses
 ```
 
-> **Do not set this when the port is exposed directly.** Trusting
-> `X-Forwarded-For` from arbitrary clients lets an attacker send a different
-> value on each request, getting a fresh rate-limit allowance every time and
-> defeating the protection entirely.
+> **`TRUST_PROXY=true` is rejected at startup, on purpose.** It would make
+> Express take the left-most `X-Forwarded-For` entry, and any client can prepend
+> one. Because proxies normally _append_ to that chain rather than replacing it,
+> a forged entry stays on the left and wins — so an attacker could present a
+> different address on every request and get a fresh rate-limit allowance each
+> time. A hop count or an address list is resolved from the right instead, which
+> a client cannot influence.
+
+Whatever the setting, the client address is resolved by the server and the
+`X-Forwarded-For` header is then **overwritten** with the result, so no raw
+client-supplied value ever reaches the rate limiter.
+
+> **Do not set this when the port is exposed directly** — there is no proxy to
+> trust, and the default already uses the real connection address.
 
 To reach the app from another machine on your LAN, add that origin to
 `CLIENT_URL`:

@@ -11,20 +11,25 @@ export const envSchema = z.object({
   PORT: z.coerce.number().default(3000),
   DB_FILE_NAME: z.string().default('file:storage/local.db'),
   /**
-   * Set only when a reverse proxy sits in front of the app. Accepts Express's
-   * `trust proxy` values: `true`, a hop count (`1`), or a comma-separated list
-   * of trusted addresses/subnets. Leave unset when the app is reached directly —
-   * trusting `X-Forwarded-For` from arbitrary clients lets them forge their IP
-   * and evade rate limiting.
+   * Set only when a reverse proxy sits in front of the app. Accepts a hop count
+   * (`1`) or a comma-separated list of trusted addresses/subnets
+   * (`10.0.0.0/8`). Leave unset when the app is reached directly.
+   *
+   * `true` is deliberately rejected. It makes Express take the left-most
+   * `X-Forwarded-For` entry, which any client can prepend — so a value meant to
+   * identify the caller becomes attacker-controlled.
    */
   TRUST_PROXY: z.preprocess(
     (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
     z
       .string()
       .optional()
+      .refine((val) => val !== 'true', {
+        message:
+          'TRUST_PROXY=true is unsafe: Express would trust the left-most X-Forwarded-For entry, which any client can forge. Use a hop count (e.g. TRUST_PROXY=1) or a list of trusted proxy addresses/subnets instead.',
+      })
       .transform((val) => {
         if (val === undefined || val === 'false') return false;
-        if (val === 'true') return true;
         return /^\d+$/.test(val) ? Number(val) : val;
       }),
   ),

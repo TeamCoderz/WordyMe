@@ -4,7 +4,6 @@
  */
 
 import { type RequestHandler } from 'express';
-import { env } from '../env.js';
 
 /**
  * Makes the client IP visible to Better Auth, which needs it for rate limiting.
@@ -27,16 +26,26 @@ import { env } from '../env.js';
  *   Express is configured to trust the same number of hops, so `req.ip` agrees.
  */
 export const clientIp: RequestHandler = (req, _res, next) => {
-  if (!env.TRUST_PROXY) {
-    const peer = req.socket.remoteAddress;
+  // `req.ip` is resolved by Express from the `trust proxy` setting: the socket
+  // peer when unset, or the right-most address in the X-Forwarded-For chain
+  // that is not one of the configured trusted hops. Either way it is a value
+  // the deployment vouches for.
+  //
+  // The header is then *overwritten* with it, never passed through. Better Auth
+  // reads the left-most entry of X-Forwarded-For, so forwarding a raw
+  // client-supplied header would let anyone prepend an address and get a fresh
+  // rate-limit bucket on every request — defeating the limit entirely. This
+  // holds even behind a proxy, because proxies typically append to the chain
+  // rather than replacing it, leaving the forged entry on the left.
+  //
+  // Node reports IPv4 peers as IPv4-mapped IPv6 (`::ffff:10.0.0.1`) on a
+  // dual-stack socket; Better Auth wants the plain form.
+  const ip = req.ip?.replace(/^::ffff:/, '');
 
-    if (peer) {
-      // Node reports IPv4 peers as IPv4-mapped IPv6 (`::ffff:10.0.0.1`) on a
-      // dual-stack socket; Better Auth wants the plain form.
-      req.headers['x-forwarded-for'] = peer.replace(/^::ffff:/, '');
-    } else {
-      delete req.headers['x-forwarded-for'];
-    }
+  if (ip) {
+    req.headers['x-forwarded-for'] = ip;
+  } else {
+    delete req.headers['x-forwarded-for'];
   }
 
   next();
