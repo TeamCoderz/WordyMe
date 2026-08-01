@@ -1,45 +1,27 @@
 services:
-  backend:
+  wordyme:
     build:
       context: .
       dockerfile: Dockerfile
-      target: backend
-    container_name: wordyme-backend
+    image: teamcoderz/wordyme:latest
+    # No container_name: leaving it unset lets two stacks run side by side.
+    ports:
+      - '${HOST_PORT:-8080}:8080'
     environment:
       - NODE_ENV=production
-      - PORT=3000
-      - DB_FILE_NAME=file:storage/local.db
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:5173}
+      - PORT=8080
+      - DB_FILE_NAME=file:/app/storage/local.db
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:8080}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-change-me-in-production-use-openssl-rand-base64-32}
+      # Deliberately has no default. A default committed to a public repo is a
+      # published secret, and anyone running it unchanged could forge sessions.
+      - 'BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:?must be set in .env — generate one with "openssl rand -base64 32"}'
     volumes:
-      # Persist the SQLite database and uploaded files
+      # Persists the SQLite database and uploaded files.
       - wordyme-storage:/app/storage
     restart: unless-stopped
-    healthcheck:
-      test:
-        [
-          'CMD',
-          'node',
-          '-e',
-          "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: web
-    container_name: wordyme-web
-    ports:
-      - '5173:80' # Maps localhost:5173 to container port 80 (Nginx)
-    depends_on:
-      - backend
-    restart: unless-stopped
+    # Healthcheck comes from the image (see HEALTHCHECK in the Dockerfile), so
+    # `docker run` users get the same behaviour as compose users.
 
 volumes:
   wordyme-storage:

@@ -9,10 +9,13 @@ export default defineConfig(({ mode }) => {
   // Load env vars (loadEnv with prefix removes the prefix from keys)
   const env = loadEnv(mode, process.cwd(), '');
 
-  // In dev, use empty URL so API goes through the proxy (works for both localhost and wordyme.test). For builds, use env or default.
+  // Empty means same-origin, so API calls are relative. That is correct in dev
+  // (Vite proxies /api and /storage) and in production (the backend serves this
+  // bundle itself). Only set VITE_BACKEND_URL when the API really is on another
+  // origin — and note it is inlined at build time, so it cannot be changed later
+  // without rebuilding.
   const defaultEnv = {
-    VITE_BACKEND_URL:
-      mode === 'development' ? '' : (env.VITE_BACKEND_URL ?? 'http://localhost:3000'),
+    VITE_BACKEND_URL: mode === 'development' ? '' : (env.VITE_BACKEND_URL ?? ''),
     BUILD_OUT_DIR: env.BUILD_OUT_DIR || './dist',
     SERVER_ORIGIN: env.SERVER_ORIGIN || 'http://localhost:5173',
     ANALAYZE_BUNDLE: env.ANALAYZE_BUNDLE || false,
