@@ -28,7 +28,7 @@ Verify installation:
 
 ```bash
 pnpm --version
-# Should output: 9.0.0
+# Should output: 10.33.0
 ```
 
 ## Step 1: Clone the Repository
