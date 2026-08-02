@@ -189,22 +189,38 @@ jobs:
           # A private package can surface at either of two stages, both seen
           # against the live registry: GHCR may refuse the anonymous token
           # outright (401 authentication required), or issue one and reject
-          # the manifest fetch (403). `|| true` keeps a non-JSON error body
-          # from killing the step under pipefail before it can explain itself.
-          TOKEN="$(curl -s "https://ghcr.io/token?scope=repository:${IMG}:pull&service=ghcr.io" | jq -r '.token // empty' || true)"
+          # the manifest fetch (403).
+          #
+          # The network failure case is kept separate from the refusal case on
+          # purpose — a timeout that produced an empty token would otherwise be
+          # misdiagnosed as "the package is private" and send an operator to
+          # the wrong fix.
+          if ! RESP="$(curl -s --connect-timeout 5 --max-time 10 \
+                "https://ghcr.io/token?scope=repository:${IMG}:pull&service=ghcr.io")"; then
+            echo "::error::Could not reach the ghcr.io token endpoint. Network problem or registry outage — not a visibility issue. Retry once GHCR is reachable."
+            exit 1
+          fi
+          TOKEN="$(printf '%s' "$RESP" | jq -r '.token // empty' || true)"
           if [ -z "$TOKEN" ]; then
             echo "::error::GHCR refused to issue an anonymous pull token for ${IMG} — the package is almost certainly private, which is GHCR's default on first push. $FIX"
             exit 1
           fi
 
-          CODE="$(curl -s -o /dev/null -w '%{http_code}' \
+          if ! CODE="$(curl -s -o /dev/null -w '%{http_code}' \
+            --connect-timeout 5 --max-time 10 \
             -H "Authorization: Bearer $TOKEN" \
             -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
-            "https://ghcr.io/v2/${IMG}/manifests/${TAG}")"
+            "https://ghcr.io/v2/${IMG}/manifests/${TAG}")"; then
+            echo "::error::Could not reach ghcr.io for the manifest fetch. Network problem or registry outage — not a visibility issue. Retry once GHCR is reachable."
+            exit 1
+          fi
           if [ "$CODE" = "200" ]; then
             echo "Anonymous pull works (HTTP 200) — the GHCR package is public."
+          elif [ "$CODE" = "401" ] || [ "$CODE" = "403" ]; then
+            echo "::error::Anonymous GHCR pull returned HTTP $CODE (access denied). $FIX"
+            exit 1
           else
-            echo "::error::Anonymous GHCR pull returned HTTP $CODE. $FIX"
+            echo "::error::Anonymous GHCR pull returned HTTP $CODE (unexpected — not a visibility problem). Check that ${IMG}:${TAG} exists and that ghcr.io is healthy."
             exit 1
           fi
 
