@@ -247,7 +247,7 @@ pnpm drizzle-kit migrate
 
 ## API Documentation
 
-The backend API includes OpenAPI documentation. When running the backend, visit `/api-docs` for interactive API documentation.
+The backend API includes OpenAPI documentation. When running the backend, visit `/api/docs` for the interactive API reference, or `/api/docs/openapi.json` for the raw OpenAPI schema.
 
 ## Contributing
 

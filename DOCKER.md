@@ -545,10 +545,14 @@ Request handling inside the single process:
 | Path            | Handled by                                                             |
 | --------------- | ---------------------------------------------------------------------- |
 | `/api/*`        | Express API routers                                                    |
+| `/api/docs`     | Scalar API reference                                                   |
 | `/storage/*`    | Express file routes (uploads, avatars, attachments)                    |
 | `/socket.io/`   | Socket.io, attached to the same HTTP server                            |
-| `/docs`         | Scalar API reference                                                   |
 | everything else | Static web bundle, falling back to `index.html` for client-side routes |
+
+Server routes live under `/api` and `/storage` only. Every other path belongs to
+the web app — `/docs` and `/spaces`, for instance, are its own screens — so the
+API reference is served at `/api/docs` rather than at the top level.
 
 Caching is set per file type: fingerprinted assets under `/assets/` are
 immutable for a year, while `index.html` and the service worker are never
