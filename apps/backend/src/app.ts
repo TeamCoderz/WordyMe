@@ -44,6 +44,8 @@ app.use(
 
 app.use(clientIp);
 
+app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
+
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
 app.use(
