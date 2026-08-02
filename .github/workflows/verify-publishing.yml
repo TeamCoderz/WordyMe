@@ -170,6 +170,44 @@ jobs:
           assert_arches "${HUB}:${TAG}" || failed=1
           exit "$failed"
 
+      # GHCR creates a package PRIVATE on its first push, even when the
+      # repository is public. Anonymous pulls then fail with 401/403 until a
+      # human flips the package to public in its settings — and every
+      # authenticated step in this job is blind to that, because the workflow
+      # pulls as the repository, not as a stranger. So check it the way a
+      # self-hoster's machine would: with no credentials at all.
+      - name: Confirm the GHCR package is publicly pullable
+        env:
+          GHCR: ${{ env.GHCR_IMAGE }}
+          TAG: ${{ env.VERIFY_TAG }}
+        run: |
+          set -euo pipefail
+          IMG="${GHCR#ghcr.io/}"
+
+          FIX="Fix: repository page -> Packages -> wordyme -> Package settings -> Danger Zone -> Change visibility -> Public. Note: deleting the whole package resets this and the next push recreates it private; delete individual versions only."
+
+          # A private package can surface at either of two stages, both seen
+          # against the live registry: GHCR may refuse the anonymous token
+          # outright (401 authentication required), or issue one and reject
+          # the manifest fetch (403). `|| true` keeps a non-JSON error body
+          # from killing the step under pipefail before it can explain itself.
+          TOKEN="$(curl -s "https://ghcr.io/token?scope=repository:${IMG}:pull&service=ghcr.io" | jq -r '.token // empty' || true)"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::GHCR refused to issue an anonymous pull token for ${IMG} — the package is almost certainly private, which is GHCR's default on first push. $FIX"
+            exit 1
+          fi
+
+          CODE="$(curl -s -o /dev/null -w '%{http_code}' \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json" \
+            "https://ghcr.io/v2/${IMG}/manifests/${TAG}")"
+          if [ "$CODE" = "200" ]; then
+            echo "Anonymous pull works (HTTP 200) — the GHCR package is public."
+          else
+            echo "::error::Anonymous GHCR pull returned HTTP $CODE. $FIX"
+            exit 1
+          fi
+
       - name: Check the Docker Hub listing sync works
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5
         with:
@@ -200,6 +238,7 @@ jobs:
             echo "- The vulnerability gate passes"
             echo "- **Write access to both registries confirmed by a real push**"
             echo "- Both \`linux/amd64\` and \`linux/arm64\` are in the manifest"
+            echo "- The GHCR package is publicly pullable — anonymous pull returns 200"
             echo "- The Docker Hub listing syncs from DOCKERHUB.md"
             echo
             echo "### Tags a release of the current version would publish"
