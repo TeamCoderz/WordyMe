@@ -78,14 +78,28 @@ jobs:
         run: |
           npm version ${{ inputs.increment }} --no-git-tag-version
           VERSION=$(node -pe "require('./package.json').version")
-          pnpm run release
+
+          # Changelog only. The GitHub release is created at the end, once the
+          # tag exists: asking GitHub to release a tag that is not there yet
+          # makes it create one itself, at the default branch's HEAD — which is
+          # the commit *before* the release commit below.
+          pnpm run release -- --no-github.release
+
           git add package.json CHANGELOG.md
           git commit -m "chore: release v$VERSION"
-          git tag "v$VERSION"
+
+          # Annotated, not lightweight: `git push --follow-tags` pushes only
+          # annotated tags, so a lightweight one never leaves the runner.
+          git tag -a "v$VERSION" -m "v$VERSION"
           git push --follow-tags
+
+          awk '/^## /{n++; if (n>1) exit} n>=1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run release (pre-release version)
         id: prerelease
@@ -93,14 +107,24 @@ jobs:
         run: |
           npm version ${{ inputs.increment }} --preid=${{ inputs.preid }} --no-git-tag-version
           VERSION=$(node -pe "require('./package.json').version")
-          npx release-it --ci --no-increment --github.preRelease=true --github.releaseName="v$VERSION"
+
+          # See the standard step above for why the GitHub release is created
+          # last rather than here.
+          npx release-it --ci --no-increment --no-github.release
+
           git add package.json CHANGELOG.md
           git commit -m "chore: release v$VERSION"
-          git tag "v$VERSION"
+
+          git tag -a "v$VERSION" -m "v$VERSION"
           git push --follow-tags
+
+          awk '/^## /{n++; if (n>1) exit} n>=1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --prerelease
+
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ==========================================================================
   # Publish container images
