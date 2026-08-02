@@ -52,6 +52,67 @@ docker compose version
    The web app and the API are served from the same origin and the same port.
    There is no separate frontend URL.
 
+## Upgrading from a version before the all-in-one image
+
+Earlier releases ran two containers — Nginx on port 5173 serving the web app,
+and the API on port 3000. That is now a single container on port 8080. Fresh
+installs need none of this; skip to the next section.
+
+Your `.env` is not part of the image and survives the upgrade untouched, so it
+still names the old ports. Two values have to change before the app will work.
+
+1. **Point `CLIENT_URL` at the address you actually open in the browser.**
+
+   ```diff
+   - CLIENT_URL=http://localhost:5173
+   + CLIENT_URL=http://localhost:8080
+   ```
+
+   This is the one that bites. Better Auth rejects any request whose `Origin`
+   is not listed in `CLIENT_URL`, so leaving it on `5173` makes every sign-in
+   fail with `403 Invalid origin` — while the container reports healthy and
+   every page loads normally. It reads like a wrong password, not a
+   misconfiguration. The server now prints its trusted origins at startup and
+   warns when they cannot match the port it is listening on.
+
+2. **Remove `BETTER_AUTH_URL` if it points at the old API port.** It defaults
+   to the first `CLIENT_URL`, which is what you want:
+
+   ```diff
+   - BETTER_AUTH_URL=http://localhost:3000
+   ```
+
+   Keep it only when the canonical public URL is not first in `CLIENT_URL`.
+
+3. **Leave `BETTER_AUTH_SECRET` alone.** It signs session cookies; changing it
+   signs out every user.
+
+Then rebuild, and remove the containers from the old layout in the same step:
+
+```bash
+docker compose up -d --build --remove-orphans
+```
+
+`--build` matters: `docker compose up` reuses an existing image and will
+silently keep running the old code. `--remove-orphans` matters just as much —
+without it the previous `wordyme-backend` and `wordyme-web` containers keep
+running, and the old backend holds the _same_ SQLite file open as the new one.
+SQLite allows a single writer, so two containers sharing it risks lock errors
+and corruption.
+
+Your data is safe throughout: documents, uploads and accounts live in the
+`wordyme-storage` volume, which neither rebuilding nor removing containers
+touches. To be certain, take a backup first — see
+[Data Persistence](#data-persistence).
+
+If you published the app on a different host port, use that everywhere instead
+of `8080`:
+
+```bash
+HOST_PORT=9000
+CLIENT_URL=http://localhost:9000
+```
+
 ## Architecture: one image, one process
 
 WordyMe ships as a **single all-in-one image**. Express serves the API, the
@@ -545,10 +606,14 @@ Request handling inside the single process:
 | Path            | Handled by                                                             |
 | --------------- | ---------------------------------------------------------------------- |
 | `/api/*`        | Express API routers                                                    |
+| `/api/docs`     | Scalar API reference                                                   |
 | `/storage/*`    | Express file routes (uploads, avatars, attachments)                    |
 | `/socket.io/`   | Socket.io, attached to the same HTTP server                            |
-| `/docs`         | Scalar API reference                                                   |
 | everything else | Static web bundle, falling back to `index.html` for client-side routes |
+
+Server routes live under `/api` and `/storage` only. Every other path belongs to
+the web app — `/docs` and `/spaces`, for instance, are its own screens — so the
+API reference is served at `/api/docs` rather than at the top level.
 
 Caching is set per file type: fingerprinted assets under `/assets/` are
 immutable for a year, while `index.html` and the service worker are never
