@@ -177,7 +177,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ env.DOCKERHUB_IMAGE }}
           short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
-          readme-filepath: ./DOCKER.md
+          # A dedicated short page, not DOCKER.md: Docker Hub truncates
+          # listings at 25,000 bytes and DOCKER.md is well past that. This step
+          # stays fatal here on purpose — the release workflow marks it
+          # continue-on-error, so the rehearsal is where a broken sync must
+          # surface.
+          readme-filepath: ./DOCKERHUB.md
 
       - name: Summary
         env:

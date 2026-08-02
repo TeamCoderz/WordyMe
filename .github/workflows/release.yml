@@ -284,8 +284,16 @@ jobs:
           docker buildx imagetools inspect "${IMAGE}:${VERSION}"
 
       # Runs after the push, so the repository exists on Docker Hub by now —
-      # the first release creates it.
+      # the first release creates it. Requires DOCKERHUB_TOKEN to have
+      # Read/Write/Delete scope: the description API rejects Read/Write tokens
+      # with 403, even though the same token pushes images fine.
+      #
+      # continue-on-error: by this point the images are already published, and
+      # a stale listing is not worth a red release run. The verify-publishing
+      # workflow runs this same step *fatally*, so a broken sync is still
+      # caught — during rehearsal, not release.
       - name: Sync the Docker Hub listing
+        continue-on-error: true
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -295,4 +303,6 @@ jobs:
           # on GitHub and would blank the listing if it were ever unset.
           # Docker Hub caps this at 100 characters.
           short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
-          readme-filepath: ./DOCKER.md
+          # A dedicated short page, not DOCKER.md: Docker Hub truncates
+          # listings at 25,000 bytes and DOCKER.md is well past that.
+          readme-filepath: ./DOCKERHUB.md
