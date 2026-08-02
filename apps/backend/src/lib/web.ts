@@ -36,10 +36,16 @@ const NEVER_CACHE = new Set(['index.html', 'sw.js', 'registerSW.js', 'manifest.w
 /**
  * Paths owned by the server. They must keep their own responses instead of the
  * app shell. Matched as the exact path or a child of it, so that bare `/api`
- * is still server-owned while a client route like `/docs-for-beginners` is not
- * swallowed by a `startsWith('/docs')` test.
+ * is still server-owned while a client route like `/api-guide` is not swallowed
+ * by a `startsWith('/api')` test.
+ *
+ * Every server route must live under one of these prefixes. The web app owns
+ * the rest of the URL space — including `/docs`, which is why the API reference
+ * is mounted at `/api/docs` rather than at the top level. Adding a top-level
+ * prefix here silently takes that path away from the SPA: its deep links stop
+ * returning the app shell and answer with a JSON 404 instead.
  */
-const SERVER_PREFIXES = ['/api', '/storage', '/docs'];
+const SERVER_PREFIXES = ['/api', '/storage'];
 
 const isServerPath = (pathname: string): boolean =>
   SERVER_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

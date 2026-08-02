@@ -5,7 +5,9 @@
 
 import server from './app.js';
 import { env } from './env.js';
+import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
+import { hasWebBundle } from './lib/web.js';
 import { dbWritesQueue } from './queues/db-writes.js';
 
 /**
@@ -17,6 +19,16 @@ const SHUTDOWN_TIMEOUT_MS = 8_000;
 
 server.listen(env.PORT, () => {
   console.log(`Server is running on http://localhost:${env.PORT}`);
+  console.log(`Trusted origins (CLIENT_URL): ${env.CLIENT_URL.join(', ')}`);
+
+  const warning = clientUrlWarning({
+    clientUrls: env.CLIENT_URL,
+    port: env.PORT,
+    servesWebBundle: hasWebBundle(),
+    behindProxy: env.TRUST_PROXY !== false,
+  });
+
+  if (warning) console.warn(warning);
 });
 
 let shuttingDown = false;
