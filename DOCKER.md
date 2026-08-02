@@ -508,13 +508,13 @@ The `Dockerfile` uses a multi-stage build process optimized for a monorepo:
 
 ### Stage 1: Pruner
 
-- **Base**: `node:20-alpine`
+- **Base**: `node:22-alpine`
 - **Purpose**: Uses Turbo to prune the monorepo, keeping only files needed for `web` and `@repo/backend` packages
 - **Output**: Pruned workspace with only necessary dependencies
 
 ### Stage 2: Builder
 
-- **Base**: `node:20-alpine` with `libc6-compat`
+- **Base**: `node:22-alpine` with `libc6-compat`
 - **Package Manager**: pnpm (via Corepack, version resolved from the `packageManager` field in the root `package.json` — currently 10.33.0)
 - **Process**:
   1. Copies pruned files from pruner stage
@@ -528,7 +528,7 @@ relative URLs and no hostname is inlined into the JavaScript.
 
 ### Stage 3: Runner (all-in-one)
 
-- **Base**: `node:20-alpine` with `libc6-compat`
+- **Base**: `node:22-alpine` with `libc6-compat`
 - **User**: Runs as non-root user (`nodejs`, UID 1001)
 - **Contents**:
   - Production backend dependencies and compiled `dist/`
@@ -647,8 +647,8 @@ CLIENT_URL=https://notes.example.com
 
 These are tracked and not yet addressed:
 
-- **The base image is `node:20-alpine`**, and Node 20 reached end of life on
-  30 April 2026. Upgrading is the next planned change.
+- **Node 22 leaves security support around April 2027.** The base image will need
+  moving to a newer LTS line before then.
 - **Bind mounts do not work out of the box.** Docker creates a bind mount
   (`./data:/app/storage`) owned by root, which the non-root container user
   cannot write to. Use the named volume in `docker-compose.yml`, which does not

@@ -167,7 +167,7 @@ The application will be available at:
 
 ### Prerequisites
 
-- **Node.js** >= 18
+- **Node.js** >= 22
 - **pnpm** 10.33.0 (specified in `packageManager` field)
 
 ### Available Scripts
