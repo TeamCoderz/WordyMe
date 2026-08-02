@@ -1,0 +1,188 @@
+# Rehearses the publishing pipeline without cutting a release.
+#
+# Run this from the Actions tab before the first real release, and again after
+# rotating the Docker Hub token. It exercises every step the release workflow
+# does — secrets, both registry logins, the CI build, the vulnerability gate,
+# and a real push to both registries — but writes only a disposable `ci-verify`
+# tag. No version bump, no git tag, no GitHub release, and `latest` is never
+# touched.
+#
+# The push is the point. `docker login` succeeds with a read-only token and
+# only fails later at push time, so a successful login proves nothing about
+# write access.
+
+name: Verify publishing setup
+
+on:
+  workflow_dispatch:
+
+env:
+  DOCKERHUB_IMAGE: teamcoderz/wordyme
+  GHCR_IMAGE: ghcr.io/teamcoderz/wordyme
+  # Deliberately not a version number, so it cannot be mistaken for a release
+  # and stands out in the registry listing.
+  VERIFY_TAG: ci-verify
+
+jobs:
+  verify:
+    name: Verify publishing setup
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      # Fail in seconds rather than after a five minute build.
+      - name: Check the required secrets exist
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          missing=0
+          if [ -z "$DOCKERHUB_USERNAME" ]; then
+            echo "::error::DOCKERHUB_USERNAME is not set. Add it under Settings -> Secrets and variables -> Actions."
+            missing=1
+          fi
+          if [ -z "$DOCKERHUB_TOKEN" ]; then
+            echo "::error::DOCKERHUB_TOKEN is not set. Create a Read/Write access token on Docker Hub and add it as a repository secret."
+            missing=1
+          fi
+          if [ "$missing" -eq 0 ]; then
+            echo "Both secrets are present."
+          fi
+          exit "$missing"
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read the current version
+        id: version
+        run: echo "value=$(node -pe "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # Shows the tags a release of the current version would publish. Nothing
+      # is pushed under these names — this only proves the tagging rules behave.
+      - name: Preview the tags a real release would produce
+        id: preview
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.value }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ steps.version.outputs.value }}
+            type=sha,format=long
+            type=raw,value=latest,enable=${{ !contains(steps.version.outputs.value, '-') }}
+
+      - name: Build for scanning
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: wordyme:verify
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run the same vulnerability gate as a release
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: wordyme:verify
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      # The step that actually proves write access to both registries.
+      - name: Push the disposable verify tag
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE }}:${{ env.VERIFY_TAG }}
+            ${{ env.GHCR_IMAGE }}:${{ env.VERIFY_TAG }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Confirm both architectures landed
+        env:
+          GHCR: ${{ env.GHCR_IMAGE }}
+          HUB: ${{ env.DOCKERHUB_IMAGE }}
+          TAG: ${{ env.VERIFY_TAG }}
+        run: |
+          echo "::group::GHCR manifest"
+          docker buildx imagetools inspect "${GHCR}:${TAG}"
+          echo "::endgroup::"
+          echo "::group::Docker Hub manifest"
+          docker buildx imagetools inspect "${HUB}:${TAG}"
+          echo "::endgroup::"
+
+      - name: Check the Docker Hub listing sync works
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.DOCKERHUB_IMAGE }}
+          short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
+          readme-filepath: ./DOCKER.md
+
+      - name: Summary
+        env:
+          PREVIEW_TAGS: ${{ steps.preview.outputs.tags }}
+          TAG: ${{ env.VERIFY_TAG }}
+        run: |
+          {
+            echo "## Publishing setup verified"
+            echo
+            echo "Everything the release workflow needs is working:"
+            echo
+            echo "- Both secrets are present"
+            echo "- Docker Hub and GHCR logins succeed"
+            echo "- The image builds on a CI runner"
+            echo "- The vulnerability gate passes"
+            echo "- **Write access to both registries confirmed by a real push**"
+            echo "- Both \`linux/amd64\` and \`linux/arm64\` are in the manifest"
+            echo "- The Docker Hub listing syncs from DOCKER.md"
+            echo
+            echo "### Tags a release of the current version would publish"
+            echo
+            echo '```'
+            echo "$PREVIEW_TAGS"
+            echo '```'
+            echo
+            echo "### Clean up"
+            echo
+            echo "A disposable \`${TAG}\` tag now exists in both registries:"
+            echo
+            echo "- Docker Hub: repository -> Tags -> \`${TAG}\` -> Delete"
+            echo "- GHCR: package -> Versions -> the \`${TAG}\` version -> Delete"
+            echo
+            echo "Leaving it does no harm; it is only untidy."
+          } >> "$GITHUB_STEP_SUMMARY"
