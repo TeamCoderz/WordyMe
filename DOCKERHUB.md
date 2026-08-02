@@ -6,7 +6,7 @@ WordyMe is a centralized platform for students to manage educational information
 
 - **One container, one port.** The web app and API are served from the same origin — no separate frontend, no reverse-proxy gymnastics required.
 - **`linux/amd64` and `linux/arm64`** in every tag. Runs on a normal server, an Apple Silicon Mac, or a Raspberry Pi 4/5.
-- **Hardened by default.** Runs as a non-root user, ships with a built-in health check, handles `SIGTERM` cleanly (shutdown in under a second), and every release is vulnerability-scanned before it is published — a release is blocked if a fixable HIGH or CRITICAL issue is found.
+- **Hardened by default.** Runs as a non-root user, ships with a built-in health check, handles `SIGTERM` cleanly (shutdown in under a second), and every release is vulnerability-scanned before it is published — a fixable HIGH or CRITICAL finding blocks the release. The scan runs against the `amd64` image; its findings are based on package versions, which are the same in both architectures.
 - **SBOM and provenance attestations** attached to every image manifest.
 - Your data lives in one volume: a single SQLite database plus uploaded files.
 
