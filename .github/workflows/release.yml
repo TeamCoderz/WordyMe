@@ -164,6 +164,11 @@ jobs:
       # Built for one platform and loaded locally so the scan runs against a
       # real image. The multi-platform build below reuses this layer cache, so
       # the amd64 half costs almost nothing the second time.
+      #
+      # amd64 stands in for both architectures: findings come from package
+      # versions — node_modules installed from the same lockfile, and Alpine
+      # packages at the same versions per arch — so an arm64 scan would repeat
+      # the same results at the cost of a QEMU build on the pre-publish path.
       - name: Build amd64 image for scanning
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
@@ -284,8 +289,16 @@ jobs:
           docker buildx imagetools inspect "${IMAGE}:${VERSION}"
 
       # Runs after the push, so the repository exists on Docker Hub by now —
-      # the first release creates it.
+      # the first release creates it. Requires DOCKERHUB_TOKEN to have
+      # Read/Write/Delete scope: the description API rejects Read/Write tokens
+      # with 403, even though the same token pushes images fine.
+      #
+      # continue-on-error: by this point the images are already published, and
+      # a stale listing is not worth a red release run. The verify-publishing
+      # workflow runs this same step *fatally*, so a broken sync is still
+      # caught — during rehearsal, not release.
       - name: Sync the Docker Hub listing
+        continue-on-error: true
         uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -295,4 +308,6 @@ jobs:
           # on GitHub and would blank the listing if it were ever unset.
           # Docker Hub caps this at 100 characters.
           short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
-          readme-filepath: ./DOCKER.md
+          # A dedicated short page, not DOCKER.md: Docker Hub truncates
+          # listings at 25,000 bytes and DOCKER.md is well past that.
+          readme-filepath: ./DOCKERHUB.md

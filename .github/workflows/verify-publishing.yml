@@ -44,7 +44,7 @@ jobs:
             missing=1
           fi
           if [ -z "$DOCKERHUB_TOKEN" ]; then
-            echo "::error::DOCKERHUB_TOKEN is not set. Create a Read/Write access token on Docker Hub and add it as a repository secret."
+            echo "::error::DOCKERHUB_TOKEN is not set. Create a Read/Write/Delete access token on Docker Hub and add it as a repository secret. Delete scope is needed by the listing-sync step: the description API returns 403 for Read/Write tokens, even though pushing works."
             missing=1
           fi
           if [ "$missing" -eq 0 ]; then
@@ -177,7 +177,12 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ env.DOCKERHUB_IMAGE }}
           short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
-          readme-filepath: ./DOCKER.md
+          # A dedicated short page, not DOCKER.md: Docker Hub truncates
+          # listings at 25,000 bytes and DOCKER.md is well past that. This step
+          # stays fatal here on purpose — the release workflow marks it
+          # continue-on-error, so the rehearsal is where a broken sync must
+          # surface.
+          readme-filepath: ./DOCKERHUB.md
 
       - name: Summary
         env:
@@ -195,7 +200,7 @@ jobs:
             echo "- The vulnerability gate passes"
             echo "- **Write access to both registries confirmed by a real push**"
             echo "- Both \`linux/amd64\` and \`linux/arm64\` are in the manifest"
-            echo "- The Docker Hub listing syncs from DOCKER.md"
+            echo "- The Docker Hub listing syncs from DOCKERHUB.md"
             echo
             echo "### Tags a release of the current version would publish"
             echo
