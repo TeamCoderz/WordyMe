@@ -147,6 +147,7 @@ WordyMe/
 WordyMe™ can be run using Docker and Docker Compose for easy deployment. See [DOCKER.md](DOCKER.md) for complete Docker documentation, including:
 
 - Quick start guide
+- Upgrading from an earlier version
 - Common commands
 - Data persistence and backups
 - Troubleshooting
@@ -155,13 +156,20 @@ WordyMe™ can be run using Docker and Docker Compose for easy deployment. See [
 **Quick Start:**
 
 ```bash
+cp .env.example .env
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> .env
 docker compose up -d
 ```
 
-The application will be available at:
+`BETTER_AUTH_SECRET` has no default and Compose refuses to start without it, so
+the first two steps are required rather than optional.
 
-- Web: http://localhost:5173
-- API: http://localhost:3000
+The application will be available at **http://localhost:8080** — one container
+serves the web app and the API from the same origin, so there is no separate
+frontend URL. The API reference is at http://localhost:8080/api/docs.
+
+Already running an older version? Ports and origins changed; see
+[Upgrading](DOCKER.md#upgrading-from-a-version-before-the-all-in-one-image).
 
 ## Development Workflow
 
