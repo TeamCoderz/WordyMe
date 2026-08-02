@@ -1,0 +1,22 @@
+version: 2
+
+updates:
+  # Workflow actions are pinned to commit SHAs so a compromised upstream tag
+  # cannot silently run new code with this repository's registry credentials.
+  # A pin only stays safe if something keeps it current, which is this: without
+  # it, pinning trades a mutable-tag risk for a stale-action one.
+  #
+  # The `# v4` comment beside each SHA is what Dependabot reads to know which
+  # release a pin corresponds to, and it rewrites both together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(ci)'
+    groups:
+      # One PR for the whole Docker toolchain rather than five.
+      docker-actions:
+        patterns:
+          - 'docker/*'
