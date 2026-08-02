@@ -29,8 +29,13 @@ Raspberry Pi 4 or 5.
 2. **Set a signing secret** (required — startup fails without it):
 
    ```bash
-   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
+   [ -e .env ] || ( umask 077; echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env )
    ```
+
+   The `umask` keeps `.env` readable only by you — it holds the key that signs
+   every session cookie, and a default umask would leave it world-readable. The
+   guard means re-running this will not overwrite a `.env` you have already
+   customised, or rotate the secret and log everyone out.
 
 3. **Start it**:
 
@@ -721,8 +726,10 @@ What each release produces:
 - **OCI labels**, including `org.opencontainers.image.source` pointing at this
   repository. That also serves the AGPL's source-availability requirement: the
   image itself carries a link to the code it was built from.
-- **An SBOM and provenance attestation**, a signed record of what went into the
-  image and how it was built.
+- **An SBOM and provenance attestation**, attached to the image manifest,
+  recording what went into it and how it was built. These are verifiable but
+  **not cryptographically signed** — signing would require a separate cosign or
+  Sigstore step, which this pipeline does not yet do.
 - **A vulnerability scan that gates the push.** The workflow builds and scans
   before publishing anything, and fails if Trivy reports a HIGH or CRITICAL
   issue _that has a fix available_. Unfixable CVEs are reported but do not block

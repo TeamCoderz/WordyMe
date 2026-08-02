@@ -4,8 +4,12 @@
 # not need to clone the repository:
 #
 #   curl -O https://raw.githubusercontent.com/TeamCoderz/WordyMe/main/docker-compose.public.yml
-#   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
+#   [ -e .env ] || ( umask 077; echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env )
 #   docker compose -f docker-compose.public.yml up -d
+#
+# The umask keeps .env readable only by you — it holds the key that signs every
+# session cookie. The guard means re-running the command will not overwrite a
+# .env you have already customised, or rotate the secret and log everyone out.
 #
 # Then open http://localhost:8080
 #
@@ -33,8 +37,10 @@ services:
       - PORT=8080
       - DB_FILE_NAME=file:/app/storage/local.db
       # Every origin you reach the app on, comma separated. Must match the
-      # address in your browser, or logging in will fail.
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:8080}
+      # address in your browser, or logging in will fail. The default follows
+      # HOST_PORT, so changing the published port alone cannot leave this
+      # pointing at the wrong address.
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:${HOST_PORT:-8080}}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
       # Deliberately has no default. A shipped default would be a published
       # secret, and anyone running it unchanged could forge sessions.
