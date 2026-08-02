@@ -83,7 +83,7 @@ jobs:
           # tag exists: asking GitHub to release a tag that is not there yet
           # makes it create one itself, at the default branch's HEAD — which is
           # the commit *before* the release commit below.
-          pnpm run release -- --no-github.release
+          npx release-it --ci --no-increment --no-github.release
 
           git add package.json CHANGELOG.md
           git commit -m "chore: release v$VERSION"
