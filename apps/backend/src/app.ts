@@ -44,15 +44,16 @@ app.use(
 
 app.use(clientIp);
 
-app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
-
-app.all('/api/auth/{*any}', toNodeHandler(auth));
-
 app.use(
   morgan<Request, Response>('dev', {
     skip: (req) => req.originalUrl.split('?')[0] === '/api/health',
   }),
 );
+
+app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
+
+app.all('/api/auth/{*any}', toNodeHandler(auth));
+
 app.use(express.json({ limit: '5mb' }));
 
 app.use('/api/documents', documentsRouter);
