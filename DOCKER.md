@@ -14,43 +14,85 @@ docker --version
 docker compose version
 ```
 
-## Quick Start
+## Quick Start (self-hosting)
 
-1. **Clone the repository** (if you haven't already):
+You do not need to clone the repository. Published images cover both
+`linux/amd64` and `linux/arm64`, so this works on a normal server and on a
+Raspberry Pi 4 or 5.
 
-   ```bash
-   git clone <repository-url>
-   cd WordyMe
-   ```
-
-2. **Set up environment variables** (required):
-   Copy the example environment file:
+1. **Fetch the compose file**:
 
    ```bash
-   cp .env.example .env
+   curl -O https://raw.githubusercontent.com/TeamCoderz/WordyMe/main/docker-compose.public.yml
    ```
 
-   Then set `BETTER_AUTH_SECRET`. It has no default and startup fails without it:
+2. **Set a signing secret** (required — startup fails without it):
 
    ```bash
-   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+   [ -e .env ] || ( umask 077; echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env )
    ```
 
-   > **Note**:
-   >
-   > - The `.env` file is excluded from Docker builds (via `.dockerignore`) for security, but Docker Compose will still read it for variable substitution in `docker-compose.yml`
-   > - The `.env.example` file serves as a template with all available environment variables documented
+   The `umask` keeps `.env` readable only by you — it holds the key that signs
+   every session cookie, and a default umask would leave it world-readable. The
+   guard means re-running this will not overwrite a `.env` you have already
+   customised, or rotate the secret and log everyone out.
 
-3. **Build and start the containers**:
+3. **Start it**:
 
    ```bash
-   docker compose up -d
+   docker compose -f docker-compose.public.yml up -d
    ```
 
-4. **Access the application**: http://localhost:8080
+4. **Open** http://localhost:8080 and create the first account.
 
    The web app and the API are served from the same origin and the same port.
    There is no separate frontend URL.
+
+### Where to pull from
+
+The same image is published to two registries on every release:
+
+| Registry   | Image                        | Notes                             |
+| ---------- | ---------------------------- | --------------------------------- |
+| GHCR       | `ghcr.io/teamcoderz/wordyme` | **Default.** No pull rate limits. |
+| Docker Hub | `teamcoderz/wordyme`         | Easier to find; rate limited.     |
+
+GHCR is the default in `docker-compose.public.yml` because Docker Hub limits
+unauthenticated pulls to 100 per 6 hours **per IP address** — a budget shared by
+everyone behind the same office or campus NAT. Both registries carry identical
+images; switch by changing one line.
+
+### Which tag to use
+
+| Tag            | Moves?               | Use when                                 |
+| -------------- | -------------------- | ---------------------------------------- |
+| `latest`       | Every stable release | You want updates when you re-pull        |
+| `1.2.3`        | Never                | You want to upgrade deliberately         |
+| `1.2`          | Within a minor line  | You want patches but not feature changes |
+| `sha-<commit>` | Never                | You need to pin an exact build           |
+
+Pre-releases (`1.3.0-beta.1`) are published but never tagged `latest`.
+
+## Running from source instead
+
+Contributors building locally use the other compose file, which builds the image
+rather than pulling it:
+
+```bash
+cp .env.example .env
+```
+
+```bash
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> .env
+```
+
+```bash
+docker compose up -d --build
+```
+
+> **Note**: `.env` is excluded from Docker builds via `.dockerignore`, so no
+> secret is baked into the image. Compose still reads it for variable
+> substitution.
 
 ## Upgrading from a version before the all-in-one image
 
@@ -727,6 +769,104 @@ accepting connections, disconnects clients, and waits for queued database writes
 to finish before exiting — SQLite is single-writer, so being killed mid-write is
 the failure worth avoiding. If shutdown ever takes longer than 8 seconds, the
 process exits anyway rather than waiting to be killed.
+
+## How images are published
+
+Images are built and pushed by the **Manual Release** workflow
+(`.github/workflows/release.yml`). Running that workflow bumps the version,
+writes the changelog, tags the commit, creates the GitHub release, and then
+builds and publishes the image — in that order, from the tag it just created.
+
+The image build lives inside the release workflow rather than in a separate
+`on: push: tags` workflow, and that is deliberate. The release job pushes its
+tag using the default `GITHUB_TOKEN`, and GitHub does not start new workflow
+runs from events created with that token — a tag-triggered workflow would never
+fire.
+
+What each release produces:
+
+- **Two architectures**, `linux/amd64` and `linux/arm64`, in one manifest, so
+  `docker pull` selects the right one automatically.
+- **Both registries**, GHCR and Docker Hub, from a single build.
+- **OCI labels**, including `org.opencontainers.image.source` pointing at this
+  repository. That also serves the AGPL's source-availability requirement: the
+  image itself carries a link to the code it was built from.
+- **An SBOM and provenance attestation**, attached to the image manifest,
+  recording what went into it and how it was built. These are verifiable but
+  **not cryptographically signed** — signing would require a separate cosign or
+  Sigstore step, which this pipeline does not yet do.
+- **A vulnerability scan that gates the push.** The workflow builds and scans
+  before publishing anything, and fails if Trivy reports a HIGH or CRITICAL
+  issue _that has a fix available_. Unfixable CVEs are reported but do not block
+  a release, since there would be nothing to do about them. The full report,
+  including MEDIUM and LOW, is uploaded to the repository's Security tab.
+
+### One-time setup
+
+Two repository secrets are required, under **Settings → Secrets and variables →
+Actions**:
+
+| Secret               | Value                                                |
+| -------------------- | ---------------------------------------------------- |
+| `DOCKERHUB_USERNAME` | `teamcoderz`                                         |
+| `DOCKERHUB_TOKEN`    | A Docker Hub access token with **Read, Write** scope |
+
+Create the token at **Docker Hub → Account settings → Personal access tokens**.
+Do not use your account password: with 2FA enabled it will not work anyway, and
+a scoped token can be revoked on its own.
+
+GHCR needs no secret. It authenticates with the `GITHUB_TOKEN` that GitHub mints
+for each run and expires when the run ends.
+
+> Docker Hub also supports keyless OIDC login, which avoids storing a token at
+> all, but it requires a Docker Team or Business subscription or membership of
+> the Docker-Sponsored Open Source programme. On a free account, a token is the
+> only option — so treat it as a credential: rotate it periodically, and revoke
+> it immediately if the repository's secrets are ever exposed.
+
+### Publishing by hand
+
+If Actions is unavailable, the same result can be produced locally. You need
+Docker with `buildx`, and you must be logged in to whichever registry you are
+pushing to.
+
+```bash
+docker login                    # Docker Hub — use an access token, not a password
+```
+
+```bash
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <your-github-username> --password-stdin
+```
+
+Build and push both architectures in one command. On a machine of a single
+architecture the other is emulated through QEMU, which is slower but produces a
+correct image:
+
+```bash
+docker buildx build --platform linux/amd64,linux/arm64 --sbom=true --provenance=mode=max --tag ghcr.io/teamcoderz/wordyme:1.2.3 --tag ghcr.io/teamcoderz/wordyme:latest --tag teamcoderz/wordyme:1.2.3 --tag teamcoderz/wordyme:latest --push .
+```
+
+Then confirm both architectures are present:
+
+```bash
+docker buildx imagetools inspect ghcr.io/teamcoderz/wordyme:1.2.3
+```
+
+You should see two manifests, one `linux/amd64` and one `linux/arm64`. If only
+one appears, the build fell back to a single platform and the tag should not be
+released.
+
+### Inspecting a published image
+
+Anyone can check what they are about to run:
+
+```bash
+docker buildx imagetools inspect ghcr.io/teamcoderz/wordyme:latest --format '{{ json .Provenance }}'
+```
+
+```bash
+docker buildx imagetools inspect ghcr.io/teamcoderz/wordyme:latest --format '{{ json .SBOM }}'
+```
 
 ## Support
 
