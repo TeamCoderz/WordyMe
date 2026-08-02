@@ -40,6 +40,26 @@ RUN pnpm build --filter=web... --filter=@repo/backend...
 
 RUN pnpm --filter @repo/backend --prod deploy --legacy pruned-backend
 
+# Strip build tooling that `pnpm deploy` drags in because better-auth declares
+# drizzle-kit as an optional peer. None of it runs in production: drizzle-kit is
+# a migration *generator*, while the runtime uses drizzle-orm/libsql/migrator.
+# It matters for more than size — the esbuild binary it pulls in accounted for
+# 36 of the image's 67 vulnerability findings on its own, all in Go stdlib.
+# Also drop the libSQL builds for other platforms; this image is Alpine (musl).
+#
+# This runs in the builder, before the COPY below, on purpose. Deleting in the
+# runner stage would leave the files in the copied layer and only add a whiteout
+# on top — the vulnerabilities would go but the megabytes would not.
+RUN rm -rf \
+        pruned-backend/node_modules/.pnpm/drizzle-kit@* \
+        pruned-backend/node_modules/.pnpm/esbuild@* \
+        pruned-backend/node_modules/.pnpm/@esbuild+* \
+        pruned-backend/node_modules/.pnpm/@libsql+linux-*-gnu@* \
+        pruned-backend/node_modules/.pnpm/@libsql+darwin-* \
+        pruned-backend/node_modules/.pnpm/@libsql+win32-* \
+    && rm -f pruned-backend/node_modules/.bin/drizzle-kit \
+             pruned-backend/node_modules/.bin/esbuild
+
 # ==========================================
 # STAGE 3: Runner (all-in-one)
 # ==========================================
@@ -58,6 +78,18 @@ RUN apk add --no-cache libc6-compat tini
 
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nodejs
+
+# A production container runs `node`, never `npm`. The base image bundles npm,
+# and npm vendors its own copies of tar, sigstore, picomatch, brace-expansion
+# and ip-address — which accounted for 14 of the 16 vulnerability findings left
+# after pruning the app's own tree, including a critical one in tar. None of it
+# is reachable at runtime, but shipping it means every scan reports issues this
+# image has no way to fix, and it leaves a package installer sitting in the
+# container for anyone who does get in. Removing it cannot reclaim the disk
+# space (the files live in the base image layer) but it does remove the risk.
+RUN rm -rf /usr/local/lib/node_modules/npm \
+           /usr/local/bin/npm \
+           /usr/local/bin/npx
 
 COPY --from=builder /app/pruned-backend .
 COPY --from=builder /app/apps/backend/dist ./dist
