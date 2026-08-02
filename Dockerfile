@@ -1,7 +1,7 @@
 # ==========================================
 # STAGE 1: Pruner
 # ==========================================
-FROM node:20-alpine AS pruner
+FROM node:22-alpine AS pruner
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g turbo
@@ -11,7 +11,7 @@ RUN turbo prune --scope=web --scope=@repo/backend --docker
 # ==========================================
 # STAGE 2: Base & Builder
 # ==========================================
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -47,7 +47,7 @@ RUN pnpm --filter @repo/backend --prod deploy --legacy pruned-backend
 # files and the web bundle. SQLite is single-writer, so splitting this into web
 # and backend containers would buy no scaling — only a hardcoded hostname and a
 # backend URL that has to be baked in at build time.
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
 
 # tini becomes PID 1. A process running as PID 1 does not get the kernel's
