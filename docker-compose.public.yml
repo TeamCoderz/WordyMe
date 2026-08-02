@@ -1,0 +1,79 @@
+# WordyMe — self-hosting stack.
+#
+# This file pulls a published image instead of building from source, so you do
+# not need to clone the repository:
+#
+#   curl -O https://raw.githubusercontent.com/TeamCoderz/WordyMe/main/docker-compose.public.yml
+#   echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
+#   docker compose -f docker-compose.public.yml up -d
+#
+# Then open http://localhost:8080
+#
+# (The docker-compose.yml next to this one builds from source instead, which is
+# what contributors want.)
+
+services:
+  wordyme:
+    # GHCR is the default because it does not rate-limit pulls of public images.
+    # Docker Hub allows 100 unauthenticated pulls per 6 hours *per IP address* —
+    # a limit shared by everyone behind the same office or campus NAT. The same
+    # image is published to both, so swap this line if you prefer Docker Hub:
+    #   image: teamcoderz/wordyme:latest
+    image: ghcr.io/teamcoderz/wordyme:latest
+
+    # Pin to a version instead of :latest if you would rather upgrade
+    # deliberately, e.g. ghcr.io/teamcoderz/wordyme:1.0.0
+
+    # No container_name: leaving it unset lets two stacks run side by side.
+    ports:
+      - '${HOST_PORT:-8080}:8080'
+
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - DB_FILE_NAME=file:/app/storage/local.db
+      # Every origin you reach the app on, comma separated. Must match the
+      # address in your browser, or logging in will fail.
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:8080}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
+      # Deliberately has no default. A shipped default would be a published
+      # secret, and anyone running it unchanged could forge sessions.
+      - 'BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:?must be set in .env — generate one with "openssl rand -base64 32"}'
+      # Set only when a reverse proxy terminates TLS in front of this container.
+      # Leave empty when the port is reached directly, or clients can forge
+      # X-Forwarded-For and evade login rate limiting.
+      - TRUST_PROXY=${TRUST_PROXY:-}
+
+    volumes:
+      # Your database and uploaded files. Back this up.
+      - wordyme-storage:/app/storage
+
+    restart: unless-stopped
+    # The health check ships inside the image, so `docker ps` reports health
+    # whether you use compose or plain `docker run`.
+
+    # Without rotation, JSON logs grow until the disk is full. That is a real
+    # failure mode on a Raspberry Pi writing to an SD card.
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+    security_opt:
+      # Stops a process inside the container gaining privileges via setuid
+      # binaries — nothing here needs to.
+      - no-new-privileges:true
+
+    cap_drop:
+      # The app listens on 8080 as a non-root user and only reads and writes
+      # files, so it needs none of the default Linux capabilities.
+      - ALL
+
+    # Caps runaway memory rather than letting it take the host down with it.
+    # The app idles around 100MB; raise this if you import very large documents.
+    mem_limit: 1g
+
+volumes:
+  wordyme-storage:
+    driver: local

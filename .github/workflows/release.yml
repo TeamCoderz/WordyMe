@@ -26,6 +26,16 @@ on:
           - beta
           - rc
 
+env:
+  # Both registries are published in parallel. GHCR is the one documented as the
+  # default pull source: Docker Hub throttles unauthenticated pulls to 100 per
+  # 6 hours *per IP address*, which a school or office behind one NAT shares
+  # between everyone. Names are hardcoded rather than derived from
+  # github.repository_owner because GHCR requires them lowercase and the org is
+  # spelled "TeamCoderz".
+  DOCKERHUB_IMAGE: teamcoderz/wordyme
+  GHCR_IMAGE: ghcr.io/teamcoderz/wordyme
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -33,6 +43,11 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+
+    # Consumed by the publish job so it builds the tag this job just created,
+    # rather than the commit the workflow started from.
+    outputs:
+      version: ${{ steps.standard.outputs.version || steps.prerelease.outputs.version }}
 
     steps:
       - name: Checkout code
@@ -58,6 +73,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Run release (standard version)
+        id: standard
         if: inputs.preid == 'none' || inputs.preid == ''
         run: |
           npm version ${{ inputs.increment }} --no-git-tag-version
@@ -67,10 +83,12 @@ jobs:
           git commit -m "chore: release v$VERSION"
           git tag "v$VERSION"
           git push --follow-tags
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run release (pre-release version)
+        id: prerelease
         if: inputs.preid != 'none' && inputs.preid != ''
         run: |
           npm version ${{ inputs.increment }} --preid=${{ inputs.preid }} --no-git-tag-version
@@ -80,5 +98,163 @@ jobs:
           git commit -m "chore: release v$VERSION"
           git tag "v$VERSION"
           git push --follow-tags
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ==========================================================================
+  # Publish container images
+  # ==========================================================================
+  # This lives inside the release workflow on purpose. The release job pushes
+  # its tag using the default GITHUB_TOKEN, and GitHub deliberately does not
+  # start new workflow runs from events created with that token — so a separate
+  # `on: push: tags: ['v*']` workflow would never fire.
+  publish:
+    name: Publish container images
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to GHCR using GITHUB_TOKEN
+      security-events: write # upload the Trivy report to the Security tab
+
+    steps:
+      - name: Checkout the released tag
+        uses: actions/checkout@v4
+        with:
+          # Not the workflow's starting SHA: the release job added a version
+          # bump commit, and the image must contain it.
+          ref: v${{ needs.release.outputs.version }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      # --- Gate: scan before anything is published -------------------------
+      # Built for one platform and loaded locally so the scan runs against a
+      # real image. The multi-platform build below reuses this layer cache, so
+      # the amd64 half costs almost nothing the second time.
+      - name: Build amd64 image for scanning
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: wordyme:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Fail the release on fixable HIGH or CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: wordyme:scan
+          format: table
+          severity: CRITICAL,HIGH
+          # Only gate on issues that can actually be acted on. A CVE with no
+          # published fix would otherwise block every release indefinitely.
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Full vulnerability report
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: wordyme:scan
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM,LOW
+          exit-code: '0'
+
+      - name: Upload report to the Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-results.sarif
+          category: container-image
+
+      # --- Publish ---------------------------------------------------------
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          # A long-lived access token, because Docker Hub's keyless OIDC login
+          # requires a Team/Business subscription or DSOS membership.
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          # No stored secret needed: this token is minted per run and expires
+          # with it.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags and labels
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          # `latest` is handled by the explicit rule below rather than the
+          # default `latest=auto`, which would also emit it from the semver
+          # tagger and produce the same tag from two rules.
+          flavor: |
+            latest=false
+          # The version comes from the release job rather than the git ref,
+          # because this workflow is triggered manually, not by a tag push.
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.version }}
+            type=sha,format=long
+            # Never point `latest` at a pre-release. metadata-action also
+            # collapses {{major}}.{{minor}} to the full version for
+            # pre-releases, so `1.1` can never resolve to a beta either.
+            type=raw,value=latest,enable=${{ !contains(needs.release.outputs.version, '-') }}
+          labels: |
+            org.opencontainers.image.title=WordyMe
+            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.vendor=TeamCoderz Ltd
+            org.opencontainers.image.url=https://teamcoderz.org
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.version=${{ needs.release.outputs.version }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          # arm64 is a product promise, not an optimisation — the project
+          # advertises running on a Raspberry Pi.
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          # A signed record of what went into the image and how it was built.
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Show what was published
+        run: |
+          echo "Published the following tags:"
+          echo "${{ steps.meta.outputs.tags }}"
+          docker buildx imagetools inspect "${{ env.GHCR_IMAGE }}:${{ needs.release.outputs.version }}"
+
+      # Runs after the push, so the repository exists on Docker Hub by now —
+      # the first release creates it.
+      - name: Sync the Docker Hub listing
+        uses: peter-evans/dockerhub-description@v5
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          repository: ${{ env.DOCKERHUB_IMAGE }}
+          # A literal rather than the repository description, which is optional
+          # on GitHub and would blank the listing if it were ever unset.
+          # Docker Hub caps this at 100 characters.
+          short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
+          readme-filepath: ./DOCKER.md
