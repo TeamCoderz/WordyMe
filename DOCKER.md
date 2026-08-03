@@ -456,15 +456,16 @@ password is simply refused.
 `TRUST_HOST=true`, the default, solves this by accepting whichever host the
 request arrived on. Pick your row:
 
-| How you reach it                                         | What to set                                |
-| -------------------------------------------------------- | ------------------------------------------ |
-| `http://localhost:8080` on the Docker host               | Nothing                                    |
-| `http://192.168.1.50:8080` — a Pi or NAS on your LAN     | Nothing                                    |
-| `http://wordy.local:8080` — a hostname                   | Nothing                                    |
-| `http://100.64.1.2:8080` — Tailscale or a VPN            | Nothing                                    |
-| `http://notes.example.com:8080` — a VPS, plain HTTP      | Nothing                                    |
-| `https://notes.example.com` — behind a reverse proxy     | `BETTER_AUTH_URL` and `TRUST_PROXY`, below |
-| A frontend hosted on a **different** origin from the API | Add that origin to `CLIENT_URL`            |
+| How you reach it                                         | What to set                                  |
+| -------------------------------------------------------- | -------------------------------------------- |
+| `http://localhost:8080` on the Docker host               | Nothing                                      |
+| `http://192.168.1.50:8080` — a Pi or NAS on your LAN     | Nothing                                      |
+| `http://wordy.local:8080` — a hostname                   | Nothing                                      |
+| `http://100.64.1.2:8080` — Tailscale or a VPN            | Nothing                                      |
+| `http://notes.example.com:8080` — a VPS, plain HTTP      | Nothing                                      |
+| `https://notes.example.com` — behind a reverse proxy     | `BETTER_AUTH_URL` and `TRUST_PROXY`, below   |
+| Deployed via **Coolify or Dokploy** with a domain        | Works as-is; two settings recommended, below |
+| A frontend hosted on a **different** origin from the API | Add that origin to `CLIENT_URL`              |
 
 **Is trusting the host safe?** Yes. It does not mean "trust everyone" — it means
 "trust the address this request was actually sent to". A browser always sets
@@ -507,6 +508,27 @@ Avoid listing both `http://` and `https://` origins in `CLIENT_URL`. Cookies
 carry a single `Secure` setting, so one of the two schemes will always be wrong.
 Set `BETTER_AUTH_URL` to the canonical address instead; the app warns if it sees
 a mixture.
+
+#### Coolify, Dokploy and similar platforms
+
+These platforms are the reverse-proxy case above with the proxy managed for you:
+their built-in Traefik terminates TLS for your domain and forwards plain HTTP to
+the container. Traefik passes the original `Host` header through by default, so
+with `TRUST_HOST` on, **sign-up and sign-in work with no configuration at all**.
+
+Three things to set in the platform's UI for a production install:
+
+1. `BETTER_AUTH_SECRET` — required; the container refuses to start without it.
+2. `BETTER_AUTH_URL=https://your-domain` and `TRUST_PROXY=1` — the two settings
+   from the section above. Without them the app still works, but session
+   cookies are not marked `Secure` and login rate limiting sees every user as
+   the proxy's address.
+3. A **persistent volume mounted at `/app/storage`** — otherwise the database
+   and every uploaded file are lost on each redeploy.
+
+Point the platform at container port `8080`. If you skip step 2, the app logs a
+one-time hint when it notices forwarded HTTPS traffic, naming exactly these
+settings.
 
 #### `TRUST_PROXY` and login rate limiting
 
