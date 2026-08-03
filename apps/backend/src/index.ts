@@ -5,6 +5,7 @@
 
 import server from './app.js';
 import { env } from './env.js';
+import { originConfig } from './lib/auth.js';
 import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
 import { hasWebBundle } from './lib/web.js';
@@ -20,12 +21,21 @@ const SHUTDOWN_TIMEOUT_MS = 8_000;
 server.listen(env.PORT, () => {
   console.log(`Server is running on http://localhost:${env.PORT}`);
   console.log(`Trusted origins (CLIENT_URL): ${env.CLIENT_URL.join(', ')}`);
+  console.log(
+    env.TRUST_HOST
+      ? 'TRUST_HOST=true: also trusting whichever host a request arrives on.'
+      : 'TRUST_HOST=false: only the origins above are accepted.',
+  );
+  console.log(`Session cookies Secure: ${originConfig.useSecureCookies}`);
+
+  for (const warning of originConfig.warnings) console.warn(warning);
 
   const warning = clientUrlWarning({
     clientUrls: env.CLIENT_URL,
     port: env.PORT,
     servesWebBundle: hasWebBundle(),
     behindProxy: env.TRUST_PROXY !== false,
+    trustHost: env.TRUST_HOST,
   });
 
   if (warning) console.warn(warning);

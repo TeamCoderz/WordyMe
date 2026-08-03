@@ -8,6 +8,7 @@ import { APIError } from 'better-auth/api';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { bearer, customSession, openAPI, username } from 'better-auth/plugins';
 import { db } from './db.js';
+import { resolveOriginConfig } from './origin.js';
 import { env } from '../env.js';
 import { users } from '../models/auth.js';
 import { getEditorSettings, setEditorSettings } from '../services/editor-settings.js';
@@ -24,13 +25,28 @@ export const isSignupEnabled = async (): Promise<boolean> => {
   return existingUsers.length === 0;
 };
 
+/**
+ * Which origins to trust and whether cookies are `Secure`. Exported so startup
+ * can report the decision and surface any warnings it produced.
+ */
+export const originConfig = resolveOriginConfig({
+  clientUrls: env.CLIENT_URL,
+  betterAuthUrl: env.BETTER_AUTH_URL,
+  trustHost: env.TRUST_HOST,
+  behindProxy: env.TRUST_PROXY !== false,
+});
+
 export const options = {
   database: adapter,
   emailAndPassword: {
     enabled: true,
   },
-  baseURL: env.BETTER_AUTH_URL ?? env.CLIENT_URL[0],
-  trustedOrigins: env.CLIENT_URL,
+  baseURL: originConfig.baseURL,
+  trustedOrigins: originConfig.trustedOrigins,
+  advanced: {
+    useSecureCookies: originConfig.useSecureCookies,
+    trustedProxyHeaders: originConfig.trustedProxyHeaders,
+  },
   user: {
     additionalFields: {
       cover: {

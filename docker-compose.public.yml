@@ -36,11 +36,17 @@ services:
       - NODE_ENV=production
       - PORT=8080
       - DB_FILE_NAME=file:/app/storage/local.db
-      # Every origin you reach the app on, comma separated. Must match the
-      # address in your browser, or logging in will fail. The default follows
-      # HOST_PORT, so changing the published port alone cannot leave this
-      # pointing at the wrong address.
+      # Accept whichever address a request arrives at, so this works on a LAN IP,
+      # a hostname, a Tailscale address or a domain without naming each one.
+      # Not "trust anyone": the browser's Origin must match the Host it sent, so
+      # cross-site requests are still refused. Set false to accept only
+      # CLIENT_URL.
+      - TRUST_HOST=${TRUST_HOST:-true}
+      # Extra origins to trust, on top of the one above. Only needed when the
+      # frontend is served from a different origin than the API.
       - CLIENT_URL=${CLIENT_URL:-http://localhost:${HOST_PORT:-8080}}
+      # Set to the address users type when serving over HTTPS. This is what
+      # marks session cookies Secure — without it they travel in the clear.
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
       # Deliberately has no default. A shipped default would be a published
       # secret, and anyone running it unchanged could forge sessions.
