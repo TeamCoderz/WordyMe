@@ -1,17 +1,33 @@
 # Local Setup Guide
 
-This guide will help you set up and run WordyMe on your local machine.
+This guide sets up WordyMe for development, running the backend and frontend
+directly on your machine with hot reloading.
+
+If you only want to _run_ WordyMe rather than work on it, use Docker instead —
+see [DOCKER.md](DOCKER.md). That path is a single command and needs no toolchain.
 
 ## Prerequisites
-
-Before you begin, ensure you have the following installed:
 
 - **Node.js** >= 22 ([Download](https://nodejs.org/))
 - **pnpm** 10.33.0 ([Installation Guide](https://pnpm.io/installation))
 
 ### Installing pnpm
 
-If you don't have pnpm installed:
+The repository pins its package manager in `package.json`, and Corepack reads
+that pin, so it is the least error-prone option:
+
+```bash
+corepack enable
+```
+
+Corepack shipped with Node through v24. It is no longer part of the official
+Node 25+ distributions, so on those you install it first:
+
+```bash
+npm install -g corepack
+```
+
+Otherwise install pnpm yourself:
 
 ```bash
 # Using npm
@@ -24,281 +40,315 @@ brew install pnpm
 curl -fsSL https://get.pnpm.io/install.sh | sh -
 ```
 
-Verify installation:
+Verify:
 
 ```bash
 pnpm --version
 # Should output: 10.33.0
 ```
 
+pnpm also has to be on your `PATH` for the git pre-commit hooks to run — they
+call `pnpm` to add licence headers and format staged files.
+
 ## Step 1: Clone the Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/TeamCoderz/WordyMe.git
 cd WordyMe
 ```
 
 ## Step 2: Install Dependencies
 
-Install all dependencies for the monorepo:
-
 ```bash
 pnpm install
 ```
 
-This will install dependencies for all apps and packages in the monorepo.
+This installs dependencies for every app and package in the monorepo, and
+installs the git hooks.
 
 ## Step 3: Environment Configuration
 
-### Backend Environment Variables
-
-Create a `.env` file in `apps/backend/`:
+### Backend
 
 ```bash
-cd apps/backend
-cp .env.example .env
+cp apps/backend/.env.example apps/backend/.env
 ```
 
-**Note:** The database file will be created automatically on first run if it doesn't exist.
-
-### Frontend Environment Variables
-
-Create a `.env` file in `apps/web/`:
+Then generate the session-signing secret, which the template deliberately ships
+commented out:
 
 ```bash
-cd apps/web
-cp .env.example .env
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> apps/backend/.env
 ```
+
+**Do not skip this.** Better Auth does not fail when `BETTER_AUTH_SECRET` is
+missing and logs no warning — it quietly falls back to a hard-coded default that
+is the same in every install. It refuses to start only under
+`NODE_ENV=production`, which nothing in local development sets. Anything signed
+with that default, including your session cookies, can be forged by anyone.
+Locally that is a small thing; the moment you expose the port to your network, or
+reuse the file on a server, it is not.
+
+Changing this value later invalidates existing sessions and logs everyone out.
+
+The remaining settings have working defaults:
+
+| Variable          | Default                 | Notes                                         |
+| ----------------- | ----------------------- | --------------------------------------------- |
+| `PORT`            | `3000`                  | Backend port                                  |
+| `DB_FILE_NAME`    | `file:storage/local.db` | Created on first migration                    |
+| `CLIENT_URL`      | `http://localhost:5173` | Trusted origins — must match your browser URL |
+| `BETTER_AUTH_URL` | first `CLIENT_URL`      | Public origin of the auth API                 |
+| `TRUST_PROXY`     | unset                   | Leave unset locally                           |
+
+Upgrading an existing clone? `DB_FILE_NAME` used to default to `file:local.db`.
+An `.env` you already have keeps working untouched, but if you replace it from
+the template, bring the database with it — otherwise you are pointed at a new,
+empty one, which looks exactly like skipping [Step 4](#step-4-database-setup):
+
+```bash
+mv apps/backend/local.db apps/backend/storage/local.db
+```
+
+### Frontend
+
+**No `.env` is needed.** `apps/web/.env.example` exists only to document the
+optional `VITE_BACKEND_URL`, and every value in it already has a working default.
+
+Copying it is not a neutral act: `VITE_BACKEND_URL` is inlined by Vite at build
+time, so setting it to `http://localhost:3000` bakes that address into any
+production bundle you build afterwards. Leave it unset and requests stay
+relative — which is what the Vite dev proxy needs in development, and what the
+backend needs in production when it serves the bundle itself.
+
+### A note on `.env` files and git
+
+`.env` files are gitignored and must never be committed — `apps/backend/.env`
+holds your session secret. Only the `.env.example` templates are tracked. If you
+add a new setting, add it to the template with a comment, not to your `.env`
+alone.
 
 ## Step 4: Database Setup
 
-The backend uses SQLite (libSQL) which creates the database file automatically. However, if you need to run migrations:
+**This step is required on a fresh clone.** The database file is created
+automatically, but it is created _empty_ — nothing in the backend applies
+migrations at startup (only the Docker image does that, as part of its launch
+command). Skip this and the server starts fine, then every request that touches
+the database fails with `no such table: users`.
 
 ```bash
 cd apps/backend
-
-# Generate migrations (if schema changed)
-pnpm drizzle-kit generate
-
-# Apply migrations
 pnpm drizzle-kit migrate
 ```
 
+Run it again after pulling changes that add migrations.
+
+Only if you have **changed the schema** in `src/models/` do you also need to
+generate a migration first:
+
+```bash
+pnpm drizzle-kit generate   # writes a new file into drizzle/
+pnpm drizzle-kit migrate
+```
+
+Commit the generated file along with your schema change.
+
 ## Step 5: Start Development Servers
 
-### Option 1: Start All Services (Recommended)
+### Option 1: Start Everything (Recommended)
 
-From the root directory:
+From the root directory — `cd ../..` if Step 4 left you in `apps/backend`:
 
 ```bash
 pnpm dev
 ```
 
-This will start both the backend and frontend in parallel.
+Starts the backend and frontend together.
 
 ### Option 2: Start Services Separately
 
-**Terminal 1 - Backend:**
+**Terminal 1 — Backend:**
 
 ```bash
 cd apps/backend
 pnpm dev
 ```
 
-The backend will start on `http://localhost:3000`
+Backend on `http://localhost:3000`.
 
-**Terminal 2 - Frontend:**
+**Terminal 2 — Frontend:**
 
 ```bash
 cd apps/web
 pnpm dev
 ```
 
-The frontend will start on `http://localhost:5173`
+Frontend on `http://localhost:5173`.
 
-## Step 6: Start Production Servers
+The dev server proxies `/api` and `/storage` through to port 3000, so the app
+sees a single origin and there is no CORS involved.
 
-Before starting production servers, you need to build the project:
+## Step 6: Running a Production Build Locally
 
-### Build the Project
-
-From the root directory:
+Build first:
 
 ```bash
 pnpm build
 ```
 
-This will build both the backend and frontend for production.
-
-### Option 1: Start All Services (Recommended)
-
-From the root directory:
+Then:
 
 ```bash
 pnpm start
 ```
 
-This will start both the backend and frontend in production mode.
+The backend serves the compiled API from `dist/`, and the frontend is served by
+`vite preview` on port 5173. Preview inherits the dev server's proxy
+configuration, so `/api` still reaches the backend.
 
-### Option 2: Start Services Separately
-
-**Terminal 1 - Backend:**
-
-```bash
-cd apps/backend
-pnpm start
-```
-
-The backend will start on `http://localhost:3000` (or the port specified in your `.env`)
-
-**Terminal 2 - Frontend:**
-
-```bash
-cd apps/web
-pnpm start
-```
-
-The frontend will start on `http://localhost:5173` (preview server for the production build)
-
-**Note:** The frontend `start` command runs `vite preview`, which serves the production build. For a true production server, you would typically use a server like Nginx or serve the `dist` folder with a static file server.
+This is a way to check that a production build behaves — it is not how you
+deploy. In a real deployment the backend serves the web bundle itself from one
+origin; see [DOCKER.md](DOCKER.md).
 
 ## Step 7: Access the Application
 
-Once both servers are running:
+- **Frontend:** [http://localhost:5173](http://localhost:5173)
+- **Backend API:** [http://localhost:3000](http://localhost:3000)
+- **API reference:** [http://localhost:3000/api/docs](http://localhost:3000/api/docs)
+- **OpenAPI document:** [http://localhost:3000/api/docs/openapi.json](http://localhost:3000/api/docs/openapi.json)
 
-- **Frontend:** Open [http://localhost:5173](http://localhost:5173) in your browser
-- **Backend API:** Available at [http://localhost:3000](http://localhost:3000)
-- **API Documentation:** [http://localhost:3000/api-docs](http://localhost:3000/api-docs) (if available)
+Every server route lives under `/api` or `/storage`. That is why the API
+reference sits at `/api/docs` and not `/docs` — the web app owns `/docs` and its
+sub-routes.
 
 ## First-Time Setup
 
 ### Create an Account
 
-1. Navigate to the signup page
-2. Create your account with email and password
-3. You'll be automatically logged in
+1. Open [http://localhost:5173](http://localhost:5173)
+2. Sign up with an email and password — no verification email is sent locally
+3. You are logged in automatically
+
+Sign-up is open only while the database has no users. Once the first account
+exists the API rejects further sign-ups, the login page stops offering the link,
+and `/signup` redirects to `/login` — so a second local account means resetting
+the database first, see [Database Issues](#database-issues).
 
 ### Initial Setup
 
-After logging in:
-
 1. Create your first **Space** (a container for organizing documents)
 2. Create your first **Document** within the space
-3. Start taking notes!
+3. Start taking notes
 
 ## Troubleshooting
 
+### `no such table: users` (or any other table)
+
+Migrations have not been applied. See [Step 4](#step-4-database-setup).
+
 ### Port Already in Use
 
-If you get a "port already in use" error:
+**Backend (3000):** change `PORT` in `apps/backend/.env`. If you do, the Vite
+proxy targets in `apps/web/vite.config.ts` need the same port.
 
-**Backend (port 3000):**
+**Frontend (5173):** the port is set twice in `apps/web/vite.config.ts` — under
+`server` for `pnpm dev` and under `preview` for `pnpm start` — both with
+`strictPort: true`, so Vite fails rather than silently picking another port.
+Change both, and add the new origin to `CLIENT_URL` in `apps/backend/.env` or
+sign-in will be rejected.
+
+### Sign-in fails with an origin or CORS error
+
+The address in your browser is not in `CLIENT_URL`. It is a list, so reaching the
+app over your LAN means adding that origin too:
 
 ```bash
-# Change PORT in apps/backend/.env
-PORT=3001
+CLIENT_URL=http://localhost:5173,http://192.168.1.20:5173
 ```
 
-**Frontend (port 5173):**
-
-```bash
-# The port is configured in apps/web/vite.config.ts
-# You can modify it or kill the process using the port
-```
+Reaching the app by hostname rather than by IP needs one more entry: that
+hostname has to be in `server.allowedHosts` in `apps/web/vite.config.ts`, which
+lists only `wordyme.test`. An unlisted hostname gets Vite's `Blocked request`
+before the request reaches the backend at all, so `CLIENT_URL` is not the fix.
+`localhost` and bare IP addresses are always allowed.
 
 ### Database Issues
 
-If you encounter database errors:
+Start over with an empty database:
 
-1. **Delete and recreate the database:**
+```bash
+cd apps/backend
+rm -f storage/local.db storage/local.db-wal storage/local.db-shm storage/local.db-journal
+pnpm drizzle-kit migrate
+```
 
-   ```bash
-   cd apps/backend
-   rm storage/local.db
-   # Restart the backend - it will create a new database
-   ```
-
-2. **Run migrations:**
-   ```bash
-   cd apps/backend
-   pnpm drizzle-kit migrate
-   ```
+This deletes all local data. The `-wal`, `-shm` and `-journal` companions are
+SQLite's own; one left behind after the server was killed mid-write can fail the
+next open, so they go with it. Uploaded files live alongside the database in
+`storage/` and are not removed by this.
 
 ### Dependency Issues
 
-If you encounter dependency-related errors:
-
 ```bash
-# Clean install
 rm -rf node_modules apps/*/node_modules packages/*/node_modules
-rm pnpm-lock.yaml
 pnpm install
 ```
 
+Do **not** delete `pnpm-lock.yaml` to fix an install. The lockfile carries
+pinned security overrides and dependency patches, and regenerating it silently
+resolves everything to whatever is newest — which changes what you are running
+and is rarely what you were trying to debug.
+
 ### Type Errors
 
-If you see TypeScript errors:
-
 ```bash
-# Type-check all packages
 pnpm check-types
-
-# If errors persist, rebuild packages
-pnpm build
 ```
+
+Workspace packages are consumed from source, so a type error in one package
+surfaces in the apps that import it.
 
 ### Build Errors
 
-If builds fail:
-
 ```bash
-# Clean build artifacts
 rm -rf apps/*/dist packages/*/dist
-
-# Rebuild
-pnpm build
+pnpm build --force
 ```
+
+`--force` is the point: `build` is a cached Turbo task, so deleting `dist/` on
+its own achieves nothing — the next build replays the same output from `.turbo/`
+instead of running `tsc` and `vite build` again.
 
 ## Development Tips
 
-### Hot Module Replacement (HMR)
+### Hot Module Replacement
 
-Both frontend and backend support hot reloading:
-
-- **Frontend:** Changes to React components will hot-reload automatically
-- **Backend:** Uses `tsx watch` for automatic restarts on file changes
-
-### Type Checking
-
-Run type checking in watch mode:
-
-```bash
-# In a separate terminal
-pnpm check-types --watch
-```
+- **Frontend:** React components hot-reload
+- **Backend:** `tsx watch` restarts on file changes
 
 ### Linting
 
-Lint your code:
-
 ```bash
-# Lint all packages
-pnpm lint
-
-# Lint specific package
-pnpm lint --filter=web
+pnpm lint                 # all packages
+pnpm lint --filter=web    # one package
 ```
 
 ### Code Formatting
 
-Format your code:
+```bash
+pnpm format
+```
+
+This also runs automatically on staged files when you commit.
+
+### Licence Headers
+
+Source files carry an SPDX header, added automatically by the pre-commit hook.
+To check or apply it by hand:
 
 ```bash
-# Format all files
-pnpm format
-
-# Format specific files
-pnpm format --write "apps/web/src/**/*.{ts,tsx}"
+pnpm license:check
+pnpm license:fix
 ```
 
 ## Project Structure Overview
@@ -306,32 +356,34 @@ pnpm format --write "apps/web/src/**/*.{ts,tsx}"
 ```
 WordyMe/
 ├── apps/
-│   ├── backend/        # Backend API (Express + libSQL)
-│   └── web/            # Frontend App (React + Vite)
+│   ├── backend/            # API (Express 5 + libSQL/SQLite + Socket.io)
+│   └── web/                # Web app (React 19 + Vite + TanStack Router)
 ├── packages/
-│   ├── editor/         # Rich text editor
-│   ├── ui/             # UI components
-│   ├── sdk/            # API client
-│   └── types/          # Type definitions
-└── package.json        # Root package.json
+│   ├── editor/             # Lexical-based rich text editor
+│   ├── embed-pdf/          # PDF viewer
+│   ├── ui/                 # Shared UI components
+│   ├── sdk/                # API client
+│   ├── lib/                # Shared utilities
+│   ├── shared/             # Code shared between apps
+│   ├── types/              # Shared type definitions
+│   ├── eslint-config/      # Shared ESLint configuration
+│   └── typescript-config/  # Shared TypeScript configuration
+└── package.json            # Workspace root
 ```
 
 ## Next Steps
 
 - Read the [README.md](README.md) for project documentation
-- Explore the codebase structure
-- Check out the API documentation at `/api-docs` when the backend is running
-- Review the component library in `packages/ui`
+- Run WordyMe in a container with [DOCKER.md](DOCKER.md)
+- Browse the API reference at `/api/docs` while the backend is running
 
 ## Getting Help
 
-If you encounter issues:
-
 1. Check the troubleshooting section above
-2. Review error messages in the terminal
-3. Check browser console for frontend errors
-4. Verify all environment variables are set correctly
-5. Ensure all dependencies are installed (`pnpm install`)
+2. Read the terminal output — the backend logs the trusted origins it started with
+3. Check the browser console for frontend errors
+4. Confirm migrations have been applied
+5. Confirm dependencies are installed (`pnpm install`)
 
 ## Additional Resources
 
@@ -339,3 +391,4 @@ If you encounter issues:
 - [Vite Documentation](https://vitejs.dev)
 - [TanStack Router](https://tanstack.com/router)
 - [Drizzle ORM](https://orm.drizzle.team)
+- [Better Auth](https://better-auth.com)
