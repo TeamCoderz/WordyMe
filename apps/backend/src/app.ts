@@ -18,6 +18,8 @@ import { env } from './env.js';
 // Error Middlewares
 import { errorHandler, notFoundHandler } from './middlewares/errors.js';
 import { clientIp } from './middlewares/client-ip.js';
+import { originHint } from './middlewares/origin-hint.js';
+import { proxyHint } from './middlewares/proxy-hint.js';
 
 // REST Routers
 import { documentsRouter } from './routes/documents.js';
@@ -49,6 +51,10 @@ app.use(
     skip: (req) => req.originalUrl.split('?')[0] === '/api/health',
   }),
 );
+
+app.use(proxyHint);
+
+app.use('/api/auth', originHint);
 
 app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
 

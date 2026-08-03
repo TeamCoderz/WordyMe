@@ -434,16 +434,113 @@ environment:
 
 All variables are read at runtime and can be changed without rebuilding the image:
 
-| Variable             | Description                                                      | Default                         |
-| -------------------- | ---------------------------------------------------------------- | ------------------------------- |
-| `BETTER_AUTH_SECRET` | Secret key for authentication. **Required — no default.**        | _(none; startup fails without)_ |
-| `CLIENT_URL`         | Comma-separated origins for CORS and Better Auth trusted origins | `http://localhost:8080`         |
-| `BETTER_AUTH_URL`    | Public origin, when it differs from the first `CLIENT_URL`       | _(unset)_                       |
-| `NODE_ENV`           | Node environment                                                 | `production`                    |
-| `PORT`               | Port the app listens on, inside the container                    | `8080`                          |
-| `DB_FILE_NAME`       | Database file path (absolute)                                    | `file:/app/storage/local.db`    |
-| `TRUST_PROXY`        | Set **only** behind a reverse proxy — see below                  | _(unset; not behind a proxy)_   |
-| `HOST_PORT`          | Host port compose publishes to (compose only)                    | `8080`                          |
+| Variable             | Description                                               | Default                         |
+| -------------------- | --------------------------------------------------------- | ------------------------------- |
+| `BETTER_AUTH_SECRET` | Secret key for authentication. **Required — no default.** | _(none; startup fails without)_ |
+| `TRUST_HOST`         | Accept the address each request arrives on — see below    | `true`                          |
+| `CLIENT_URL`         | Extra origins to trust, comma separated. Also sets CORS   | `http://localhost:8080`         |
+| `BETTER_AUTH_URL`    | Public address users type. **Set this when using HTTPS**  | _(unset)_                       |
+| `NODE_ENV`           | Node environment                                          | `production`                    |
+| `PORT`               | Port the app listens on, inside the container             | `8080`                          |
+| `DB_FILE_NAME`       | Database file path (absolute)                             | `file:/app/storage/local.db`    |
+| `TRUST_PROXY`        | Set **only** behind a reverse proxy — see below           | _(unset; not behind a proxy)_   |
+| `HOST_PORT`          | Host port compose publishes to (compose only)             | `8080`                          |
+
+#### Deployment scenarios
+
+The container cannot know the address you type into your browser. Better Auth
+refuses any request whose `Origin` it does not trust, which shows up as
+**`403 Invalid origin`** when you try to create an account — the page loads, the
+password is simply refused.
+
+`TRUST_HOST=true`, the default, solves this by accepting whichever host the
+request arrived on. Pick your row:
+
+| How you reach it                                         | What to set                                  |
+| -------------------------------------------------------- | -------------------------------------------- |
+| `http://localhost:8080` on the Docker host               | Nothing                                      |
+| `http://192.168.1.50:8080` — a Pi or NAS on your LAN     | Nothing                                      |
+| `http://wordy.local:8080` — a hostname                   | Nothing                                      |
+| `http://100.64.1.2:8080` — Tailscale or a VPN            | Nothing                                      |
+| `http://notes.example.com:8080` — a VPS, plain HTTP      | Nothing                                      |
+| `https://notes.example.com` — behind a reverse proxy     | `BETTER_AUTH_URL` and `TRUST_PROXY`, below   |
+| Deployed via **Coolify or Dokploy** with a domain        | Works as-is; two settings recommended, below |
+| A frontend hosted on a **different** origin from the API | Add that origin to `CLIENT_URL`              |
+
+**Is trusting the host safe?** Yes. It does not mean "trust everyone" — it means
+"trust the address this request was actually sent to". A browser always sets
+`Host` to the server it is talking to, so a malicious page on `evil.com` reaches
+you as `Origin: https://evil.com` with `Host: notes.example.com`. Those differ,
+so it is still refused. Cross-site request forgery protection is unchanged.
+
+Set `TRUST_HOST=false` if you would rather pin the app to an explicit list. Then
+only the origins in `CLIENT_URL` are accepted, which is how the app behaved
+before this option existed.
+
+#### Serving over HTTPS
+
+Two extra settings, and they matter:
+
+```bash
+BETTER_AUTH_URL=https://notes.example.com
+TRUST_PROXY=1
+```
+
+`BETTER_AUTH_URL` is what marks session cookies `Secure`, so the browser
+refuses to ever send them over an unencrypted connection. **Without an HTTPS
+address configured, cookies lack that flag** — they still work over HTTPS, but
+a downgrade or a stray `http://` link would send them in the clear. The
+container cannot detect TLS itself, because the proxy speaks plain HTTP to it.
+(An HTTPS origin in `CLIENT_URL` also enables the flag when `BETTER_AUTH_URL`
+is unset, but the canonical address belongs in `BETTER_AUTH_URL`.) The app
+warns at startup when `TRUST_PROXY` is set and no HTTPS address is configured
+in either variable.
+
+`TRUST_PROXY` is what makes login rate limiting see the real client address
+rather than the proxy's — see the section below.
+
+Setting `TRUST_PROXY` declares that your proxy owns every `X-Forwarded-*`
+header, so the proxy must **set or overwrite** them all — never pass a
+client-supplied value through. A header the proxy neglects becomes
+attacker-controlled: a forwarded `X-Forwarded-Host` would override the host
+used for origin checks, and a forwarded `X-Forwarded-For` would let clients
+pick their own rate-limit identity. Caddy and Traefik overwrite all of these
+and pass the original `Host` through by default; for nginx, set every one
+explicitly:
+
+```nginx
+proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+```
+
+Avoid listing both `http://` and `https://` origins in `CLIENT_URL`. Cookies
+carry a single `Secure` setting, so one of the two schemes will always be wrong.
+Set `BETTER_AUTH_URL` to the canonical address instead; the app warns if it sees
+a mixture.
+
+#### Coolify, Dokploy and similar platforms
+
+These platforms are the reverse-proxy case above with the proxy managed for you:
+their built-in Traefik terminates TLS for your domain and forwards plain HTTP to
+the container. Traefik passes the original `Host` header through by default, so
+with `TRUST_HOST` on, **sign-up and sign-in work with no configuration at all**.
+
+Three things to set in the platform's UI for a production install:
+
+1. `BETTER_AUTH_SECRET` — required; the container refuses to start without it.
+2. `BETTER_AUTH_URL=https://your-domain` and `TRUST_PROXY=1` — the two settings
+   from the section above. Each fixes its own thing, and the app works without
+   either: `BETTER_AUTH_URL` is what marks session cookies `Secure`, and
+   `TRUST_PROXY` is what stops login rate limiting seeing every user as the
+   proxy's address.
+3. A **persistent volume mounted at `/app/storage`** — otherwise the database
+   and every uploaded file are lost on each redeploy.
+
+Point the platform at container port `8080`. If you skip step 2, the app logs a
+one-time hint when it notices forwarded HTTPS traffic, naming exactly these
+settings.
 
 #### `TRUST_PROXY` and login rate limiting
 

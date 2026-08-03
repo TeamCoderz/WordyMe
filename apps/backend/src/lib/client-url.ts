@@ -22,12 +22,17 @@ export const clientUrlWarning = ({
   port,
   servesWebBundle,
   behindProxy,
+  trustHost,
 }: {
   clientUrls: string[];
   port: number;
   servesWebBundle: boolean;
   behindProxy: boolean;
+  trustHost: boolean;
 }): string | null => {
+  // With TRUST_HOST on, the host a request arrives at is trusted regardless of
+  // what CLIENT_URL names, so a port mismatch is no longer a failure.
+  if (trustHost) return null;
   if (!servesWebBundle || behindProxy) return null;
   if (clientUrls.some((origin) => originPort(origin) === port)) return null;
 
