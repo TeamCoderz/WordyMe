@@ -7,6 +7,20 @@ import type { RequestHandler } from 'express';
 import { env } from '../env.js';
 
 /**
+ * Makes a request-derived value safe to put in a log line. These values are
+ * attacker-controlled: embedded newlines would let a client forge entire log
+ * entries, and ANSI escape bytes can restyle or hide text in the terminal of
+ * whoever runs `docker logs`. Control characters become spaces rather than
+ * being dropped so the length of what was sent stays visible, and anything
+ * absurdly long is cut — no legitimate Origin or path is 300 characters.
+ */
+const sanitizeForLog = (value: string): string => {
+  // eslint-disable-next-line no-control-regex
+  const cleaned = value.replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ');
+  return cleaned.length > 300 ? `${cleaned.slice(0, 300)}…` : cleaned;
+};
+
+/**
  * Explains origin rejections in the server log.
  *
  * Better Auth answers an untrusted `Origin` with a bare `403 Invalid origin`.
@@ -27,9 +41,9 @@ export const originHint: RequestHandler = (req, res, next) => {
       console.warn(
         [
           '',
-          `  ⚠  403 on ${req.method} ${req.originalUrl} from Origin: ${origin}`,
+          `  ⚠  403 on ${req.method} ${sanitizeForLog(req.originalUrl)} from Origin: ${sanitizeForLog(origin)}`,
           '',
-          `     Host header   ${req.headers.host ?? '(none)'}`,
+          `     Host header   ${sanitizeForLog(req.headers.host ?? '(none)')}`,
           `     CLIENT_URL    ${env.CLIENT_URL.join(', ')}`,
           `     TRUST_HOST    ${env.TRUST_HOST}`,
           '',

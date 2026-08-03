@@ -54,7 +54,7 @@ export const envSchema = z.object({
       if (['false', '0', 'no', 'off'].includes(normalised)) return false;
       return val;
     },
-    z.boolean({ message: 'TRUST_HOST must be true or false.' }).default(true),
+    z.boolean({ error: 'TRUST_HOST must be true or false.' }).default(true),
   ),
   /** Public origin of the auth API (same as the web app when using the Nginx proxy). Overrides first CLIENT_URL for Better Auth `baseURL`. */
   BETTER_AUTH_URL: z.preprocess(

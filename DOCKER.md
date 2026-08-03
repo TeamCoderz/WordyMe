@@ -486,20 +486,31 @@ BETTER_AUTH_URL=https://notes.example.com
 TRUST_PROXY=1
 ```
 
-`BETTER_AUTH_URL` is what marks session cookies `Secure`, so the browser will
-only ever send them over an encrypted connection. **Without it your sessions are
-sent in the clear**, because the container is spoken to over plain HTTP by the
-proxy and has no way to tell that users are on HTTPS. The app warns at startup
-when `TRUST_PROXY` is set and no HTTPS address is configured.
+`BETTER_AUTH_URL` is what marks session cookies `Secure`, so the browser
+refuses to ever send them over an unencrypted connection. **Without an HTTPS
+address configured, cookies lack that flag** — they still work over HTTPS, but
+a downgrade or a stray `http://` link would send them in the clear. The
+container cannot detect TLS itself, because the proxy speaks plain HTTP to it.
+(An HTTPS origin in `CLIENT_URL` also enables the flag when `BETTER_AUTH_URL`
+is unset, but the canonical address belongs in `BETTER_AUTH_URL`.) The app
+warns at startup when `TRUST_PROXY` is set and no HTTPS address is configured
+in either variable.
 
 `TRUST_PROXY` is what makes login rate limiting see the real client address
 rather than the proxy's — see the section below.
 
-Your proxy must pass the original `Host` header through. Caddy and Traefik do
-this by default; for nginx add:
+Setting `TRUST_PROXY` declares that your proxy owns every `X-Forwarded-*`
+header, so the proxy must **set or overwrite** them all — never pass a
+client-supplied value through. A header the proxy neglects becomes
+attacker-controlled: a forwarded `X-Forwarded-Host` would override the host
+used for origin checks, and a forwarded `X-Forwarded-For` would let clients
+pick their own rate-limit identity. Caddy and Traefik overwrite all of these
+and pass the original `Host` through by default; for nginx, set every one
+explicitly:
 
 ```nginx
 proxy_set_header Host $host;
+proxy_set_header X-Forwarded-Host $host;
 proxy_set_header X-Forwarded-Proto $scheme;
 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 ```
@@ -520,9 +531,10 @@ Three things to set in the platform's UI for a production install:
 
 1. `BETTER_AUTH_SECRET` — required; the container refuses to start without it.
 2. `BETTER_AUTH_URL=https://your-domain` and `TRUST_PROXY=1` — the two settings
-   from the section above. Without them the app still works, but session
-   cookies are not marked `Secure` and login rate limiting sees every user as
-   the proxy's address.
+   from the section above. Each fixes its own thing, and the app works without
+   either: `BETTER_AUTH_URL` is what marks session cookies `Secure`, and
+   `TRUST_PROXY` is what stops login rate limiting seeing every user as the
+   proxy's address.
 3. A **persistent volume mounted at `/app/storage`** — otherwise the database
    and every uploaded file are lost on each redeploy.
 

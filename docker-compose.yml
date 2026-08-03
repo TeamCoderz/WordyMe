@@ -18,7 +18,7 @@ services:
       - TRUST_HOST=${TRUST_HOST:-true}
       # Extra origins to trust, on top of the one above. Only needed when the
       # frontend is served from a different origin than the API.
-      - CLIENT_URL=${CLIENT_URL:-http://localhost:8080}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:${HOST_PORT:-8080}}
       # Set to the address users type when serving over HTTPS. This is what
       # marks session cookies Secure — without it they travel in the clear.
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-}
