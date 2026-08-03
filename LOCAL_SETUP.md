@@ -13,14 +13,21 @@ see [DOCKER.md](DOCKER.md). That path is a single command and needs no toolchain
 
 ### Installing pnpm
 
-The repository pins its package manager in `package.json`, so the least
-error-prone option is Corepack, which ships with Node and reads that pin:
+The repository pins its package manager in `package.json`, and Corepack reads
+that pin, so it is the least error-prone option:
 
 ```bash
 corepack enable
 ```
 
-Otherwise install it yourself:
+Corepack shipped with Node through v24. It is no longer part of the official
+Node 25+ distributions, so on those you install it first:
+
+```bash
+npm install -g corepack
+```
+
+Otherwise install pnpm yourself:
 
 ```bash
 # Using npm
@@ -76,20 +83,32 @@ echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> apps/backend/.env
 
 **Do not skip this.** Better Auth does not fail when `BETTER_AUTH_SECRET` is
 missing and logs no warning — it quietly falls back to a hard-coded default that
-is the same in every install. Anything signed with it, including your session
-cookies, can be forged by anyone. Locally that is a small thing; the moment you
-expose the port to your network, or reuse the file on a server, it is not.
+is the same in every install. It refuses to start only under
+`NODE_ENV=production`, which nothing in local development sets. Anything signed
+with that default, including your session cookies, can be forged by anyone.
+Locally that is a small thing; the moment you expose the port to your network, or
+reuse the file on a server, it is not.
 
 Changing this value later invalidates existing sessions and logs everyone out.
 
 The remaining settings have working defaults:
 
-| Variable       | Default                 | Notes                                         |
-| -------------- | ----------------------- | --------------------------------------------- |
-| `PORT`         | `3000`                  | Backend port                                  |
-| `DB_FILE_NAME` | `file:storage/local.db` | Created on first migration                    |
-| `CLIENT_URL`   | `http://localhost:5173` | Trusted origins — must match your browser URL |
-| `TRUST_PROXY`  | unset                   | Leave unset locally                           |
+| Variable          | Default                 | Notes                                         |
+| ----------------- | ----------------------- | --------------------------------------------- |
+| `PORT`            | `3000`                  | Backend port                                  |
+| `DB_FILE_NAME`    | `file:storage/local.db` | Created on first migration                    |
+| `CLIENT_URL`      | `http://localhost:5173` | Trusted origins — must match your browser URL |
+| `BETTER_AUTH_URL` | first `CLIENT_URL`      | Public origin of the auth API                 |
+| `TRUST_PROXY`     | unset                   | Leave unset locally                           |
+
+Upgrading an existing clone? `DB_FILE_NAME` used to default to `file:local.db`.
+An `.env` you already have keeps working untouched, but if you replace it from
+the template, bring the database with it — otherwise you are pointed at a new,
+empty one, which looks exactly like skipping [Step 4](#step-4-database-setup):
+
+```bash
+mv apps/backend/local.db apps/backend/storage/local.db
+```
 
 ### Frontend
 
@@ -138,7 +157,7 @@ Commit the generated file along with your schema change.
 
 ### Option 1: Start Everything (Recommended)
 
-From the root directory:
+From the root directory — `cd ../..` if Step 4 left you in `apps/backend`:
 
 ```bash
 pnpm dev
@@ -210,6 +229,11 @@ sub-routes.
 2. Sign up with an email and password — no verification email is sent locally
 3. You are logged in automatically
 
+Sign-up is open only while the database has no users. Once the first account
+exists the API rejects further sign-ups, the login page stops offering the link,
+and `/signup` redirects to `/login` — so a second local account means resetting
+the database first, see [Database Issues](#database-issues).
+
 ### Initial Setup
 
 1. Create your first **Space** (a container for organizing documents)
@@ -227,9 +251,10 @@ Migrations have not been applied. See [Step 4](#step-4-database-setup).
 **Backend (3000):** change `PORT` in `apps/backend/.env`. If you do, the Vite
 proxy targets in `apps/web/vite.config.ts` need the same port.
 
-**Frontend (5173):** the port is set in `apps/web/vite.config.ts` with
-`strictPort: true`, so Vite fails rather than silently picking another port. If
-you change it, add the new origin to `CLIENT_URL` in `apps/backend/.env` or
+**Frontend (5173):** the port is set twice in `apps/web/vite.config.ts` — under
+`server` for `pnpm dev` and under `preview` for `pnpm start` — both with
+`strictPort: true`, so Vite fails rather than silently picking another port.
+Change both, and add the new origin to `CLIENT_URL` in `apps/backend/.env` or
 sign-in will be rejected.
 
 ### Sign-in fails with an origin or CORS error
@@ -241,18 +266,26 @@ app over your LAN means adding that origin too:
 CLIENT_URL=http://localhost:5173,http://192.168.1.20:5173
 ```
 
+Reaching the app by hostname rather than by IP needs one more entry: that
+hostname has to be in `server.allowedHosts` in `apps/web/vite.config.ts`, which
+lists only `wordyme.test`. An unlisted hostname gets Vite's `Blocked request`
+before the request reaches the backend at all, so `CLIENT_URL` is not the fix.
+`localhost` and bare IP addresses are always allowed.
+
 ### Database Issues
 
 Start over with an empty database:
 
 ```bash
 cd apps/backend
-rm storage/local.db
+rm -f storage/local.db storage/local.db-wal storage/local.db-shm storage/local.db-journal
 pnpm drizzle-kit migrate
 ```
 
-This deletes all local data. Uploaded files live alongside it in `storage/` and
-are not removed by this.
+This deletes all local data. The `-wal`, `-shm` and `-journal` companions are
+SQLite's own; one left behind after the server was killed mid-write can fail the
+next open, so they go with it. Uploaded files live alongside the database in
+`storage/` and are not removed by this.
 
 ### Dependency Issues
 
@@ -279,8 +312,12 @@ surfaces in the apps that import it.
 
 ```bash
 rm -rf apps/*/dist packages/*/dist
-pnpm build
+pnpm build --force
 ```
+
+`--force` is the point: `build` is a cached Turbo task, so deleting `dist/` on
+its own achieves nothing — the next build replays the same output from `.turbo/`
+instead of running `tsc` and `vite build` again.
 
 ## Development Tips
 
@@ -288,13 +325,6 @@ pnpm build
 
 - **Frontend:** React components hot-reload
 - **Backend:** `tsx watch` restarts on file changes
-
-### Tests
-
-```bash
-cd apps/web
-pnpm test
-```
 
 ### Linting
 
@@ -332,7 +362,7 @@ WordyMe/
 │   ├── editor/             # Lexical-based rich text editor
 │   ├── embed-pdf/          # PDF viewer
 │   ├── ui/                 # Shared UI components
-│   ├── sdk/                # Generated API client
+│   ├── sdk/                # API client
 │   ├── lib/                # Shared utilities
 │   ├── shared/             # Code shared between apps
 │   ├── types/              # Shared type definitions
