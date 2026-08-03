@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.2.0](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...v1.1.0) (2026-08-03)
+
+### Bug Fixes
+
+* **security:** update body-parser past CVE-2026-12590 ([#77](https://github.com/TeamCoderz/WordyMe/issues/77)) ([6095185](https://github.com/TeamCoderz/WordyMe/commit/60951852682d798ed682b76ab288160c79f901d2))
+
+## [1.1.0](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...v1.1.0) (2026-08-02)
+
+### Features
+
+* **ci:** publish multi-arch images to Docker Hub and GHCR on release ([#68](https://github.com/TeamCoderz/WordyMe/issues/68)) ([bab824e](https://github.com/TeamCoderz/WordyMe/commit/bab824e305302f63c892c9c0694c942a34704746))
+* **docker:** handle signals, restore rate limiting, and harden the container ([cbcfe5d](https://github.com/TeamCoderz/WordyMe/commit/cbcfe5d0d4107a82c56646aa72fd3f32d1a27c89)), closes [#61](https://github.com/TeamCoderz/WordyMe/issues/61) [#60](https://github.com/TeamCoderz/WordyMe/issues/60)
+* **docker:** serve the web bundle from Express as one all-in-one image ([a6b518c](https://github.com/TeamCoderz/WordyMe/commit/a6b518cdd0c88848f21f37259c1da795f964414f))
+
+### Bug Fixes
+
+* **backend:** never let a client-supplied X-Forwarded-For reach the rate limiter ([c32c059](https://github.com/TeamCoderz/WordyMe/commit/c32c0593fe0c37f2175705564c6f016edd0a4792))
+* **ci:** give the Docker Hub listing its own page and never fail a re… ([#74](https://github.com/TeamCoderz/WordyMe/issues/74)) ([67241fd](https://github.com/TeamCoderz/WordyMe/commit/67241fd72778643596259198fb93171fac780207))
+* **ci:** tag the release commit so the image is built from it ([baf3090](https://github.com/TeamCoderz/WordyMe/commit/baf3090918d6b60c8e004e42115fd0bef8fbeef5))
+
+### Performance Improvements
+
+* **docker:** halve the image by not installing optional peer dependencies ([f27f386](https://github.com/TeamCoderz/WordyMe/commit/f27f3863ca3fbf3e0c7b01b7faa4be275edbfc8b))
+
 ## [](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...vnull) (2026-08-02)
 
 ### Features
