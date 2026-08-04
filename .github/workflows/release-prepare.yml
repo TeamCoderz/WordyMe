@@ -50,14 +50,18 @@ concurrency:
   group: release-prepare
   cancel-in-progress: false
 
+# Nothing by default; each job asks for exactly what it needs. A job added
+# later without its own block gets no permissions instead of GitHub's defaults.
+permissions: {}
+
 jobs:
   prepare:
     name: Prepare release branch
     runs-on: ubuntu-latest
     permissions:
-      # Pushing the release branch. No `pull-requests: write` — see the note at
-      # the top about why this job does not open the pull request.
-      contents: write
+      # No `pull-requests: write` — see the note at the top about why this job
+      # does not open the pull request.
+      contents: write # push the release/vX.Y.Z branch
 
     steps:
       - name: Checkout main

@@ -30,6 +30,10 @@ concurrency:
   group: release-publish
   cancel-in-progress: false
 
+# Nothing by default; each job asks for exactly what it needs. A job added
+# later without its own block gets no permissions instead of GitHub's defaults.
+permissions: {}
+
 env:
   # Both registries are published in parallel. GHCR is the one documented as the
   # default pull source: Docker Hub throttles unauthenticated pulls to 100 per
@@ -88,7 +92,7 @@ jobs:
     if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: write # push the version tag and create the GitHub release
 
     steps:
       - name: Checkout
