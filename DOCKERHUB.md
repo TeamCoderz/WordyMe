@@ -26,12 +26,22 @@ Or with plain `docker run`:
 docker run -d \
   -p 8080:8080 \
   -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
-  -e CLIENT_URL=http://localhost:8080 \
   -v wordyme-storage:/app/storage \
   teamcoderz/wordyme:latest
 ```
 
-`BETTER_AUTH_SECRET` is required — it signs session cookies and deliberately has no default. `CLIENT_URL` must match the address you open in the browser, or sign-in is rejected.
+`BETTER_AUTH_SECRET` is the only required setting — it signs session cookies and deliberately has no default.
+
+**Reaching it from another machine** — a Pi or NAS on your LAN, a VPS by domain, a Tailscale address — needs no extra configuration. The app accepts whichever address the request arrives on, so `http://192.168.1.50:8080` works as-is. This is not "trust anyone": the browser's `Origin` still has to match the `Host` it sent, so a page on another site cannot act on your session.
+
+**Serving over HTTPS** behind a reverse proxy needs two settings, and the first matters:
+
+```console
+  -e BETTER_AUTH_URL=https://notes.example.com \
+  -e TRUST_PROXY=1 \
+```
+
+`BETTER_AUTH_URL` is what marks session cookies `Secure`; the container is spoken to over plain HTTP by the proxy and cannot detect TLS by itself. `TRUST_PROXY` makes login rate limiting see the real client rather than the proxy. The app logs a one-time hint if it notices forwarded HTTPS traffic without these set.
 
 ## Tags
 
