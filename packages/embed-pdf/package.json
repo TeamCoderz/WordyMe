@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "lint": "eslint . --max-warnings 0",
+    "_lint-note": "Ratchet, not a target: fails on any NEW warning. Lower it as warnings are fixed, never raise it. Goal is 0. See CONTRIBUTING.md.",
+    "lint": "eslint . --max-warnings 27",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

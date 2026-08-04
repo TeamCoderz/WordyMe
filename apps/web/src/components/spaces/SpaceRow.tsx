@@ -139,7 +139,6 @@ export function SpaceRow({
   // Update renameValue when renamingSpaceId changes
   useEffect(() => {
     if (renamingSpaceId === space.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRenameValue(space.name);
     }
   }, [renamingSpaceId, space.id, space.name]);

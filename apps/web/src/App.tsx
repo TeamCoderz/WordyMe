@@ -49,7 +49,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-// eslint-disable-next-line react-refresh/only-export-components
 
 export const App = () => {
   const { data: session, isPending, isRefetching } = authClient.useSession();

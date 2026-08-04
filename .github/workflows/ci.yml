@@ -1,0 +1,117 @@
+name: CI
+
+# Gate for pull requests: nothing merges that fails to lint, type-check, build,
+# or that produces an image which will not come up healthy.
+#
+# Originally proposed in #42. Rewritten here against a tree that has moved a
+# long way since: Node 22, actions on the node24 runtime, and a compose file
+# that now refuses to start without a signing secret.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+concurrency:
+  # Supersede in-flight runs for the same ref. A superseded run tells you
+  # nothing, and the queue is shared with the release workflow.
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint, type-check, build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Nothing here pushes, so there is no reason to leave the token in
+          # .git/config for later steps to reach.
+          persist-credentials: false
+
+      # Before setup-node: `cache: 'pnpm'` shells out to pnpm to locate the
+      # store, so pnpm has to exist first.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Restore turbo cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-turbo-
+
+      # --frozen-lockfile fails rather than silently resolving a different tree,
+      # so a lockfile that was not committed alongside a manifest change is
+      # caught here instead of in a release.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type-check
+        run: pnpm check-types
+
+      - name: Build
+        run: pnpm build
+
+  docker:
+    name: Docker stack health
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      # The compose file has no default for BETTER_AUTH_SECRET and refuses to
+      # start without one — deliberately, so a published default can never sign
+      # anyone's sessions. Generate a throwaway for this run.
+      - name: Generate a throwaway signing secret
+        run: |
+          umask 077
+          echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
+
+      - name: Build image
+        run: docker compose build
+
+      # --wait blocks on the HEALTHCHECK in the Dockerfile, so this asserts the
+      # app actually serves /api/health — not merely that the container started.
+      - name: Start stack and wait for healthchecks
+        run: docker compose up -d --wait --wait-timeout 180
+
+      - name: Check the app answers on its published port
+        run: |
+          set -euo pipefail
+          CODE="$(curl -sS -o /dev/null -w '%{http_code}' --max-time 10 http://localhost:8080/api/health)"
+          echo "GET /api/health -> $CODE"
+          [ "$CODE" = "200" ] || { echo "::error::health endpoint returned $CODE"; exit 1; }
+
+      - name: Dump compose state on failure
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v

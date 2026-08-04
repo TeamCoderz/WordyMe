@@ -30,8 +30,14 @@ export default function AvatarControls() {
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent>
             <AvatarCropper
+              // The `|| null` this replaces could never fire: a template
+              // literal containing "/" is always truthy, so a user with no
+              // avatar was handed the string "/" instead of the null the
+              // cropper expects.
               image={
-                `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user?.avatar_image?.url ?? ''}` || null
+                user?.avatar_image?.url
+                  ? `${import.meta.env.VITE_BACKEND_URL ?? ''}/${user.avatar_image.url}`
+                  : null
               }
               isNewUpload={false}
               onClose={() => setEditOpen(false)}

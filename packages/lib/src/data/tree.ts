@@ -5,11 +5,24 @@
 
 import { generatePositionKeyBetween } from '../utils/position.js';
 
+/**
+ * Minimum shape a value needs to sit in a tree. Deliberately has no index
+ * signature: TypeScript does not give interfaces implicit index signatures, so
+ * one here would reject every `interface` callers actually pass — `Space`,
+ * `ListSpaceResultItem` — while `[key: string]: any` only hid that by opting
+ * the whole type out of checking. Nothing in this module reads arbitrary keys,
+ * so the constraint does not need them.
+ */
 export interface TreeNodeData {
   id: string;
   parentId?: string | null;
   position?: string | null;
-  [key: string]: any;
+}
+
+/** Shape `jsonToTree` walks: a plain object mirroring a serialized tree. */
+interface TreeNodeJson<T extends TreeNodeData> {
+  data: T;
+  children?: TreeNodeJson<T>[];
 }
 
 export interface SerializedTreeNode<T extends TreeNodeData = TreeNodeData> {
@@ -147,10 +160,10 @@ export class TreeNode<T extends TreeNodeData = TreeNodeData> {
 /**
  * Creates a tree from a serialized object
  */
-export function jsonToTree<T extends TreeNodeData>(obj: any): TreeNode<T> {
+export function jsonToTree<T extends TreeNodeData>(obj: TreeNodeJson<T>): TreeNode<T> {
   const node = new TreeNode<T>(obj.data as T);
   if (Array.isArray(obj.children)) {
-    obj.children.forEach((childObj: any) => {
+    obj.children.forEach((childObj) => {
       const childNode = jsonToTree<T>(childObj);
       node.addChild(childNode);
     });

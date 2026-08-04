@@ -150,7 +150,7 @@ export function useUpdateRevisionNameMutation({
         invalidate([
           getDocumentByHandleQueryOptions(document?.handle ?? '').queryKey,
           getLocalRevisionByDocumentIdQueryOptions(document?.id, document?.currentRevisionId, true)
-            .queryKey as string[],
+            .queryKey,
         ]);
       }
     },
