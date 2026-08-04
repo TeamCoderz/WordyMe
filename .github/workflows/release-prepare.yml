@@ -99,8 +99,9 @@ jobs:
         env:
           INCREMENT: ${{ inputs.increment }}
           PREID: ${{ inputs.preid }}
+          # For the branch push only. release-it itself needs no token here:
+          # the GitHub release is created later by release-publish.yml.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
 
@@ -126,6 +127,11 @@ jobs:
           fi
 
           VERSION=$(node -pe "require('./package.json').version")
+
+          # This commit is made by the bot, so the pre-commit format hook never
+          # runs on it. Format here, or every release adds `*` bullets that the
+          # next human commit churns back to `-`.
+          pnpm exec prettier --write CHANGELOG.md package.json
 
           BRANCH="release/v$VERSION"
 
