@@ -21,6 +21,15 @@ on:
     branches:
       - main
 
+concurrency:
+  # One evaluation at a time. Two merges landing close together would otherwise
+  # race: both could see an untagged version before either pushes the tag, and
+  # the loser would fail red on the tag push. Serialised, the second run sees
+  # the tag and skips cleanly. No cancel-in-progress — interrupting a
+  # half-finished publish is worse than queueing behind it.
+  group: release-publish
+  cancel-in-progress: false
+
 env:
   # Both registries are published in parallel. GHCR is the one documented as the
   # default pull source: Docker Hub throttles unauthenticated pulls to 100 per
@@ -86,7 +95,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # The tag push below authenticates explicitly; nothing else in this
+          # job needs git credentials.
+          persist-credentials: false
 
       - name: Configure Git user
         run: |
@@ -96,12 +107,15 @@ jobs:
       - name: Create and push the tag
         env:
           VERSION: ${{ needs.check.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           # Annotated rather than lightweight: it carries an author and date, and
           # `--follow-tags` elsewhere only pushes annotated tags.
           git tag -a "v$VERSION" -m "v$VERSION"
-          git push origin "v$VERSION"
+
+          # Authenticated for this one command only — see the checkout above.
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "v$VERSION"
 
       - name: Create the GitHub release
         env:

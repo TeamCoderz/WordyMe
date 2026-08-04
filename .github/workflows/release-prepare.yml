@@ -43,6 +43,13 @@ on:
           - beta
           - rc
 
+concurrency:
+  # Two people pressing the button at once would compute the same version and
+  # fight over the same branch. Serialised, the second run hits the
+  # branch-already-exists check and fails with its clear message instead.
+  group: release-prepare
+  cancel-in-progress: false
+
 jobs:
   prepare:
     name: Prepare release branch
@@ -58,7 +65,10 @@ jobs:
         with:
           # release-it reads the commit history to build the changelog.
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          # The push at the end authenticates explicitly instead. Persisting the
+          # token here would leave it in .git/config for every later step —
+          # including pnpm install's lifecycle scripts — to read.
+          persist-credentials: false
 
       - name: Setup Node.js
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -111,7 +121,11 @@ jobs:
           git checkout -b "$BRANCH"
           git add package.json CHANGELOG.md
           git commit -m "chore: release v$VERSION"
-          git push origin "$BRANCH"
+
+          # Authenticated for this one command only — the checkout deliberately
+          # does not persist credentials. The token never appears in logs
+          # regardless: GitHub masks secret values in workflow output.
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$BRANCH"
 
           {
             echo "version=$VERSION"
