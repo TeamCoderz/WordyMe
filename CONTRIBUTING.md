@@ -236,10 +236,17 @@ run on ESLint 10, so nobody had seen a complete lint result in months. Most of
 what surfaced is behavioural (React Compiler correctness, hook dependencies,
 conditionally-called hooks) and wants reviewing one case at a time, not a sweep.
 
-The rule: **the number may go down, never up.** Adding a warning fails the
-build. If a fix lowers the count, lower the ceiling in the same pull request.
-The goal for all four is `0`; every other package is already there and is
-pinned at `--max-warnings 0`.
+The rule: **the number may go down, never up.** If a fix lowers the count, lower
+the ceiling in the same pull request. The goal for all four is `0`; every other
+package is already there and is pinned at `--max-warnings 0`.
+
+Be aware of what `--max-warnings` does and does not catch. It compares the
+**total** count against the ceiling, so it fails a pull request that pushes the
+total over — but a new warning introduced alongside a fix elsewhere nets to zero
+and passes. It is a ceiling, not a per-warning diff. Closing that gap properly
+needs a baseline file committed to the repository and compared per run, which is
+worth doing once the counts are small enough that the baseline is not itself
+noise.
 
 ---
 
