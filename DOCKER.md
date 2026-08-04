@@ -869,16 +869,29 @@ process exits anyway rather than waiting to be killed.
 
 ## How images are published
 
-Images are built and pushed by the **Manual Release** workflow
-(`.github/workflows/release.yml`). Running that workflow bumps the version,
-writes the changelog, tags the commit, creates the GitHub release, and then
-builds and publishes the image — in that order, from the tag it just created.
+Releasing is two steps, with a pull request in the middle.
 
-The image build lives inside the release workflow rather than in a separate
-`on: push: tags` workflow, and that is deliberate. The release job pushes its
-tag using the default `GITHUB_TOKEN`, and GitHub does not start new workflow
-runs from events created with that token — a tag-triggered workflow would never
-fire.
+**Prepare Release** (`.github/workflows/release-prepare.yml`) is run by hand.
+It bumps the version, writes the changelog, commits that to a `release/vX.Y.Z`
+branch and pushes it. Nothing is tagged or published. A maintainer then opens
+the pull request the run summary links to, and merges it once the checks pass.
+
+**Publish Release** (`.github/workflows/release-publish.yml`) fires on that
+merge. It tags the commit, creates the GitHub release, and builds and publishes
+the image from the tag.
+
+The split exists because `main` requires status checks. A version bump pushed
+straight there has never existed anywhere CI could run, so the checks can never
+appear on it and the push is refused. Routing it through a branch means the
+release commit is tested like any other change, and no bypass or long-lived
+token is needed.
+
+Two consequences of the same GitHub behaviour are worth knowing, because both
+shaped the design: GitHub does not start workflow runs from events created with
+`GITHUB_TOKEN`. That is why the prepare workflow does not open the pull request
+itself — one it opened would sit with no checks and could never be merged — and
+why tagging and publishing stay in a single run rather than splitting into an
+`on: push: tags` workflow, which would never fire.
 
 What each release produces:
 

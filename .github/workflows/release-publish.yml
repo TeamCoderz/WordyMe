@@ -1,30 +1,25 @@
-name: Manual Release
+name: Publish Release
+
+# Step 2 of 2. Triggered by merging the pull request that Prepare Release opened.
+#
+# It runs on every push to main and exits in seconds unless the version in
+# package.json has no matching tag. That check, rather than matching the commit
+# message, is what decides whether to release:
+#
+#   - it survives someone editing the squash-merge title
+#   - it is self-healing: if a release half-fails, merging nothing and simply
+#     re-running this workflow finishes the job
+#   - it cannot double-publish, because the tag it creates makes the condition
+#     false forever after
+#
+# Tagging and publishing stay in one run on purpose. A tag pushed with
+# GITHUB_TOKEN does not start new workflow runs, so a separate
+# `on: push: tags` workflow would never fire.
 
 on:
-  workflow_dispatch:
-    inputs:
-      increment:
-        description: 'Version increment type'
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prepatch
-          - preminor
-          - premajor
-          - prerelease
-      preid:
-        description: 'Pre-release identifier (only used with pre* increments)'
-        required: false
-        type: choice
-        default: 'none'
-        options:
-          - none
-          - alpha
-          - beta
-          - rc
+  push:
+    branches:
+      - main
 
 env:
   # Both registries are published in parallel. GHCR is the one documented as the
@@ -37,105 +32,101 @@ env:
   GHCR_IMAGE: ghcr.io/teamcoderz/wordyme
 
 jobs:
-  release:
+  # ==========================================================================
+  # Is this a release commit?
+  # ==========================================================================
+  check:
+    name: Check for an unreleased version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.detect.outputs.version }}
+      release: ${{ steps.detect.outputs.release }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Tags are needed to answer "has this version already been released?".
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Compare package.json against the existing tags
+        id: detect
+        run: |
+          set -euo pipefail
+          VERSION=$(node -pe "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse -q --verify "refs/tags/v$VERSION" >/dev/null; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "v$VERSION is already tagged — nothing to publish."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "v$VERSION has no tag — publishing."
+          fi
+
+  # ==========================================================================
+  # Tag the release commit
+  # ==========================================================================
+  # Separate from publish so that publish can check out with
+  # persist-credentials: false. Publish runs several third-party actions, and
+  # only this job needs a token able to write.
+  tag:
+    name: Tag and create the GitHub release
+    needs: check
+    if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      issues: write
-      pull-requests: write
-
-    # Consumed by the publish job so it builds the tag this job just created,
-    # rather than the commit the workflow started from.
-    outputs:
-      version: ${{ steps.standard.outputs.version || steps.prerelease.outputs.version }}
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: '22'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
 
       - name: Configure Git user
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Run release (standard version)
-        id: standard
-        if: inputs.preid == 'none' || inputs.preid == ''
-        run: |
-          npm version ${{ inputs.increment }} --no-git-tag-version
-          VERSION=$(node -pe "require('./package.json').version")
-
-          # Changelog only. The GitHub release is created at the end, once the
-          # tag exists: asking GitHub to release a tag that is not there yet
-          # makes it create one itself, at the default branch's HEAD — which is
-          # the commit *before* the release commit below.
-          npx release-it --ci --no-increment --no-github.release
-
-          git add package.json CHANGELOG.md
-          git commit -m "chore: release v$VERSION"
-
-          # Annotated, not lightweight: `git push --follow-tags` pushes only
-          # annotated tags, so a lightweight one never leaves the runner.
-          git tag -a "v$VERSION" -m "v$VERSION"
-          git push --follow-tags
-
-          awk '/^## /{n++; if (n>1) exit} n>=1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-          gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
-
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Create and push the tag
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Run release (pre-release version)
-        id: prerelease
-        if: inputs.preid != 'none' && inputs.preid != ''
+          VERSION: ${{ needs.check.outputs.version }}
         run: |
-          npm version ${{ inputs.increment }} --preid=${{ inputs.preid }} --no-git-tag-version
-          VERSION=$(node -pe "require('./package.json').version")
-
-          # See the standard step above for why the GitHub release is created
-          # last rather than here.
-          npx release-it --ci --no-increment --no-github.release
-
-          git add package.json CHANGELOG.md
-          git commit -m "chore: release v$VERSION"
-
+          set -euo pipefail
+          # Annotated rather than lightweight: it carries an author and date, and
+          # `--follow-tags` elsewhere only pushes annotated tags.
           git tag -a "v$VERSION" -m "v$VERSION"
-          git push --follow-tags
+          git push origin "v$VERSION"
 
-          awk '/^## /{n++; if (n>1) exit} n>=1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-          gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --prerelease
-
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+      - name: Create the GitHub release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.check.outputs.version }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          # The first section of the changelog, i.e. everything from the first
+          # "## " heading up to the second.
+          awk '/^## /{n++; if (n>1) exit} n>=1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
+
+          # A version containing a hyphen is a pre-release (1.3.0-beta.1).
+          if [[ "$VERSION" == *-* ]]; then
+            gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md" --prerelease
+          else
+            gh release create "v$VERSION" --title "v$VERSION" --notes-file "$RUNNER_TEMP/notes.md"
+          fi
 
   # ==========================================================================
   # Publish container images
   # ==========================================================================
-  # This lives inside the release workflow on purpose. The release job pushes
-  # its tag using the default GITHUB_TOKEN, and GitHub deliberately does not
-  # start new workflow runs from events created with that token — so a separate
-  # `on: push: tags: ['v*']` workflow would never fire.
   publish:
     name: Publish container images
-    needs: release
+    needs: [check, tag]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -146,9 +137,7 @@ jobs:
       - name: Checkout the released tag
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Not the workflow's starting SHA: the release job added a version
-          # bump commit, and the image must contain it.
-          ref: v${{ needs.release.outputs.version }}
+          ref: v${{ needs.check.outputs.version }}
           # This job only reads the repository, and it runs several third-party
           # actions. Leaving the token in .git/config would expose it to all of
           # them for no benefit.
@@ -237,23 +226,23 @@ jobs:
           # tagger and produce the same tag from two rules.
           flavor: |
             latest=false
-          # The version comes from the release job rather than the git ref,
-          # because this workflow is triggered manually, not by a tag push.
+          # The version comes from the check job rather than the git ref: this
+          # workflow is triggered by a push to main, not by a tag push.
           tags: |
-            type=semver,pattern={{version}},value=${{ needs.release.outputs.version }}
-            type=semver,pattern={{major}}.{{minor}},value=${{ needs.release.outputs.version }}
+            type=semver,pattern={{version}},value=${{ needs.check.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.check.outputs.version }}
             type=sha,format=long
             # Never point `latest` at a pre-release. metadata-action also
             # collapses {{major}}.{{minor}} to the full version for
             # pre-releases, so `1.1` can never resolve to a beta either.
-            type=raw,value=latest,enable=${{ !contains(needs.release.outputs.version, '-') }}
+            type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
           labels: |
             org.opencontainers.image.title=WordyMe
             org.opencontainers.image.description=Centralized platform for students to manage educational information
             org.opencontainers.image.vendor=TeamCoderz Ltd
             org.opencontainers.image.url=https://teamcoderz.org
             org.opencontainers.image.licenses=AGPL-3.0-or-later
-            org.opencontainers.image.version=${{ needs.release.outputs.version }}
+            org.opencontainers.image.version=${{ needs.check.outputs.version }}
 
       - name: Build and push
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
@@ -282,7 +271,7 @@ jobs:
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
           IMAGE: ${{ env.GHCR_IMAGE }}
-          VERSION: ${{ needs.release.outputs.version }}
+          VERSION: ${{ needs.check.outputs.version }}
         run: |
           echo "Published the following tags:"
           echo "$TAGS"

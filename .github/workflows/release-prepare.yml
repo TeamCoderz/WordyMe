@@ -1,0 +1,145 @@
+name: Prepare Release
+
+# Step 1 of 2.
+#
+# Produces the version-bump commit on a BRANCH instead of pushing it straight to
+# main. That is the whole point: `main` requires status checks, and a commit
+# pushed directly there has never existed anywhere CI could run, so the checks
+# can never appear on it and the push is refused. On a branch it goes through a
+# pull request like any other change, gets checked, and merges normally.
+#
+# Nothing is tagged or published here. Merging the pull request triggers
+# release-publish.yml, which does the rest.
+#
+# Why this workflow does not open the pull request itself: GitHub deliberately
+# does not start workflow runs from events created with GITHUB_TOKEN. A pull
+# request opened by this job would sit with no checks, and the ruleset would
+# refuse to merge it — the same deadlock in a different place. Opened by a
+# person, CI runs normally. The link is printed in the run summary.
+
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: 'Version increment type'
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+          - prepatch
+          - preminor
+          - premajor
+          - prerelease
+      preid:
+        description: 'Pre-release identifier (only used with pre* increments)'
+        required: false
+        type: choice
+        default: 'none'
+        options:
+          - none
+          - alpha
+          - beta
+          - rc
+
+jobs:
+  prepare:
+    name: Prepare release branch
+    runs-on: ubuntu-latest
+    permissions:
+      # Pushing the release branch. No `pull-requests: write` — see the note at
+      # the top about why this job does not open the pull request.
+      contents: write
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # release-it reads the commit history to build the changelog.
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure Git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump the version and write the changelog
+        id: bump
+        env:
+          INCREMENT: ${{ inputs.increment }}
+          PREID: ${{ inputs.preid }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ "$PREID" = "none" ] || [ -z "$PREID" ]; then
+            npm version "$INCREMENT" --no-git-tag-version
+          else
+            npm version "$INCREMENT" --preid="$PREID" --no-git-tag-version
+          fi
+
+          VERSION=$(node -pe "require('./package.json').version")
+
+          # Changelog only. No commit, tag, push or GitHub release — .release-it.json
+          # disables the git steps, and the release object is created later by
+          # release-publish.yml once the tag actually exists.
+          npx release-it --ci --no-increment --no-github.release
+
+          BRANCH="release/v$VERSION"
+
+          # A leftover branch from an abandoned attempt would otherwise make the
+          # push fail with a confusing non-fast-forward error.
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "::error::Branch $BRANCH already exists on the remote. Delete it, or close and delete the open release pull request, then run this again."
+            exit 1
+          fi
+
+          git checkout -b "$BRANCH"
+          git add package.json CHANGELOG.md
+          git commit -m "chore: release v$VERSION"
+          git push origin "$BRANCH"
+
+          {
+            echo "version=$VERSION"
+            echo "branch=$BRANCH"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Explain what to do next
+        env:
+          VERSION: ${{ steps.bump.outputs.version }}
+          BRANCH: ${{ steps.bump.outputs.branch }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # The pull request has to be opened by a person, so the run summary
+          # carries a pre-filled link rather than leaving it to be found.
+          PR_URL="${REPO_URL}/compare/main...${BRANCH}?expand=1&title=chore:%20release%20v${VERSION}"
+
+          {
+            echo "## Release v${VERSION} is ready for review"
+            echo
+            echo "The version bump is on branch \`${BRANCH}\`. Nothing has been tagged or published yet."
+            echo
+            echo "### Next steps"
+            echo
+            echo "1. **[Open the pull request](${PR_URL})** — then press *Create pull request*."
+            echo "2. Wait for the checks to pass. They run because a person opened it."
+            echo "3. **Merge it.** That triggers *Publish Release*, which tags the commit, builds and pushes the images to GHCR and Docker Hub, and creates the GitHub release."
+            echo
+            echo "Changed your mind? Delete the branch \`${BRANCH}\` and nothing has happened."
+          } >> "$GITHUB_STEP_SUMMARY"
