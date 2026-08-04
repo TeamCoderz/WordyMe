@@ -104,18 +104,28 @@ jobs:
         run: |
           set -euo pipefail
 
+          # release-it performs the increment itself — no `npm version` first.
+          # Pre-bumping package.json and running with --no-increment made the
+          # changelog plugin derive its compare range from the previous PAIR of
+          # tags, so every heading linked one release behind and re-generated a
+          # duplicate of the previous section. Handing release-it the increment
+          # gives it latest tag -> new tag, which produces the right range, one
+          # section per version, and the package.json bump as a side effect.
+          #
+          # Flags use the equals form: release-it's parser treats a
+          # space-separated "--increment patch" as unrelated tokens and silently
+          # falls back to the default.
+          #
+          # No commit, tag, push or GitHub release happens here —
+          # .release-it.json disables the git steps, and the release object is
+          # created later by release-publish.yml once the tag actually exists.
           if [ "$PREID" = "none" ] || [ -z "$PREID" ]; then
-            npm version "$INCREMENT" --no-git-tag-version
+            npx release-it --ci "--increment=$INCREMENT" --no-github.release
           else
-            npm version "$INCREMENT" --preid="$PREID" --no-git-tag-version
+            npx release-it --ci "--increment=$INCREMENT" "--preRelease=$PREID" --no-github.release
           fi
 
           VERSION=$(node -pe "require('./package.json').version")
-
-          # Changelog only. No commit, tag, push or GitHub release — .release-it.json
-          # disables the git steps, and the release object is created later by
-          # release-publish.yml once the tag actually exists.
-          npx release-it --ci --no-increment --no-github.release
 
           BRANCH="release/v$VERSION"
 

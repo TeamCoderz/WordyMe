@@ -1,124 +1,70 @@
 # Changelog
 
-## [1.2.2](https://github.com/TeamCoderz/WordyMe/compare/v1.2.0...v1.2.1) (2026-08-04)
+## [1.2.2](https://github.com/TeamCoderz/WordyMe/compare/v1.2.1...v1.2.2) (2026-08-04)
 
 ### Features
 
-* **ci:** add PR gate for lint, type-check, build and Docker health ([#82](https://github.com/TeamCoderz/WordyMe/issues/82)) ([af99f5e](https://github.com/TeamCoderz/WordyMe/commit/af99f5e7b3a6e94447210109a6c135e2c05a4c1a)), closes [#42](https://github.com/TeamCoderz/WordyMe/issues/42)
+- **ci:** add PR gate for lint, type-check, build and Docker health ([#82](https://github.com/TeamCoderz/WordyMe/issues/82)) ([af99f5e](https://github.com/TeamCoderz/WordyMe/commit/af99f5e7b3a6e94447210109a6c135e2c05a4c1a)), closes [#42](https://github.com/TeamCoderz/WordyMe/issues/42)
 
 ## [1.2.1](https://github.com/TeamCoderz/WordyMe/compare/v1.2.0...v1.2.1) (2026-08-04)
 
 ### Bug Fixes
 
-* **security:** update socket.io-parser past CVE-2026-69185 ([#80](https://github.com/TeamCoderz/WordyMe/issues/80)) ([ef1ff2a](https://github.com/TeamCoderz/WordyMe/commit/ef1ff2af351575761494257dd6634cac3a0b49b1))
-
-## [1.2.1](https://github.com/TeamCoderz/WordyMe/compare/v1.1.0...v1.2.0) (2026-08-04)
-
-### Bug Fixes
-
-* **security:** update socket.io-parser past CVE-2026-69185 ([#80](https://github.com/TeamCoderz/WordyMe/issues/80)) ([ef1ff2a](https://github.com/TeamCoderz/WordyMe/commit/ef1ff2af351575761494257dd6634cac3a0b49b1))
+- **security:** update socket.io-parser past CVE-2026-69185 ([#80](https://github.com/TeamCoderz/WordyMe/issues/80)) ([ef1ff2a](https://github.com/TeamCoderz/WordyMe/commit/ef1ff2af351575761494257dd6634cac3a0b49b1))
 
 ## [1.2.0](https://github.com/TeamCoderz/WordyMe/compare/v1.1.0...v1.2.0) (2026-08-03)
 
-### Bug Fixes
+### Features
 
-* **security:** update body-parser past CVE-2026-12590 ([#77](https://github.com/TeamCoderz/WordyMe/issues/77)) ([6095185](https://github.com/TeamCoderz/WordyMe/commit/60951852682d798ed682b76ab288160c79f901d2))
-
-## [1.2.0](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...v1.1.0) (2026-08-03)
+- accept the address each request arrives on ([#79](https://github.com/TeamCoderz/WordyMe/issues/79)) ([107f415](https://github.com/TeamCoderz/WordyMe/commit/107f415ffe795f900dd5f38ff3dc7163b2553f2c))
 
 ### Bug Fixes
 
-* **security:** update body-parser past CVE-2026-12590 ([#77](https://github.com/TeamCoderz/WordyMe/issues/77)) ([6095185](https://github.com/TeamCoderz/WordyMe/commit/60951852682d798ed682b76ab288160c79f901d2))
+- **security:** update body-parser past CVE-2026-12590 ([#77](https://github.com/TeamCoderz/WordyMe/issues/77)) ([6095185](https://github.com/TeamCoderz/WordyMe/commit/60951852682d798ed682b76ab288160c79f901d2))
 
 ## [1.1.0](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...v1.1.0) (2026-08-02)
 
 ### Features
 
-* **ci:** publish multi-arch images to Docker Hub and GHCR on release ([#68](https://github.com/TeamCoderz/WordyMe/issues/68)) ([bab824e](https://github.com/TeamCoderz/WordyMe/commit/bab824e305302f63c892c9c0694c942a34704746))
-* **docker:** handle signals, restore rate limiting, and harden the container ([cbcfe5d](https://github.com/TeamCoderz/WordyMe/commit/cbcfe5d0d4107a82c56646aa72fd3f32d1a27c89)), closes [#61](https://github.com/TeamCoderz/WordyMe/issues/61) [#60](https://github.com/TeamCoderz/WordyMe/issues/60)
-* **docker:** serve the web bundle from Express as one all-in-one image ([a6b518c](https://github.com/TeamCoderz/WordyMe/commit/a6b518cdd0c88848f21f37259c1da795f964414f))
+- **ci:** publish multi-arch images to Docker Hub and GHCR on release ([#68](https://github.com/TeamCoderz/WordyMe/issues/68)) ([bab824e](https://github.com/TeamCoderz/WordyMe/commit/bab824e305302f63c892c9c0694c942a34704746))
+- **docker:** handle signals, restore rate limiting, and harden the container ([cbcfe5d](https://github.com/TeamCoderz/WordyMe/commit/cbcfe5d0d4107a82c56646aa72fd3f32d1a27c89)), closes [#61](https://github.com/TeamCoderz/WordyMe/issues/61) [#60](https://github.com/TeamCoderz/WordyMe/issues/60)
+- **docker:** serve the web bundle from Express as one all-in-one image ([a6b518c](https://github.com/TeamCoderz/WordyMe/commit/a6b518cdd0c88848f21f37259c1da795f964414f))
 
 ### Bug Fixes
 
-* **backend:** never let a client-supplied X-Forwarded-For reach the rate limiter ([c32c059](https://github.com/TeamCoderz/WordyMe/commit/c32c0593fe0c37f2175705564c6f016edd0a4792))
-* **ci:** give the Docker Hub listing its own page and never fail a re… ([#74](https://github.com/TeamCoderz/WordyMe/issues/74)) ([67241fd](https://github.com/TeamCoderz/WordyMe/commit/67241fd72778643596259198fb93171fac780207))
-* **ci:** tag the release commit so the image is built from it ([baf3090](https://github.com/TeamCoderz/WordyMe/commit/baf3090918d6b60c8e004e42115fd0bef8fbeef5))
+- **backend:** never let a client-supplied X-Forwarded-For reach the rate limiter ([c32c059](https://github.com/TeamCoderz/WordyMe/commit/c32c0593fe0c37f2175705564c6f016edd0a4792))
+- **ci:** give the Docker Hub listing its own page and never fail a re… ([#74](https://github.com/TeamCoderz/WordyMe/issues/74)) ([67241fd](https://github.com/TeamCoderz/WordyMe/commit/67241fd72778643596259198fb93171fac780207))
+- **ci:** tag the release commit so the image is built from it ([baf3090](https://github.com/TeamCoderz/WordyMe/commit/baf3090918d6b60c8e004e42115fd0bef8fbeef5))
 
 ### Performance Improvements
 
-* **docker:** halve the image by not installing optional peer dependencies ([f27f386](https://github.com/TeamCoderz/WordyMe/commit/f27f3863ca3fbf3e0c7b01b7faa4be275edbfc8b))
+- **docker:** halve the image by not installing optional peer dependencies ([f27f386](https://github.com/TeamCoderz/WordyMe/commit/f27f3863ca3fbf3e0c7b01b7faa4be275edbfc8b))
 
-## [](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...vnull) (2026-08-02)
-
-### Features
-
-* **ci:** publish multi-arch images to Docker Hub and GHCR on release ([#68](https://github.com/TeamCoderz/WordyMe/issues/68)) ([bab824e](https://github.com/TeamCoderz/WordyMe/commit/bab824e305302f63c892c9c0694c942a34704746))
-* **docker:** handle signals, restore rate limiting, and harden the container ([cbcfe5d](https://github.com/TeamCoderz/WordyMe/commit/cbcfe5d0d4107a82c56646aa72fd3f32d1a27c89)), closes [#61](https://github.com/TeamCoderz/WordyMe/issues/61) [#60](https://github.com/TeamCoderz/WordyMe/issues/60)
-* **docker:** serve the web bundle from Express as one all-in-one image ([a6b518c](https://github.com/TeamCoderz/WordyMe/commit/a6b518cdd0c88848f21f37259c1da795f964414f))
-
-### Bug Fixes
-
-* **backend:** never let a client-supplied X-Forwarded-For reach the rate limiter ([c32c059](https://github.com/TeamCoderz/WordyMe/commit/c32c0593fe0c37f2175705564c6f016edd0a4792))
-* **ci:** give the Docker Hub listing its own page and never fail a re… ([#74](https://github.com/TeamCoderz/WordyMe/issues/74)) ([67241fd](https://github.com/TeamCoderz/WordyMe/commit/67241fd72778643596259198fb93171fac780207))
-* **ci:** tag the release commit so the image is built from it ([baf3090](https://github.com/TeamCoderz/WordyMe/commit/baf3090918d6b60c8e004e42115fd0bef8fbeef5))
-
-### Performance Improvements
-
-* **docker:** halve the image by not installing optional peer dependencies ([f27f386](https://github.com/TeamCoderz/WordyMe/commit/f27f3863ca3fbf3e0c7b01b7faa4be275edbfc8b))
-
-## [1.0.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.1-beta.0...v0.2.0-beta.0) (2026-04-22)
+## [1.0.0](https://github.com/TeamCoderz/WordyMe/compare/v0.2.0-beta.0...v1.0.0) (2026-04-22)
 
 ### Features
 
-* add preview tabs and inactive-tab close button ([3b6be71](https://github.com/TeamCoderz/WordyMe/commit/3b6be717033d553fda9bfab683989e61b21b20a1))
-* **tab:** remove saving loader, show checkmark only on save success ([620293e](https://github.com/TeamCoderz/WordyMe/commit/620293e3561330fe10a15f2ac829b38b8c1a0394))
-* **tabs:** add generic LinkButton and fix tab/dropdown navigation ([a667371](https://github.com/TeamCoderz/WordyMe/commit/a667371fb93474f5b686cd88bfd2c53bf9a4b92d))
-* **tabs:** autosave on tab leave and unify save indicator across actions ([cbf1138](https://github.com/TeamCoderz/WordyMe/commit/cbf1138107f6c9aa8d2eb0544ca5941e2c2fcd12))
-* **tabs:** refine tab bar and space switcher styling ([7b1a804](https://github.com/TeamCoderz/WordyMe/commit/7b1a8044d821d018cdc110ba4f7b9c9a1ae88fea))
-* **tabs:** show saving indicator and persist preview/saving state cleanly ([8d24709](https://github.com/TeamCoderz/WordyMe/commit/8d24709d591af2cf2b7859a83b13f842195984d3))
-* **TEA-71:** implement automated SPDX header management ([#36](https://github.com/TeamCoderz/WordyMe/issues/36)) ([4b8cda0](https://github.com/TeamCoderz/WordyMe/commit/4b8cda003d9b4d5d2752703454701b4199361c20))
+- add preview tabs and inactive-tab close button ([3b6be71](https://github.com/TeamCoderz/WordyMe/commit/3b6be717033d553fda9bfab683989e61b21b20a1))
+- **tab:** remove saving loader, show checkmark only on save success ([620293e](https://github.com/TeamCoderz/WordyMe/commit/620293e3561330fe10a15f2ac829b38b8c1a0394))
+- **tabs:** add generic LinkButton and fix tab/dropdown navigation ([a667371](https://github.com/TeamCoderz/WordyMe/commit/a667371fb93474f5b686cd88bfd2c53bf9a4b92d))
+- **tabs:** autosave on tab leave and unify save indicator across actions ([cbf1138](https://github.com/TeamCoderz/WordyMe/commit/cbf1138107f6c9aa8d2eb0544ca5941e2c2fcd12))
+- **tabs:** refine tab bar and space switcher styling ([7b1a804](https://github.com/TeamCoderz/WordyMe/commit/7b1a8044d821d018cdc110ba4f7b9c9a1ae88fea))
+- **tabs:** show saving indicator and persist preview/saving state cleanly ([8d24709](https://github.com/TeamCoderz/WordyMe/commit/8d24709d591af2cf2b7859a83b13f842195984d3))
+- **TEA-71:** implement automated SPDX header management ([#36](https://github.com/TeamCoderz/WordyMe/issues/36)) ([4b8cda0](https://github.com/TeamCoderz/WordyMe/commit/4b8cda003d9b4d5d2752703454701b4199361c20))
 
 ### Bug Fixes
 
-* **backend:** resolve lint warnings and stabilize Turbo env cache for DB_FILE_NAME ([#39](https://github.com/TeamCoderz/WordyMe/issues/39)) ([9d63f63](https://github.com/TeamCoderz/WordyMe/commit/9d63f634a850617c07116326d882f513fa8d8790))
-* **Dockerfile:** update run-migrations.mjs path to reflect new directory structure ([9992311](https://github.com/TeamCoderz/WordyMe/commit/9992311f0452e7bb7345cb26e6db30faa065faee))
-* **errors:** enhance error handling for payload size limits and improve express error detection ([0d9a353](https://github.com/TeamCoderz/WordyMe/commit/0d9a353d32fecd0e1582587d5103e042cd5d9fac))
-* **errors:** improve error handling in document and profile mutations ([d29dacf](https://github.com/TeamCoderz/WordyMe/commit/d29dacf19721ec129c6ceb7b1fd070aef11280d0))
-* **space-switcher:** include active space in breadcrumb and prevent mobile sheet auto-focus ([630ec16](https://github.com/TeamCoderz/WordyMe/commit/630ec16fbda2abb1f3d951b572dfca50fc818380))
-* **tabs:** correct resolveTabAction JSDoc and optimize closeSplit lookups ([065f9dd](https://github.com/TeamCoderz/WordyMe/commit/065f9dddc137748073bbb327b3d6d78589406590))
-* **tabs:** extract shared routing logic, prevent split-pane duplicates, fix pane-aware navigation ([cbef5d4](https://github.com/TeamCoderz/WordyMe/commit/cbef5d4efe81424e177de710b73232f79960f084))
-* **tabs:** narrow Zustand selectors and fix split-tab dedup ([4178176](https://github.com/TeamCoderz/WordyMe/commit/4178176157a638598573e3710b2441916772cc72))
-* **tabs:** use full location matching for split dedup and closeSplit ([c838b5c](https://github.com/TeamCoderz/WordyMe/commit/c838b5c65eabbf4b08c1af9dae43776753b874d5))
+- **backend:** resolve lint warnings and stabilize Turbo env cache for DB_FILE_NAME ([#39](https://github.com/TeamCoderz/WordyMe/issues/39)) ([9d63f63](https://github.com/TeamCoderz/WordyMe/commit/9d63f634a850617c07116326d882f513fa8d8790))
+- **Dockerfile:** update run-migrations.mjs path to reflect new directory structure ([9992311](https://github.com/TeamCoderz/WordyMe/commit/9992311f0452e7bb7345cb26e6db30faa065faee))
+- **errors:** enhance error handling for payload size limits and improve express error detection ([0d9a353](https://github.com/TeamCoderz/WordyMe/commit/0d9a353d32fecd0e1582587d5103e042cd5d9fac))
+- **errors:** improve error handling in document and profile mutations ([d29dacf](https://github.com/TeamCoderz/WordyMe/commit/d29dacf19721ec129c6ceb7b1fd070aef11280d0))
+- **space-switcher:** include active space in breadcrumb and prevent mobile sheet auto-focus ([630ec16](https://github.com/TeamCoderz/WordyMe/commit/630ec16fbda2abb1f3d951b572dfca50fc818380))
+- **tabs:** correct resolveTabAction JSDoc and optimize closeSplit lookups ([065f9dd](https://github.com/TeamCoderz/WordyMe/commit/065f9dddc137748073bbb327b3d6d78589406590))
+- **tabs:** extract shared routing logic, prevent split-pane duplicates, fix pane-aware navigation ([cbef5d4](https://github.com/TeamCoderz/WordyMe/commit/cbef5d4efe81424e177de710b73232f79960f084))
+- **tabs:** narrow Zustand selectors and fix split-tab dedup ([4178176](https://github.com/TeamCoderz/WordyMe/commit/4178176157a638598573e3710b2441916772cc72))
+- **tabs:** use full location matching for split dedup and closeSplit ([c838b5c](https://github.com/TeamCoderz/WordyMe/commit/c838b5c65eabbf4b08c1af9dae43776753b874d5))
 
 ## [0.2.0-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.1-beta.0...v0.2.0-beta.0) (2026-04-15)
-
-### Features
-
-* create document search index table and related triggers ([1bb9484](https://github.com/TeamCoderz/WordyMe/commit/1bb948422b2fda7334958df7d4578548e41ce218))
-* **database:** implement full-text search for documents with FTS5 ([0f4274e](https://github.com/TeamCoderz/WordyMe/commit/0f4274e254d044b29681f89b589bddba88336fa3))
-* **search-ui:** match Wordy search dialog UI and wire global document search ([7927120](https://github.com/TeamCoderz/WordyMe/commit/7927120af656fb238e34067950935da3f7c6023b))
-* **search:** add full-text search endpoint for user documents ([dc46805](https://github.com/TeamCoderz/WordyMe/commit/dc46805206e6ca970bc6d76ebb4a9c55705f81ed))
-* **search:** add searchDocuments function the SDK ([1554477](https://github.com/TeamCoderz/WordyMe/commit/15544774fcd1c71350b5ca5a902fb5f55850cd8c))
-* **search:** enhance full-text search to support optional spaceId filtering ([c8f59e7](https://github.com/TeamCoderz/WordyMe/commit/c8f59e7317e6841ecbc3da864d7592a68db00698))
-* **search:** implement full-text search functionality and query utilities ([a899896](https://github.com/TeamCoderz/WordyMe/commit/a899896bf9fee8e39d1ab6ff82bbaf202cf918ce))
-* **search:** pass spaceId through search query options ([eabdd9b](https://github.com/TeamCoderz/WordyMe/commit/eabdd9bbed37e5f5b5ab62fe4a9000c6a337945a))
-* **space-switcher:** add hover card showing full breadcrumb path for nested spaces ([e4c82ba](https://github.com/TeamCoderz/WordyMe/commit/e4c82ba540dfbc1366c214c2b767c908102dc76b))
-* **TEA-69:** disable signups after the first account exists ([#33](https://github.com/TeamCoderz/WordyMe/issues/33)) ([bc0bfe9](https://github.com/TeamCoderz/WordyMe/commit/bc0bfe9c4858946a30264b35219a2e570e861dbc))
-
-### Bug Fixes
-
-* **deps:** resolve 5 CVEs via dependency upgrades and pnpm overrides ([6f6a649](https://github.com/TeamCoderz/WordyMe/commit/6f6a64969d5fe077329daed0e13236b6e311c02e))
-* **docker:** run database migrations at container startup instead of build time ([a64c4b9](https://github.com/TeamCoderz/WordyMe/commit/a64c4b973f269189e854360b3500b780d1170a83))
-* **editor:** refresh checksum event deps ([e24969a](https://github.com/TeamCoderz/WordyMe/commit/e24969a1e0ecad017ba86dc9f67f5ba7a138621c))
-* **inputs:** prevent Firefox double-submit on inline create/rename inputs ([73d9a65](https://github.com/TeamCoderz/WordyMe/commit/73d9a651f5141033568ac1bd552f0eb542184e73))
-* **layout:** responsive on small screens ([7758824](https://github.com/TeamCoderz/WordyMe/commit/77588240e5c507358811812ec697f86c5c21914b))
-* **search:** pass spaceId to SDK, singleton hotkey, and safe cloneElement ([acaaf55](https://github.com/TeamCoderz/WordyMe/commit/acaaf55054a33e3a912c067b962bb246d57fe449))
-* **security:** resolve transitive vulnerabilities via pnpm overrides ([dee948e](https://github.com/TeamCoderz/WordyMe/commit/dee948e41d3803e6c7e0ea6ffaf1d4d980c3b9fa))
-* **tabs:** fix tabs save button error ([674f781](https://github.com/TeamCoderz/WordyMe/commit/674f781a711d74105ed790063d9639942f1b40b6))
-* **web:** allow empty last name and guard invalid profile section ([544950f](https://github.com/TeamCoderz/WordyMe/commit/544950ffd9cf1ce9f37a17bf66abaeca3463cf9f))
-* **web:** improve settings tab reuse and close user menu on navigation ([35bf4b2](https://github.com/TeamCoderz/WordyMe/commit/35bf4b2172161d91a5be02b299773fe67e5f928d))
-
-## [0.2.0-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.0-beta.0...v0.1.1-beta.0) (2026-04-15)
 
 ### Features
 
@@ -161,143 +107,7 @@
 - **auth,editor:** HTTP session cookies, compose env, and IndexedDB AES without Web Crypto ([a78963c](https://github.com/TeamCoderz/WordyMe/commit/a78963c590cfab1b2a369facc55e1233b9deb91d))
 - update image zoom logic and table of contents scrolling ([3503c1c](https://github.com/TeamCoderz/WordyMe/commit/3503c1c4af3a5e0feb7c4c045db3a376c365df54))
 
-## [0.1.1-beta.0](https://github.com/TeamCoderz/WordyMe/compare/v0.1.0-beta.0...v0.1.0-beta.0) (2026-03-29)
-
-### Features
-
-- add embed-pdf package and refactor state management ([#17](https://github.com/TeamCoderz/WordyMe/issues/17)) ([166c14c](https://github.com/TeamCoderz/WordyMe/commit/166c14c442a6fd884124389668f18fdb5fa2f7df))
-- add useDocumentActions and refine various components ([b921984](https://github.com/TeamCoderz/WordyMe/commit/b92198441de59dec0d13342622218bdf2b1f8511))
-- enhance bug report template with issue scope and detailed environment info ([07a7c2d](https://github.com/TeamCoderz/WordyMe/commit/07a7c2dd63bbca4276e58c3ecf571c5c47d19049))
-- split view ([#15](https://github.com/TeamCoderz/WordyMe/issues/15)) ([055b78a](https://github.com/TeamCoderz/WordyMe/commit/055b78aced3783b5df3a3e2dd31f38c05958731a)), closes [#16](https://github.com/TeamCoderz/WordyMe/issues/16)
-
-### Bug Fixes
-
-- add canBeEmpty method to PageContentNode and enhance stray child handling in PaginationPlugin ([bfe7560](https://github.com/TeamCoderz/WordyMe/commit/bfe75608ea7bf1deb8a8a8c677fd2031cadbea5d))
-- **auth,editor:** HTTP session cookies, compose env, and IndexedDB AES without Web Crypto ([a78963c](https://github.com/TeamCoderz/WordyMe/commit/a78963c590cfab1b2a369facc55e1233b9deb91d))
-- update image zoom logic and table of contents scrolling ([3503c1c](https://github.com/TeamCoderz/WordyMe/commit/3503c1c4af3a5e0feb7c4c045db3a376c365df54))
-
 ## [0.1.0-beta.0](https://github.com/TeamCoderz/WordyMe/compare/87a5d4511894a04869529cc955407ef8567991ae...v0.1.0-beta.0) (2026-02-22)
-
-### Features
-
-- **access:** implement document access checks ([dcb2cc9](https://github.com/TeamCoderz/WordyMe/commit/dcb2cc9b67b9303285bfee4565b651451002eaf4))
-- add authentication forms and fix TypeScript config ([db5e8c9](https://github.com/TeamCoderz/WordyMe/commit/db5e8c9239c3f842b31af3640bb469ede83d7a0c))
-- add basic middlewares and move schemas package to inside backend app. ([dd06656](https://github.com/TeamCoderz/WordyMe/commit/dd06656792e888973c8c7078f2a9d6d545bc47be))
-- add default env values to vite config and update UI components ([6c1fa84](https://github.com/TeamCoderz/WordyMe/commit/6c1fa841264668ee83c07085ff297f4951e2e75e))
-- Add Docker configuration, documentation, and deployment setup ([6838d3e](https://github.com/TeamCoderz/WordyMe/commit/6838d3e35ba2e1c17e882495bbc5fde88dca49fb))
-- add empty states and error handling for document tree and manage page ([fbe5663](https://github.com/TeamCoderz/WordyMe/commit/fbe5663382d400c0ad910c79ec761617aa8a146d))
-- add ESLint configuration ([581c001](https://github.com/TeamCoderz/WordyMe/commit/581c001f3c3cd7cf5541175cc546bacace9fb819))
-- add issue templates for bug reports, feature feedback, and feature requests ([60d9f4b](https://github.com/TeamCoderz/WordyMe/commit/60d9f4b0cbfa2bd5dd249d87a13552e97d9bdb63))
-- add navigation links and skeleton loading states ([1d04367](https://github.com/TeamCoderz/WordyMe/commit/1d04367b5e3e29ebd916434518e7a14961ad03bb))
-- **attachments:** implement file upload and retrieval for document attachments ([a81d1bb](https://github.com/TeamCoderz/WordyMe/commit/a81d1bbc4a71c82f13cbf0b90989f55b1d19e747))
-- **auth:** add additional user fields and support usernames ([5a05cf1](https://github.com/TeamCoderz/WordyMe/commit/5a05cf1e7d9300f025f122db47f9ccc1b55c8025))
-- **auth:** enhance user creation process by adding default space properties ([31f15e2](https://github.com/TeamCoderz/WordyMe/commit/31f15e20389d0d79f99a77a660423aab8c426da6))
-- **auth:** integrate custom session logic to add editor settings retrieval ([4ecf22c](https://github.com/TeamCoderz/WordyMe/commit/4ecf22c5fd342755de74cd55b833cddc0ff48f7a))
-- **backend:** add dotenv for environment variable management ([d0d0d77](https://github.com/TeamCoderz/WordyMe/commit/d0d0d772f522e98bf8bb4c4a1f048e3064e96255))
-- **backend:** add Drizzle ORM and configure scripts to use it ([cfb7ae8](https://github.com/TeamCoderz/WordyMe/commit/cfb7ae8c5eeb3d7be833ac8c69ade0f4685ac1a3))
-- **backend:** initialize express app with zod validation middleware ([fe04c90](https://github.com/TeamCoderz/WordyMe/commit/fe04c905c68ba0521ff442e9fb928c79a77c3f76))
-- **backend:** integrate better-auth for authentication and add user schema ([b09506f](https://github.com/TeamCoderz/WordyMe/commit/b09506fee50016bcb2fdafbb16171160d91aa5f7))
-- **backend:** refactor schema definitions and update drizzle configuration ([8b48b95](https://github.com/TeamCoderz/WordyMe/commit/8b48b95c32244d144a1959ff3f1d23b6c881bb4c))
-- **backend:** update documents schema to use UUIDs and add feedbacks schema with enum support ([b597329](https://github.com/TeamCoderz/WordyMe/commit/b597329bf842030eeb71e41fb2eb863c842b9118))
-- **collections:** add order method to CollectionQuery for sorting results ([5244827](https://github.com/TeamCoderz/WordyMe/commit/5244827270a95b68de65efd5a0a484f85fe3d740))
-- **collections:** add pagination schema and collection query classes ([9c755ed](https://github.com/TeamCoderz/WordyMe/commit/9c755edee9eaf73325e7618165ce9554832a86e1))
-- **create-turbo:** apply official-starter transform ([34cd0ca](https://github.com/TeamCoderz/WordyMe/commit/34cd0ca72eca1af330385fbfd140dc1eb6363e72))
-- **create-turbo:** apply pnpm-eslint transform ([122f440](https://github.com/TeamCoderz/WordyMe/commit/122f4409851130ca7f51914821d35d9319654af7))
-- **create-turbo:** create basic ([87a5d45](https://github.com/TeamCoderz/WordyMe/commit/87a5d4511894a04869529cc955407ef8567991ae))
-- **create-turbo:** install dependencies ([30867ec](https://github.com/TeamCoderz/WordyMe/commit/30867ecf6582381018e88d84239e4660cc64747c))
-- **docs:** add OpenAPI documentation and integrate drizzle-zod for schema validation ([5c2f339](https://github.com/TeamCoderz/WordyMe/commit/5c2f339af112f1135cc6d38c337eb55217ec6daa))
-- **docs:** enhance OpenAPI documentation with new endpoints for document management and improve schema validation ([d1df728](https://github.com/TeamCoderz/WordyMe/commit/d1df72830a8085a8dd05e89ba7e8bf17bb1dcae8))
-- **documents, favorites, pagination:** enhance document schemas and update service methods for improved data handling ([7259149](https://github.com/TeamCoderz/WordyMe/commit/725914993e0caaaf1b023390e7afd95757617cf7))
-- **documents, favorites:** add last viewed documents and favorites listing with pagination ([5adeb60](https://github.com/TeamCoderz/WordyMe/commit/5adeb60d41deeb573599d152ef7b221ccc84d540))
-- **documents:** add copy document functionality with validation and attachment handling ([eebd437](https://github.com/TeamCoderz/WordyMe/commit/eebd4379e566e5cd2def7bbf8208d3008eb866f9))
-- **documents:** add endpoint to create document with initial revision and update existing routes ([7864135](https://github.com/TeamCoderz/WordyMe/commit/78641351588c0ee4e008685495283986ffe55fd9))
-- **documents:** add endpoint to retrieve user documents and enhance document retrieval logic ([6813cfc](https://github.com/TeamCoderz/WordyMe/commit/6813cfc7befb09704e3747d79922d76bfd3ebe63))
-- **documents:** add limit parameter to document filters ([999e9aa](https://github.com/TeamCoderz/WordyMe/commit/999e9aaa9f29311b6de4b0c33c297ded3b06e35a))
-- **documents:** add option to update last viewed status when retrieving document details ([2ecbcbf](https://github.com/TeamCoderz/WordyMe/commit/2ecbcbf43a54b103d1c2462d59c4e362e3d6d56f))
-- **documents:** add support for updating document space ID and queue updates for child documents ([00923ca](https://github.com/TeamCoderz/WordyMe/commit/00923cafa85ed60cb30e04e2a46ca934b48f376d))
-- **documents:** add support for updating last viewed timestamp on selecting a document ([163ce72](https://github.com/TeamCoderz/WordyMe/commit/163ce7243dadd8ea35c0f9cf25c87d059d0dc539))
-- **documents:** add validation for parentId and spaceId in document creation and update ([ff30a30](https://github.com/TeamCoderz/WordyMe/commit/ff30a303b0f75b41dca023baf40e5760ed8b834d))
-- **documents:** enhance document and revision schemas, update service methods, and improve SDK integration ([f416efd](https://github.com/TeamCoderz/WordyMe/commit/f416efd65c7333da03da6d4ef3b04a91035c1a36))
-- **documents:** enhance document filtering and pagination capabilities in routes and services ([8cb4439](https://github.com/TeamCoderz/WordyMe/commit/8cb4439d0ae6b8e30a3a3644f655882dc398b605))
-- **documents:** implement CRUD operations and access control for documents ([4b97a94](https://github.com/TeamCoderz/WordyMe/commit/4b97a94a6ed993c274819b7e9b265cfb8b44a686))
-- **documents:** implement document export functionality with attachment support ([a07a581](https://github.com/TeamCoderz/WordyMe/commit/a07a581a9c95dc9c7a0e6c4d9feae80e65afaacb))
-- **documents:** implement document import functionality with attachment support ([77da753](https://github.com/TeamCoderz/WordyMe/commit/77da75353054f7c7777f9d8f559f4e05ff64e092))
-- **documents:** implement getting a single document ([ca72a02](https://github.com/TeamCoderz/WordyMe/commit/ca72a025e7cfbbf080d5dba4f2e14c1bd7f39946))
-- **editor-settings:** add API endpoint to update editor settings and enhance schema validation ([6844269](https://github.com/TeamCoderz/WordyMe/commit/6844269d06b8bad962478e4b5752ef450f993593))
-- **editor-settings:** add editor settings management with initial setup and update functionality ([4352160](https://github.com/TeamCoderz/WordyMe/commit/4352160fad853b7607cdd31d30e63e46a5d03ac1))
-- **editor-settings:** add EditorSettings type and update SDK integration for editor settings management ([0df2707](https://github.com/TeamCoderz/WordyMe/commit/0df270774aae9097da441fb8a64903496d923acc))
-- **env:** add CLIENT_URL to environment configuration and use it in auth setup ([d634f55](https://github.com/TeamCoderz/WordyMe/commit/d634f55381f3f15c86edcedb958357a809ff9ab4))
-- **errors:** integrate zod validation for error response schema in errorHandler middleware ([2fe8f67](https://github.com/TeamCoderz/WordyMe/commit/2fe8f673875231ec0fec6524e68061e87b368bc9))
-- **favorites:** emit socket events for favoriting and unfavoriting documents and spaces ([9ff8ade](https://github.com/TeamCoderz/WordyMe/commit/9ff8ade88657499cfe7d74bc10b85bf9a4d4243c))
-- **favorites:** implement favorites management API endpoints and enhance error handling ([15690ba](https://github.com/TeamCoderz/WordyMe/commit/15690ba8f93b421c90448392bb916d3207eaecd9))
-- **favorites:** implement favorites management with add and remove functionality, including schema validation and routes ([2c86506](https://github.com/TeamCoderz/WordyMe/commit/2c865066d67be52ac5390646377620484815159d))
-- **favorites:** implement favorites SDK methods and update favorites schema ([7346d22](https://github.com/TeamCoderz/WordyMe/commit/7346d222fbcda233322a3edbbb40136cb4b71212))
-- **health:** add database health check endpoint ([#9](https://github.com/TeamCoderz/WordyMe/issues/9)) ([95e5e9a](https://github.com/TeamCoderz/WordyMe/commit/95e5e9acb010e2302b8f9bab78b48062ab2bbcab))
-- implement git hooks using ([33376f2](https://github.com/TeamCoderz/WordyMe/commit/33376f22cbc21adf0495a5bf01fbc541bc80c2e8))
-- improve type safety for tree components and space switcher ([612b9ae](https://github.com/TeamCoderz/WordyMe/commit/612b9aecb0ba545b12a6e680e52bb5b12b0b1137))
-- **orm:** add Drizzle ORM schema definitions ([dbacd22](https://github.com/TeamCoderz/WordyMe/commit/dbacd22b2f937130dd16fbf2d1962e108621f53b))
-- **pagination:** introduce documentFiltersSchema for enhanced filtering in document and favorites queries ([79e7fb5](https://github.com/TeamCoderz/WordyMe/commit/79e7fb5e053f08ce37541aa51282b70ee2c1ed02))
-- **queues:** add PQueue for managing concurrent database write operations ([760f7cb](https://github.com/TeamCoderz/WordyMe/commit/760f7cb7afc6c05a10c1e2e7af519f5ffab1d11d))
-- **realtime:** add more details to existing events and add missing emit calls ([6cc7163](https://github.com/TeamCoderz/WordyMe/commit/6cc7163900b10ef0c25b90e5d41e8f6d1026da21))
-- **realtime:** emit socket events for document and space creation and updates ([060dc83](https://github.com/TeamCoderz/WordyMe/commit/060dc838efe80af5602fd6e49b3eabe4bf6fa10a))
-- **revisions,storage:** add comprehensive API endpoints for revision and storage management, enhance error handling, and improve schema validation ([87b9662](https://github.com/TeamCoderz/WordyMe/commit/87b96627569717077ac511da22839b2a49f3a6b4))
-- **revisions:** add revision management functionality with CRUD operations and schema validation ([ca3570d](https://github.com/TeamCoderz/WordyMe/commit/ca3570dd7f27b1c97a0c791a8fb695c2100b0e20))
-- **revisions:** implement update revision content ([f1b0da8](https://github.com/TeamCoderz/WordyMe/commit/f1b0da838c4cc4892ebfb6a99f0fea24fbc1876e))
-- **revisions:** integrate revisions router and implement CRUD operations for revisions with validation ([1355c06](https://github.com/TeamCoderz/WordyMe/commit/1355c06f804ca471d05918bc19a1817a46f72b49))
-- **revisions:** update revisions schema, refine PlainRevision type, and implement SDK methods for revision management ([7a0ec87](https://github.com/TeamCoderz/WordyMe/commit/7a0ec87abb01b72ad38adead4c160fda9282f126))
-- **schemas:** add a package for zod schemas and use it in the backend ([be53d83](https://github.com/TeamCoderz/WordyMe/commit/be53d83c8f09c1b3a09433597bea0cb2941e6161))
-- **sdk:** add some missing sdk functions ([137a5f3](https://github.com/TeamCoderz/WordyMe/commit/137a5f32605f22dcff1b7ba4901886e926ded085))
-- **sdk:** implement SDK client with Axios ([126eccd](https://github.com/TeamCoderz/WordyMe/commit/126eccdaa3a6d325ea0d1714ab769cf44a75be64))
-- **socket:** enhance socket functionality with user and space event emission ([73129bf](https://github.com/TeamCoderz/WordyMe/commit/73129bfcf57d7c6a2843a361a0c56a3a019bd0e0))
-- **socket:** integrate Socket.IO for real-time communication and add authentication middleware ([7c4909d](https://github.com/TeamCoderz/WordyMe/commit/7c4909d9f8a3642b9f7cab4d99ad9324afbe8bba))
-- **storage:** add storage client and implement getFile function for file retrieval ([5670349](https://github.com/TeamCoderz/WordyMe/commit/5670349ae72d54514c9357d20026d6559f58d3b2))
-- **storage:** enhance path resolution to prevent path traversal vulnerabilities ([cc345db](https://github.com/TeamCoderz/WordyMe/commit/cc345db0d79bf654c764cbee1952cc2f69d8e1eb))
-- **storage:** implement storage management with routes and content handling ([42e36cf](https://github.com/TeamCoderz/WordyMe/commit/42e36cfe1fdfd2f62429c4d5b0fba882443ba8c5))
-- **storage:** implement user profile and cover image upload, retrieval, and deletion ([9aa254f](https://github.com/TeamCoderz/WordyMe/commit/9aa254f174fc20469d7d1c4bb81b33ba9b557932))
-
-### Bug Fixes
-
-- add trailing commas in function parameters across multiple files ([842964c](https://github.com/TeamCoderz/WordyMe/commit/842964c9ceb8845e2d97b6b86fab299ff4044d6a))
-- **api:** change export endpoint from GET to POST ([3bf5d6e](https://github.com/TeamCoderz/WordyMe/commit/3bf5d6e6c670cbc61f83050c3ae5601874facb17))
-- **attachments:** handle missing source directory in copyDocumentAttachments ([8b3f6dc](https://github.com/TeamCoderz/WordyMe/commit/8b3f6dc3b24db7be15efd169d54dce8f69f931ca))
-- **collections:** fix query where clause overwrite bug ([89ca6ef](https://github.com/TeamCoderz/WordyMe/commit/89ca6efc755bb480f9370d50a9e0f5b4044df6e1))
-- correct type import in SDK ([03eb391](https://github.com/TeamCoderz/WordyMe/commit/03eb391d94ac7406d8489079b6d3f6c36e5e1da5))
-- **db:** update schema import path from schemas to models ([52fafe5](https://github.com/TeamCoderz/WordyMe/commit/52fafe528b259d8f70f9a23fb722fd090bc4c11f))
-- **docker:** execute drizzle migration using node directly ([db36d01](https://github.com/TeamCoderz/WordyMe/commit/db36d01fa4e98f4ec10b60bc8a5e9ab0aa1a588f))
-- **docs:** correct requestParams schema extension in openApiDocument ([34cdc62](https://github.com/TeamCoderz/WordyMe/commit/34cdc6251eb735308dcc1565800a92e64af5b403))
-- **documents:** fix boolean type coercion in document filters ([7810140](https://github.com/TeamCoderz/WordyMe/commit/7810140a22ccd55dc95a747b346e4018945968c5))
-- **documents:** fix updateLastViewed parameter validation and behavior ([3c106ff](https://github.com/TeamCoderz/WordyMe/commit/3c106fffcb19987bd3adb0a4e7107965b48871d6))
-- **documents:** make options parameter optional in getDocumentById and getDocumentByHandle functions ([aa9f782](https://github.com/TeamCoderz/WordyMe/commit/aa9f782818b2c36403d2e83318f7e76df7b3875e))
-- **documents:** optimize updateLastViewed handling and schema validation ([194067a](https://github.com/TeamCoderz/WordyMe/commit/194067ab19499cfd0446302694b74aa0a10e113c))
-- **documents:** update boolean coercion in document schemas for consistency ([ac5f7b8](https://github.com/TeamCoderz/WordyMe/commit/ac5f7b8f3c6b3172f6ec7104c573dbd412f46e39))
-- **documents:** use transaction object in createDocumentWithRevision ([cb1b00e](https://github.com/TeamCoderz/WordyMe/commit/cb1b00e861d4f47efa93f48b83a33d5e825d3bfd))
-- improve realtime document update handling ([e8a2a35](https://github.com/TeamCoderz/WordyMe/commit/e8a2a35946b3aee623ddd9363479184ad8cfd3a7))
-- improve type safety and user state initialization ([26660e9](https://github.com/TeamCoderz/WordyMe/commit/26660e9b9d65554f161f6e1aec66019d883c55fe))
-- **lefthook:** ensure pre-commit formatting job stages fixed files ([c3dae38](https://github.com/TeamCoderz/WordyMe/commit/c3dae38cbae47b4678d46ca358f8bfc57c3a9a10))
-- **lefthook:** update pre-commit format job to include glob pattern for file types ([25e16af](https://github.com/TeamCoderz/WordyMe/commit/25e16afddf44d9fdce4889ca98ff1182a6549106))
-- prevent context menu on input elements in document and space components ([d0da443](https://github.com/TeamCoderz/WordyMe/commit/d0da443a85b98740df65213c5b69a7acd22cba63))
-- **queries:** replace where clauses with filter method for userId in document and favorites queries ([6cf7948](https://github.com/TeamCoderz/WordyMe/commit/6cf7948bc7b98fffffd80b28cc7c2e397114f31e))
-- resolve browser compatibility issues and improve type safety ([0b8595d](https://github.com/TeamCoderz/WordyMe/commit/0b8595d67b3ddc6df80169b8bc54d27643fc04b0))
-- resolve image loading, type errors, and blob URL memory leaks ([dc6e7ab](https://github.com/TeamCoderz/WordyMe/commit/dc6e7abef13a545523e9a97ce5fb29dff596d593))
-- resolve SDK realtime client import and add realtime change listeners ([86ac487](https://github.com/TeamCoderz/WordyMe/commit/86ac4871292fd9a3b8e5e980c394f6eb9e2d9ef8))
-- resolve type errors in ActiveSpaceLoader to match listSpaces return type ([ec42f78](https://github.com/TeamCoderz/WordyMe/commit/ec42f78967a6bc4355cec3bf633907bbe325f225))
-- **routes:** replace HttpUnauthorized with HttpNotFound for unauthorized access checks ([52b3c87](https://github.com/TeamCoderz/WordyMe/commit/52b3c87ac62bccd48f2076e7ff5feb1dde2a47ec))
-- **routes:** update document update endpoint path for consistency ([da37876](https://github.com/TeamCoderz/WordyMe/commit/da378765e95423bfe75ceab1977a4b296aca6a6b))
-- **routes:** update error messages to clarify accessibility issues ([0b5a45b](https://github.com/TeamCoderz/WordyMe/commit/0b5a45b144da8379c60a3fd94e7de806f4e116e7))
-- **routes:** update error messages to delete misleading 'unauthorized' ([f48358a](https://github.com/TeamCoderz/WordyMe/commit/f48358a6bf0683da625451784b9b22279376516e))
-- **schemas:** simplify revision ID parameter schema to use zod for validation ([f8b206f](https://github.com/TeamCoderz/WordyMe/commit/f8b206f9247da8e12c79fa595ef3707d8bdf8a1d))
-- **schemas:** update document schemas to include insert and update functionality ([dc8444d](https://github.com/TeamCoderz/WordyMe/commit/dc8444daa5573344eb8f090218618547bf7a8abb))
-- **schemas:** update editor settings and document copy schemas for insert and update functionality ([878f734](https://github.com/TeamCoderz/WordyMe/commit/878f73480e1af5a8a919316583f778fbb87867a7))
-- **storage:** add safeFilename utility for secure file uploads ([e5eddda](https://github.com/TeamCoderz/WordyMe/commit/e5eddda4f3136c94d00f154bb28be1647b2f6ce6))
-- **storage:** handle errors thrown by `sendFile` ([57cf86f](https://github.com/TeamCoderz/WordyMe/commit/57cf86f93b8c53036d814daacb0a37faf05c015a))
-- **storage:** update filename generation for cover uploads to use a consistent format ([6575134](https://github.com/TeamCoderz/WordyMe/commit/657513411d6615efac3ad3dbd7d0fdccb457fdea))
-
-### Performance Improvements
-
-- prevent unnecessary rerenders when adding placeholders in manage tables ([3344d30](https://github.com/TeamCoderz/WordyMe/commit/3344d30eec4977fdd09e79b452cf522ae26dca9e))
-- prevent unnecessary rerenders when adding placeholders in space switcher and document tree ([4202a54](https://github.com/TeamCoderz/WordyMe/commit/4202a5435bf8736ca5b80900f5c6a5921318d89d))
-
-## 0.1.0-beta.0 (2026-02-22)
 
 ### Features
 
