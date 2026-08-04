@@ -93,13 +93,19 @@ Changing this value later invalidates existing sessions and logs everyone out.
 
 The remaining settings have working defaults:
 
-| Variable          | Default                 | Notes                                         |
-| ----------------- | ----------------------- | --------------------------------------------- |
-| `PORT`            | `3000`                  | Backend port                                  |
-| `DB_FILE_NAME`    | `file:storage/local.db` | Created on first migration                    |
-| `CLIENT_URL`      | `http://localhost:5173` | Trusted origins — must match your browser URL |
-| `BETTER_AUTH_URL` | first `CLIENT_URL`      | Public origin of the auth API                 |
-| `TRUST_PROXY`     | unset                   | Leave unset locally                           |
+| Variable          | Default                 | Notes                                          |
+| ----------------- | ----------------------- | ---------------------------------------------- |
+| `PORT`            | `3000`                  | Backend port                                   |
+| `DB_FILE_NAME`    | `file:storage/local.db` | Created on first migration                     |
+| `TRUST_HOST`      | `true`                  | Also trust the address each request arrives on |
+| `CLIENT_URL`      | `http://localhost:5173` | Extra trusted origins, added to the one above  |
+| `BETTER_AUTH_URL` | first `CLIENT_URL`      | Public origin of the auth API                  |
+| `TRUST_PROXY`     | unset                   | Leave unset locally                            |
+
+With `TRUST_HOST` on, an `Origin` is accepted when it matches the host the
+request arrived at, so reaching the dev server over your LAN works without
+listing that address. Set it to `false` to accept only `CLIENT_URL`, which is
+how the app behaved before this option existed.
 
 Upgrading an existing clone? `DB_FILE_NAME` used to default to `file:local.db`.
 An `.env` you already have keeps working untouched, but if you replace it from
