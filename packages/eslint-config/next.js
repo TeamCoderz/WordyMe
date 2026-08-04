@@ -52,7 +52,8 @@ export const nextJsConfig = [
     plugins: {
       "react-hooks": pluginReactHooks,
     },
-    settings: { react: { version: "detect" } },
+    // Pinned rather than "detect" — see the note in react-internal.js.
+    settings: { react: { version: "19" } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.

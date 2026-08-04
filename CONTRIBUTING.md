@@ -145,15 +145,18 @@ git remote add upstream https://github.com/TeamCoderz/WordyMe.git
 # 3. Install dependencies
 pnpm install
 
-# 4. Set up environment files
-cp .env.example .env
+# 4. Set up the backend environment, then generate a session secret.
+#    apps/web needs no .env — see LOCAL_SETUP.md for why copying it is harmful.
 cp apps/backend/.env.example apps/backend/.env
-cp apps/web/.env.example apps/web/.env
+echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" >> apps/backend/.env
 
-# 5. Start development servers
+# 5. Apply migrations — required on a fresh clone, or sign-up fails
+cd apps/backend && pnpm drizzle-kit migrate && cd ../..
+
+# 6. Start development servers
 pnpm dev
 
-# 6. Create a feature branch
+# 7. Create a feature branch
 git checkout -b feature/your-feature-name
 ```
 
@@ -195,6 +198,55 @@ cd apps/backend
 pnpm drizzle-kit generate  # Generate migration
 pnpm drizzle-kit migrate   # Apply migration
 ```
+
+---
+
+## CI gate
+
+Every pull request runs `.github/workflows/ci.yml`, which must pass before merge:
+
+| Job                     | What it proves                                                        |
+| ----------------------- | --------------------------------------------------------------------- |
+| Lint, type-check, build | `pnpm lint`, `pnpm check-types`, `pnpm build` all succeed             |
+| Docker stack health     | The image builds and answers `/api/health` — not merely that it boots |
+
+Run the first job locally before pushing:
+
+```bash
+pnpm lint && pnpm check-types && pnpm build
+```
+
+`pnpm install --frozen-lockfile` is used in CI, so a manifest change without its
+matching `pnpm-lock.yaml` fails here rather than during a release.
+
+### Lint warning ratchets
+
+Four packages carry a `--max-warnings N` ceiling instead of `0`:
+
+| Package              | Ceiling |
+| -------------------- | ------- |
+| `packages/editor`    | 103     |
+| `apps/web`           | 30      |
+| `packages/embed-pdf` | 27      |
+| `packages/ui`        | 22      |
+
+These are **ratchets, not targets**. The warnings predate the gate — they were
+invisible because `eslint-plugin-react`'s version detection crashed the whole
+run on ESLint 10, so nobody had seen a complete lint result in months. Most of
+what surfaced is behavioural (React Compiler correctness, hook dependencies,
+conditionally-called hooks) and wants reviewing one case at a time, not a sweep.
+
+The rule: **the number may go down, never up.** If a fix lowers the count, lower
+the ceiling in the same pull request. The goal for all four is `0`; every other
+package is already there and is pinned at `--max-warnings 0`.
+
+Be aware of what `--max-warnings` does and does not catch. It compares the
+**total** count against the ceiling, so it fails a pull request that pushes the
+total over — but a new warning introduced alongside a fix elsewhere nets to zero
+and passes. It is a ceiling, not a per-warning diff. Closing that gap properly
+needs a baseline file committed to the repository and compared per run, which is
+worth doing once the counts are small enough that the baseline is not itself
+noise.
 
 ---
 

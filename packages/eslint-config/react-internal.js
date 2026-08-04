@@ -34,7 +34,11 @@ export const config = [
     plugins: {
       "react-hooks": pluginReactHooks,
     },
-    settings: { react: { version: "detect" } },
+    // Pinned rather than "detect": detection calls context.getFilename(), which
+    // ESLint 10 removed, so eslint-plugin-react 7.37 throws
+    // "contextOrFilename.getFilename is not a function" and the whole lint run
+    // dies. Revert to "detect" once the plugin supports ESLint 10.
+    settings: { react: { version: "19" } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.

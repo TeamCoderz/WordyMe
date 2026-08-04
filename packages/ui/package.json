@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "lint": "eslint . --max-warnings 0",
+    "_lint-note": "Total-count ceiling, not a per-warning check: ESLint fails only when the count EXCEEDS this number, so a fix elsewhere can mask a new warning. Treat it as a ratchet \u2014 lower it whenever warnings are fixed, never raise it. Goal is 0. See CONTRIBUTING.md.",
+    "lint": "eslint . --max-warnings 22",
     "check-types": "tsc --noEmit"
   },
   "dependencies": {

@@ -12,11 +12,13 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@next/eslint-plugin-next": "^16.1.6",
+    "@tanstack/eslint-plugin-query": "^5.101.4",
     "eslint": "^10.1.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-only-warn": "^1.2.1",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.5.3",
     "eslint-plugin-turbo": "^2.8.16",
     "globals": "^17.4.0",
     "typescript": "^6.0.2",

@@ -142,7 +142,6 @@ export function FavoriteDocumentRow({
   // Update renameValue when renamingDocumentId changes
   useEffect(() => {
     if (renamingDocumentId === document.id) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRenameValue(document.name);
     }
   }, [renamingDocumentId, document.id, document.name]);
