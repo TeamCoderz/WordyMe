@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.2](https://github.com/TeamCoderz/WordyMe/compare/v1.2.0...v1.2.1) (2026-08-04)
+
+### Features
+
+* **ci:** add PR gate for lint, type-check, build and Docker health ([#82](https://github.com/TeamCoderz/WordyMe/issues/82)) ([af99f5e](https://github.com/TeamCoderz/WordyMe/commit/af99f5e7b3a6e94447210109a6c135e2c05a4c1a)), closes [#42](https://github.com/TeamCoderz/WordyMe/issues/42)
+
+## [1.2.1](https://github.com/TeamCoderz/WordyMe/compare/v1.2.0...v1.2.1) (2026-08-04)
+
+### Bug Fixes
+
+* **security:** update socket.io-parser past CVE-2026-69185 ([#80](https://github.com/TeamCoderz/WordyMe/issues/80)) ([ef1ff2a](https://github.com/TeamCoderz/WordyMe/commit/ef1ff2af351575761494257dd6634cac3a0b49b1))
+
 ## [1.2.1](https://github.com/TeamCoderz/WordyMe/compare/v1.1.0...v1.2.0) (2026-08-04)
 
 ### Bug Fixes
