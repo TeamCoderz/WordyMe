@@ -10,8 +10,7 @@
     "license:fix": "node scripts/spdx-license-cli.mjs add",
     "license:check": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
-    "start": "turbo start",
-    "release": "release-it --ci --no-increment"
+    "start": "turbo start"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.6",
