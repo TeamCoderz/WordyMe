@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.1](https://github.com/TeamCoderz/WordyMe/compare/v1.1.0...v1.2.0) (2026-08-04)
+
+### Bug Fixes
+
+* **security:** update socket.io-parser past CVE-2026-69185 ([#80](https://github.com/TeamCoderz/WordyMe/issues/80)) ([ef1ff2a](https://github.com/TeamCoderz/WordyMe/commit/ef1ff2af351575761494257dd6634cac3a0b49b1))
+
+## [1.2.0](https://github.com/TeamCoderz/WordyMe/compare/v1.1.0...v1.2.0) (2026-08-03)
+
+### Bug Fixes
+
+* **security:** update body-parser past CVE-2026-12590 ([#77](https://github.com/TeamCoderz/WordyMe/issues/77)) ([6095185](https://github.com/TeamCoderz/WordyMe/commit/60951852682d798ed682b76ab288160c79f901d2))
+
 ## [1.2.0](https://github.com/TeamCoderz/WordyMe/compare/v1.0.0...v1.1.0) (2026-08-03)
 
 ### Bug Fixes
