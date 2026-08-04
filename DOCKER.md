@@ -877,8 +877,11 @@ branch and pushes it. Nothing is tagged or published. A maintainer then opens
 the pull request the run summary links to, and merges it once the checks pass.
 
 **Publish Release** (`.github/workflows/release-publish.yml`) fires on that
-merge. It tags the commit, creates the GitHub release, and builds and publishes
-the image from the tag.
+merge. It builds, scans and publishes the image first, then tags the commit and
+creates the GitHub release. The tag comes last deliberately: it is the
+completion marker, so a release that fails at the vulnerability gate or a
+registry push leaves no tag behind and is retried by simply re-running the
+workflow.
 
 The split exists because `main` requires status checks. A version bump pushed
 straight there has never existed anywhere CI could run, so the checks can never

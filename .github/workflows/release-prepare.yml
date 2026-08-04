@@ -67,6 +67,10 @@ jobs:
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          # Explicit, not the dispatch default: workflow_dispatch checks out
+          # whichever branch was selected in the Run workflow dropdown, and a
+          # release must only ever be prepared from main.
+          ref: main
           # release-it reads the commit history to build the changelog.
           fetch-depth: 0
           # The push at the end authenticates explicitly instead. Persisting the
