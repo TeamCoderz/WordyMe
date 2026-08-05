@@ -62,6 +62,11 @@ jobs:
     outputs:
       version: ${{ steps.detect.outputs.version }}
       release: ${{ steps.detect.outputs.release }}
+      # One timestamp for the whole release, stamped into both architectures'
+      # org.opencontainers.image.created labels. Left to metadata-action's
+      # default, each build job would stamp its own start time and the two
+      # manifests of one release would disagree.
+      created: ${{ steps.detect.outputs.created }}
 
     steps:
       - name: Checkout
@@ -86,13 +91,22 @@ jobs:
             echo "v$VERSION has no tag — publishing."
           fi
 
+          echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
   # ==========================================================================
-  # Publish container images
+  # Build, scan and push each architecture — natively, in parallel
   # ==========================================================================
-  # Runs BEFORE the tag job: the tag is the completion marker, so nothing may
-  # be tagged until the images are actually on the registries.
-  publish:
-    name: Publish container images
+  # One job per architecture, each on a runner of its own kind. arm64 used to
+  # be built through QEMU emulation inside a single amd64 job, which made it
+  # by far the slowest step of a release; on a native arm64 runner it costs
+  # about the same as the amd64 build and the two run side by side.
+  #
+  # Each architecture is scanned BEFORE it is pushed, so nothing unscanned
+  # ever reaches a registry. The push is by digest only — no tag of any kind
+  # exists until the merge job below has both digests, so the tag-last
+  # completion-marker design is unchanged.
+  build-amd64:
+    name: Build and push linux/amd64
     needs: check
     if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
@@ -100,6 +114,8 @@ jobs:
       contents: read
       packages: write # push to GHCR using GITHUB_TOKEN
       security-events: write # upload the Trivy report to the Security tab
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
 
     steps:
       - name: Checkout the release commit
@@ -113,30 +129,28 @@ jobs:
           # them for no benefit.
           persist-credentials: false
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
 
       # --- Gate: scan before anything is published -------------------------
-      # Built for one platform and loaded locally so the scan runs against a
-      # real image. The multi-platform build below reuses this layer cache, so
-      # the amd64 half costs almost nothing the second time.
+      # Built and loaded locally so the scan runs against a real image. The
+      # push below reuses the layers this build leaves in the builder, so it
+      # costs almost nothing the second time.
       #
-      # amd64 stands in for both architectures: findings come from package
-      # versions — node_modules installed from the same lockfile, and Alpine
-      # packages at the same versions per arch — so an arm64 scan would repeat
-      # the same results at the cost of a QEMU build on the pre-publish path.
-      - name: Build amd64 image for scanning
+      # The second cache-from line reads the cache written before the builds
+      # were split per architecture, so the first release after the split
+      # still starts warm.
+      - name: Build for scanning
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           platforms: linux/amd64
           load: true
           tags: wordyme:scan
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: |
+            type=gha,scope=linux-amd64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-amd64
 
       - name: Fail the release on fixable HIGH or CRITICAL vulnerabilities
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -149,6 +163,10 @@ jobs:
           ignore-unfixed: true
           exit-code: '1'
 
+      # Uploaded once, from this job only: findings come from package versions
+      # — node_modules installed from the same lockfile, and Alpine packages
+      # at the same versions per arch — so an arm64 report would repeat the
+      # same results under a second category.
       - name: Full vulnerability report
         if: always()
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
@@ -166,7 +184,13 @@ jobs:
           sarif_file: trivy-results.sarif
           category: container-image
 
-      # --- Publish ---------------------------------------------------------
+      # --- Push by digest --------------------------------------------------
+      # No tag of any kind yet: the image lands on both registries addressed
+      # only by its digest, and nothing is discoverable by tag until the merge
+      # job ties both architectures into the tagged manifest lists. A run that
+      # fails after this point leaves untagged digests behind — harmless and
+      # invisible to `docker pull`, but do not point "delete untagged
+      # versions" housekeeping at these packages; see DOCKER.md.
       - name: Log in to Docker Hub
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
         with:
@@ -182,6 +206,183 @@ jobs:
           username: ${{ github.actor }}
           # No stored secret needed: this token is minted per run and expires
           # with it.
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Identical configuration to the merge job's, so the labels and
+      # annotations baked into this architecture's manifest carry the same
+      # version and revision. Only labels and annotations are consumed here —
+      # the digest push carries no tags.
+      - name: Compute labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.check.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.check.outputs.version }}
+            type=sha,format=long
+            type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
+          labels: |
+            org.opencontainers.image.title=WordyMe
+            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.vendor=TeamCoderz Ltd
+            org.opencontainers.image.url=https://teamcoderz.org
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.version=${{ needs.check.outputs.version }}
+            org.opencontainers.image.created=${{ needs.check.outputs.created }}
+
+      - name: Push by digest
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          # Attestations recording what went into the image and how it was
+          # built, attached to the manifest. They are verifiable but NOT
+          # cryptographically signed — that would need a separate cosign or
+          # Sigstore step with an identity token.
+          sbom: true
+          provenance: mode=max
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",name-canonical=true,push-by-digest=true,push=true
+          cache-from: type=gha,scope=linux-amd64
+
+  build-arm64:
+    name: Build and push linux/arm64
+    needs: check
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      packages: write # push to GHCR using GITHUB_TOKEN
+
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
+      - name: Checkout the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      # Same gate as amd64: this architecture's image is scanned before its
+      # push too. Only the SARIF report is amd64's alone.
+      - name: Build for scanning
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: wordyme:scan
+          cache-from: |
+            type=gha,scope=linux-arm64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-arm64
+
+      - name: Fail the release on fixable HIGH or CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: wordyme:scan
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute labels
+        id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
+        with:
+          images: |
+            ${{ env.DOCKERHUB_IMAGE }}
+            ${{ env.GHCR_IMAGE }}
+          flavor: |
+            latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.check.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.check.outputs.version }}
+            type=sha,format=long
+            type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
+          labels: |
+            org.opencontainers.image.title=WordyMe
+            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.vendor=TeamCoderz Ltd
+            org.opencontainers.image.url=https://teamcoderz.org
+            org.opencontainers.image.licenses=AGPL-3.0-or-later
+            org.opencontainers.image.version=${{ needs.check.outputs.version }}
+            org.opencontainers.image.created=${{ needs.check.outputs.created }}
+
+      - name: Push by digest
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
+          sbom: true
+          provenance: mode=max
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",name-canonical=true,push-by-digest=true,push=true
+          cache-from: type=gha,scope=linux-arm64
+
+  # ==========================================================================
+  # Merge the digests into the tagged multi-arch manifests
+  # ==========================================================================
+  # The moment the release becomes pullable by tag: both architectures are
+  # already on both registries by digest, and this job ties them into one
+  # manifest list per tag. Runs BEFORE the tag job — the tag is the completion
+  # marker, so nothing may be tagged until the tagged manifests exist on the
+  # registries.
+  merge:
+    name: Publish the multi-arch tags
+    needs: [check, build-amd64, build-arm64]
+    if: needs.check.outputs.release == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push to GHCR using GITHUB_TOKEN
+
+    steps:
+      # Only for DOCKERHUB.md, which the listing-sync step below reads.
+      - name: Checkout the release commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compute tags and labels
@@ -213,30 +414,28 @@ jobs:
             org.opencontainers.image.url=https://teamcoderz.org
             org.opencontainers.image.licenses=AGPL-3.0-or-later
             org.opencontainers.image.version=${{ needs.check.outputs.version }}
-
-      - name: Build and push
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          # arm64 is a product promise, not an optimisation — the project
-          # advertises running on a Raspberry Pi.
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          annotations: ${{ steps.meta.outputs.annotations }}
-          # Attestations recording what went into the image and how it was
-          # built, attached to the manifest. They are verifiable but NOT
-          # cryptographically signed — that would need a separate cosign or
-          # Sigstore step with an identity token.
-          sbom: true
-          provenance: mode=max
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            org.opencontainers.image.created=${{ needs.check.outputs.created }}
 
       # Values are passed through the environment rather than interpolated
       # straight into the script, so nothing from an expression can be parsed
-      # as shell.
+      # as shell. Each registry's manifest list may only reference digests
+      # that live in the same repository, hence one create per registry.
+      - name: Create and push the tagged manifests
+        env:
+          AMD64_DIGEST: ${{ needs.build-amd64.outputs.digest }}
+          ARM64_DIGEST: ${{ needs.build-arm64.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for image in "$DOCKERHUB_IMAGE" "$GHCR_IMAGE"; do
+            args=()
+            while IFS= read -r tag; do
+              args+=(-t "$tag")
+            done < <(jq -r --arg prefix "$image:" '.tags[] | select(startswith($prefix))' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+            docker buildx imagetools create "${args[@]}" \
+              "$image@$AMD64_DIGEST" \
+              "$image@$ARM64_DIGEST"
+          done
+
       - name: Show what was published
         env:
           TAGS: ${{ steps.meta.outputs.tags }}
@@ -274,13 +473,14 @@ jobs:
   # ==========================================================================
   # Tag the release commit — LAST, as the completion marker
   # ==========================================================================
-  # Only reached when the images are already on both registries. A tag on this
-  # repository therefore always names a published release. Both steps are
-  # idempotent, so "Re-run failed jobs" can finish a run that died between the
-  # tag push and the release object without tripping over its own progress.
+  # Only reached when the tagged manifests are already on both registries. A
+  # tag on this repository therefore always names a published release. Both
+  # steps are idempotent, so "Re-run failed jobs" can finish a run that died
+  # between the tag push and the release object without tripping over its own
+  # progress.
   tag:
     name: Tag and create the GitHub release
-    needs: [check, publish]
+    needs: [check, merge]
     if: needs.check.outputs.release == 'true'
     runs-on: ubuntu-latest
     permissions:
