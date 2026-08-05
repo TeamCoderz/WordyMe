@@ -4,9 +4,16 @@
 FROM node:22-alpine AS pruner
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-RUN npm install -g turbo
+RUN npm install -g turbo@2.9.3
 COPY . .
 RUN turbo prune --scope=web --scope=@repo/backend --docker
+
+# A release commit changes only the root version field, but that ripples into
+# out/json and would evict the pnpm-install layer below on every release even
+# though the dependency tree is identical. Pin the field in the install-only
+# manifests; out/full restores the real one before anything is built, so the
+# published image never sees this value.
+RUN node -e "const fs=require('fs');const p='out/json/package.json';const j=JSON.parse(fs.readFileSync(p,'utf8'));j.version='0.0.0';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
 
 # ==========================================
 # STAGE 2: Base & Builder
