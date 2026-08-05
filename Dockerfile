@@ -1,7 +1,14 @@
 # ==========================================
 # STAGE 1: Pruner
 # ==========================================
-FROM node:22-alpine AS pruner
+# Pinned by digest, not just by tag: the amd64 and arm64 halves of a release
+# are built by separate jobs that each resolve the base independently, so an
+# upstream republish between them would ship two architectures built on
+# different bases. The digest names the multi-arch index, so each job still
+# selects its own platform from it.
+#
+# To update:  docker buildx imagetools inspect node:22-alpine
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS pruner
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN npm install -g turbo@2.9.3
@@ -18,7 +25,7 @@ RUN node -e "const fs=require('fs');const p='out/json/package.json';const j=JSON
 # ==========================================
 # STAGE 2: Base & Builder
 # ==========================================
-FROM node:22-alpine AS builder
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -74,7 +81,7 @@ RUN rm -rf \
 # files and the web bundle. SQLite is single-writer, so splitting this into web
 # and backend containers would buy no scaling — only a hardcoded hostname and a
 # backend URL that has to be baked in at build time.
-FROM node:22-alpine AS runner
+FROM node:22-alpine@sha256:c610fcdfb1d5b4740dd70c284ed3cb16bb857e0f7166196e36a5501df7a3aa32 AS runner
 WORKDIR /app
 
 # tini becomes PID 1. A process running as PID 1 does not get the kernel's
