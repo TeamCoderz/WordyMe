@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.4](https://github.com/TeamCoderz/WordyMe/compare/v1.2.3...v1.2.4) (2026-08-05)
+
+### Performance Improvements
+
+- **ci:** build release images natively per architecture. ([#86](https://github.com/TeamCoderz/WordyMe/issues/86)) ([3f3d069](https://github.com/TeamCoderz/WordyMe/commit/3f3d0696ca57f41b17e112f6623055eeb4c15fb1))
+
 ## [1.2.3](https://github.com/TeamCoderz/WordyMe/compare/v1.2.2...v1.2.3) (2026-08-04)
 
 ## [1.2.2](https://github.com/TeamCoderz/WordyMe/compare/v1.2.1...v1.2.2) (2026-08-04)
