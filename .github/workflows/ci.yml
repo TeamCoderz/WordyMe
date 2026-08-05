@@ -23,6 +23,60 @@ permissions:
   contents: read
 
 jobs:
+  # Squash-merging takes the commit subject from the pull request title, and
+  # release-it builds the changelog from those subjects — so a title that is
+  # not a conventional commit lands verbatim in CHANGELOG.md and is invisible
+  # to the version bump, which reads the type to decide major/minor/patch.
+  # Cheapest check in the file, so it runs first.
+  pr-title:
+    name: Conventional PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # The title is attacker-controlled text from whoever opened the pull
+      # request, so it travels through the environment rather than being
+      # interpolated into the script, where it could be parsed as shell.
+      - name: Check the title against the conventional commit format
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          # type(optional-scope)!: subject
+          # The scope is optional, the "!" breaking-change marker is optional,
+          # and exactly one colon-space separates the prefix from the subject.
+          PATTERN='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._/-]+\))?!?: .+'
+
+          if printf '%s' "$TITLE" | grep -Eq "$PATTERN"; then
+            echo "Title is a valid conventional commit:"
+            echo "  $TITLE"
+            exit 0
+          fi
+
+          {
+            echo "## Pull request title is not a conventional commit"
+            echo
+            echo '```'
+            echo "$TITLE"
+            echo '```'
+            echo
+            echo "Expected \`type(scope): subject\` — a colon after the type, not a slash."
+            echo
+            echo "| Wrong | Right |"
+            echo "| ----- | ----- |"
+            echo "| \`feat/pr-title\` | \`feat(ci): add a pull request title check\` |"
+            echo "| \`fix: \` | \`fix(docker): normalise drizzle directory permissions\` |"
+            echo "| \`Update README\` | \`docs: explain the release flow\` |"
+            echo
+            echo "Types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test."
+            echo "Add \`!\` before the colon for a breaking change: \`feat(api)!: drop v1 routes\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error::Pull request title '$TITLE' is not a conventional commit. Expected 'type(scope): subject', for example 'feat(ci): add a pull request title check'. See the run summary for the full format."
+          exit 1
+
   build:
     name: Lint, type-check, build
     runs-on: ubuntu-latest
@@ -91,8 +145,23 @@ jobs:
           umask 077
           echo "BETTER_AUTH_SECRET=$(openssl rand -base64 32)" > .env
 
+      # Built through buildx rather than `docker compose build` so the layer
+      # cache lands in the GitHub Actions cache under the same scope the
+      # release workflow reads. Every push to main leaves a hot amd64 cache
+      # behind, so a release build starts from the previous merge's layers
+      # instead of from scratch — and pull requests read main's cache too.
+      # The tag is the one the compose file names, so `compose up` below uses
+      # this image instead of rebuilding.
       - name: Build image
-        run: docker compose build
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          load: true
+          tags: teamcoderz/wordyme:latest
+          cache-from: |
+            type=gha,scope=linux-amd64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-amd64
 
       # --wait blocks on the HEALTHCHECK in the Dockerfile, so this asserts the
       # app actually serves /api/health — not merely that the container started.
@@ -115,3 +184,31 @@ jobs:
       - name: Tear down stack
         if: always()
         run: docker compose down -v
+
+  # Push-to-main only: keeps the arm64 half of the release cache as warm as
+  # the amd64 half, without slowing pull requests down. Nothing is loaded or
+  # pushed — the build exists to leave its layers in the cache the release
+  # workflow's native arm64 job reads.
+  docker-arm64-cache:
+    name: Warm the arm64 build cache
+    if: github.event_name == 'push'
+    runs-on: ubuntu-24.04-arm
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Build for the cache
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          cache-from: |
+            type=gha,scope=linux-arm64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-arm64
