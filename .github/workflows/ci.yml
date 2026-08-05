@@ -23,6 +23,60 @@ permissions:
   contents: read
 
 jobs:
+  # Squash-merging takes the commit subject from the pull request title, and
+  # release-it builds the changelog from those subjects — so a title that is
+  # not a conventional commit lands verbatim in CHANGELOG.md and is invisible
+  # to the version bump, which reads the type to decide major/minor/patch.
+  # Cheapest check in the file, so it runs first.
+  pr-title:
+    name: Conventional PR title
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # The title is attacker-controlled text from whoever opened the pull
+      # request, so it travels through the environment rather than being
+      # interpolated into the script, where it could be parsed as shell.
+      - name: Check the title against the conventional commit format
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          set -euo pipefail
+
+          # type(optional-scope)!: subject
+          # The scope is optional, the "!" breaking-change marker is optional,
+          # and exactly one colon-space separates the prefix from the subject.
+          PATTERN='^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z0-9._/-]+\))?!?: .+'
+
+          if printf '%s' "$TITLE" | grep -Eq "$PATTERN"; then
+            echo "Title is a valid conventional commit:"
+            echo "  $TITLE"
+            exit 0
+          fi
+
+          {
+            echo "## Pull request title is not a conventional commit"
+            echo
+            echo '```'
+            echo "$TITLE"
+            echo '```'
+            echo
+            echo "Expected \`type(scope): subject\` — a colon after the type, not a slash."
+            echo
+            echo "| Wrong | Right |"
+            echo "| ----- | ----- |"
+            echo "| \`feat/pr-title\` | \`feat(ci): add a pull request title check\` |"
+            echo "| \`fix: \` | \`fix(docker): normalise drizzle directory permissions\` |"
+            echo "| \`Update README\` | \`docs: explain the release flow\` |"
+            echo
+            echo "Types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test."
+            echo "Add \`!\` before the colon for a breaking change: \`feat(api)!: drop v1 routes\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::error::Pull request title '$TITLE' is not a conventional commit. Expected 'type(scope): subject', for example 'feat(ci): add a pull request title check'. See the run summary for the full format."
+          exit 1
+
   build:
     name: Lint, type-check, build
     runs-on: ubuntu-latest
