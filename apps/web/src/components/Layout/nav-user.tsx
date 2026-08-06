@@ -127,9 +127,9 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
 /**
  * Version row plus update status.
  *
- * Deliberately silent when up to date: that is the state ~95% of the time, and
- * a permanent "you are up to date" line is noise. The refresh control is always
- * available for anyone who wants to ask.
+ * The status line is permanent — "Up to date" shows rather than the row falling
+ * silent. It keeps the row a constant height so the menu never jumps, and it
+ * makes a working check visible even when there is nothing to do.
  *
  * Nothing here is hover-only — the available version is visible text, so it
  * works on touch, reads to screen readers, and survives a support screenshot.
@@ -138,12 +138,16 @@ function VersionSection() {
   const { status, isChecking, check } = useUpdateStatus();
   const [instructionsOpen, setInstructionsOpen] = useState(false);
 
-  // Operator opted out entirely: show what we always showed, nothing more.
+  // Operator opted out entirely. A plain div rather than a DropdownMenuItem:
+  // the item styling adds a hover background and its own text colour, which
+  // makes static text look interactive. Matches the enabled row exactly.
   if (!status.enabled) {
     return (
-      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-        Version {status.current}
-      </DropdownMenuItem>
+      <div className="px-2 py-1.5">
+        <span className="text-muted-foreground text-sm tabular-nums whitespace-nowrap">
+          Version {status.current}
+        </span>
+      </div>
     );
   }
 
