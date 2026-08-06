@@ -1,7 +1,7 @@
 {
   "name": "oss",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.4",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -10,8 +10,7 @@
     "license:fix": "node scripts/spdx-license-cli.mjs add",
     "license:check": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
-    "start": "turbo start",
-    "release": "release-it --ci --no-increment"
+    "start": "turbo start"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.6",

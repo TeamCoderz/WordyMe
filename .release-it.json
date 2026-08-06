@@ -22,7 +22,8 @@
         "name": "conventionalcommits"
       },
       "infile": "CHANGELOG.md",
-      "header": "# Changelog"
+      "header": "# Changelog",
+      "ignoreRecommendedBump": true
     }
   },
   "hooks": {

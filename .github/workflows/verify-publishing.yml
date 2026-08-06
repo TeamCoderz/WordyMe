@@ -2,19 +2,25 @@
 #
 # Run this from the Actions tab before the first real release, and again after
 # rotating the Docker Hub token. It exercises every step the release workflow
-# does — secrets, both registry logins, the CI build, the vulnerability gate,
-# and a real push to both registries — but writes only a disposable `ci-verify`
-# tag. No version bump, no git tag, no GitHub release, and `latest` is never
-# touched.
+# does — secrets, both registry logins, the native per-architecture builds, the
+# vulnerability gate, the digest pushes and the manifest merge — but tags only
+# a disposable `ci-verify`. No version bump, no git tag, no GitHub release, and
+# `latest` is never touched.
 #
 # The push is the point. `docker login` succeeds with a read-only token and
 # only fails later at push time, so a successful login proves nothing about
 # write access.
+#
+# Because it runs the same per-architecture jobs on the same runners with the
+# same caches as a release, its timings are also the honest preview of what
+# the next release will cost.
 
 name: Verify publishing setup
 
 on:
   workflow_dispatch:
+
+permissions: {}
 
 env:
   DOCKERHUB_IMAGE: teamcoderz/wordyme
@@ -24,15 +30,13 @@ env:
   VERIFY_TAG: ci-verify
 
 jobs:
-  verify:
-    name: Verify publishing setup
+  # Fail in seconds rather than after a five minute build.
+  secrets:
+    name: Check the required secrets exist
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    timeout-minutes: 30
 
     steps:
-      # Fail in seconds rather than after a five minute build.
       - name: Check the required secrets exist
         env:
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -52,13 +56,153 @@ jobs:
           fi
           exit "$missing"
 
+  # Same shape as the release workflow: one native job per architecture, each
+  # scanned before its digest push, merged into the ci-verify tag afterwards.
+  build-amd64:
+    name: Build and push linux/amd64
+    needs: secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Build for scanning
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          tags: wordyme:verify
+          cache-from: |
+            type=gha,scope=linux-amd64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-amd64
+
+      - name: Run the same vulnerability gate as a release
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: wordyme:verify
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The step that actually proves write access to both registries.
+      - name: Push by digest
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/amd64
+          sbom: true
+          provenance: mode=max
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",name-canonical=true,push-by-digest=true,push=true
+          cache-from: type=gha,scope=linux-amd64
+
+  build-arm64:
+    name: Build and push linux/arm64
+    needs: secrets
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
+
+      - name: Build for scanning
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          load: true
+          tags: wordyme:verify
+          cache-from: |
+            type=gha,scope=linux-arm64
+            type=gha
+          cache-to: type=gha,mode=max,scope=linux-arm64
+
+      - name: Run the same vulnerability gate as a release
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: wordyme:verify
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push by digest
+        id: push
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          platforms: linux/arm64
+          sbom: true
+          provenance: mode=max
+          outputs: type=image,"name=${{ env.DOCKERHUB_IMAGE }},${{ env.GHCR_IMAGE }}",name-canonical=true,push-by-digest=true,push=true
+          cache-from: type=gha,scope=linux-arm64
+
+  merge:
+    name: Merge, tag ci-verify and check the registries
+    needs: [build-amd64, build-arm64]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
@@ -97,39 +241,17 @@ jobs:
             type=sha,format=long
             type=raw,value=latest,enable=${{ !contains(steps.version.outputs.value, '-') }}
 
-      - name: Build for scanning
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          platforms: linux/amd64
-          load: true
-          tags: wordyme:verify
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run the same vulnerability gate as a release
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: wordyme:verify
-          format: table
-          severity: CRITICAL,HIGH
-          ignore-unfixed: true
-          exit-code: '1'
-
-      # The step that actually proves write access to both registries.
-      - name: Push the disposable verify tag
-        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: true
-          tags: |
-            ${{ env.DOCKERHUB_IMAGE }}:${{ env.VERIFY_TAG }}
-            ${{ env.GHCR_IMAGE }}:${{ env.VERIFY_TAG }}
-          sbom: true
-          provenance: mode=max
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Merge the digests into the ci-verify tag
+        env:
+          AMD64_DIGEST: ${{ needs.build-amd64.outputs.digest }}
+          ARM64_DIGEST: ${{ needs.build-arm64.outputs.digest }}
+        run: |
+          set -euo pipefail
+          for image in "$DOCKERHUB_IMAGE" "$GHCR_IMAGE"; do
+            docker buildx imagetools create -t "$image:$VERIFY_TAG" \
+              "$image@$AMD64_DIGEST" \
+              "$image@$ARM64_DIGEST"
+          done
 
       # `imagetools inspect` exits 0 whatever the manifest contains, so printing
       # it proves nothing. Parse the raw manifest list and fail if either
@@ -250,8 +372,8 @@ jobs:
             echo
             echo "- Both secrets are present"
             echo "- Docker Hub and GHCR logins succeed"
-            echo "- The image builds on a CI runner"
-            echo "- The vulnerability gate passes"
+            echo "- Both architectures build natively on their own runners"
+            echo "- The vulnerability gate passes for each architecture"
             echo "- **Write access to both registries confirmed by a real push**"
             echo "- Both \`linux/amd64\` and \`linux/arm64\` are in the manifest"
             echo "- The GHCR package is publicly pullable — anonymous pull returns 200"

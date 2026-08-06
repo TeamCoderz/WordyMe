@@ -869,22 +869,51 @@ process exits anyway rather than waiting to be killed.
 
 ## How images are published
 
-Images are built and pushed by the **Manual Release** workflow
-(`.github/workflows/release.yml`). Running that workflow bumps the version,
-writes the changelog, tags the commit, creates the GitHub release, and then
-builds and publishes the image — in that order, from the tag it just created.
+Releasing is two steps, with a pull request in the middle.
 
-The image build lives inside the release workflow rather than in a separate
-`on: push: tags` workflow, and that is deliberate. The release job pushes its
-tag using the default `GITHUB_TOKEN`, and GitHub does not start new workflow
-runs from events created with that token — a tag-triggered workflow would never
-fire.
+**Prepare Release** (`.github/workflows/release-prepare.yml`) is run by hand.
+It bumps the version, writes the changelog, commits that to a `release/vX.Y.Z`
+branch and pushes it. Nothing is tagged or published. A maintainer then opens
+the pull request the run summary links to, and merges it once the checks pass.
+
+**Publish Release** (`.github/workflows/release-publish.yml`) fires on that
+merge. It builds and scans each architecture natively on a runner of its own
+kind — amd64 on `ubuntu-latest`, arm64 on `ubuntu-24.04-arm`, in parallel —
+pushes each image by digest, merges the digests into the tagged multi-arch
+manifests, then tags the commit and creates the GitHub release. The tag comes
+last deliberately: it is the completion marker, so a release that fails at the
+vulnerability gate or a registry push leaves no tag behind and is retried by
+simply re-running the workflow.
+
+Because each architecture is pushed by digest before the merge step tags
+them, a release that fails midway can leave untagged manifests on the
+registries. They are invisible to `docker pull`, immutable and harmless — but
+never point "delete untagged versions" housekeeping at these packages: the
+per-architecture and attestation manifests of every _released_ tag are also
+listed as untagged, and deleting them breaks pulls of published releases.
+One more property carried over from the old pipeline: re-running an old
+failed release run after a newer version has shipped re-points `latest` at
+the older version, so finish or discard failed release runs promptly.
+
+The split exists because `main` requires status checks. A version bump pushed
+straight there has never existed anywhere CI could run, so the checks can never
+appear on it and the push is refused. Routing it through a branch means the
+release commit is tested like any other change, and no bypass or long-lived
+token is needed.
+
+Two consequences of the same GitHub behaviour are worth knowing, because both
+shaped the design: GitHub does not start workflow runs from events created with
+`GITHUB_TOKEN`. That is why the prepare workflow does not open the pull request
+itself — one it opened would sit with no checks and could never be merged — and
+why tagging and publishing stay in a single run rather than splitting into an
+`on: push: tags` workflow, which would never fire.
 
 What each release produces:
 
 - **Two architectures**, `linux/amd64` and `linux/arm64`, in one manifest, so
   `docker pull` selects the right one automatically.
-- **Both registries**, GHCR and Docker Hub, from a single build.
+- **Both registries**, GHCR and Docker Hub, from the same per-architecture
+  builds — each digest is pushed to both, so the registries can never diverge.
 - **OCI labels**, including `org.opencontainers.image.source` pointing at this
   repository. That also serves the AGPL's source-availability requirement: the
   image itself carries a link to the code it was built from.
@@ -893,10 +922,11 @@ What each release produces:
   **not cryptographically signed** — signing would require a separate cosign or
   Sigstore step, which this pipeline does not yet do.
 - **A vulnerability scan that gates the push.** The workflow builds and scans
-  before publishing anything, and fails if Trivy reports a HIGH or CRITICAL
-  issue _that has a fix available_. Unfixable CVEs are reported but do not block
-  a release, since there would be nothing to do about them. The full report,
-  including MEDIUM and LOW, is uploaded to the repository's Security tab.
+  each architecture before pushing it, and fails if Trivy reports a HIGH or
+  CRITICAL issue _that has a fix available_. Unfixable CVEs are reported but do
+  not block a release, since there would be nothing to do about them. The full
+  report, including MEDIUM and LOW, is uploaded to the repository's Security
+  tab.
 
 ### One-time setup
 
