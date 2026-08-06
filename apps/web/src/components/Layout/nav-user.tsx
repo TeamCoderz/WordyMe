@@ -27,8 +27,7 @@ import {
 import { useSelector } from '@/store';
 import { logout } from '@repo/sdk/auth';
 import { useState } from 'react';
-import { ExternalLink, RefreshCw } from '@repo/ui/components/icons';
-import { Badge } from '@repo/ui/components/badge';
+import { RefreshCw } from '@repo/ui/components/icons';
 import { cn } from '@repo/ui/lib/utils';
 import { useUpdateStatus } from '@/hooks/use-update-status';
 import { UpdateInstructionsDialog } from './update-instructions-dialog';
@@ -151,8 +150,38 @@ function VersionSection() {
   return (
     <>
       <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+        {/* current → latest on one line: the transition is the message, and it
+            reads faster than a version plus a separate badge.
+            The app's sans, not monospace — this sits between "Settings" and
+            "Log out", and mono would read as terminal output while costing
+            ~20% more width in a menu that has none to spare.
+            tabular-nums keeps the digits from shifting as versions change. */}
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm whitespace-nowrap">Version {status.current}</span>
+          <span className="truncate text-sm tabular-nums whitespace-nowrap">
+            <span className="text-muted-foreground">Version {status.current}</span>
+            {status.updateAvailable && status.latest ? (
+              <>
+                <span className="text-muted-foreground mx-1.5" aria-hidden="true">
+                  →
+                </span>
+                {/* The new version number is itself the link to the notes —
+                    one target instead of a separate "Release notes" label. */}
+                {status.releaseUrl ? (
+                  <a
+                    href={status.releaseUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    title={`Release notes for ${status.latest}`}
+                    className="decoration-muted-foreground/40 hover:decoration-foreground font-medium underline underline-offset-2"
+                  >
+                    {status.latest}
+                  </a>
+                ) : (
+                  <span className="font-medium">{status.latest}</span>
+                )}
+              </>
+            ) : null}
+          </span>
           <button
             type="button"
             onClick={check}
@@ -164,43 +193,29 @@ function VersionSection() {
           </button>
         </div>
 
-        {status.updateAvailable && status.latest ? (
-          <>
-            {/* On its own line rather than beside the version: at this menu
-                width the two together wrap, and a wrapped version number reads
-                as broken rather than compact. */}
-            <Badge
-              variant="secondary"
-              className="mt-1 px-1.5 py-0 text-[0.625rem] font-medium whitespace-nowrap"
-            >
-              {status.latest} available
-            </Badge>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-              {status.releaseUrl ? (
-                <a
-                  href={status.releaseUrl}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs whitespace-nowrap underline underline-offset-2"
-                >
-                  Release notes
-                  <ExternalLink className="size-3" />
-                </a>
-              ) : null}
+        {/* Status stays put in every state, so the row never changes height and
+            the check is visibly working even when there is nothing to do. */}
+        <div className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-xs">
+          <span>
+            {status.status === 'unreachable'
+              ? "Couldn't check for updates"
+              : status.updateAvailable
+                ? 'Update available'
+                : 'Up to date'}
+          </span>
+          {status.updateAvailable ? (
+            <>
+              <span aria-hidden="true">·</span>
               <button
                 type="button"
                 onClick={() => setInstructionsOpen(true)}
-                className="text-muted-foreground hover:text-foreground text-xs whitespace-nowrap underline underline-offset-2"
+                className="hover:text-foreground whitespace-nowrap hover:underline hover:underline-offset-2"
               >
                 How to update
               </button>
-            </div>
-          </>
-        ) : null}
-
-        {status.status === 'unreachable' ? (
-          <p className="text-muted-foreground mt-1.5 text-xs">Couldn&apos;t check for updates</p>
-        ) : null}
+            </>
+          ) : null}
+        </div>
       </div>
 
       <UpdateInstructionsDialog
