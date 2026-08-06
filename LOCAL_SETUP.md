@@ -64,7 +64,16 @@ pnpm install
 ```
 
 This installs dependencies for every app and package in the monorepo, and
-installs the git hooks.
+installs the git hooks — the `prepare` script runs `lefthook install` for you.
+
+Confirm the hooks landed, because a commit without them silently skips the
+licence header your pull request will then be failed for:
+
+```bash
+ls .git/hooks/pre-commit
+```
+
+If it is missing, run `pnpm exec lefthook install` by hand.
 
 ## Step 3: Environment Configuration
 
@@ -95,6 +104,7 @@ The remaining settings have working defaults:
 
 | Variable          | Default                 | Notes                                          |
 | ----------------- | ----------------------- | ---------------------------------------------- |
+| `NODE_ENV`        | `development`           | Leave unset locally                            |
 | `PORT`            | `3000`                  | Backend port                                   |
 | `DB_FILE_NAME`    | `file:storage/local.db` | Created on first migration                     |
 | `TRUST_HOST`      | `true`                  | Also trust the address each request arrives on |
@@ -252,6 +262,16 @@ the database first, see [Database Issues](#database-issues).
 
 Migrations have not been applied. See [Step 4](#step-4-database-setup).
 
+The browser shows a different wording, because the response carries only the
+query that failed — the sign-in page is usually where you meet it:
+
+```
+Failed query: select "id" from "users" limit ?
+```
+
+`no such table` appears in the terminal running the backend, as the underlying
+cause. Any `Failed query:` response on a fresh clone means this.
+
 ### Port Already in Use
 
 **Backend (3000):** change `PORT` in `apps/backend/.env`. If you do, the Vite
@@ -342,10 +362,14 @@ pnpm lint --filter=web    # one package
 ### Code Formatting
 
 ```bash
-pnpm format
+pnpm format         # write
+pnpm format:check   # report without changing anything, as CI would
 ```
 
-This also runs automatically on staged files when you commit.
+This also runs automatically on staged files when you commit — only the staged
+ones, via the pre-commit hook. Generated files are exempt through
+`.prettierignore`: `routeTree.gen.ts`, the drizzle migrations, and the lockfile
+are all rewritten by their own tooling, so formatting them only creates churn.
 
 ### Licence Headers
 

@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @source "../../../**/*.{ts,tsx,css}";
-@import "tw-animate-css";
-@import "./themes.css";
+@import 'tw-animate-css';
+@import './themes.css';
 
 @layer base {
   * {
@@ -11,7 +11,7 @@
     @apply bg-background text-foreground;
   }
   button:not(:disabled),
-  [role="button"]:not(:disabled),
+  [role='button']:not(:disabled),
   a:not(:disabled) {
     cursor: pointer;
   }
