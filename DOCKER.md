@@ -793,6 +793,52 @@ docker compose exec wordyme sh
 docker compose exec wordyme node -v
 ```
 
+### Adding CJK fonts to the PDF viewer
+
+Only relevant if your PDFs are Japanese, Korean or Chinese **and** were saved
+without embedding their fonts. Most are not: embedding is the norm for those
+languages precisely because the reader cannot be assumed to have the fonts.
+Everything renders from the file itself, and no font here is ever consulted.
+
+Arabic and Hebrew fallbacks ship with the image. The CJK packs come to roughly
+139 MB between them — about 40% on top of the image — so they are wired up but
+left for you to add if you need them.
+
+Download the ones you want from npm, and mount them over the font directory:
+
+```bash
+mkdir pdf-fonts && cd pdf-fonts
+npm pack @embedpdf/fonts-jp        # Japanese
+npm pack @embedpdf/fonts-sc        # Simplified Chinese
+tar -xzf embedpdf-fonts-*.tgz --strip-components=2 package/fonts
+```
+
+```yaml
+services:
+  wordyme:
+    volumes:
+      - ./pdf-fonts:/app/web/pdf-fonts
+```
+
+Two things to get right:
+
+**Use the filenames as shipped.** Simplified Chinese is `NotoSansHans-*` and
+Traditional is `NotoSansHant-*`, despite the packages being named `fonts-sc`
+and `fonts-tc`. A renamed file never loads, and the only symptom is one line in
+the browser console.
+
+**Include the Arabic and Hebrew files too.** A bind mount replaces the
+directory rather than merging with it, so mounting over it without them removes
+fallbacks the image already had. Copy them out first:
+
+```bash
+docker compose cp wordyme:/app/web/pdf-fonts/. ./pdf-fonts/
+```
+
+No rebuild and no restart-time configuration: the files are fetched by URL when
+a document needs them. `apps/web/public/pdf-fonts/README.md` lists every
+supported filename.
+
 ### Custom Network Configuration
 
 Compose creates a network automatically. To use a custom one, modify
