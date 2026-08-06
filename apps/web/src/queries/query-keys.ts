@@ -51,3 +51,8 @@ export const TABS_QUERY_KEYS = {
   /** Placeholder key when a tab has no registered metadata query. */
   METADATA_NOOP: (tabId: string) => ['tab-metadata-noop', tabId] as const,
 };
+
+/** Release update query keys. */
+export const UPDATES_QUERY_KEYS = {
+  LATEST_RELEASE: ['updates', 'latest-release'] as const,
+};
