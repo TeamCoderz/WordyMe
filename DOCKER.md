@@ -444,7 +444,30 @@ All variables are read at runtime and can be changed without rebuilding the imag
 | `PORT`               | Port the app listens on, inside the container             | `8080`                          |
 | `DB_FILE_NAME`       | Database file path (absolute)                             | `file:/app/storage/local.db`    |
 | `TRUST_PROXY`        | Set **only** behind a reverse proxy — see below           | _(unset; not behind a proxy)_   |
+| `UPDATE_CHECK`       | Ask GitHub whether a newer release exists — see below     | `true`                          |
 | `HOST_PORT`          | Host port compose publishes to (compose only)             | `8080`                          |
+
+#### Update notifications
+
+The app tells you in the user menu when a newer WordyMe release has been
+published. To find out, the **server** — not your browser — asks the GitHub
+releases API which release is newest, at most once every six hours, and caches
+the answer. Nothing is ever downloaded or installed: updating stays a command
+you run yourself.
+
+That request reveals this instance's IP address to GitHub. If you would rather
+your deployment made no outbound calls at all, turn it off:
+
+```bash
+UPDATE_CHECK=false
+```
+
+Set to `false`, the server never contacts GitHub, and the menu shows the
+version with nothing about updates. This is a real switch, not a hidden
+button — no request is made.
+
+Leaving it on is recommended. Knowing a release exists is how you find out
+about security fixes, and the check is one request every six hours.
 
 #### Deployment scenarios
 

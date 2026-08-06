@@ -55,6 +55,9 @@ services:
       # Leave empty when the port is reached directly, or clients can forge
       # X-Forwarded-For and evade login rate limiting.
       - TRUST_PROXY=${TRUST_PROXY:-}
+      # Lets the app tell you when a newer image is published. It asks GitHub
+      # once every six hours. Set false to make no outbound calls at all.
+      - UPDATE_CHECK=${UPDATE_CHECK:-true}
 
     volumes:
       # Your database and uploaded files. Back this up.
