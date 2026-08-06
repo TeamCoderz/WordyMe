@@ -6,11 +6,13 @@
     "build": "turbo run build",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "license:fix": "node scripts/spdx-license-cli.mjs add",
     "license:check": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
-    "start": "turbo start"
+    "start": "turbo start",
+    "prepare": "lefthook install || echo 'lefthook: no git repository, skipping hook install'"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.6",

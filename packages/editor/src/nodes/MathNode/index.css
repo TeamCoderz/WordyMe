@@ -54,7 +54,7 @@ math-field::part(menu-toggle) {
   gap: calc(2 * var(--keycap-gap)) !important;
 }
 
-.MLK__rows>.MLK__row :is(.MLK__keycap, .action, .separator) {
+.MLK__rows > .MLK__row :is(.MLK__keycap, .action, .separator) {
   border-radius: 8px;
 }
 
