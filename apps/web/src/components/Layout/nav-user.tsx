@@ -27,7 +27,11 @@ import {
 import { useSelector } from '@/store';
 import { logout } from '@repo/sdk/auth';
 import { useState } from 'react';
-import { version } from '../../../../../package.json';
+import { ExternalLink, RefreshCw } from '@repo/ui/components/icons';
+import { Badge } from '@repo/ui/components/badge';
+import { cn } from '@repo/ui/lib/utils';
+import { useUpdateStatus } from '@/hooks/use-update-status';
+import { UpdateInstructionsDialog } from './update-instructions-dialog';
 type NavUserProps = {
   variant?: 'sidebar' | 'avatar';
   dropdownMenuSide?: 'top' | 'bottom' | 'left' | 'right';
@@ -50,13 +54,16 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
                   size="lg"
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground p-0"
                 >
-                  <Avatar>
-                    <AvatarImage
-                      src={user.avatar_image?.calculatedImage ?? undefined}
-                      alt={user.name ?? undefined}
-                    />
-                    <AvatarFallback>{user.name ? user.name[0] : undefined}</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar>
+                      <AvatarImage
+                        src={user.avatar_image?.calculatedImage ?? undefined}
+                        alt={user.name ?? undefined}
+                      />
+                      <AvatarFallback>{user.name ? user.name[0] : undefined}</AvatarFallback>
+                    </Avatar>
+                    <UpdateDot />
+                  </div>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
                     <span className="truncate text-xs">{user.email}</span>
@@ -90,13 +97,16 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
             className="hover:bg-accent-foreground/10!"
             aria-label="User menu"
           >
-            <Avatar className="size-8 rounded-lg">
-              <AvatarImage
-                src={user.avatar_image?.calculatedImage ?? undefined}
-                alt={user.name ?? undefined}
-              />
-              <AvatarFallback>{user.name ? user.name[0] : undefined}</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="size-8 rounded-lg">
+                <AvatarImage
+                  src={user.avatar_image?.calculatedImage ?? undefined}
+                  alt={user.name ?? undefined}
+                />
+                <AvatarFallback>{user.name ? user.name[0] : undefined}</AvatarFallback>
+              </Avatar>
+              <UpdateDot />
+            </div>
           </Button>
         </DropdownMenuTrigger>
         <MenuContent
@@ -115,6 +125,116 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
   }
   return null;
 }
+/**
+ * Version row plus update status.
+ *
+ * Deliberately silent when up to date: that is the state ~95% of the time, and
+ * a permanent "you are up to date" line is noise. The refresh control is always
+ * available for anyone who wants to ask.
+ *
+ * Nothing here is hover-only — the available version is visible text, so it
+ * works on touch, reads to screen readers, and survives a support screenshot.
+ */
+function VersionSection() {
+  const { status, isChecking, check } = useUpdateStatus();
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
+
+  // Operator opted out entirely: show what we always showed, nothing more.
+  if (!status.enabled) {
+    return (
+      <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+        Version {status.current}
+      </DropdownMenuItem>
+    );
+  }
+
+  return (
+    <>
+      <div className="px-2 py-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm whitespace-nowrap">Version {status.current}</span>
+          <button
+            type="button"
+            onClick={check}
+            disabled={isChecking}
+            aria-label="Check for updates"
+            className="text-muted-foreground hover:text-foreground ml-auto shrink-0 rounded-sm p-1 transition-colors disabled:cursor-default"
+          >
+            <RefreshCw className={cn('size-3.5', isChecking && 'animate-spin')} />
+          </button>
+        </div>
+
+        {status.updateAvailable && status.latest ? (
+          <>
+            {/* On its own line rather than beside the version: at this menu
+                width the two together wrap, and a wrapped version number reads
+                as broken rather than compact. */}
+            <Badge
+              variant="secondary"
+              className="mt-1 px-1.5 py-0 text-[0.625rem] font-medium whitespace-nowrap"
+            >
+              {status.latest} available
+            </Badge>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {status.releaseUrl ? (
+                <a
+                  href={status.releaseUrl}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs whitespace-nowrap underline underline-offset-2"
+                >
+                  Release notes
+                  <ExternalLink className="size-3" />
+                </a>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => setInstructionsOpen(true)}
+                className="text-muted-foreground hover:text-foreground text-xs whitespace-nowrap underline underline-offset-2"
+              >
+                How to update
+              </button>
+            </div>
+          </>
+        ) : null}
+
+        {status.status === 'unreachable' ? (
+          <p className="text-muted-foreground mt-1.5 text-xs">Couldn&apos;t check for updates</p>
+        ) : null}
+      </div>
+
+      <UpdateInstructionsDialog
+        open={instructionsOpen}
+        onOpenChange={setInstructionsOpen}
+        latest={status.latest}
+        releaseUrl={status.releaseUrl}
+      />
+    </>
+  );
+}
+
+/**
+ * The only always-visible surface, so it stays quiet: no animation, no count.
+ * Not red — red reads as an error or an emergency, and a routine minor release
+ * is neither. Colouring routine news red is how people learn to ignore red.
+ */
+function UpdateDot({ className }: { className?: string }) {
+  const { status } = useUpdateStatus();
+  if (!status.enabled || !status.updateAvailable) return null;
+
+  return (
+    <span
+      role="status"
+      aria-label="Update available"
+      className={cn(
+        'bg-primary ring-background absolute size-2 rounded-full ring-2',
+        '-top-0.5 -right-0.5',
+        className,
+      )}
+    />
+  );
+}
+
 function MenuContent({
   dropdownMenuSide,
   isMobile,
@@ -130,7 +250,7 @@ function MenuContent({
   return (
     <>
       <DropdownMenuContent
-        className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-60"
         side={dropdownMenuSide || (isMobile ? 'bottom' : 'right')}
         align="end"
         sideOffset={4}
@@ -165,13 +285,7 @@ function MenuContent({
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onSelect={(e) => {
-            e.preventDefault();
-          }}
-        >
-          Version {version}
-        </DropdownMenuItem>
+        <VersionSection />
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 group-hover:text-accent-foreground" />

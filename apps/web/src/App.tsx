@@ -12,6 +12,8 @@ import { authClient } from '@repo/sdk/auth';
 
 import { store } from './store';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+// PROTOTYPE ONLY — remove with the rest of the update-check scaffolding.
+import { PrototypeUpdateSwitcher } from '@/components/Layout/prototype-update-switcher';
 
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -49,7 +51,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-
 export const App = () => {
   const { data: session, isPending, isRefetching } = authClient.useSession();
   return (
@@ -64,6 +65,8 @@ export const App = () => {
           }}
         />
         <ReactQueryDevtools initialIsOpen={false} />
+        {/* PROTOTYPE ONLY — remove with the rest of the update-check scaffolding. */}
+        {import.meta.env.DEV ? <PrototypeUpdateSwitcher /> : null}
       </ThemeProvider>
     </QueryClientProvider>
   );
