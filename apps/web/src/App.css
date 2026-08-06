@@ -3,7 +3,7 @@
   @apply bg-muted;
   transition: background-color 300ms ease;
 }
-@import "@repo/ui/globals.css";
+@import '@repo/ui/globals.css';
 
 /* Animated highlight utility for first-render/cached rows */
 .flash-highlight-animate {
@@ -51,7 +51,7 @@ body {
   flex-direction: column;
   width: 100%;
   min-height: 100vh;
-  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
   overflow: hidden;
   container-type: inline-size;
 }
@@ -65,12 +65,11 @@ header {
   background-color: rgb(95 183 255 / 50%);
 }
 
-
-.viewer-container :is([id], [target="_self"], h1, h2, h3, h4, h5, h6) {
+.viewer-container :is([id], [target='_self'], h1, h2, h3, h4, h5, h6) {
   scroll-margin-top: calc(var(--spacing) * 20);
 }
 
-.editor-container :is([id], [target="_self"], h1, h2, h3, h4, h5, h6) {
+.editor-container :is([id], [target='_self'], h1, h2, h3, h4, h5, h6) {
   scroll-margin-top: calc(var(--spacing) * 34);
 }
 
@@ -98,12 +97,13 @@ html > body.fullscreen {
   }
 }
 
-body:has([contenteditable="true"]) {
+body:has([contenteditable='true']) {
   pointer-events: auto !important;
 }
 
 @media (pointer: coarse) and (max-width: 40rem) {
-  body:has([contenteditable="true"]) [data-radix-popper-content-wrapper]:has(>[data-slot="context-menu-content"]) {
+  body:has([contenteditable='true'])
+    [data-radix-popper-content-wrapper]:has(> [data-slot='context-menu-content']) {
     margin-top: calc(var(--spacing) * 6);
   }
 }
@@ -123,16 +123,11 @@ body:has([contenteditable="true"]) {
     --foreground: oklch(0.145 0 0) !important;
   }
 
-  body
-    *:not(
-      .editor-input ,
-      .editor-input *,
-      :has(.editor-input)
-    ) {
+  body *:not(.editor-input, .editor-input *, :has(.editor-input)) {
     display: none !important;
   }
 
-  .editor-input  {
+  .editor-input {
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
@@ -161,7 +156,7 @@ body:has([contenteditable="true"]) {
 
 @font-face {
   font-family: Gyrochrome;
-  src: url(/fonts/GyrochromeVF.ttf) format("truetype");
+  src: url(/fonts/GyrochromeVF.ttf) format('truetype');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

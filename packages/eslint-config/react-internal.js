@@ -3,13 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import js from "@eslint/js";
-import eslintConfigPrettier from "eslint-config-prettier";
-import tseslint from "typescript-eslint";
-import pluginReactHooks from "eslint-plugin-react-hooks";
-import pluginReact from "eslint-plugin-react";
-import globals from "globals";
-import { config as baseConfig } from "./base.js";
+import js from '@eslint/js';
+import eslintConfigPrettier from 'eslint-config-prettier';
+import tseslint from 'typescript-eslint';
+import pluginReactHooks from 'eslint-plugin-react-hooks';
+import pluginReact from 'eslint-plugin-react';
+import globals from 'globals';
+import { config as baseConfig } from './base.js';
 
 /**
  * A custom ESLint configuration for libraries that use React.
@@ -32,17 +32,17 @@ export const config = [
   },
   {
     plugins: {
-      "react-hooks": pluginReactHooks,
+      'react-hooks': pluginReactHooks,
     },
     // Pinned rather than "detect": detection calls context.getFilename(), which
     // ESLint 10 removed, so eslint-plugin-react 7.37 throws
     // "contextOrFilename.getFilename is not a function" and the whole lint run
     // dies. Revert to "detect" once the plugin supports ESLint 10.
-    settings: { react: { version: "19" } },
+    settings: { react: { version: '19' } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
       // React scope no longer necessary with new JSX transform.
-      "react/react-in-jsx-scope": "off",
+      'react/react-in-jsx-scope': 'off',
     },
   },
 ];

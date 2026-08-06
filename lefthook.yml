@@ -24,7 +24,11 @@ pre-commit:
       glob: '**/*.{ts,tsx,js,jsx}'
       stage_fixed: true
 
+    # Prettier directly rather than `pnpm format`, which carries its own glob:
+    # appending {staged_files} to it did nothing, so every commit reformatted the
+    # whole repository and still skipped the css/js/json files this job passes.
+    # --ignore-unknown skips what Prettier cannot parse instead of failing the
+    # commit, and .prettierignore keeps generated files out.
     - name: format
-      run: pnpm format {staged_files}
-      glob: '**/*.{ts,tsx,js,jsx,json,md,yml,yaml}'
+      run: pnpm exec prettier --write --ignore-unknown {staged_files}
       stage_fixed: true
