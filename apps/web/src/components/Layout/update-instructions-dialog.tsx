@@ -39,11 +39,17 @@ export function UpdateInstructionsDialog({
   releaseUrl: string | null;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const copy = async () => {
-    await navigator.clipboard.writeText(UPDATE_COMMAND);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(UPDATE_COMMAND);
+      setCopied(true);
+      setCopyFailed(false);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopyFailed(true);
+    }
   };
 
   return (
@@ -72,6 +78,13 @@ export function UpdateInstructionsDialog({
               {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
             </Button>
           </div>
+
+          {copyFailed ? (
+            <p className="text-muted-foreground text-xs">
+              Copying is unavailable on this connection — select the command above and copy it
+              manually.
+            </p>
+          ) : null}
 
           <p className="text-muted-foreground text-xs">
             Your documents and uploaded files live in a Docker volume and are not touched by

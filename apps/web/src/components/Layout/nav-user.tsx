@@ -134,9 +134,8 @@ export function NavUser({ variant = 'sidebar', dropdownMenuSide, ...props }: Nav
  * Nothing here is hover-only — the available version is visible text, so it
  * works on touch, reads to screen readers, and survives a support screenshot.
  */
-function VersionSection() {
+function VersionSection({ onShowInstructions }: { onShowInstructions: () => void }) {
   const { status, isChecking, check } = useUpdateStatus();
-  const [instructionsOpen, setInstructionsOpen] = useState(false);
 
   // Operator opted out entirely. A plain div rather than a DropdownMenuItem:
   // the item styling adds a hover background and its own text colour, which
@@ -212,7 +211,7 @@ function VersionSection() {
               <span aria-hidden="true">·</span>
               <button
                 type="button"
-                onClick={() => setInstructionsOpen(true)}
+                onClick={onShowInstructions}
                 className="hover:text-foreground whitespace-nowrap hover:underline hover:underline-offset-2"
               >
                 How to update
@@ -221,13 +220,6 @@ function VersionSection() {
           ) : null}
         </div>
       </div>
-
-      <UpdateInstructionsDialog
-        open={instructionsOpen}
-        onOpenChange={setInstructionsOpen}
-        latest={status.latest}
-        releaseUrl={status.releaseUrl}
-      />
     </>
   );
 }
@@ -266,6 +258,8 @@ function MenuContent({
   onClose: () => void;
 }) {
   const user = useSelector((state) => state.user);
+  const { status } = useUpdateStatus();
+  const [instructionsOpen, setInstructionsOpen] = useState(false);
   return (
     <>
       <DropdownMenuContent
@@ -304,13 +298,20 @@ function MenuContent({
           </Link>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <VersionSection />
+        <VersionSection onShowInstructions={() => setInstructionsOpen(true)} />
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout}>
           <LogOut className="mr-2 group-hover:text-accent-foreground" />
           Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
+
+      <UpdateInstructionsDialog
+        open={instructionsOpen}
+        onOpenChange={setInstructionsOpen}
+        latest={status.latest}
+        releaseUrl={status.releaseUrl}
+      />
     </>
   );
 }
