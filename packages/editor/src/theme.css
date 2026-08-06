@@ -1,10 +1,10 @@
-@import "mathlive/static.css";
+@import 'mathlive/static.css';
 
-[dir="ltr"] {
+[dir='ltr'] {
   text-align: left;
 }
 
-[dir="rtl"] {
+[dir='rtl'] {
   text-align: right;
 }
 
@@ -78,7 +78,7 @@
   text-decoration: underline;
 }
 
-[contenteditable="true"] .LexicalTheme__link {
+[contenteditable='true'] .LexicalTheme__link {
   text-decoration: none;
   cursor: text;
 }
@@ -90,7 +90,7 @@
 }
 
 .LexicalTheme__blockCursor:after {
-  content: "";
+  content: '';
   display: block;
   position: absolute;
   top: -2px;
@@ -119,7 +119,7 @@
 }
 
 .LexicalTheme__code:before {
-  content: "";
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
@@ -245,14 +245,14 @@
 }
 
 .LexicalTheme__tableCellSelected::after,
-:not(.selected)>.selected::after {
+:not(.selected) > .selected::after {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   top: 0;
   background-color: #5fb7ff80;
-  content: "";
+  content: '';
   pointer-events: none;
 }
 
@@ -327,7 +327,7 @@
 .LexicalTheme__listItemUnchecked:before,
 .LexicalTheme__listItemChecked:before {
   display: block;
-  content: "";
+  content: '';
   box-sizing: border-box;
   position: absolute;
   width: 18px;
@@ -339,8 +339,8 @@
   left: 0;
 }
 
-.LexicalTheme__listItemUnchecked[dir="rtl"]:before,
-.LexicalTheme__listItemChecked[dir="rtl"]:before {
+.LexicalTheme__listItemUnchecked[dir='rtl']:before,
+.LexicalTheme__listItemChecked[dir='rtl']:before {
   left: auto;
   right: 0;
 }
@@ -352,7 +352,7 @@
 }
 
 .LexicalTheme__listItemChecked:after {
-  content: "";
+  content: '';
   display: block;
   box-sizing: border-box;
   position: absolute;
@@ -366,8 +366,8 @@
   transform: rotate(45deg);
 }
 
-.LexicalTheme__listItemUnchecked[dir="rtl"]:after,
-.LexicalTheme__listItemChecked[dir="rtl"]:after {
+.LexicalTheme__listItemUnchecked[dir='rtl']:after,
+.LexicalTheme__listItemChecked[dir='rtl']:after {
   left: auto;
   right: 8px;
 }
@@ -458,8 +458,8 @@ iframe {
   position: relative;
 }
 
-[style*="text-align:justify"] .LexicalTheme__image,
-[style*="text-align: justify"] .LexicalTheme__image {
+[style*='text-align:justify'] .LexicalTheme__image,
+[style*='text-align: justify'] .LexicalTheme__image {
   width: 100%;
 }
 
@@ -499,7 +499,7 @@ iframe {
   caret-color: rgb(5, 5, 5);
 }
 
-[contenteditable="true"] .LexicalTheme__hr {
+[contenteditable='true'] .LexicalTheme__hr {
   user-select: none;
   cursor: pointer;
 }
@@ -520,7 +520,7 @@ iframe {
   overflow-y: hidden;
 }
 
-[type="page-break"] {
+[type='page-break'] {
   position: relative;
   display: block;
   overflow: unset;
@@ -534,15 +534,15 @@ iframe {
   clear: both;
 }
 
-[type="page-break"]::before {
-  content: "";
+[type='page-break']::before {
+  content: '';
   display: block;
   height: 2px;
   background-color: #ccc;
   line-height: 2px;
 }
 
-[type="page-break"]::after {
+[type='page-break']::after {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -551,14 +551,14 @@ iframe {
   padding: 2px 6px;
   border: 1px solid #ccc;
   background-color: #fff;
-  content: "PAGE BREAK";
+  content: 'PAGE BREAK';
   font-size: 0.75em;
   color: #000;
   font-weight: 600;
 }
 
 @media print {
-  [type="page-break"] {
+  [type='page-break'] {
     display: none;
   }
 }
@@ -596,36 +596,22 @@ iframe {
   flex-direction: column;
 }
 
-[data-paged="true"] .LexicalTheme__pageContent {
+[data-paged='true'] .LexicalTheme__pageContent {
   margin-bottom: auto;
 }
 
-[data-paged="false"]
-  :is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter),
+[data-paged='false'] :is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter),
 :is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter):empty {
   display: none;
 }
 
-:is(
-  .LexicalTheme__pageHeader,
-  .LexicalTheme__pageFooter
-)[contenteditable="false"],
-:is(
-    .LexicalTheme__pageHeader,
-    .LexicalTheme__pageFooter
-  )[contenteditable="false"]
-  * {
+:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable='false'],
+:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable='false'] * {
   user-select: none;
 }
 
-:is(
-    .LexicalTheme__pageHeader,
-    .LexicalTheme__pageFooter
-  )[contenteditable="false"]
- :is(
-    .selected,
-.LexicalTheme__tableCellSelected
-  )::after {
+:is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter)[contenteditable='false']
+  :is(.selected, .LexicalTheme__tableCellSelected)::after {
   background-color: transparent;
 }
 
@@ -650,10 +636,10 @@ iframe {
 }
 
 @media screen {
-  [data-paged="true"] .LexicalTheme__page {
+  [data-paged='true'] .LexicalTheme__page {
     max-width: 100%;
-    padding: var(--page-margin-top) var(--page-margin-right)
-      var(--page-margin-bottom) var(--page-margin-left);
+    padding: var(--page-margin-top) var(--page-margin-right) var(--page-margin-bottom)
+      var(--page-margin-left);
     margin-bottom: 24px; /* Space between pages */
     margin-left: auto;
     margin-right: auto;
@@ -665,12 +651,8 @@ iframe {
 @media print {
   .LexicalTheme__page {
     page-break-inside: avoid;
-    width: calc(
-      var(--page-width) - var(--page-margin-right) - var(--page-margin-left)
-    );
-    height: calc(
-      var(--page-height) - var(--page-margin-top) - var(--page-margin-bottom)
-    );
+    width: calc(var(--page-width) - var(--page-margin-right) - var(--page-margin-left));
+    height: calc(var(--page-height) - var(--page-margin-top) - var(--page-margin-bottom));
   }
 
   .LexicalTheme__pageHeader:has(.PageHeaderEditor__placeholder),
@@ -714,13 +696,13 @@ iframe {
 
 /* direction */
 .LexicalTheme__quote:not([dir]),
-.LexicalTheme__quote[dir="ltr"] {
+.LexicalTheme__quote[dir='ltr'] {
   padding-left: 16px;
   border-left-style: solid;
   border-left-width: 4px;
 }
 
-.LexicalTheme__quote[dir="rtl"] {
+.LexicalTheme__quote[dir='rtl'] {
   padding-right: 16px;
   border-right-style: solid;
   border-right-width: 4px;
@@ -782,12 +764,12 @@ iframe {
 }
 
 @media screen {
-  :is(.light, .dark .light) [contenteditable="true"] .LexicalTheme__layoutItem {
+  :is(.light, .dark .light) [contenteditable='true'] .LexicalTheme__layoutItem {
     border-color: rgba(0, 0, 0, 0.12);
   }
 
   :is(.light, .dark .light)
-    [data-paged="true"][contenteditable="true"]
+    [data-paged='true'][contenteditable='true']
     :is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter) {
     border-color: var(--muted-foreground);
   }
@@ -836,7 +818,7 @@ iframe {
     background-color: rgba(255, 255, 255, 0.03);
   }
 
-  .dark [contenteditable="true"] .LexicalTheme__layoutItem {
+  .dark [contenteditable='true'] .LexicalTheme__layoutItem {
     border-color: rgba(255, 255, 255, 0.12);
   }
 
@@ -845,7 +827,7 @@ iframe {
   }
 
   .dark
-    [data-paged="true"][contenteditable="true"]
+    [data-paged='true'][contenteditable='true']
     :is(.LexicalTheme__pageHeader, .LexicalTheme__pageFooter) {
     border-color: rgba(255, 255, 255, 0.12);
   }

@@ -49,7 +49,6 @@ declare module '@tanstack/react-router' {
   }
 }
 
-
 export const App = () => {
   const { data: session, isPending, isRefetching } = authClient.useSession();
   return (
