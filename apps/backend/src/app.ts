@@ -29,6 +29,7 @@ import { favoritesRouter } from './routes/favorites.js';
 import { storageRouter } from './routes/storage.js';
 import { healthRouter } from './routes/health.js';
 import { authStateRouter } from './routes/auth-state.js';
+import { updatesRouter } from './routes/updates.js';
 
 const app: Express = express();
 const server = createServer(app);
@@ -68,6 +69,7 @@ app.use('/api/editor-settings', editorSettingsRouter);
 app.use('/api/favorites', favoritesRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/auth-state', authStateRouter);
+app.use('/api/updates', updatesRouter);
 
 app.use('/storage', storageRouter);
 

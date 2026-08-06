@@ -10,6 +10,7 @@ import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
 import { hasWebBundle } from './lib/web.js';
 import { dbWritesQueue } from './queues/db-writes.js';
+import { startUpdateChecks, stopUpdateChecks } from './services/updates.js';
 
 /**
  * How long to wait for in-flight work before giving up. Docker's default grace
@@ -27,6 +28,8 @@ server.listen(env.PORT, () => {
       : 'TRUST_HOST=false: only the origins above are accepted.',
   );
   console.log(`Session cookies Secure: ${originConfig.useSecureCookies}`);
+
+  startUpdateChecks();
 
   for (const warning of originConfig.warnings) console.warn(warning);
 
@@ -55,6 +58,8 @@ const shutdown = async (signal: string) => {
   }
   shuttingDown = true;
   console.log(`${signal} received, shutting down.`);
+
+  stopUpdateChecks();
 
   // Backstop: if shutdown itself hangs, exit rather than wait for SIGKILL.
   const forceExit = setTimeout(() => {

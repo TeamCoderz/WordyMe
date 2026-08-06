@@ -61,6 +61,18 @@ export const envSchema = z.object({
     (val) => (typeof val === 'string' && val.trim() === '' ? undefined : val),
     z.string().url().optional(),
   ),
+
+  UPDATE_CHECK: z.preprocess(
+    (val) => {
+      if (typeof val !== 'string') return val;
+      const normalised = val.trim().toLowerCase();
+      if (normalised === '') return undefined;
+      if (['true', '1', 'yes', 'on'].includes(normalised)) return true;
+      if (['false', '0', 'no', 'off'].includes(normalised)) return false;
+      return val;
+    },
+    z.boolean({ error: 'UPDATE_CHECK must be true or false.' }).default(true),
+  ),
   CLIENT_URL: z
     .string()
     .default('http://localhost:5173')
