@@ -12,6 +12,17 @@ on:
   push:
     branches:
       - main
+  # Manual runs, from Actions → CI → Run workflow. A check that only ever fires
+  # on an event you cannot replay leaves you stuck when the failure was GitHub's
+  # rather than the code's. `pr-title` and the arm64 cache warm both gate on
+  # event type, so a manual run does exactly the two jobs worth repeating:
+  # lint/type-check/build, and the Docker health check.
+  #
+  # To clear a required check on a pull request, prefer "Re-run all jobs" on
+  # that pull request's own run: it reports against the same commit, which is
+  # what the branch ruleset reads. This is for asking "is CI itself broken?"
+  # against a branch, outside any pull request.
+  workflow_dispatch:
 
 concurrency:
   # Supersede in-flight runs for the same ref. A superseded run tells you
