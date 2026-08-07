@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - main
+  # Manual runs, from Actions → SPDX Header Check → Run workflow. Same reasoning
+  # as CI: a required check you cannot replay is a trap when the failure was
+  # GitHub's rather than the code's.
+  workflow_dispatch:
 
 jobs:
   license-check:
