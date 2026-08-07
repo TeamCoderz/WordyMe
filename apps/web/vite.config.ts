@@ -54,8 +54,8 @@ export default defineConfig(({ mode }) => {
           'maskable-512.png',
         ],
         manifest: {
-          name: 'Wordy',
-          short_name: 'Wordy',
+          name: 'WordyMe',
+          short_name: 'WordyMe',
           description: 'Centralized platform for students to manage educational information',
           theme_color: '#000000',
           background_color: '#ffffff',

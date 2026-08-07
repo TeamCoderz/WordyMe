@@ -3,6 +3,14 @@
 @import 'tw-animate-css';
 @import './themes.css';
 
+@theme {
+  /* Tailwind's smallest default breakpoint is sm at 40rem, which leaves every
+     phone in one bucket. 25rem (400px) splits it: iPhone SE and the standard
+     iPhone sit below, everything from the Plus sizes up sits above. Gives
+     `xs:` and `max-xs:` variants. */
+  --breakpoint-xs: 25rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
