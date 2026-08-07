@@ -12,7 +12,7 @@
     "license:check": "node scripts/spdx-license-cli.mjs check",
     "check-types": "turbo run check-types",
     "start": "turbo start",
-    "prepare": "lefthook install || echo 'lefthook: no git repository, skipping hook install'"
+    "prepare": "lefthook install || echo 'lefthook: hooks not installed. Expected during Docker builds, which have no Git; otherwise run: pnpm exec lefthook install'"
   },
   "devDependencies": {
     "@release-it/conventional-changelog": "^10.0.6",
