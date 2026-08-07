@@ -104,6 +104,20 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': { target: 'http://localhost:3000', changeOrigin: true },
         '/storage': { target: 'http://localhost:3000', changeOrigin: true },
+        // Socket.io connects to the current origin, because VITE_BACKEND_URL is
+        // forced empty in development (above) so that nothing bakes a hostname
+        // into a production bundle. Without this entry the handshake reaches
+        // Vite, falls through to the SPA fallback, and the client is handed
+        // index.html where it expects an Engine.IO packet — so it fails and
+        // retries every few seconds, forever.
+        //
+        // ws: true is not optional. The handshake advertises
+        // `upgrades: ["websocket"]`, so the transport switches immediately
+        // afterwards, and the upgrade fails without it even once polling works.
+        //
+        // Production needs no equivalent: the backend serves the web bundle and
+        // the socket from one origin, which is why this only ever broke locally.
+        '/socket.io': { target: 'http://localhost:3000', changeOrigin: true, ws: true },
       },
     },
     preview: {
