@@ -192,41 +192,46 @@
 
 .dark {
   color-scheme: dark;
-  --background: oklch(0.2603 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.23 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.23 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(0.2891 0 0);
-  --input: oklch(0.2478 0 0);
-  --ring: oklch(0.556 0 0);
-  --sidebar: oklch(0.2478 0 0);
-  --sidebar-foreground: oklch(0.708 0 0);
-  --sidebar-primary: oklch(0.922 0 0);
-  --sidebar-primary-foreground: oklch(0.205 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.708 0 0);
-  --sidebar-border: oklch(0.23 0 0);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-
-  --top-bar-primary-background: oklch(0.2478 0 0);
-  --top-bar-secondary-background: oklch(0.2478 0 0);
-  --home-card-background: oklch(0.2478 0 0);
+  /* Dark palette. The greys are deliberately cool rather than neutral —
+     #121314, #191A1B and #2A2B2C are all R<G<B. That tint is the character of
+     the theme: a neutral grey of the same lightness reads as flat and slightly
+     wrong beside it, which is hard to spot by eye and easy to "correct" by
+     accident. Translucent surfaces are pre-composited over the surface they
+     actually sit on, so every token here is opaque. */
+  --background: oklch(0.186 0.0026 247.966); /* #121314 document surface */
+  --foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --card: oklch(0.2471 0.0024 247.923); /* #202122 raised panel */
+  --card-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --popover: oklch(0.2471 0.0024 247.923); /* #202122 command palette */
+  --popover-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --primary: oklch(0.5482 0.0964 233.03); /* #297AA0 primary action */
+  --primary-foreground: oklch(1 0 0); /* #FFFFFF primary action text */
+  --secondary: oklch(0.2686 0 0); /* #262626 inline code surface */
+  --secondary-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --muted: oklch(0.2686 0 0); /* #262626 inline code surface */
+  --muted-foreground: oklch(0.6401 0 0); /* #8C8C8C secondary text */
+  --accent: oklch(0.2925 0.0023 247.904); /* #2B2C2D row hover, over the side panel */
+  --accent-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --destructive: oklch(0.7377 0.1377 32.501); /* #F48771 error text */
+  --border: oklch(0.2884 0.0023 247.906); /* #2A2B2C panel divider */
+  --input: oklch(0.2171 0.0025 247.941); /* #191A1B field surface */
+  --ring: oklch(0.5088 0.0789 229.571); /* #2D6E8A focus ring, over the document surface */
+  --sidebar: oklch(0.2171 0.0025 247.941); /* #191A1B side panel */
+  --sidebar-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --sidebar-primary: oklch(0.5482 0.0964 233.03); /* #297AA0 primary action */
+  --sidebar-primary-foreground: oklch(1 0 0); /* #FFFFFF primary action text */
+  --sidebar-accent: oklch(0.2925 0.0023 247.904); /* #2B2C2D row hover, over the side panel */
+  --sidebar-accent-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+  --sidebar-border: oklch(0.2884 0.0023 247.906); /* #2A2B2C panel divider */
+  --sidebar-ring: oklch(0.5088 0.0789 229.571); /* #2D6E8A focus ring, over the document surface */
+  --chart-1: oklch(0.7046 0.1464 252.851); /* #57A3F8 chart blue */
+  --chart-2: oklch(0.7881 0.1253 144.273); /* #86CF86 chart green */
+  --chart-3: oklch(0.807 0.0873 76.925); /* #E0B97F chart amber */
+  --chart-4: oklch(0.6773 0.1328 306.996); /* #AD80D7 chart violet */
+  --chart-5: oklch(0.7317 0.1313 31.916); /* #EF8773 chart red */
+  --top-bar-primary-background: oklch(0.2171 0.0025 247.941); /* #191A1B title bar */
+  --top-bar-secondary-background: oklch(0.2171 0.0025 247.941); /* #191A1B tab strip */
+  --home-card-background: oklch(0.2471 0.0024 247.923); /* #202122 raised panel */
 }
 .theme-new-york {
   --background: oklch(1 0 0);
@@ -266,47 +271,60 @@
   --top-bar-secondary-background: oklch(0.9851 0 0);
   --home-card-background: oklch(0.9851 0 0);
   @variant dark {
-    --background: oklch(0.2603 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.23 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.23 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.2891 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(0.2891 0 0);
-    --input: oklch(0.2478 0 0);
-    --ring: oklch(0.556 0 0);
-    --sidebar: oklch(0.2478 0 0);
-    --sidebar-foreground: oklch(0.708 0 0);
-    --sidebar-primary: oklch(0.922 0 0);
-    --sidebar-primary-foreground: oklch(0.205 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.708 0 0);
-    --sidebar-border: oklch(0.2891 0 0);
-    --sidebar-ring: oklch(0.551 0.027 264.364);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-
-    --top-bar-primary-background: oklch(0.2478 0 0);
-    --top-bar-secondary-background: oklch(0.2478 0 0);
-    --home-card-background: oklch(0.2478 0 0);
+    /* Dark palette. The greys are deliberately cool rather than neutral —
+       #121314, #191A1B and #2A2B2C are all R<G<B. That tint is the character of
+       the theme: a neutral grey of the same lightness reads as flat and slightly
+       wrong beside it, which is hard to spot by eye and easy to "correct" by
+       accident. Translucent surfaces are pre-composited over the surface they
+       actually sit on, so every token here is opaque. */
+    --background: oklch(0.186 0.0026 247.966); /* #121314 document surface */
+    --foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --card: oklch(0.2471 0.0024 247.923); /* #202122 raised panel */
+    --card-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --popover: oklch(0.2471 0.0024 247.923); /* #202122 command palette */
+    --popover-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --primary: oklch(0.5482 0.0964 233.03); /* #297AA0 primary action */
+    --primary-foreground: oklch(1 0 0); /* #FFFFFF primary action text */
+    --secondary: oklch(0.2686 0 0); /* #262626 inline code surface */
+    --secondary-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --muted: oklch(0.2686 0 0); /* #262626 inline code surface */
+    --muted-foreground: oklch(0.6401 0 0); /* #8C8C8C secondary text */
+    --accent: oklch(0.2925 0.0023 247.904); /* #2B2C2D row hover, over the side panel */
+    --accent-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --destructive: oklch(0.7377 0.1377 32.501); /* #F48771 error text */
+    --border: oklch(0.2884 0.0023 247.906); /* #2A2B2C panel divider */
+    --input: oklch(0.2171 0.0025 247.941); /* #191A1B field surface */
+    --ring: oklch(0.5088 0.0789 229.571); /* #2D6E8A focus ring, over the document surface */
+    --sidebar: oklch(0.2171 0.0025 247.941); /* #191A1B side panel */
+    --sidebar-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --sidebar-primary: oklch(0.5482 0.0964 233.03); /* #297AA0 primary action */
+    --sidebar-primary-foreground: oklch(1 0 0); /* #FFFFFF primary action text */
+    --sidebar-accent: oklch(0.2925 0.0023 247.904); /* #2B2C2D row hover, over the side panel */
+    --sidebar-accent-foreground: oklch(0.8047 0 0); /* #BFBFBF body text */
+    --sidebar-border: oklch(0.2884 0.0023 247.906); /* #2A2B2C panel divider */
+    --sidebar-ring: oklch(
+      0.5088 0.0789 229.571
+    ); /* #2D6E8A focus ring, over the document surface */
+    --chart-1: oklch(0.7046 0.1464 252.851); /* #57A3F8 chart blue */
+    --chart-2: oklch(0.7881 0.1253 144.273); /* #86CF86 chart green */
+    --chart-3: oklch(0.807 0.0873 76.925); /* #E0B97F chart amber */
+    --chart-4: oklch(0.6773 0.1328 306.996); /* #AD80D7 chart violet */
+    --chart-5: oklch(0.7317 0.1313 31.916); /* #EF8773 chart red */
+    --top-bar-primary-background: oklch(0.2171 0.0025 247.941); /* #191A1B title bar */
+    --top-bar-secondary-background: oklch(0.2171 0.0025 247.941); /* #191A1B tab strip */
+    --home-card-background: oklch(0.2471 0.0024 247.923); /* #202122 raised panel */
   }
   &.color-default,
   & .color-default {
     --primary: oklch(0.2046 0 0);
     @variant dark {
-      --primary: oklch(0.922 0 0);
+      /* Applied at runtime — 'default' is the first colour variant of this
+         theme, so this rule wins over the --primary set above and is what
+         actually paints buttons. shadcn's convention here is a near-white
+         primary, which would leave every button pale while the rest of the
+         palette moved; it follows the palette's own primary instead. Light
+         mode is untouched. */
+      --primary: oklch(0.5482 0.0964 233.03); /* #297AA0 primary action */
     }
   }
 
@@ -944,7 +962,14 @@
   --top-bar-primary-background: oklch(0.9851 0 0);
   --top-bar-secondary-background: oklch(0.9851 0 0);
   @variant dark {
-    --top-bar-primary-background: oklch(0.269 0 0);
+    /* This block is applied at runtime and comes after the theme blocks, so it
+       is what actually paints the header — the value set alongside the rest of
+       the palette never survives to here. The header, the tab strip and the
+       side panel are all the same shade deliberately: that is what makes the
+       chrome read as a single surface with the document inset into it, rather
+       than as three stacked bars. */
+    --top-bar-primary-background: oklch(0.2171 0.0025 247.941); /* #191A1B title bar */
+    --top-bar-secondary-background: oklch(0.2171 0.0025 247.941); /* #191A1B tab strip */
   }
 }
 

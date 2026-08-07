@@ -795,19 +795,81 @@ iframe {
     border-top-color: #eee;
   }
 
+  /* Code blocks and syntax highlighting, matched to the app's dark palette.
+     These live here rather than in the design tokens because the editor
+     package carries its own stylesheet and never reads them. */
+
   .dark .LexicalTheme__code {
-    background-color: rgb(30, 30, 30);
-    color: #9cdcfe;
+    /* The raised-surface shade, not the document surface. A code block sits on
+       the page rather than being the page, so it has to lift off it — matched
+       to the same shade as cards and menus so every raised thing agrees. Set
+       equal to the document surface and the block vanishes, which is exactly
+       what happened first time round.
+
+       The body text was previously #9cdcfe — a colour reserved elsewhere for
+       *variables* — so every unhighlighted character rendered as though it
+       were one. */
+    background-color: #202122; /* raised surface */
+    color: #bfbfbf; /* body text */
   }
 
   .dark .LexicalTheme__code:before {
-    background-color: #333;
-    color: #858585;
-    border-right-color: #1e1e1e;
+    /* The gutter shares the block's surface, so only the divider separates
+       them. It is lighter than the block rather than darker: on a raised dark
+       surface a darker rule reads as a gap punched through it, a lighter one
+       as a seam. Light mode goes the other way because there the block is
+       darker than the page it sits on. */
+    background-color: #202122; /* raised surface */
+    color: #858889; /* line numbers */
+    border-right-color: #2a2b2c; /* divider */
   }
 
   .dark .LexicalTheme__code:after {
-    color: #858585;
+    color: #858889; /* line numbers */
+  }
+
+  /* Syntax highlighting. These classes had no dark rules at all, so dark mode
+     was showing Prism's default *light* palette — #905 magenta, #690 green,
+     #07a blue — over a dark block. Lexical groups several Prism token types
+     onto each class, so each takes the colour of whichever kind dominates it. */
+
+  .dark .LexicalTheme__tokenComment {
+    color: #8b949e; /* comment */
+  }
+
+  .dark .LexicalTheme__tokenPunctuation {
+    color: #d4d4d4; /* punctuation */
+  }
+
+  .dark .LexicalTheme__tokenProperty {
+    color: #b5cea8; /* constant.numeric */
+  }
+
+  .dark .LexicalTheme__tokenSelector {
+    color: #a5d6ff; /* string */
+  }
+
+  .dark .LexicalTheme__tokenOperator {
+    color: #d4d4d4; /* keyword.operator */
+  }
+
+  .dark .LexicalTheme__tokenAttr {
+    color: #ff7b72; /* keyword */
+  }
+
+  .dark .LexicalTheme__tokenVariable {
+    color: #ffa657; /* variable */
+  }
+
+  .dark .LexicalTheme__tokenFunction {
+    color: #d2a8ff; /* entity.name.function */
+  }
+
+  /* Inline code had no dark rule either, so it kept the light pill —
+     rgb(225 230 235 / 44%) — which is why it reads as a pale block. */
+  .dark .LexicalTheme__textCode {
+    background-color: #262626; /* textPreformat.background */
+    color: #8c8c8c; /* textPreformat.foreground */
   }
 
   .dark .LexicalTheme__tableCell {
