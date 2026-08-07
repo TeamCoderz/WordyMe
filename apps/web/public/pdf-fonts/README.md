@@ -4,24 +4,31 @@ Served at `/pdf-fonts/`. PDFium reaches for these only when a PDF **does not
 embed** the font it needs — an embedded font is always used as-is, so nothing
 here changes how a normal document renders.
 
-Two are shipped because they are small. The rest are left to you because they
-are not.
+Everything small enough to ship is shipped. Only CJK is left out, and only
+because of its size.
 
 ## Shipped
 
-| Charset | File                          |
-| ------- | ----------------------------- |
-| Arabic  | `NotoNaskhArabic-Regular.ttf` |
-| Arabic  | `NotoNaskhArabic-Bold.ttf`    |
-| Hebrew  | `NotoSansHebrew-Regular.ttf`  |
-| Hebrew  | `NotoSansHebrew-Bold.ttf`     |
+| Charset                        | File                          |
+| ------------------------------ | ----------------------------- |
+| Arabic                         | `NotoNaskhArabic-Regular.ttf` |
+| Arabic                         | `NotoNaskhArabic-Bold.ttf`    |
+| Hebrew                         | `NotoSansHebrew-Regular.ttf`  |
+| Hebrew                         | `NotoSansHebrew-Bold.ttf`     |
+| Cyrillic, Greek and Vietnamese | `NotoSans-Regular.ttf`        |
+| Cyrillic, Greek and Vietnamese | `NotoSans-Bold.ttf`           |
 
-328 KB in total. Noto fonts under the SIL Open Font License 1.1 — see
+1.5 MB in total. Noto fonts under the SIL Open Font License 1.1 — see
 `LICENSE`, which must travel with the files if you redistribute them.
 
-Vendored rather than installed: `@embedpdf/fonts-arabic` and
-`@embedpdf/fonts-hebrew` export only a metadata listing, not the `.ttf` files
-themselves, so there is no supported way to import them from the package.
+Cyrillic, Greek and Vietnamese share the same two Noto Sans faces, which is how
+`@embedpdf/engines` maps them too. Two faces rather than the Latin pack's
+eighteen: 1.2 MB against 11 MB. The weight matcher falls back to the nearest
+available face, so a document asking for Light or Thin still renders.
+
+Vendored rather than installed: the `@embedpdf/fonts-*` packages export only a
+metadata listing, not the `.ttf` files themselves, so there is no supported way
+to import the fonts from them.
 
 ## Adding CJK
 

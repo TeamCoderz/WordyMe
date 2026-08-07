@@ -804,14 +804,32 @@ Arabic and Hebrew fallbacks ship with the image. The CJK packs come to roughly
 139 MB between them — about 40% on top of the image — so they are wired up but
 left for you to add if you need them.
 
-Download the ones you want from npm, and mount them over the font directory:
+First copy out the fonts the image already ships, because a bind mount
+**replaces** the directory rather than merging with it — mount over it without
+them and you remove the Arabic, Hebrew, Cyrillic, Greek and Vietnamese
+fallbacks you had:
 
 ```bash
-mkdir pdf-fonts && cd pdf-fonts
-npm pack @embedpdf/fonts-jp        # Japanese
-npm pack @embedpdf/fonts-sc        # Simplified Chinese
-tar -xzf embedpdf-fonts-*.tgz --strip-components=2 package/fonts
+mkdir -p pdf-fonts
+docker compose cp wordyme:/app/web/pdf-fonts/. ./pdf-fonts/
 ```
+
+Then add whichever CJK packs you need. Drop the ones you do not want from the
+list — each is ~30-40 MB:
+
+```bash
+for pkg in fonts-jp fonts-kr fonts-sc fonts-tc; do
+  npm pack "@embedpdf/$pkg"
+  tar -xzf "embedpdf-$pkg"-*.tgz -C pdf-fonts --strip-components=2 package/fonts
+done
+rm -f embedpdf-fonts-*.tgz
+```
+
+Every command here runs from the same directory — the one holding `pdf-fonts`,
+not inside it. `tar` extracts one archive per `-f`, which is why this loops
+rather than globbing them all into a single call.
+
+Then mount it:
 
 ```yaml
 services:
@@ -820,20 +838,10 @@ services:
       - ./pdf-fonts:/app/web/pdf-fonts
 ```
 
-Two things to get right:
-
 **Use the filenames as shipped.** Simplified Chinese is `NotoSansHans-*` and
 Traditional is `NotoSansHant-*`, despite the packages being named `fonts-sc`
 and `fonts-tc`. A renamed file never loads, and the only symptom is one line in
 the browser console.
-
-**Include the Arabic and Hebrew files too.** A bind mount replaces the
-directory rather than merging with it, so mounting over it without them removes
-fallbacks the image already had. Copy them out first:
-
-```bash
-docker compose cp wordyme:/app/web/pdf-fonts/. ./pdf-fonts/
-```
 
 No rebuild and no restart-time configuration: the files are fetched by URL when
 a document needs them. `apps/web/public/pdf-fonts/README.md` lists every

@@ -44,6 +44,23 @@ export const pdfFontFallback: FontFallbackConfig = {
       { url: 'NotoSansHebrew-Bold.ttf', weight: 700 },
     ],
 
+    // Cyrillic, Greek and Vietnamese all resolve to the same Noto Sans faces,
+    // which is how @embedpdf/engines maps them too. Two faces rather than the
+    // pack's eighteen: 1.2 MB against 11 MB, and the weight matcher falls back
+    // to the nearest available, so Light and Thin documents still render.
+    [FontCharset.CYRILLIC]: [
+      { url: 'NotoSans-Regular.ttf', weight: 400 },
+      { url: 'NotoSans-Bold.ttf', weight: 700 },
+    ],
+    [FontCharset.GREEK]: [
+      { url: 'NotoSans-Regular.ttf', weight: 400 },
+      { url: 'NotoSans-Bold.ttf', weight: 700 },
+    ],
+    [FontCharset.VIETNAMESE]: [
+      { url: 'NotoSans-Regular.ttf', weight: 400 },
+      { url: 'NotoSans-Bold.ttf', weight: 700 },
+    ],
+
     // Wired, not shipped. Add the files to enable — no rebuild required.
     //
     // These are the names the upstream packs actually use, so a downloaded file
