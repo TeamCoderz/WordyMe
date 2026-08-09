@@ -40,7 +40,7 @@
       "lodash": "^4.18.0",
       "lodash-es": "^4.18.0",
       "mermaid": "^10.9.4",
-      "nanoid": "^5.1.6",
+      "nanoid": "^5.1.16",
       "path-to-regexp": "^8.4.2",
       "picomatch": "^4.0.5",
       "qs": "^6.15.2",
