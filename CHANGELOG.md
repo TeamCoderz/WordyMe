@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.5](https://github.com/TeamCoderz/WordyMe/compare/v1.2.4...v1.2.5) (2026-08-09)
+
+### Features
+
+- **versions:** notify self-hosters when a newer release is available ([#91](https://github.com/TeamCoderz/WordyMe/issues/91)) ([e024c39](https://github.com/TeamCoderz/WordyMe/commit/e024c395c2dbe641f664a18a1871a02e09e3326d))
+
+### Bug Fixes
+
+- **deps:** raise the axios floor to ^1.18.0 to clear its advisories ([#90](https://github.com/TeamCoderz/WordyMe/issues/90)) ([a09c174](https://github.com/TeamCoderz/WordyMe/commit/a09c1741fe55fd9b8f9a661614dd7580a9e5389d))
+- **dx:** correct the prepare fallback message, which named the wrong cause ([#94](https://github.com/TeamCoderz/WordyMe/issues/94)) ([5b5a4d4](https://github.com/TeamCoderz/WordyMe/commit/5b5a4d4857e46809c42b6a5798c00364c90ac3a6)), closes [#89](https://github.com/TeamCoderz/WordyMe/issues/89)
+- **pdf:** serve the PDFium engine and fallback fonts from our own origin ([#93](https://github.com/TeamCoderz/WordyMe/issues/93)) ([25cec37](https://github.com/TeamCoderz/WordyMe/commit/25cec378389f14f3431ca3b7dc50986aba390364))
+
 ## [1.2.4](https://github.com/TeamCoderz/WordyMe/compare/v1.2.3...v1.2.4) (2026-08-05)
 
 ### Performance Improvements
