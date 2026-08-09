@@ -7,7 +7,7 @@ settings:
 overrides:
   minimatch@3.1.5>brace-expansion: 1.1.16
   defu: ^6.1.7
-  dompurify: ^3.4.12
+  dompurify: ^3.4.13
   engine.io: ^6.6.7
   esbuild: ^0.25.0
   flatted: ^3.4.4
@@ -16,7 +16,7 @@ overrides:
   lodash: ^4.18.0
   lodash-es: ^4.18.0
   mermaid: ^10.9.4
-  nanoid: ^5.1.6
+  nanoid: ^5.1.16
   path-to-regexp: ^8.4.2
   picomatch: ^4.0.5
   qs: ^6.15.2
@@ -101,8 +101,8 @@ importers:
         specifier: ^1.11.0
         version: 1.11.0
       nanoid:
-        specifier: ^5.1.6
-        version: 5.1.7
+        specifier: ^5.1.16
+        version: 5.1.16
       p-queue:
         specifier: ^9.1.0
         version: 9.1.0
@@ -240,8 +240,8 @@ importers:
         specifier: ^1.0.6
         version: 1.0.6
       dompurify:
-        specifier: ^3.4.12
-        version: 3.4.12
+        specifier: ^3.4.13
+        version: 3.4.13
       mobile-drag-drop:
         specifier: 3.0.0-rc.0
         version: 3.0.0-rc.0
@@ -5581,8 +5581,8 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  dompurify@3.4.12:
-    resolution: {integrity: sha512-zQvGet8Z2sWbQhCmfFz/T5QWH2oBmjnqK3qvOjaqaNLrLEF912WamU+ohnTp0TCep/MFVHpdJuCZEdFOdTnEFg==}
+  dompurify@3.4.13:
+    resolution: {integrity: sha512-2vmYIoqjze2d+kakP8S/nS5shfsl587kzwEjcGlTdiksUVgFHnFCsLYDVj/JNqJVOQZGSYBTmuycv0PodwmnMQ==}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -7272,8 +7272,8 @@ packages:
   nan@2.25.0:
     resolution: {integrity: sha512-0M90Ag7Xn5KMLLZ7zliPWP3rT90P6PN+IzVFS0VqmnPktBk3700xUVv8Ikm9EUaUE5SDWdp/BIxdENzVznpm1g==}
 
-  nanoid@5.1.7:
-    resolution: {integrity: sha512-ua3NDgISf6jdwezAheMOk4mbE1LXjm1DfMUDMuJf4AqxLFK3ccGpgWizwa5YV7Yz9EpXwEaWoRXSb/BnV0t5dQ==}
+  nanoid@5.1.16:
+    resolution: {integrity: sha512-kVrnsrJqMR8+oLJnGEmSWw9BivK5mt7H3FZatVRjrc5wGqFYuBxX1yG7+A7Gi5AefkX6t/oCkizcQgpu0cY1dQ==}
     engines: {node: ^18 || >=20}
     hasBin: true
 
@@ -10309,7 +10309,7 @@ snapshots:
       jotai-scope: 0.7.2(jotai@2.11.0(@types/react@19.2.14)(react@19.2.4))(react@19.2.4)
       lodash.debounce: 4.0.8
       lodash.throttle: 4.1.1
-      nanoid: 5.1.7
+      nanoid: 5.1.16
       open-color: 1.9.1
       pako: 2.0.3
       perfect-freehand: 1.2.0
@@ -10342,7 +10342,7 @@ snapshots:
     dependencies:
       '@excalidraw/markdown-to-text': 0.1.2
       mermaid: 10.9.5
-      nanoid: 5.1.7
+      nanoid: 5.1.16
     transitivePeerDependencies:
       - supports-color
 
@@ -10910,7 +10910,7 @@ snapshots:
       '@floating-ui/dom': 1.7.6
       '@types/css-tree': 2.3.11
       css-tree: 3.2.1
-      nanoid: 5.1.7
+      nanoid: 5.1.16
 
   '@opentelemetry/api@1.9.1': {}
 
@@ -12175,7 +12175,7 @@ snapshots:
   '@scalar/types@0.7.3':
     dependencies:
       '@scalar/helpers': 0.4.1
-      nanoid: 5.1.7
+      nanoid: 5.1.16
       type-fest: 5.4.4
       zod: 4.3.6
 
@@ -12541,7 +12541,7 @@ snapshots:
 
   '@types/dompurify@3.2.0':
     dependencies:
-      dompurify: 3.4.12
+      dompurify: 3.4.13
 
   '@types/esrecurse@4.3.1': {}
 
@@ -13909,7 +13909,7 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.4.12:
+  dompurify@3.4.13:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -15490,7 +15490,7 @@ snapshots:
       d3-sankey: 0.12.3
       dagre-d3-es: 7.0.13
       dayjs: 1.11.20
-      dompurify: 3.4.12
+      dompurify: 3.4.13
       elkjs: 0.9.3
       katex: 0.16.38
       khroma: 2.1.0
@@ -15758,7 +15758,7 @@ snapshots:
   nan@2.25.0:
     optional: true
 
-  nanoid@5.1.7: {}
+  nanoid@5.1.16: {}
 
   nanostores@1.2.0: {}
 
@@ -16118,13 +16118,13 @@ snapshots:
 
   postcss@8.5.25:
     dependencies:
-      nanoid: 5.1.7
+      nanoid: 5.1.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
   postcss@8.5.8:
     dependencies:
-      nanoid: 5.1.7
+      nanoid: 5.1.16
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
