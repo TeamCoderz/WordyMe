@@ -6,6 +6,13 @@
 import { useMemo } from 'react';
 import { EmbedPDF } from '@embedpdf/core/react';
 import { usePdfiumEngine } from '@embedpdf/engines/react';
+// Served from our own origin. Left to its default, @embedpdf/engines fetches
+// this 4.3 MB binary from cdn.jsdelivr.net at runtime, which means no PDF opens
+// on an air-gapped install or behind a firewall that blocks the CDN — and every
+// reader's address reaches a third party. `?url` makes the bundler emit the copy
+// already in node_modules, so the version tracks the dependency automatically.
+import pdfiumWasmUrl from '@embedpdf/pdfium/pdfium.wasm?url';
+import { pdfFontFallback } from './fonts';
 import { createPluginRegistration } from '@embedpdf/core';
 import { ViewportPluginPackage, Viewport } from '@embedpdf/plugin-viewport/react';
 import { ScrollPluginPackage, ScrollStrategy, Scroller } from '@embedpdf/plugin-scroll/react';
@@ -84,7 +91,10 @@ export interface PDFViewerProps {
 }
 
 export function PDFViewer({ url }: PDFViewerProps) {
-  const { engine, isLoading, error } = usePdfiumEngine();
+  const { engine, isLoading, error } = usePdfiumEngine({
+    wasmUrl: pdfiumWasmUrl,
+    fontFallback: pdfFontFallback,
+  });
 
   // Memoize UIProvider props to prevent unnecessary remounts
   const uiComponents = useMemo(

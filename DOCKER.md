@@ -816,6 +816,60 @@ docker compose exec wordyme sh
 docker compose exec wordyme node -v
 ```
 
+### Adding CJK fonts to the PDF viewer
+
+Only relevant if your PDFs are Japanese, Korean or Chinese **and** were saved
+without embedding their fonts. Most are not: embedding is the norm for those
+languages precisely because the reader cannot be assumed to have the fonts.
+Everything renders from the file itself, and no font here is ever consulted.
+
+Arabic and Hebrew fallbacks ship with the image. The CJK packs come to roughly
+139 MB between them — about 40% on top of the image — so they are wired up but
+left for you to add if you need them.
+
+First copy out the fonts the image already ships, because a bind mount
+**replaces** the directory rather than merging with it — mount over it without
+them and you remove the Arabic, Hebrew, Cyrillic, Greek and Vietnamese
+fallbacks you had:
+
+```bash
+mkdir -p pdf-fonts
+docker compose cp wordyme:/app/web/pdf-fonts/. ./pdf-fonts/
+```
+
+Then add whichever CJK packs you need. Drop the ones you do not want from the
+list — each is ~30-40 MB:
+
+```bash
+for pkg in fonts-jp fonts-kr fonts-sc fonts-tc; do
+  npm pack "@embedpdf/$pkg"
+  tar -xzf "embedpdf-$pkg"-*.tgz -C pdf-fonts --strip-components=2 package/fonts
+done
+rm -f embedpdf-fonts-*.tgz
+```
+
+Every command here runs from the same directory — the one holding `pdf-fonts`,
+not inside it. `tar` extracts one archive per `-f`, which is why this loops
+rather than globbing them all into a single call.
+
+Then mount it:
+
+```yaml
+services:
+  wordyme:
+    volumes:
+      - ./pdf-fonts:/app/web/pdf-fonts
+```
+
+**Use the filenames as shipped.** Simplified Chinese is `NotoSansHans-*` and
+Traditional is `NotoSansHant-*`, despite the packages being named `fonts-sc`
+and `fonts-tc`. A renamed file never loads, and the only symptom is one line in
+the browser console.
+
+No rebuild and no restart-time configuration: the files are fetched by URL when
+a document needs them. `apps/web/public/pdf-fonts/README.md` lists every
+supported filename.
+
 ### Custom Network Configuration
 
 Compose creates a network automatically. To use a custom one, modify
