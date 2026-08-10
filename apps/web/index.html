@@ -3,7 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" href="/favicon.ico" />
+    <!-- Safari decodes ICO less reliably than the other browsers, which is why
+         the tab icon never appeared there while Chrome was fine. The explicit
+         PNGs are what Safari picks up; the ICO stays as the legacy fallback,
+         and sizes="any" keeps modern browsers from preferring it. -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <meta name="theme-color" content="#000000" />
     <meta
       name="description"
