@@ -6,13 +6,13 @@
 <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome">
 </p>
 
-WordyMe™ is a centralized platform for students to manage educational information. It provides a rich note-taking experience with support for documents, spaces, and a powerful editor with diagram and math support.
+WordyMe™ is a lightweight self-hosted personal wiki and note-taking app. Rich editor, one Docker container, runs anywhere — even a Raspberry Pi. Documents are organized into spaces, with diagram and math support, revision history and real-time updates.
 
 🏛 Open Core & Mission  
-WordyMe™ is built and maintained by TeamCoderz Ltd with a mission to keep powerful educational tools accessible.
+WordyMe™ is built and maintained by TeamCoderz Ltd with a mission to keep powerful, private tools in the hands of the people who use them.
 
 The Core: This repository contains the open-source core of WordyMe™, licensed under AGPL-3.0.  
-The Enterprise: We will offer a PRO version for institutions requiring Service Documentation Management, permission control, advanced SSO, audit logs, managed compliance and more. All of this will be available in our Next Generation ERP Solution: [ReactSuite](https://www.linkedin.com/showcase/reactsuite)
+The Enterprise: We will offer a PRO version for organizations requiring Service Documentation Management, permission control, advanced SSO, audit logs, managed compliance and more. All of this will be available in our next-generation ERP solution: [ReactSuite](https://www.linkedin.com/showcase/reactsuite)
 
 🚀 Overview  
 WordyMe™ is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions.

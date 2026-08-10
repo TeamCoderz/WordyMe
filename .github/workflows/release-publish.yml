@@ -230,7 +230,7 @@ jobs:
             type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
           labels: |
             org.opencontainers.image.title=WordyMe
-            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.description=Your own private wiki. Self-hosted notes and documentation, light enough to run on a Raspberry Pi.
             org.opencontainers.image.vendor=TeamCoderz Ltd
             org.opencontainers.image.url=https://teamcoderz.org
             org.opencontainers.image.licenses=AGPL-3.0-or-later
@@ -351,7 +351,7 @@ jobs:
             type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
           labels: |
             org.opencontainers.image.title=WordyMe
-            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.description=Your own private wiki. Self-hosted notes and documentation, light enough to run on a Raspberry Pi.
             org.opencontainers.image.vendor=TeamCoderz Ltd
             org.opencontainers.image.url=https://teamcoderz.org
             org.opencontainers.image.licenses=AGPL-3.0-or-later
@@ -436,7 +436,7 @@ jobs:
             type=raw,value=latest,enable=${{ !contains(needs.check.outputs.version, '-') }}
           labels: |
             org.opencontainers.image.title=WordyMe
-            org.opencontainers.image.description=Centralized platform for students to manage educational information
+            org.opencontainers.image.description=Your own private wiki. Self-hosted notes and documentation, light enough to run on a Raspberry Pi.
             org.opencontainers.image.vendor=TeamCoderz Ltd
             org.opencontainers.image.url=https://teamcoderz.org
             org.opencontainers.image.licenses=AGPL-3.0-or-later
@@ -492,7 +492,7 @@ jobs:
           # A literal rather than the repository description, which is optional
           # on GitHub and would blank the listing if it were ever unset.
           # Docker Hub caps this at 100 characters.
-          short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
+          short-description: 'Self-hosted personal wiki and note-taking app. AGPL-3.0.'
           # A dedicated short page, not DOCKER.md: Docker Hub truncates
           # listings at 25,000 bytes and DOCKER.md is well past that.
           readme-filepath: ./DOCKERHUB.md

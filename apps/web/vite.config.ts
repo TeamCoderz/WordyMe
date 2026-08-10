@@ -56,7 +56,8 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'WordyMe',
           short_name: 'WordyMe',
-          description: 'Centralized platform for students to manage educational information',
+          description:
+            'Your own private wiki. Self-hosted notes and documentation, light enough to run on a Raspberry Pi.',
           theme_color: '#000000',
           background_color: '#ffffff',
           display: 'standalone',
