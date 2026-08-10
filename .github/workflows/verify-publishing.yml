@@ -352,7 +352,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
           repository: ${{ env.DOCKERHUB_IMAGE }}
-          short-description: 'Self-hosted note-taking and document management for students. AGPL-3.0.'
+          short-description: 'Self-hosted personal wiki and note-taking app. AGPL-3.0.'
           # A dedicated short page, not DOCKER.md: Docker Hub truncates
           # listings at 25,000 bytes and DOCKER.md is well past that. This step
           # stays fatal here on purpose — the release workflow marks it

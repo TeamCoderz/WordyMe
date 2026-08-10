@@ -11,7 +11,7 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 - **Learn and grow** — Work with modern technologies like React 19, TypeScript, and Turborepo
 - **Build your portfolio** — Meaningful open source contributions that showcase your skills
 - **Join a community** — Connect with developers who share your passion
-- **Make an impact** — Help students worldwide manage their educational information better
+- **Make an impact** — Help people own their notes and documentation instead of renting them
 
 > **Before you start:** Please search [existing issues](https://github.com/TeamCoderz/WordyMe/issues) and [pull requests](https://github.com/TeamCoderz/WordyMe/pulls) to see if someone else is working on something similar.
 
@@ -92,7 +92,7 @@ pnpm license:check     # check tracked and untracked applicable files (full-repo
 
 ## Commercial Features
 
-WordyMe™ follows an Open Core model. If you are interested in developing features intended for large institutions (e.g., SAML/SSO, advanced audit logging), please contact us first. These features often belong in our Enterprise version, and we can discuss how to best collaborate.
+WordyMe™ follows an Open Core model. If you are interested in developing features intended for large organizations (e.g., SAML/SSO, advanced audit logging), please contact us first. These features often belong in our Enterprise version, and we can discuss how to best collaborate.
 
 ---
 

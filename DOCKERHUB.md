@@ -1,8 +1,8 @@
 # WordyMe
 
-**A lightweight note-taking app you can self-host anywhere. Even on your Raspberry Pi.**
+**A lightweight personal wiki you can self-host anywhere. Even on your Raspberry Pi.**
 
-WordyMe is a centralized platform for students to manage educational information: rich documents with diagram (Mermaid), math (KaTeX) and music-notation support, organized into spaces, with revision history, favorites and real-time updates.
+WordyMe is a self-hosted personal wiki and note-taking app: rich documents with diagram (Mermaid), math (KaTeX) and music-notation support, organized into spaces, with revision history, favorites and real-time updates.
 
 - **One container, one port.** The web app and API are served from the same origin — no separate frontend, no reverse-proxy gymnastics required.
 - **`linux/amd64` and `linux/arm64`** in every tag. Runs on a normal server, an Apple Silicon Mac, or a Raspberry Pi 4/5.
