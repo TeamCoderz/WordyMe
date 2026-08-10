@@ -187,6 +187,7 @@ pnpm dev --filter=web           # Frontend only
 pnpm dev --filter=@repo/backend # Backend only
 pnpm build                      # Production build
 pnpm lint                       # Run linter
+pnpm lint:md                    # Lint Markdown docs
 pnpm check-types                # Type check
 pnpm format                     # Format with Prettier
 ```

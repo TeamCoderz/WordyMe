@@ -185,6 +185,7 @@ From the root directory:
 - `pnpm dev` - Start all apps in development mode
 - `pnpm build` - Build all apps and packages
 - `pnpm lint` - Lint all packages
+- `pnpm lint:md` - Lint Markdown documentation
 - `pnpm format` - Format code with Prettier
 - `pnpm check-types` - Type-check all packages
 - `pnpm start` - Start all apps in production mode
