@@ -84,7 +84,7 @@ app.get(
       { title: 'WordyMe API', url: '/api/docs/openapi.json' },
       { title: 'Better-Auth API', url: '/api/auth/open-api/generate-schema' },
     ],
-    pageTitle: 'Wordy API Documentation',
+    pageTitle: 'WordyMe API Documentation',
   }),
 );
 

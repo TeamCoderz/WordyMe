@@ -57,14 +57,32 @@ export const AppHeader = () => {
         )}
       >
         <div className="flex w-full h-14 justify-between items-center overflow-hidden">
+          {/* Fixed from xs (400px) up, so the logo, wordmark, toggle and divider
+              hold their positions at every width anyone resizes a window to —
+              anything breakpoint-dependent slides them sideways instead. Width
+              tracks --sidebar-width to stay in line with the sidebar below it;
+              that variable is 16rem everywhere the header can see it, since the
+              18rem mobile override is scoped to the sidebar's own Sheet.
+
+              Below xs it has to give. The fixed block is 256px and the controls
+              on the right need 143px, so 399px is the floor — under that the
+              parent is overflow-hidden and the avatar gets clipped, which is
+              the only route to Settings and Log out. So on the smallest phones
+              the wordmark drops and the block shrinks to its contents, taking
+              the row to ~96px. The mark alone still identifies the app. */}
           <div
             className={cn(
-              'flex justify-between items-center gap-2 h-full px-4 shrink-0 w-56 sm:w-(--sidebar-width) sm:border-r',
+              'flex justify-between items-center gap-2 h-full pl-2 pr-4 shrink-0 border-r',
+              'w-auto xs:w-(--sidebar-width)',
             )}
           >
-            <Link to="/" className="flex items-center font-logo gap-2 shrink-0" data-new-tab="true">
-              <img src={logo} alt="Wordy" className="size-8" />
-              <p className="font-extrabold text-lg font-logo">Wordy</p>
+            <Link
+              to="/"
+              className="flex items-center font-logo gap-1.5 shrink-0"
+              data-new-tab="true"
+            >
+              <img src={logo} alt="WordyMe" className="size-8" />
+              <p className="font-extrabold text-lg font-logo hidden xs:block">WordyMe</p>
             </Link>
             <SidebarTrigger variant="outline" className="size-9 p-2!" />
           </div>
