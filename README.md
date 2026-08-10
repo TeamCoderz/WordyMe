@@ -1,9 +1,13 @@
-# WordyMe™
+<h1 align="center">
+  <img src="apps/web/public/logo512.png" alt="" height="70"><br>
+  WordyMe™
+</h1>
 
 <p align="center">
-<img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
-<img src="https://img.shields.io/badge/Maintained%20by-TeamCoderz%20Ltd-orange" alt="Maintained by TeamCoderz Ltd">
+<img src="https://img.shields.io/badge/Made%20by-TeamCoderz%20Ltd-orange" alt="Made by TeamCoderz Ltd">
+<img src="https://img.shields.io/docker/pulls/teamcoderz/wordyme?color=2496ED&label=Docker%20pulls" alt="Docker pulls">
 <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome">
+<img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
 </p>
 
 WordyMe™ is a lightweight self-hosted personal wiki and note-taking app. Rich editor, one Docker container, runs anywhere — even a Raspberry Pi. Documents are organized into spaces, with diagram and math support, revision history and real-time updates.
@@ -16,6 +20,15 @@ The Enterprise: We will offer a PRO version for organizations requiring Service 
 
 🚀 Overview  
 WordyMe™ is a full-stack application built as a monorepo using Turborepo. It consists of a modern React web application and an Express.js backend API, along with shared packages for editor functionality, UI components, and type definitions.
+
+## The App
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset=".github/assets/WordyMe_dark_background.webp">
+    <img alt="WordyMe editor with the space tree and an architecture diagram" src=".github/assets/WordyMe_light_background.webp">
+  </picture>
+</p>
 
 ## Architecture
 
