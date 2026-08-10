@@ -42,7 +42,15 @@ export default defineConfig(({ mode }) => {
           navigateFallbackDenylist: [/^\/$/, /^\/home/, /^\/sign-in/, /^\/try-demo/],
           navigateFallback: null,
         },
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'logo.png', 'logo.webp'],
+        includeAssets: [
+          'favicon.ico',
+          'apple-touch-icon.png',
+          'logo.png',
+          'logo.webp',
+          'logo192.png',
+          'logo512.png',
+          'maskable-512.png',
+        ],
         manifest: {
           name: 'Wordy',
           short_name: 'Wordy',
@@ -53,15 +61,30 @@ export default defineConfig(({ mode }) => {
           scope: '/',
           start_url: '/',
           icons: [
+            // Declared sizes must match the files. Android needs a real 192px
+            // launcher icon and a 512px splash icon; upscaling a smaller file
+            // is what made the installed icon look soft.
             {
-              src: 'logo.png',
-              sizes: 'any',
+              src: 'logo192.png',
+              sizes: '192x192',
               type: 'image/png',
+              purpose: 'any',
             },
             {
-              src: 'logo.webp',
-              sizes: 'any',
-              type: 'image/webp',
+              src: 'logo512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            // Maskable icons are cropped to the launcher's shape (circle,
+            // squircle, rounded square), so this one keeps the mark inside the
+            // safe zone on an opaque background rather than letting Android
+            // letterbox the transparent logo into a white tile.
+            {
+              src: 'maskable-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
             },
           ],
         },
