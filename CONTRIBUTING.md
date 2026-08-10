@@ -6,7 +6,7 @@ We're thrilled to have you here. Whether you're a first-time contributor or an e
 
 **Every contribution matters** — from fixing a typo to implementing a major feature. We value all forms of contribution and treat every contributor with respect and appreciation.
 
-### Why Contribute?
+## Why Contribute?
 
 - **Learn and grow** — Work with modern technologies like React 19, TypeScript, and Turborepo
 - **Build your portfolio** — Meaningful open source contributions that showcase your skills
@@ -284,6 +284,7 @@ noise.
    ```
 
 3. **Push your branch:**
+
    ```bash
    git push origin feature/your-feature-name
    ```
@@ -294,7 +295,7 @@ noise.
 
 Just fill it out — don't leave sections empty. Use this title format (follow [Commit Convention](#commit-convention)):
 
-```
+```text
 <type>(<scope>): <clear description>
 ```
 
@@ -325,7 +326,7 @@ Examples: `feat(editor): add keyboard shortcuts`, `fix(auth): resolve session on
 
 We follow [Conventional Commits](https://conventionalcommits.org/). Please use the format:
 
-```
+```text
 <type>(<scope>): <description>
 
 [optional body]
@@ -348,7 +349,7 @@ We follow [Conventional Commits](https://conventionalcommits.org/). Please use t
 
 ### Examples
 
-```
+```text
 feat(editor): add keyboard shortcuts for toolbar
 fix(auth): resolve session expiration issue
 docs(api): update authentication examples

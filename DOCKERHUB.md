@@ -18,7 +18,7 @@ curl -O https://raw.githubusercontent.com/TeamCoderz/WordyMe/main/docker-compose
 docker compose -f docker-compose.public.yml up -d
 ```
 
-Then open **http://localhost:8080** and create the first account.
+Then open **<http://localhost:8080>** and create the first account.
 
 Or with plain `docker run`:
 
@@ -68,13 +68,13 @@ Docker Hub allows 100 unauthenticated pulls per 6 hours per IP address — a bud
 
 The full guide — every environment variable, running behind a reverse proxy, upgrading from the older two-container layout, and safe backup/restore of the database — lives in the repository:
 
-**https://github.com/TeamCoderz/WordyMe/blob/main/DOCKER.md**
+**<https://github.com/TeamCoderz/WordyMe/blob/main/DOCKER.md>**
 
 ## Source and license
 
 WordyMe is free software, licensed under **AGPL-3.0**. The complete corresponding source for every image is at:
 
-**https://github.com/TeamCoderz/WordyMe**
+**<https://github.com/TeamCoderz/WordyMe>**
 
 Each image also carries an `org.opencontainers.image.source` label pointing at the repository. Bug reports and contributions are welcome via GitHub issues.
 
