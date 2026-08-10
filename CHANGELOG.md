@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.6](https://github.com/TeamCoderz/WordyMe/compare/v1.2.5...v1.2.6) (2026-08-10)
+
+### Features
+
+- **ui:** refresh the dark theme ([#102](https://github.com/TeamCoderz/WordyMe/issues/102)) ([2b89552](https://github.com/TeamCoderz/WordyMe/commit/2b89552abe525312b1a3f320ff09430c6d0410e3)), closes [#121314](https://github.com/TeamCoderz/WordyMe/issues/121314) [#191A1B](https://github.com/TeamCoderz/WordyMe/issues/191A1B) [#2A2B2C](https://github.com/TeamCoderz/WordyMe/issues/2A2B2C)
+
+### Bug Fixes
+
+- **brand:** call the app WordyMe everywhere it names itself ([#101](https://github.com/TeamCoderz/WordyMe/issues/101)) ([2fd8874](https://github.com/TeamCoderz/WordyMe/commit/2fd8874c3129756b7a61c0254745145ab56c718c))
+- **pwa:** ship real WordyMe install icons ([#104](https://github.com/TeamCoderz/WordyMe/issues/104)) ([bcb6a6e](https://github.com/TeamCoderz/WordyMe/commit/bcb6a6eab4bcfd6104c5c365ab071d28e8a54e33))
+- **web:** make the tab favicon work in Safari ([#105](https://github.com/TeamCoderz/WordyMe/issues/105)) ([51e7df9](https://github.com/TeamCoderz/WordyMe/commit/51e7df9651418a76199aabb490f609d7734afd7f))
+- **web:** proxy /socket.io in development so real-time features connect ([#103](https://github.com/TeamCoderz/WordyMe/issues/103)) ([d2177dd](https://github.com/TeamCoderz/WordyMe/commit/d2177dd5c98a7cb71cd119269d8669a2e5da6f38))
+
 ## [1.2.5](https://github.com/TeamCoderz/WordyMe/compare/v1.2.4...v1.2.5) (2026-08-09)
 
 ### Features
