@@ -9,48 +9,38 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UnauthedRouteImport } from './routes/_unauthed'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as UnauthedRouteImport } from './routes/_unauthed'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
-import { Route as UnauthedSignupRouteImport } from './routes/_unauthed/signup'
-import { Route as UnauthedLoginRouteImport } from './routes/_unauthed/login'
 import { Route as AuthedAttachmentRouteImport } from './routes/_authed/attachment'
 import { Route as AuthedSettingsRouteRouteImport } from './routes/_authed/settings/route'
-import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index'
-import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as UnauthedLoginRouteImport } from './routes/_unauthed/login'
+import { Route as UnauthedSignupRouteImport } from './routes/_unauthed/signup'
 import { Route as AuthedDocsIndexRouteImport } from './routes/_authed/docs/index'
-import { Route as AuthedViewHandleRouteImport } from './routes/_authed/view/$handle'
-import { Route as AuthedSpacesManageRouteImport } from './routes/_authed/spaces/manage'
-import { Route as AuthedSpacesFavoritesRouteImport } from './routes/_authed/spaces/favorites'
-import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile'
-import { Route as AuthedSettingsPreferencesRouteImport } from './routes/_authed/settings/preferences'
-import { Route as AuthedEditHandleRouteImport } from './routes/_authed/edit/$handle'
-import { Route as AuthedDocsRecentViewedRouteImport } from './routes/_authed/docs/recent-viewed'
-import { Route as AuthedDocsManageRouteImport } from './routes/_authed/docs/manage'
 import { Route as AuthedDocsFavoritesRouteImport } from './routes/_authed/docs/favorites'
+import { Route as AuthedDocsManageRouteImport } from './routes/_authed/docs/manage'
+import { Route as AuthedDocsRecentViewedRouteImport } from './routes/_authed/docs/recent-viewed'
+import { Route as AuthedEditHandleRouteImport } from './routes/_authed/edit/$handle'
+import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedSettingsPreferencesRouteImport } from './routes/_authed/settings/preferences'
+import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile'
+import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index'
+import { Route as AuthedSpacesFavoritesRouteImport } from './routes/_authed/spaces/favorites'
+import { Route as AuthedSpacesManageRouteImport } from './routes/_authed/spaces/manage'
+import { Route as AuthedViewHandleRouteImport } from './routes/_authed/view/$handle'
 
-const UnauthedRoute = UnauthedRouteImport.update({
-  id: '/_unauthed',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnauthedRoute = UnauthedRouteImport.update({
+  id: '/_unauthed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedRoute,
-} as any)
-const UnauthedSignupRoute = UnauthedSignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => UnauthedRoute,
-} as any)
-const UnauthedLoginRoute = UnauthedLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => UnauthedRoute,
 } as any)
 const AuthedAttachmentRoute = AuthedAttachmentRouteImport.update({
   id: '/attachment',
@@ -62,39 +52,44 @@ const AuthedSettingsRouteRoute = AuthedSettingsRouteRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSpacesIndexRoute = AuthedSpacesIndexRouteImport.update({
-  id: '/spaces/',
-  path: '/spaces/',
-  getParentRoute: () => AuthedRoute,
+const UnauthedLoginRoute = UnauthedLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => UnauthedRoute,
 } as any)
-const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthedSettingsRouteRoute,
+const UnauthedSignupRoute = UnauthedSignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => UnauthedRoute,
 } as any)
 const AuthedDocsIndexRoute = AuthedDocsIndexRouteImport.update({
   id: '/docs/',
   path: '/docs/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedViewHandleRoute = AuthedViewHandleRouteImport.update({
-  id: '/view/$handle',
-  path: '/view/$handle',
+const AuthedDocsFavoritesRoute = AuthedDocsFavoritesRouteImport.update({
+  id: '/docs/favorites',
+  path: '/docs/favorites',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSpacesManageRoute = AuthedSpacesManageRouteImport.update({
-  id: '/spaces/manage',
-  path: '/spaces/manage',
+const AuthedDocsManageRoute = AuthedDocsManageRouteImport.update({
+  id: '/docs/manage',
+  path: '/docs/manage',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSpacesFavoritesRoute = AuthedSpacesFavoritesRouteImport.update({
-  id: '/spaces/favorites',
-  path: '/spaces/favorites',
+const AuthedDocsRecentViewedRoute = AuthedDocsRecentViewedRouteImport.update({
+  id: '/docs/recent-viewed',
+  path: '/docs/recent-viewed',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedSettingsProfileRoute = AuthedSettingsProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const AuthedEditHandleRoute = AuthedEditHandleRouteImport.update({
+  id: '/edit/$handle',
+  path: '/edit/$handle',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => AuthedSettingsRouteRoute,
 } as any)
 const AuthedSettingsPreferencesRoute =
@@ -103,24 +98,29 @@ const AuthedSettingsPreferencesRoute =
     path: '/preferences',
     getParentRoute: () => AuthedSettingsRouteRoute,
   } as any)
-const AuthedEditHandleRoute = AuthedEditHandleRouteImport.update({
-  id: '/edit/$handle',
-  path: '/edit/$handle',
+const AuthedSettingsProfileRoute = AuthedSettingsProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthedSettingsRouteRoute,
+} as any)
+const AuthedSpacesIndexRoute = AuthedSpacesIndexRouteImport.update({
+  id: '/spaces/',
+  path: '/spaces/',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedDocsRecentViewedRoute = AuthedDocsRecentViewedRouteImport.update({
-  id: '/docs/recent-viewed',
-  path: '/docs/recent-viewed',
+const AuthedSpacesFavoritesRoute = AuthedSpacesFavoritesRouteImport.update({
+  id: '/spaces/favorites',
+  path: '/spaces/favorites',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedDocsManageRoute = AuthedDocsManageRouteImport.update({
-  id: '/docs/manage',
-  path: '/docs/manage',
+const AuthedSpacesManageRoute = AuthedSpacesManageRouteImport.update({
+  id: '/spaces/manage',
+  path: '/spaces/manage',
   getParentRoute: () => AuthedRoute,
 } as any)
-const AuthedDocsFavoritesRoute = AuthedDocsFavoritesRouteImport.update({
-  id: '/docs/favorites',
-  path: '/docs/favorites',
+const AuthedViewHandleRoute = AuthedViewHandleRouteImport.update({
+  id: '/view/$handle',
+  path: '/view/$handle',
   getParentRoute: () => AuthedRoute,
 } as any)
 
@@ -251,18 +251,18 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_unauthed': {
-      id: '/_unauthed'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof UnauthedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed': {
       id: '/_authed'
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_unauthed': {
+      id: '/_unauthed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof UnauthedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -271,20 +271,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
-    }
-    '/_unauthed/signup': {
-      id: '/_unauthed/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof UnauthedSignupRouteImport
-      parentRoute: typeof UnauthedRoute
-    }
-    '/_unauthed/login': {
-      id: '/_unauthed/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof UnauthedLoginRouteImport
-      parentRoute: typeof UnauthedRoute
     }
     '/_authed/attachment': {
       id: '/_authed/attachment'
@@ -300,19 +286,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsRouteRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/spaces/': {
-      id: '/_authed/spaces/'
-      path: '/spaces'
-      fullPath: '/spaces/'
-      preLoaderRoute: typeof AuthedSpacesIndexRouteImport
-      parentRoute: typeof AuthedRoute
+    '/_unauthed/login': {
+      id: '/_unauthed/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof UnauthedLoginRouteImport
+      parentRoute: typeof UnauthedRoute
     }
-    '/_authed/settings/': {
-      id: '/_authed/settings/'
-      path: '/'
-      fullPath: '/settings/'
-      preLoaderRoute: typeof AuthedSettingsIndexRouteImport
-      parentRoute: typeof AuthedSettingsRouteRoute
+    '/_unauthed/signup': {
+      id: '/_unauthed/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof UnauthedSignupRouteImport
+      parentRoute: typeof UnauthedRoute
     }
     '/_authed/docs/': {
       id: '/_authed/docs/'
@@ -321,53 +307,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDocsIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/view/$handle': {
-      id: '/_authed/view/$handle'
-      path: '/view/$handle'
-      fullPath: '/view/$handle'
-      preLoaderRoute: typeof AuthedViewHandleRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/spaces/manage': {
-      id: '/_authed/spaces/manage'
-      path: '/spaces/manage'
-      fullPath: '/spaces/manage'
-      preLoaderRoute: typeof AuthedSpacesManageRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/spaces/favorites': {
-      id: '/_authed/spaces/favorites'
-      path: '/spaces/favorites'
-      fullPath: '/spaces/favorites'
-      preLoaderRoute: typeof AuthedSpacesFavoritesRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/settings/profile': {
-      id: '/_authed/settings/profile'
-      path: '/profile'
-      fullPath: '/settings/profile'
-      preLoaderRoute: typeof AuthedSettingsProfileRouteImport
-      parentRoute: typeof AuthedSettingsRouteRoute
-    }
-    '/_authed/settings/preferences': {
-      id: '/_authed/settings/preferences'
-      path: '/preferences'
-      fullPath: '/settings/preferences'
-      preLoaderRoute: typeof AuthedSettingsPreferencesRouteImport
-      parentRoute: typeof AuthedSettingsRouteRoute
-    }
-    '/_authed/edit/$handle': {
-      id: '/_authed/edit/$handle'
-      path: '/edit/$handle'
-      fullPath: '/edit/$handle'
-      preLoaderRoute: typeof AuthedEditHandleRouteImport
-      parentRoute: typeof AuthedRoute
-    }
-    '/_authed/docs/recent-viewed': {
-      id: '/_authed/docs/recent-viewed'
-      path: '/docs/recent-viewed'
-      fullPath: '/docs/recent-viewed'
-      preLoaderRoute: typeof AuthedDocsRecentViewedRouteImport
+    '/_authed/docs/favorites': {
+      id: '/_authed/docs/favorites'
+      path: '/docs/favorites'
+      fullPath: '/docs/favorites'
+      preLoaderRoute: typeof AuthedDocsFavoritesRouteImport
       parentRoute: typeof AuthedRoute
     }
     '/_authed/docs/manage': {
@@ -377,11 +321,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedDocsManageRouteImport
       parentRoute: typeof AuthedRoute
     }
-    '/_authed/docs/favorites': {
-      id: '/_authed/docs/favorites'
-      path: '/docs/favorites'
-      fullPath: '/docs/favorites'
-      preLoaderRoute: typeof AuthedDocsFavoritesRouteImport
+    '/_authed/docs/recent-viewed': {
+      id: '/_authed/docs/recent-viewed'
+      path: '/docs/recent-viewed'
+      fullPath: '/docs/recent-viewed'
+      preLoaderRoute: typeof AuthedDocsRecentViewedRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/edit/$handle': {
+      id: '/_authed/edit/$handle'
+      path: '/edit/$handle'
+      fullPath: '/edit/$handle'
+      preLoaderRoute: typeof AuthedEditHandleRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/settings/': {
+      id: '/_authed/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof AuthedSettingsIndexRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
+    '/_authed/settings/preferences': {
+      id: '/_authed/settings/preferences'
+      path: '/preferences'
+      fullPath: '/settings/preferences'
+      preLoaderRoute: typeof AuthedSettingsPreferencesRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
+    '/_authed/settings/profile': {
+      id: '/_authed/settings/profile'
+      path: '/profile'
+      fullPath: '/settings/profile'
+      preLoaderRoute: typeof AuthedSettingsProfileRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
+    '/_authed/spaces/': {
+      id: '/_authed/spaces/'
+      path: '/spaces'
+      fullPath: '/spaces/'
+      preLoaderRoute: typeof AuthedSpacesIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/spaces/favorites': {
+      id: '/_authed/spaces/favorites'
+      path: '/spaces/favorites'
+      fullPath: '/spaces/favorites'
+      preLoaderRoute: typeof AuthedSpacesFavoritesRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/spaces/manage': {
+      id: '/_authed/spaces/manage'
+      path: '/spaces/manage'
+      fullPath: '/spaces/manage'
+      preLoaderRoute: typeof AuthedSpacesManageRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/view/$handle': {
+      id: '/_authed/view/$handle'
+      path: '/view/$handle'
+      fullPath: '/view/$handle'
+      preLoaderRoute: typeof AuthedViewHandleRouteImport
       parentRoute: typeof AuthedRoute
     }
   }
