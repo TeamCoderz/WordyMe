@@ -61,7 +61,7 @@ export function useChangeAvatarMutation() {
                 type: 'avatar',
                 calculatedImage: user.avatar_image?.calculatedImage ?? null,
                 isLoading: user.avatar_image?.isLoading ?? false,
-                provider: 'supabase',
+                provider: 'storage',
               }
             : undefined,
         });

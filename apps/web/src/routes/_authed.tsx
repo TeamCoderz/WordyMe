@@ -96,7 +96,7 @@ export const Route = createFileRoute('/_authed')({
               type: 'avatar',
               calculatedImage: user?.avatar_image?.calculatedImage ?? null,
               isLoading: user?.avatar_image?.isLoading ?? true,
-              provider: 'supabase',
+              provider: 'storage',
             }
           : undefined,
         editor_settings: {
@@ -181,7 +181,7 @@ function UserSync() {
               type: 'avatar',
               calculatedImage: user?.avatar_image?.calculatedImage ?? null,
               isLoading: user?.avatar_image?.isLoading ?? true,
-              provider: 'supabase',
+              provider: 'storage',
             }
           : undefined,
         editor_settings: {

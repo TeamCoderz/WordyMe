@@ -23,7 +23,7 @@ export type UserState =
         type: 'avatar' | 'cover' | null;
         calculatedImage: string | null;
         isLoading: boolean;
-        provider: 'supabase' | 'auth_provider';
+        provider: 'storage' | 'auth_provider';
       };
       cover_image?: {
         url: string | null;

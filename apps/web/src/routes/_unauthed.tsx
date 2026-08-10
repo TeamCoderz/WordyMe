@@ -98,7 +98,7 @@ function UserSync() {
               type: 'avatar',
               calculatedImage: null,
               isLoading: true,
-              provider: 'supabase',
+              provider: 'storage',
             }
           : undefined,
         editor_settings: {
