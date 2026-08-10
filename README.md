@@ -1,4 +1,4 @@
-**WordyMe™**
+# WordyMe™
 
 <p align="center">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
@@ -113,7 +113,7 @@ This project uses [Turborepo](https://turborepo.com) for managing a monorepo wit
 
 ## Project Structure
 
-```
+```text
 WordyMe/
 ├── apps/
 │   ├── backend/          # Express.js API server
@@ -164,9 +164,9 @@ docker compose up -d
 `BETTER_AUTH_SECRET` has no default and Compose refuses to start without it, so
 the first two steps are required rather than optional.
 
-The application will be available at **http://localhost:8080** — one container
+The application will be available at **<http://localhost:8080>** — one container
 serves the web app and the API from the same origin, so there is no separate
-frontend URL. The API reference is at http://localhost:8080/api/docs.
+frontend URL. The API reference is at <http://localhost:8080/api/docs>.
 
 Already running an older version? Ports and origins changed; see
 [Upgrading](DOCKER.md#upgrading-from-a-version-before-the-all-in-one-image).

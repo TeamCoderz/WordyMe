@@ -265,7 +265,7 @@ Migrations have not been applied. See [Step 4](#step-4-database-setup).
 The browser shows a different wording, because the response carries only the
 query that failed — the sign-in page is usually where you meet it:
 
-```
+```console
 Failed query: select "id" from "users" limit ?
 ```
 
@@ -383,7 +383,7 @@ pnpm license:fix
 
 ## Project Structure Overview
 
-```
+```text
 WordyMe/
 ├── apps/
 │   ├── backend/            # API (Express 5 + libSQL/SQLite + Socket.io)

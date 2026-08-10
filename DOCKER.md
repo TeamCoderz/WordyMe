@@ -43,7 +43,7 @@ Raspberry Pi 4 or 5.
    docker compose -f docker-compose.public.yml up -d
    ```
 
-4. **Open** http://localhost:8080 and create the first account.
+4. **Open** <http://localhost:8080> and create the first account.
 
    The web app and the API are served from the same origin and the same port.
    There is no separate frontend URL.
@@ -652,6 +652,7 @@ If you encounter database errors:
    those root-owned, and the non-root container user cannot write to them.
 
 2. **Reset the database** (⚠️ **WARNING**: This deletes all data):
+
    ```bash
    docker compose down -v
    docker compose up -d
@@ -668,6 +669,7 @@ If the build fails:
    ```
 
 2. **Rebuild from scratch**:
+
    ```bash
    docker compose build --no-cache
    docker compose up -d
@@ -688,6 +690,7 @@ If the build fails:
    ```
 
 3. **Check container resources**:
+
    ```bash
    docker stats
    ```
