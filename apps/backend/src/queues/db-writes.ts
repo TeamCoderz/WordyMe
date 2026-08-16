@@ -6,3 +6,9 @@
 import PQueue from 'p-queue';
 
 export const dbWritesQueue = new PQueue({ concurrency: 1 });
+
+export const enqueueDbWrite = (task: () => Promise<unknown>): void => {
+  void dbWritesQueue.add(task).catch((error) => {
+    console.error('Queued database write failed:', error);
+  });
+};

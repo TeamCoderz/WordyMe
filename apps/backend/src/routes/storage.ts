@@ -68,15 +68,7 @@ router.post(
       maxFileSize: 10 * 1024 * 1024, // 10MB
       keepExtensions: true,
       filename: safeFilename,
-    });
-
-    form.on('fileBegin', (name) => {
-      if (name !== 'attachments') {
-        throw new HttpUnprocessableEntity({
-          message:
-            'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
-        });
-      }
+      filter: (part) => part.name === 'attachments',
     });
 
     const [, files] = await form.parse(req);
@@ -129,17 +121,8 @@ router.put('/images', async (req, res) => {
       return `image${ext}`;
     },
     filter(part) {
-      return part.mimetype?.startsWith('image/') || false;
+      return part.name === 'image' && (part.mimetype?.startsWith('image/') || false);
     },
-  });
-
-  form.on('fileBegin', (name) => {
-    if (name !== 'image') {
-      throw new HttpUnprocessableEntity({
-        message:
-          'Invalid upload. Either no file was provided, the field name was incorrect (expected "image").',
-      });
-    }
   });
 
   const [fields, files] = await form.parse(req);
@@ -183,17 +166,8 @@ router.put('/covers', async (req, res) => {
       return `cover${ext}`;
     },
     filter(part) {
-      return part.mimetype?.startsWith('image/') || false;
+      return part.name === 'cover' && (part.mimetype?.startsWith('image/') || false);
     },
-  });
-
-  form.on('fileBegin', (name) => {
-    if (name !== 'cover') {
-      throw new HttpUnprocessableEntity({
-        message:
-          'Invalid upload. Either no file was provided, the field name was incorrect (expected "cover").',
-      });
-    }
   });
 
   const [fields, files] = await form.parse(req);

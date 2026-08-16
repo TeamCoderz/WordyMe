@@ -5,7 +5,12 @@
 
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import { CopyDocumentInput, ExportedDocument, ImportDocumentInput } from '../schemas/operations.js';
+import {
+  CopyDocumentInput,
+  ExportedDocument,
+  ImportDocumentInput,
+  MAX_IMPORT_DEPTH,
+} from '../schemas/operations.js';
 import { documentsTable } from '../models/documents.js';
 import { createDocument, createDocumentWithRevision } from './documents.js';
 import { getRevisionById } from './revisions.js';
@@ -14,7 +19,7 @@ import {
   exportDocumentAttachments,
   importDocumentAttachment,
 } from './attachments.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
+import { enqueueDbWrite } from '../queues/db-writes.js';
 import { readRevisionContent } from './revision-contents.js';
 
 export const copyDocument = async (
@@ -59,7 +64,7 @@ export const copyDocument = async (
   });
 
   children.map((child) =>
-    dbWritesQueue.add(() =>
+    enqueueDbWrite(() =>
       copyDocument(
         child.id,
         {
@@ -85,7 +90,7 @@ export const exportDocumentTree = async (
     throw new Error(`Circular reference detected: document ${documentId} was already processed`);
   }
 
-  if (currentDepth >= 100) {
+  if (currentDepth >= MAX_IMPORT_DEPTH) {
     throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
   }
 
@@ -147,7 +152,7 @@ export const importDocumentTree = async (
   userId: string,
   currentDepth: number = 0,
 ): Promise<{ id: string; name: string }> => {
-  if (currentDepth >= 100) {
+  if (currentDepth >= MAX_IMPORT_DEPTH) {
     throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
   }
 
@@ -179,7 +184,7 @@ export const importDocumentTree = async (
   );
 
   for (const child of payload.document.children) {
-    dbWritesQueue.add(() =>
+    enqueueDbWrite(() =>
       importDocumentTree(
         {
           document: child,
@@ -195,7 +200,7 @@ export const importDocumentTree = async (
   }
 
   for (const spaceChild of payload.document.spaceRootChildren) {
-    dbWritesQueue.add(() =>
+    enqueueDbWrite(() =>
       importDocumentTree(
         {
           document: spaceChild,

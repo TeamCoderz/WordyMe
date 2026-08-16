@@ -20,7 +20,7 @@ import { favoritesTable } from '../models/favorites.js';
 import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
+import { enqueueDbWrite } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
 import { saveRevisionContent } from './revision-contents.js';
@@ -254,7 +254,7 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     });
 
     for (const child of children) {
-      dbWritesQueue.add(() => updateDocument(child.id, { spaceId }));
+      enqueueDbWrite(() => updateDocument(child.id, { spaceId }));
     }
   }
 

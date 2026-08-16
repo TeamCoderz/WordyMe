@@ -8,6 +8,7 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
+export const MAX_IMPORT_DEPTH = 100;
 
 export const attachmentSchema = z.object({
   filename: z
@@ -50,13 +51,38 @@ export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
   }),
 );
 
-export const importDocumentSchema = z.object({
-  spaceId: z.uuid().optional().nullable(),
-  parentId: z.uuid().optional().nullable(),
-  position: z.string().optional().nullable(),
-  type: z.enum(['space', 'folder', 'note']),
-  document: exportedDocumentSchema,
-});
+const importTreeDepth = (root: ExportedDocument): number => {
+  let maxDepth = 0;
+  const stack: Array<{ node: ExportedDocument; depth: number }> = [{ node: root, depth: 1 }];
+
+  while (stack.length > 0) {
+    const { node, depth } = stack.pop()!;
+    if (depth > maxDepth) maxDepth = depth;
+    for (const child of node.children) stack.push({ node: child, depth: depth + 1 });
+    for (const child of node.spaceRootChildren) stack.push({ node: child, depth: depth + 1 });
+  }
+
+  return maxDepth;
+};
+
+export const importDocumentSchema = z
+  .object({
+    spaceId: z.uuid().optional().nullable(),
+    parentId: z.uuid().optional().nullable(),
+    position: z.string().optional().nullable(),
+    type: z.enum(['space', 'folder', 'note']),
+    document: exportedDocumentSchema,
+  })
+  .superRefine((value, ctx) => {
+    const depth = importTreeDepth(value.document);
+    if (depth > MAX_IMPORT_DEPTH) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `Document tree is nested ${depth} levels deep; the maximum is ${MAX_IMPORT_DEPTH}.`,
+        path: ['document'],
+      });
+    }
+  });
 
 export const copyDocumentSchema = createInsertSchema(documentsTable).omit({
   id: true,

@@ -33,7 +33,7 @@ import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
 import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
+import { dbWritesQueue, enqueueDbWrite } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
 const router: Router = Router();
@@ -99,7 +99,7 @@ router.get(
       throw new HttpNotFound('Document with the specified handle not found or not accessible.');
     }
     if (req.query.updateLastViewed === true) {
-      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+      enqueueDbWrite(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },
@@ -114,7 +114,7 @@ router.get(
       throw new HttpNotFound('Document not found or the user does not have access to it.');
     }
     if (req.query.updateLastViewed === true) {
-      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+      enqueueDbWrite(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },
