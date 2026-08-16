@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { access, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
@@ -71,6 +71,13 @@ export const exportDocumentAttachments = async (documentId: string): Promise<Att
 
   const attachments = await Promise.all(filePromises);
   return attachments;
+};
+
+export const deleteDocumentAttachments = async (documentId: string) => {
+  await rm(resolvePhysicalPath(`attachments/${documentId}`), {
+    recursive: true,
+    force: true,
+  }).catch((error) => console.error(`Failed to remove attachments for ${documentId}:`, error));
 };
 
 export const importDocumentAttachment = async (

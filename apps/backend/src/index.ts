@@ -5,6 +5,7 @@
 
 import server from './app.js';
 import { env } from './env.js';
+import { configureDatabase } from './lib/db.js';
 import { originConfig } from './lib/auth.js';
 import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
@@ -18,6 +19,8 @@ import { startUpdateChecks, stopUpdateChecks } from './services/updates.js';
  * the process anyway and the graceful path achieved nothing.
  */
 const SHUTDOWN_TIMEOUT_MS = 8_000;
+
+await configureDatabase();
 
 server.listen(env.PORT, () => {
   console.log(`Server is running on http://localhost:${env.PORT}`);

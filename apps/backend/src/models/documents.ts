@@ -4,7 +4,7 @@
  */
 
 import crypto from 'node:crypto';
-import { SQLiteColumn, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { SQLiteColumn, index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { enumType } from '../utils/drizzle.js';
 import { users } from './auth.js';
 import { revisionsTable } from './revisions.js';
@@ -12,45 +12,58 @@ import { relations } from 'drizzle-orm';
 import { documentViewsTable } from './document-views.js';
 import { favoritesTable } from './favorites.js';
 
-export const documentsTable = sqliteTable('documents', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
-  createdAt: integer('created_at', { mode: 'timestamp_ms' })
-    .notNull()
-    .$defaultFn(() => new Date()),
-  updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-    .notNull()
-    .$defaultFn(() => new Date())
-    .$onUpdateFn(() => new Date()),
-  name: text('name').notNull(),
-  handle: text('handle').notNull(),
-  icon: text('icon'),
-  position: text('position'),
-  currentRevisionId: text('current_revision_id').references((): SQLiteColumn => revisionsTable.id, {
-    onDelete: 'set null',
-    onUpdate: 'cascade',
-  }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => users.id, {
+export const documentsTable = sqliteTable(
+  'documents',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date())
+      .$onUpdateFn(() => new Date()),
+    name: text('name').notNull(),
+    handle: text('handle').notNull(),
+    icon: text('icon'),
+    position: text('position'),
+    currentRevisionId: text('current_revision_id').references(
+      (): SQLiteColumn => revisionsTable.id,
+      {
+        onDelete: 'set null',
+        onUpdate: 'cascade',
+      },
+    ),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, {
+        onDelete: 'cascade',
+        onUpdate: 'cascade',
+      }),
+    parentId: text('parent_id').references((): SQLiteColumn => documentsTable.id, {
       onDelete: 'cascade',
       onUpdate: 'cascade',
     }),
-  parentId: text('parent_id').references((): SQLiteColumn => documentsTable.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade',
-  }),
-  documentType: enumType(['space', 'folder', 'note'] as const, 'document_type')
-    .notNull()
-    .default('note'),
-  spaceId: text('space_id').references((): SQLiteColumn => documentsTable.id, {
-    onDelete: 'cascade',
-    onUpdate: 'cascade',
-  }),
-  isContainer: integer('is_container', { mode: 'boolean' }).notNull().default(false),
-  clientId: text('client_id'),
-});
+    documentType: enumType(['space', 'folder', 'note'] as const, 'document_type')
+      .notNull()
+      .default('note'),
+    spaceId: text('space_id').references((): SQLiteColumn => documentsTable.id, {
+      onDelete: 'cascade',
+      onUpdate: 'cascade',
+    }),
+    isContainer: integer('is_container', { mode: 'boolean' }).notNull().default(false),
+    clientId: text('client_id'),
+  },
+  (table) => [
+    index('documents_user_id_idx').on(table.userId),
+    index('documents_parent_id_idx').on(table.parentId),
+    index('documents_space_id_idx').on(table.spaceId),
+    index('documents_handle_idx').on(table.handle),
+    index('documents_current_revision_id_idx').on(table.currentRevisionId),
+  ],
+);
 
 export const documentRelations = relations(documentsTable, ({ one, many }) => ({
   user: one(users, {

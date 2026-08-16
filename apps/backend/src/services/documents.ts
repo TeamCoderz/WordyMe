@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { and, count, countDistinct, eq, getTableColumns, gt, max } from 'drizzle-orm';
+import crypto from 'node:crypto';
+import { and, count, countDistinct, eq, getTableColumns, gt, inArray, max, sql } from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
-import { db } from '../lib/db.js';
+import { db, withWriteRetry } from '../lib/db.js';
 import { documentsTable } from '../models/documents.js';
 import {
   CreateDocumentInput,
@@ -23,7 +24,8 @@ import { DocumentListItem } from '../schemas/documents.js';
 import { enqueueDbWrite } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
-import { saveRevisionContent } from './revision-contents.js';
+import { deleteRevisionContent, saveRevisionContent } from './revision-contents.js';
+import { deleteDocumentAttachments } from './attachments.js';
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -31,8 +33,15 @@ export const orderByColumns = {
   lastViewedAt: documentViewsTable.lastViewedAt,
 } satisfies Record<string, SQLiteColumn>;
 
-export const checkExistingDocumentHandle = async (handle: string) => {
-  const result = await db.select().from(documentsTable).where(eq(documentsTable.handle, handle));
+export const checkExistingDocumentHandle = async (
+  handle: string,
+  executor: Pick<typeof db, 'select'> = db,
+) => {
+  const result = await executor
+    .select({ id: documentsTable.id })
+    .from(documentsTable)
+    .where(eq(documentsTable.handle, handle))
+    .limit(1);
   return result.length > 0;
 };
 
@@ -174,48 +183,59 @@ export const createDocumentWithRevision = async (
   payload: CreateDocumentWithRevisionInput,
   userId: string,
 ) => {
-  const result = await db.transaction(async (tx) => {
-    let handle = slugify(payload.name);
-    if (await checkExistingDocumentHandle(handle)) {
-      handle = appendUniqueSuffix(handle);
-    }
-    const [document] = await tx
-      .insert(documentsTable)
-      .values({
-        ...payload,
-        handle,
-        userId,
-      })
-      .returning();
+  const revisionId = crypto.randomUUID();
+  await saveRevisionContent(payload.revision.content, revisionId);
 
-    const [revision] = await tx
-      .insert(revisionsTable)
-      .values({
-        documentId: document.id,
-        text: payload.revision.text,
-        checksum: payload.revision.checksum,
-        revisionName: payload.revision.revisionName,
-        userId,
-      })
-      .returning();
+  let result;
 
-    await saveRevisionContent(payload.revision.content, revision.id);
+  try {
+    result = await withWriteRetry(() =>
+      db.transaction(async (tx) => {
+        let handle = slugify(payload.name);
+        if (await checkExistingDocumentHandle(handle, tx)) {
+          handle = appendUniqueSuffix(handle);
+        }
+        const [document] = await tx
+          .insert(documentsTable)
+          .values({
+            ...payload,
+            handle,
+            userId,
+          })
+          .returning();
 
-    await tx
-      .update(documentsTable)
-      .set({
-        currentRevisionId: revision.id,
-      })
-      .where(eq(documentsTable.id, document.id));
+        const [revision] = await tx
+          .insert(revisionsTable)
+          .values({
+            id: revisionId,
+            documentId: document.id,
+            text: payload.revision.text,
+            checksum: payload.revision.checksum,
+            revisionName: payload.revision.revisionName,
+            userId,
+          })
+          .returning();
 
-    return {
-      ...document,
-      currentRevisionId: revision.id,
-      currentRevision: revision,
-      isFavorite: false,
-      lastViewedAt: null,
-    };
-  });
+        await tx
+          .update(documentsTable)
+          .set({
+            currentRevisionId: revision.id,
+          })
+          .where(eq(documentsTable.id, document.id));
+
+        return {
+          ...document,
+          currentRevisionId: revision.id,
+          currentRevision: revision,
+          isFavorite: false,
+          lastViewedAt: null,
+        };
+      }),
+    );
+  } catch (error) {
+    await deleteRevisionContent(revisionId);
+    throw error;
+  }
 
   if (payload.documentType === 'space') {
     emitToUser(userId, 'space:created', result);
@@ -284,12 +304,44 @@ export const getUserDocumentCount = async (userId: string): Promise<number> => {
 };
 
 export const deleteDocument = async (documentId: string) => {
-  const [document] = await db
-    .delete(documentsTable)
-    .where(eq(documentsTable.id, documentId))
-    .returning();
+  const { document, documentIds, revisionIds } = await withWriteRetry(() =>
+    db.transaction(async (tx) => {
+      const subtree = await tx.all<{ id: string }>(sql`
+        with recursive subtree(id) as (
+          select id from documents where id = ${documentId}
+          union
+          select d.id from documents d
+            join subtree s on d.parent_id = s.id or d.space_id = s.id
+        )
+        select id from subtree
+      `);
+      const documentIds = subtree.map((row) => row.id);
+
+      const revisionIds =
+        documentIds.length > 0
+          ? (
+              await tx
+                .select({ id: revisionsTable.id })
+                .from(revisionsTable)
+                .where(inArray(revisionsTable.documentId, documentIds))
+            ).map((row) => row.id)
+          : [];
+
+      const [document] = await tx
+        .delete(documentsTable)
+        .where(eq(documentsTable.id, documentId))
+        .returning();
+
+      return { document, documentIds, revisionIds };
+    }),
+  );
 
   if (!document) return;
+
+  await Promise.all([
+    ...revisionIds.map(deleteRevisionContent),
+    ...documentIds.map(deleteDocumentAttachments),
+  ]);
 
   if (document.documentType === 'space') {
     emitToUser(document.userId, 'space:deleted', document);

@@ -9,7 +9,8 @@
     "build": "tsc",
     "lint": "eslint .",
     "check-types": "tsc --noEmit",
-    "drizzle-kit": "bun node_modules/drizzle-kit/bin.cjs"
+    "drizzle-kit": "bun node_modules/drizzle-kit/bin.cjs",
+    "prune-orphans": "node src/scripts/prune-orphans.mjs"
   },
   "exports": {
     "./*": "./src/schemas/*",

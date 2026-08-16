@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import crypto from 'node:crypto';
 import { desc, eq, and } from 'drizzle-orm';
 import { HttpConflict } from '@httpx/exception';
 import { db } from '../lib/db.js';
@@ -10,24 +11,34 @@ import { revisionsTable } from '../models/revisions.js';
 import { CreateRevisionInput, UpdateRevisionInput } from '../schemas/revisions.js';
 import { documentsTable } from '../models/documents.js';
 import {
+  deleteRevisionContent,
   getRevisionContentUrl,
   readRevisionContent,
   saveRevisionContent,
 } from './revision-contents.js';
 
 export const createRevision = async (payload: CreateRevisionInput, userId: string) => {
-  const [revision] = await db
-    .insert(revisionsTable)
-    .values({
-      documentId: payload.documentId,
-      text: payload.text,
-      checksum: payload.checksum,
-      revisionName: payload.revisionName,
-      userId,
-    })
-    .returning();
+  const revisionId = crypto.randomUUID();
+  await saveRevisionContent(payload.content, revisionId);
 
-  await saveRevisionContent(payload.content, revision.id);
+  let revision;
+
+  try {
+    [revision] = await db
+      .insert(revisionsTable)
+      .values({
+        id: revisionId,
+        documentId: payload.documentId,
+        text: payload.text,
+        checksum: payload.checksum,
+        revisionName: payload.revisionName,
+        userId,
+      })
+      .returning();
+  } catch (error) {
+    await deleteRevisionContent(revisionId);
+    throw error;
+  }
 
   if (payload.makeCurrentRevision) {
     await db
@@ -131,6 +142,10 @@ export const deleteRevisionById = async (revisionId: string) => {
     .delete(revisionsTable)
     .where(eq(revisionsTable.id, revisionId))
     .returning({ id: revisionsTable.id });
+
+  if (deleted) {
+    await deleteRevisionContent(deleted.id);
+  }
 
   return deleted;
 };

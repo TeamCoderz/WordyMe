@@ -31,5 +31,8 @@ export const saveRevisionContent = async (content: string, revisionId: string) =
 
 export const deleteRevisionContent = async (revisionId: string) => {
   const physicalPath = resolvePhysicalPath(getRevisionContentUrl(revisionId));
-  return await unlink(physicalPath).catch(console.error);
+  return await unlink(physicalPath).catch((error) => {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return;
+    console.error(`Failed to remove revision content ${revisionId}:`, error);
+  });
 };
