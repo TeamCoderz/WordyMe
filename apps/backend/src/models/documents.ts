@@ -28,7 +28,7 @@ export const documentsTable = sqliteTable('documents', {
   icon: text('icon'),
   position: text('position'),
   currentRevisionId: text('current_revision_id').references((): SQLiteColumn => revisionsTable.id, {
-    onDelete: 'cascade',
+    onDelete: 'set null',
     onUpdate: 'cascade',
   }),
   userId: text('user_id')

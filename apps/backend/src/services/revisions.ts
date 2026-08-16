@@ -4,6 +4,7 @@
  */
 
 import { desc, eq, and } from 'drizzle-orm';
+import { HttpConflict } from '@httpx/exception';
 import { db } from '../lib/db.js';
 import { revisionsTable } from '../models/revisions.js';
 import { CreateRevisionInput, UpdateRevisionInput } from '../schemas/revisions.js';
@@ -114,6 +115,18 @@ export const updateRevisionName = async (revisionId: string, payload: UpdateRevi
 };
 
 export const deleteRevisionById = async (revisionId: string) => {
+  const [current] = await db
+    .select({ id: documentsTable.id })
+    .from(documentsTable)
+    .where(eq(documentsTable.currentRevisionId, revisionId))
+    .limit(1);
+
+  if (current) {
+    throw new HttpConflict(
+      'This revision is the current version of its document and cannot be deleted. Save or restore another revision first.',
+    );
+  }
+
   const [deleted] = await db
     .delete(revisionsTable)
     .where(eq(revisionsTable.id, revisionId))
