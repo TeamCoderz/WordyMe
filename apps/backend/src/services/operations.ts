@@ -26,7 +26,15 @@ export const copyDocument = async (
   documentId: string,
   payload: CopyDocumentInput,
   userId: string,
+  visitedDocuments: Set<string> = new Set(),
+  currentDepth: number = 0,
 ) => {
+  if (visitedDocuments.has(documentId) || currentDepth >= MAX_IMPORT_DEPTH) {
+    return false;
+  }
+
+  visitedDocuments.add(documentId);
+
   const originalDocument = await db.query.documentsTable.findFirst({
     where: eq(documentsTable.id, documentId),
   });
@@ -74,6 +82,8 @@ export const copyDocument = async (
           spaceId: child.spaceId === documentId ? newDocument.id : newDocument.spaceId,
         },
         userId,
+        visitedDocuments,
+        currentDepth + 1,
       ),
     ),
   );

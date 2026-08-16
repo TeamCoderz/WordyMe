@@ -6,6 +6,7 @@
 import crypto from 'node:crypto';
 import { and, count, countDistinct, eq, getTableColumns, gt, inArray, max, sql } from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { HttpUnprocessableEntity } from '@httpx/exception';
 import { db, withWriteRetry } from '../lib/db.js';
 import { documentsTable } from '../models/documents.js';
 import {
@@ -21,7 +22,6 @@ import { favoritesTable } from '../models/favorites.js';
 import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
-import { enqueueDbWrite } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
 import { deleteRevisionContent, saveRevisionContent } from './revision-contents.js';
@@ -256,6 +256,43 @@ export const viewDocument = async (documentId: string, userId: string) => {
     });
 };
 
+const emitDocumentUpdate = (document: typeof documentsTable.$inferSelect) => {
+  if (document.documentType === 'space') {
+    emitToUser(document.userId, 'space:updated', document);
+  } else if (document.spaceId) {
+    emitToSpace(document.spaceId, 'document:updated', document);
+  }
+};
+
+const descendantIds = async (documentId: string): Promise<string[]> => {
+  const rows = await db.all<{ id: string }>(sql`
+    with recursive subtree(id) as (
+      select id from documents where parent_id = ${documentId}
+      union
+      select d.id from documents d join subtree s on d.parent_id = s.id
+    )
+    select id from subtree where id <> ${documentId}
+  `);
+
+  return rows.map((row) => row.id);
+};
+
+export const assertNoParentCycle = async (documentId: string, parentId: string) => {
+  if (parentId === documentId) {
+    throw new HttpUnprocessableEntity({
+      message: 'A document cannot be its own parent.',
+    });
+  }
+
+  const descendants = await descendantIds(documentId);
+
+  if (descendants.includes(parentId)) {
+    throw new HttpUnprocessableEntity({
+      message: 'A document cannot be moved inside one of its own descendants.',
+    });
+  }
+};
+
 export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
   let handle;
 
@@ -266,16 +303,8 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     }
   }
 
-  if (payload.spaceId) {
-    const spaceId = payload.spaceId;
-
-    const children = await db.query.documentsTable.findMany({
-      where: eq(documentsTable.parentId, documentId),
-    });
-
-    for (const child of children) {
-      enqueueDbWrite(() => updateDocument(child.id, { spaceId }));
-    }
+  if (payload.parentId) {
+    await assertNoParentCycle(documentId, payload.parentId);
   }
 
   const [document] = await db
@@ -284,10 +313,20 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     .where(eq(documentsTable.id, documentId))
     .returning();
 
-  if (document.documentType === 'space') {
-    emitToUser(document.userId, 'space:updated', document);
-  } else if (document.spaceId) {
-    emitToSpace(document.spaceId, 'document:updated', document);
+  emitDocumentUpdate(document);
+
+  if (payload.spaceId) {
+    const ids = await descendantIds(documentId);
+
+    if (ids.length > 0) {
+      const moved = await db
+        .update(documentsTable)
+        .set({ spaceId: payload.spaceId })
+        .where(inArray(documentsTable.id, ids))
+        .returning();
+
+      moved.forEach(emitDocumentUpdate);
+    }
   }
 
   return document;
