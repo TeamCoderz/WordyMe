@@ -10,8 +10,14 @@ import { revisionsTable } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
 
 export const attachmentSchema = z.object({
-  filename: z.string(),
-  url: z.string(),
+  filename: z
+    .string()
+    .min(1)
+    .max(255)
+    .refine((value) => !/[/\\\0]/.test(value) && value !== '.' && value !== '..', {
+      message: 'Attachment filename must be a bare file name, not a path.',
+    }),
+  url: z.string().startsWith('data:', 'Attachment url must be a data URL.'),
 });
 
 export const exportedRevisionSchema = createSelectSchema(revisionsTable, {

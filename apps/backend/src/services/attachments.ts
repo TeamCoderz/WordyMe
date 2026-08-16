@@ -7,6 +7,7 @@ import { access, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promise
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
+import { sanitizeStoredFilename } from '../utils/strings.js';
 
 export const getAttachmentUrl = (documentId: string, filename: string) => {
   return `/storage/attachments/${documentId}/${filename}`;
@@ -80,6 +81,8 @@ export const importDocumentAttachment = async (
   await mkdir(directory, { recursive: true });
 
   const buffer = dataURLToBuffer(attachment.url);
-  const filePath = join(directory, attachment.filename);
+  const filePath = resolvePhysicalPath(
+    `attachments/${documentId}/${sanitizeStoredFilename(attachment.filename)}`,
+  );
   await writeFile(filePath, buffer);
 };
