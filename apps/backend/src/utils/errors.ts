@@ -11,6 +11,14 @@ function isExpressError(err: unknown): err is HttpError {
   return err instanceof Error && ('status' in err || 'statusCode' in err);
 }
 
+function isFormidableError(err: unknown): err is Error & { httpCode: number } {
+  return (
+    err instanceof Error &&
+    'httpCode' in err &&
+    typeof (err as { httpCode?: unknown }).httpCode === 'number'
+  );
+}
+
 function isPayloadTooLargeError(err: unknown): err is Error & { type?: string } {
   return (
     err instanceof Error && 'type' in err && (err as { type?: string }).type === 'entity.too.large'
@@ -29,6 +37,12 @@ export const toHttpException = (error: unknown): HttpException => {
     );
   }
 
+  if (isFormidableError(error)) {
+    return error.httpCode < 500
+      ? new HttpException(error.httpCode, error.message)
+      : new HttpException(500, 'Internal Server Error');
+  }
+
   if (isExpressError(error)) {
     const status = typeof error.status === 'number' ? error.status : error.statusCode;
     return new HttpException(status ?? 500, error.message);
@@ -40,10 +54,6 @@ export const toHttpException = (error: unknown): HttpException => {
       issues: error.issues as HttpValidationIssue[],
       cause: error,
     });
-  }
-
-  if (error instanceof Error) {
-    return new HttpException(500, error.message);
   }
 
   return new HttpException(500, 'Internal Server Error');
