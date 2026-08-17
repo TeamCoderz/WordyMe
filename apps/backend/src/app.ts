@@ -61,7 +61,7 @@ app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
 
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
-app.use(express.json({ limit: '5mb' }));
+app.use('/api', express.json({ limit: '5mb' }));
 
 app.use('/api/documents', documentsRouter);
 app.use('/api/revisions', revisionsRouter);
