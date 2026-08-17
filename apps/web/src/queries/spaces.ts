@@ -42,6 +42,7 @@ import {
   removeDocumentFromFavorites,
 } from '@repo/sdk/favorites.ts';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
+import { expandDocumentTreeContent } from '@/utils/exportedDocument';
 const listSpaces = async () => {
   return getUserDocuments({ documentType: 'space' });
 };
@@ -889,7 +890,7 @@ export function useExportSpaceMutation(itemId: string, spaceName?: string) {
       }
       if (data) {
         // Stringify the data
-        const jsonString = JSON.stringify(data, null, 2);
+        const jsonString = JSON.stringify(expandDocumentTreeContent(data), null, 2);
 
         // Create a blob from the JSON string
         const blob = new Blob([jsonString], { type: 'application/json' });

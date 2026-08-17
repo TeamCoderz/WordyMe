@@ -52,6 +52,7 @@ import { getRevisionsByDocumentIdQueryOptions } from './revisions';
 import { addDocumentToCache, isDocumentCached, removeDocumentFromCache } from './caches/documents';
 import { createLocalDocument, deleteLocalDocument } from '@repo/editor/indexeddb';
 import { importDocumentSchema } from '@repo/backend/operations.ts';
+import { expandDocumentTreeContent } from '@/utils/exportedDocument';
 const listDocuments = async ({ spaceId }: { spaceId: string }) => {
   return await getUserDocuments({ spaceId, documentType: 'note' });
 };
@@ -1223,10 +1224,8 @@ export function useExportDocumentMutation(itemId: string, documentName?: string)
         throw error;
       }
       if (data) {
-        // Parse the content as JSON
-        (data as any).revision.content = JSON.parse((data as any).revision.content);
         // Stringify the data
-        const jsonString = JSON.stringify(data, null, 2);
+        const jsonString = JSON.stringify(expandDocumentTreeContent(data), null, 2);
 
         // Create a blob from the JSON string
         const blob = new Blob([jsonString], { type: 'application/json' });
