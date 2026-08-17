@@ -264,8 +264,10 @@ const emitDocumentUpdate = (document: typeof documentsTable.$inferSelect) => {
   }
 };
 
-const descendantIds = async (documentId: string): Promise<string[]> => {
-  const rows = await db.all<{ id: string }>(sql`
+type SqlExecutor = Pick<typeof db, 'all'>;
+
+const descendantIds = async (documentId: string, executor: SqlExecutor = db): Promise<string[]> => {
+  const rows = await executor.all<{ id: string }>(sql`
     with recursive subtree(id) as (
       select id from documents where parent_id = ${documentId}
       union
@@ -277,14 +279,18 @@ const descendantIds = async (documentId: string): Promise<string[]> => {
   return rows.map((row) => row.id);
 };
 
-export const assertNoParentCycle = async (documentId: string, parentId: string) => {
+export const assertNoParentCycle = async (
+  documentId: string,
+  parentId: string,
+  executor: SqlExecutor = db,
+) => {
   if (parentId === documentId) {
     throw new HttpUnprocessableEntity({
       message: 'A document cannot be its own parent.',
     });
   }
 
-  const descendants = await descendantIds(documentId);
+  const descendants = await descendantIds(documentId, executor);
 
   if (descendants.includes(parentId)) {
     throw new HttpUnprocessableEntity({
@@ -294,7 +300,7 @@ export const assertNoParentCycle = async (documentId: string, parentId: string) 
 };
 
 export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
-  let handle;
+  let handle: string | undefined;
 
   if (payload.name) {
     handle = slugify(payload.name);
@@ -303,31 +309,40 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     }
   }
 
-  if (payload.parentId) {
-    await assertNoParentCycle(documentId, payload.parentId);
-  }
+  const { document, moved } = await withWriteRetry(() =>
+    db.transaction(async (tx) => {
+      if (payload.parentId) {
+        await assertNoParentCycle(documentId, payload.parentId, tx);
+      }
 
-  const [document] = await db
-    .update(documentsTable)
-    .set({ ...payload, handle })
-    .where(eq(documentsTable.id, documentId))
-    .returning();
+      const [document] = await tx
+        .update(documentsTable)
+        .set({ ...payload, handle })
+        .where(eq(documentsTable.id, documentId))
+        .returning();
 
-  emitDocumentUpdate(document);
+      if (!payload.spaceId) {
+        return { document, moved: [] as (typeof documentsTable.$inferSelect)[] };
+      }
 
-  if (payload.spaceId) {
-    const ids = await descendantIds(documentId);
+      const ids = await descendantIds(documentId, tx);
 
-    if (ids.length > 0) {
-      const moved = await db
+      if (ids.length === 0) {
+        return { document, moved: [] as (typeof documentsTable.$inferSelect)[] };
+      }
+
+      const moved = await tx
         .update(documentsTable)
         .set({ spaceId: payload.spaceId })
         .where(inArray(documentsTable.id, ids))
         .returning();
 
-      moved.forEach(emitDocumentUpdate);
-    }
-  }
+      return { document, moved };
+    }),
+  );
+
+  emitDocumentUpdate(document);
+  moved.forEach(emitDocumentUpdate);
 
   return document;
 };
