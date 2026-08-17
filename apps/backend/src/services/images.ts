@@ -8,8 +8,10 @@ import { db } from '../lib/db.js';
 import { users } from '../models/auth.js';
 import { ImageMeta } from '../schemas/images.js';
 import { resolvePhysicalPath } from '../lib/storage.js';
-import { readdir, rm } from 'node:fs/promises';
+import { readdir, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
+
+const PRUNE_MIN_AGE_MS = 60 * 60 * 1000;
 
 export const getUserImageUrl = async (userId: string, filename: string) => {
   return `storage/images/${userId}/${filename}`;
@@ -25,11 +27,16 @@ const pruneSiblings = async (directory: string, keep: string) => {
   await Promise.all(
     entries
       .filter((entry) => entry !== keep)
-      .map((entry) =>
-        rm(join(directory, entry), { force: true }).catch((error) =>
-          console.error(`Failed to remove stale upload ${entry}:`, error),
-        ),
-      ),
+      .map(async (entry) => {
+        const entryPath = join(directory, entry);
+        try {
+          const info = await stat(entryPath);
+          if (Date.now() - info.mtimeMs < PRUNE_MIN_AGE_MS) return;
+          await rm(entryPath, { force: true });
+        } catch (error) {
+          console.error(`Failed to remove stale upload ${entry}:`, error);
+        }
+      }),
   );
 };
 
