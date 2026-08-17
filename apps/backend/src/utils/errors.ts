@@ -11,7 +11,7 @@ function isExpressError(err: unknown): err is HttpError {
   return err instanceof Error && ('status' in err || 'statusCode' in err);
 }
 
-function isFormidableError(err: unknown): err is Error & { httpCode: number } {
+function isFormidableError(err: unknown): err is Error & { httpCode: number; code?: number } {
   return (
     err instanceof Error &&
     'httpCode' in err &&
@@ -19,11 +19,24 @@ function isFormidableError(err: unknown): err is Error & { httpCode: number } {
   );
 }
 
-function isPayloadTooLargeError(err: unknown): err is Error & { type?: string } {
+const FORMIDABLE_CLIENT_MESSAGES: Record<number, string> = {
+  1006: 'Upload form fields are too large.',
+  1007: 'Upload form has too many fields.',
+  1009: 'Uploaded files exceed the maximum allowed total size.',
+  1015: 'Too many files uploaded.',
+  1016: 'Uploaded file exceeds the maximum allowed size.',
+};
+
+function isPayloadTooLargeError(err: unknown): err is Error & { type?: string; limit?: number } {
   return (
     err instanceof Error && 'type' in err && (err as { type?: string }).type === 'entity.too.large'
   );
 }
+
+const formatByteLimit = (limit: number | undefined) =>
+  typeof limit === 'number' && Number.isFinite(limit)
+    ? `${Math.round((limit / (1024 * 1024)) * 10) / 10}MB`
+    : 'the configured limit';
 
 export const toHttpException = (error: unknown): HttpException => {
   if (error instanceof HttpException) {
@@ -33,14 +46,18 @@ export const toHttpException = (error: unknown): HttpException => {
   if (isPayloadTooLargeError(error)) {
     return new HttpException(
       413,
-      'Request body is too large. Maximum allowed payload is 5MB. Please reduce the import size and try again.',
+      `Request body is too large. Maximum allowed payload is ${formatByteLimit(error.limit)}.`,
     );
   }
 
   if (isFormidableError(error)) {
-    return error.httpCode < 500
-      ? new HttpException(error.httpCode, error.message)
-      : new HttpException(500, 'Internal Server Error');
+    if (error.httpCode >= 500 || error.code === 1018) {
+      return new HttpException(500, 'Internal Server Error');
+    }
+    const message =
+      (error.code !== undefined ? FORMIDABLE_CLIENT_MESSAGES[error.code] : undefined) ??
+      'Invalid upload request.';
+    return new HttpException(error.httpCode, message);
   }
 
   if (isExpressError(error)) {
