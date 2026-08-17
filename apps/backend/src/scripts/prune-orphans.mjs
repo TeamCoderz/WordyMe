@@ -63,6 +63,19 @@ const refuse = (reason) => {
   process.exit(1);
 };
 
+const dbFilePath = DB_URL.startsWith('file:')
+  ? resolve(
+      process.cwd(),
+      DB_URL.slice('file:'.length)
+        .split('?')[0]
+        .replace(/^\/\/(?=\/)/, ''),
+    )
+  : null;
+
+if (dbFilePath && !(await stat(dbFilePath).catch(() => null))) {
+  refuse(`No database file exists at ${dbFilePath}.`);
+}
+
 let client;
 
 try {
@@ -79,13 +92,15 @@ const tables = new Set(
   ).rows.map((row) => String(row.name)),
 );
 
-if (!tables.has('revisions') || !tables.has('documents')) {
-  refuse('It has no documents/revisions tables, so it is empty or not a WordyMe database.');
+if (!tables.has('revisions') || !tables.has('documents') || !tables.has('users')) {
+  refuse('It has no documents/revisions/users tables, so it is empty or not a WordyMe database.');
 }
 
-const [{ n: userCount }] = (await client.execute('select count(*) as n from users')).rows;
+const userRows = (
+  await client.execute('select count(*) as n from users').catch(() => ({ rows: [] }))
+).rows;
 
-if (Number(userCount) === 0) {
+if (userRows.length === 0 || Number(userRows[0].n) === 0) {
   refuse('It has no user accounts, so it has never been initialised.');
 }
 
