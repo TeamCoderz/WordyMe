@@ -5,7 +5,7 @@
 
 import server from './app.js';
 import { env } from './env.js';
-import { configureDatabase } from './lib/db.js';
+import { checkpointDatabase, configureDatabase } from './lib/db.js';
 import { originConfig } from './lib/auth.js';
 import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
@@ -79,6 +79,7 @@ const shutdown = async (signal: string) => {
     });
 
     await dbWritesQueue.onIdle();
+    await checkpointDatabase();
 
     console.log('Shutdown complete.');
     process.exit(0);
