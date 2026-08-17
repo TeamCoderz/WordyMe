@@ -291,45 +291,80 @@ The application uses Docker volumes to persist data:
 
 ### Backup Database
 
-The database is a single file. It runs in SQLite's rollback-journal mode
-(`journal_mode=delete`, verifiable with `PRAGMA journal_mode`), **not** WAL, so
-there are no persistent `-wal` or `-shm` companion files to collect. A copy of
-`local.db` is the whole database.
+The database runs in SQLite's write-ahead-log mode (`journal_mode=WAL`,
+verifiable with `PRAGMA journal_mode`). Recent commits live in a companion
+`local.db-wal` file until SQLite folds them back into `local.db`, so **a copy of
+`local.db` on its own is not the whole database** — taken at the wrong moment it
+is missing your most recent edits, and on a young instance it can be missing
+everything.
 
-The safest backup is taken with the service stopped, so no write can land
-mid-copy:
+Two consequences worth knowing before you rely on a backup:
+
+- **Back up the whole `/app/storage` volume, not just `local.db`.** The database
+  holds document metadata, but the text of every revision lives in
+  `storage/revisions/` and uploads live in `storage/attachments/`. A database
+  restored without those files gives you a document list where nothing opens.
+- **Keep the volume on local disk.** WAL requires all readers to share memory
+  with the writer, which network filesystems (NFS, SMB, most NAS mounts) do not
+  provide. Pointing the volume at one risks corruption.
+
+Stopping the service first is still the safest option, and it now leaves a
+self-contained `local.db`: shutdown checkpoints the WAL back into the main file
+before exiting.
 
 ```bash
 docker compose stop wordyme
 ```
 
+Copy into a directory that does not already exist, so each backup stands alone —
+`docker compose cp` into an existing directory nests the copy inside it, leaving
+the previous backup at the path you would restore from:
+
 ```bash
-docker compose cp wordyme:/app/storage/local.db ./backup-local.db
+docker compose cp wordyme:/app/storage "./wordyme-backup-$(date +%Y%m%d-%H%M%S)"
 ```
 
 ```bash
 docker compose start wordyme
 ```
 
-Stopping costs almost nothing — shutdown completes in well under a second.
+That directory is the whole backup: `local.db` plus `revisions/`,
+`attachments/`, `images/` and `covers/`.
 
-Copying while the service is running usually works, but a write landing during
-the copy can produce a torn file that only reveals itself when you try to
-restore it. If you take live backups, verify them.
+To back up without stopping, let SQLite write the database copy for you — this
+is safe against a concurrent write, where a plain file copy is not. The target
+must not already exist, so remove any previous one first:
+
+```bash
+docker compose exec wordyme sh -c 'rm -f /app/storage/backup.db && node -e "const{createClient}=require(\"@libsql/client\");createClient({url:process.env.DB_FILE_NAME}).execute(\"VACUUM INTO \x27/app/storage/backup.db\x27\").then(()=>console.log(\"ok\"),e=>{console.error(e.message);process.exit(1)})"'
+```
+
+Then collect `backup.db` **and** the `revisions/`, `attachments/`, `images/` and
+`covers/` directories — the database alone restores a document list where
+nothing opens. Delete `backup.db` from the volume afterwards so it is not swept
+into later backups. If you take live backups, verify one by restoring it.
 
 ### Restore Database
 
-Restoring takes three steps, and skipping either of the last two fails in ways
-that are hard to spot:
+Restoring takes three steps, and getting the middle one wrong fails in ways that
+are hard to spot:
 
 - **Stop the service first.** Replacing `local.db` underneath a running SQLite
   is not safe.
+- **Restore the content files too, not only the database.** The text of every
+  revision and every upload lives beside `local.db` in the same volume. A
+  database restored on its own gives you a workspace where every document is
+  listed and none will open.
 - **Clear any leftover journal.** If the process was killed mid-write, a
-  `local.db-journal` can survive. On the next open SQLite treats it as an
-  interrupted transaction and rolls part of it back — into the file you just
-  restored. The command below removes it, along with `-wal`/`-shm`, which this
-  configuration does not use but which would matter if the journal mode ever
-  changed.
+  `local.db-journal`, `local.db-wal` or `local.db-shm` can survive. On the next
+  open SQLite treats them as belonging to the file you just restored and replays
+  or rolls back part of them into it. The command below removes all three.
+
+  This is correct when the backup is a **self-contained** `local.db` — one taken
+  with the service stopped, or produced by `VACUUM INTO`. If instead you saved
+  `local.db` together with its own `-wal` and `-shm`, restore all three and do
+  **not** delete them, or you will discard the writes they carry.
+
 - **Fix the file ownership.** `docker cp` preserves the ownership of the file on
   your machine, so the restored database arrives owned by your host user rather
   than the container's `nodejs` user. The result is a container that looks
@@ -343,10 +378,11 @@ docker compose stop wordyme
 ```
 
 ```bash
-# 2. Clear any leftover journal and stream the backup in. Streaming rather than
-#    `docker compose cp` means the file is written by the container's own user,
-#    so the ownership is correct and no chown is needed.
-docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.db-journal /app/storage/local.db-wal /app/storage/local.db-shm && cat > /app/storage/local.db' < ./backup-local.db
+# 2. Clear any leftover journal and stream the whole backup in — database and
+#    content files together. Streaming rather than `docker compose cp` means
+#    everything is written by the container's own user, so the ownership is
+#    correct and no chown is needed. Use your backup directory's real name.
+tar cf - -C ./wordyme-backup-YYYYmmdd-HHMMSS . | docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.db-journal /app/storage/local.db-wal /app/storage/local.db-shm && cd /app/storage && tar xf -'
 ```
 
 ```bash
@@ -354,8 +390,10 @@ docker compose run --rm -T --entrypoint sh wordyme -c 'rm -f /app/storage/local.
 docker compose start wordyme
 ```
 
-Then **verify by signing in**, not by checking that the container is healthy —
-it reports healthy either way.
+Then **verify by opening a document**, not by signing in and not by checking that
+the container is healthy. A database restored without its content files lets you
+sign in and lists every document, and the container reports healthy throughout —
+the damage only shows when a document fails to open.
 
 > **Why not `docker compose cp`?** It preserves the ownership of the file on
 > your machine, so the database arrives owned by your host user instead of the
@@ -364,6 +402,29 @@ it reports healthy either way.
 > `SQLITE_READONLY`. Streaming the bytes in avoids this entirely. Note also that
 > `chown` inside the container is not an option here: `cap_drop: ALL` removes
 > `CAP_CHOWN` and `CAP_DAC_OVERRIDE`, so not even root can do it.
+
+### Reclaiming Orphaned Files
+
+Deleting a document removes its rows and its files together. Deletions made by
+older versions removed only the rows, so their revision and attachment files are
+still on the volume, referenced by nothing. `prune-orphans.mjs` finds them.
+
+It reports and exits, changing nothing:
+
+```bash
+docker compose exec wordyme node prune-orphans.mjs
+```
+
+Remove what it listed:
+
+```bash
+docker compose exec wordyme node prune-orphans.mjs --delete
+```
+
+It refuses to run unless `DB_FILE_NAME` points at a database with the expected
+tables and at least one account, and it ignores anything modified in the last
+hour so an upload in flight is never swept. Even so, run the report first and
+read it: pointed at the wrong database, every live file looks unreferenced.
 
 ## Environment Variables
 
