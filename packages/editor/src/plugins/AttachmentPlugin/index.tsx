@@ -11,18 +11,23 @@
  *
  */
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $wrapNodeInElement, mergeRegister } from '@lexical/utils';
+import { $findMatchingParent, $wrapNodeInElement, mergeRegister } from '@lexical/utils';
 import {
+  $createParagraphNode,
   $getNodeByKey,
+  $getPreviousSelection,
+  $getRoot,
+  $getSelection,
+  $insertNodes,
+  $isElementNode,
+  $isRangeSelection,
+  $isRootOrShadowRoot,
   COMMAND_PRIORITY_EDITOR,
+  HISTORY_MERGE_TAG,
   HISTORIC_TAG,
   createCommand,
   LexicalCommand,
   MutationListener,
-  $isRootNode,
-  $createParagraphNode,
-  $insertNodes,
-  HISTORY_MERGE_TAG,
 } from 'lexical';
 import { useEffect } from 'react';
 
@@ -31,6 +36,7 @@ import {
   AttachmentNode,
   AttachmentPayload,
 } from '@repo/editor/nodes/AttachmentNode';
+import { $isPageNode, $isPageSetupNode } from '@repo/editor/nodes/PageNode';
 import { useActions } from '@repo/editor/store';
 import { ANNOUNCE_COMMAND } from '@repo/editor/commands';
 
@@ -39,6 +45,57 @@ export type InsertAttachmentPayload = Readonly<AttachmentPayload>;
 export const INSERT_ATTACHMENT_COMMAND: LexicalCommand<InsertAttachmentPayload> = createCommand();
 
 const processingNodeKeys = new Set<string>();
+
+function $ensureValidAttachmentInsertionSelection() {
+  // An async upload can leave the editor focused on a page structure node. Move only
+  // those unsafe selections to a concrete body block and preserve normal caret insertion.
+  const selection = $getSelection() || $getPreviousSelection();
+  let selectionNode;
+  if ($isRangeSelection(selection)) {
+    selectionNode = $getNodeByKey(selection.focus.key);
+  } else {
+    const selectedNodes = selection?.getNodes();
+    selectionNode = selectedNodes?.[selectedNodes.length - 1];
+  }
+
+  const needsDocumentBodyFallback =
+    !selectionNode ||
+    $isRootOrShadowRoot(selectionNode) ||
+    $isPageNode(selectionNode) ||
+    $isPageSetupNode(selectionNode);
+
+  if (!needsDocumentBodyFallback) return;
+
+  const selectedPage = selectionNode ? $findMatchingParent(selectionNode, $isPageNode) : null;
+  const pages = $getRoot().getChildren().filter($isPageNode);
+  const fallbackPage = selectedPage ?? pages[pages.length - 1];
+  const insertionContainer = fallbackPage?.getContentNode() ?? $getRoot();
+  const lastDescendant = insertionContainer.getLastDescendant();
+  const hasBlockInsertionPoint =
+    lastDescendant &&
+    $findMatchingParent(
+      lastDescendant,
+      (node) => $isElementNode(node) && !node.isInline() && !$isRootOrShadowRoot(node),
+    );
+
+  if (hasBlockInsertionPoint) {
+    insertionContainer.selectEnd();
+  } else {
+    const paragraph = $createParagraphNode();
+    insertionContainer.append(paragraph);
+    paragraph.selectEnd();
+  }
+}
+
+export function $insertAttachmentNode(payload: InsertAttachmentPayload): AttachmentNode {
+  $ensureValidAttachmentInsertionSelection();
+  const attachmentNode = $createAttachmentNode(payload);
+  $insertNodes([attachmentNode]);
+  if ($isRootOrShadowRoot(attachmentNode.getParentOrThrow())) {
+    $wrapNodeInElement(attachmentNode, $createParagraphNode);
+  }
+  return attachmentNode;
+}
 
 export default function AttachmentPlugin() {
   const [editor] = useLexicalComposerContext();
@@ -156,11 +213,7 @@ export default function AttachmentPlugin() {
       editor.registerCommand(
         INSERT_ATTACHMENT_COMMAND,
         (payload) => {
-          const attachmentNode = $createAttachmentNode(payload);
-          $insertNodes([attachmentNode]);
-          if ($isRootNode(attachmentNode.getParentOrThrow())) {
-            $wrapNodeInElement(attachmentNode, $createParagraphNode);
-          }
+          $insertAttachmentNode(payload);
           return true;
         },
         COMMAND_PRIORITY_EDITOR,
