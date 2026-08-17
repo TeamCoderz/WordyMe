@@ -6,7 +6,7 @@
 import crypto from 'node:crypto';
 import { and, count, countDistinct, eq, getTableColumns, gt, inArray, max, sql } from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
-import { HttpUnprocessableEntity } from '@httpx/exception';
+import { HttpConflict, HttpUnprocessableEntity } from '@httpx/exception';
 import { db, withWriteRetry } from '../lib/db.js';
 import { documentsTable } from '../models/documents.js';
 import {
@@ -311,15 +311,31 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
     }
   }
 
+  const { expectedCurrentRevisionId, ...updates } = payload;
+
   const { document, moved } = await withWriteRetry(() =>
     db.transaction(async (tx) => {
       if (payload.parentId) {
         await assertNoParentCycle(documentId, payload.parentId, tx);
       }
 
+      if (expectedCurrentRevisionId !== undefined) {
+        const [current] = await tx
+          .select({ currentRevisionId: documentsTable.currentRevisionId })
+          .from(documentsTable)
+          .where(eq(documentsTable.id, documentId))
+          .limit(1);
+
+        if (current && current.currentRevisionId !== expectedCurrentRevisionId) {
+          throw new HttpConflict(
+            'This document was changed somewhere else since you opened it. Reload to get the latest version; your work was kept as a separate revision.',
+          );
+        }
+      }
+
       const [document] = await tx
         .update(documentsTable)
-        .set({ ...payload, handle })
+        .set({ ...updates, handle })
         .where(eq(documentsTable.id, documentId))
         .returning();
 

@@ -60,16 +60,20 @@ export const createDocumentWithRevisionSchema = createDocumentSchema.extend({
   revision: createRevisionSchema.omit({ documentId: true }),
 });
 
-export const updateDocumentSchema = createUpdateSchema(documentsTable).omit({
-  id: true,
-  userId: true,
-  clientId: true,
-  createdAt: true,
-  updatedAt: true,
-  handle: true,
-  isContainer: true,
-  documentType: true,
-});
+export const updateDocumentSchema = createUpdateSchema(documentsTable)
+  .omit({
+    id: true,
+    userId: true,
+    clientId: true,
+    createdAt: true,
+    updatedAt: true,
+    handle: true,
+    isContainer: true,
+    documentType: true,
+  })
+  .extend({
+    expectedCurrentRevisionId: z.uuid().nullable().optional(),
+  });
 
 export const plainDocumentSchema = createSelectSchema(documentsTable, {
   documentType: z.enum(['space', 'folder', 'note']),
