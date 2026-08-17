@@ -206,6 +206,7 @@ export function useSaveDocumentMutation({
       }
       const { error: updateError } = await updateDocument(document.id, {
         currentRevisionId: newRevision.id,
+        expectedCurrentRevisionId: document.currentRevisionId,
       });
       if (updateError) {
         throw new Error(updateError.message || 'Failed to update document head');
