@@ -261,6 +261,8 @@ const emitDocumentUpdate = (document: typeof documentsTable.$inferSelect) => {
     emitToUser(document.userId, 'space:updated', document);
   } else if (document.spaceId) {
     emitToSpace(document.spaceId, 'document:updated', document);
+  } else {
+    emitToUser(document.userId, 'document:updated', document);
   }
 };
 
