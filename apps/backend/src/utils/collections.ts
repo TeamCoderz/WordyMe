@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { and, asc, desc, eq, gte, isNotNull, like, SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, isNotNull, sql, SQL } from 'drizzle-orm';
 import { SQLiteColumn, SQLiteSelect } from 'drizzle-orm/sqlite-core';
 import { PaginationQuery } from '../schemas/pagination.js';
 import { db } from '../lib/db.js';
@@ -29,7 +29,8 @@ export class CollectionQuery<Q extends SQLiteSelect> {
 
   search(column: SQLiteColumn, searchTerm: string | undefined): this {
     if (searchTerm !== undefined) {
-      this.whereClauses.push(like(column, `%${searchTerm}%`));
+      const escaped = searchTerm.replace(/[\\%_]/g, (character) => `\\${character}`);
+      this.whereClauses.push(sql`${column} like ${`%${escaped}%`} escape '\\'`);
     }
     return this;
   }
@@ -68,7 +69,6 @@ export class CollectionQuery<Q extends SQLiteSelect> {
   }
 
   async getPaginatedResult({ page, limit }: PaginationQuery) {
-    console.log(this.query.toSQL());
     const offset = (page - 1) * limit;
 
     const total = await db.$count(this.query.where(and(...this.whereClauses)));
