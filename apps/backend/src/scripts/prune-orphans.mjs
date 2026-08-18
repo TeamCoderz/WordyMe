@@ -183,8 +183,9 @@ if (orphans.length > 20) console.log(`  … and ${orphans.length - 20} more`);
 
 if (!APPLY) {
   console.log('\nNothing removed. Re-run with --delete to remove them.');
-  process.exit(0);
+  process.exit(missingContent.length > 0 ? 2 : 0);
 }
 
 await Promise.all(orphans.map((path) => rm(path, { recursive: true, force: true })));
 console.log(`\nRemoved ${orphans.length} entries (${totalMb} MB).`);
+process.exit(missingContent.length > 0 ? 2 : 0);
