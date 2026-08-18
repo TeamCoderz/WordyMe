@@ -11,6 +11,7 @@ import * as schema from '../models/index.js';
 export const db = drizzle(env.DB_FILE_NAME, { schema });
 
 export const configureDatabase = async () => {
+  await db.run(sql`PRAGMA foreign_keys = ON`);
   await db.run(sql`PRAGMA journal_mode = WAL`);
   await db.run(sql`PRAGMA synchronous = NORMAL`);
 };
