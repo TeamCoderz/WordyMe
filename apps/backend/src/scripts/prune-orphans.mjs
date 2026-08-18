@@ -141,9 +141,35 @@ if (skippedRecent > 0) {
   );
 }
 
+const missingContent = [];
+
+for (const row of (await client.execute('select id, document_id from revisions')).rows) {
+  const revisionId = String(row.id);
+  const path = join(STORAGE_DIR, 'revisions', `${revisionId}.json`);
+  const exists = await stat(path).then(
+    () => true,
+    () => false,
+  );
+  if (!exists) missingContent.push({ revisionId, documentId: String(row.document_id) });
+}
+
+if (missingContent.length > 0) {
+  console.log(
+    `\n  ⚠  ${missingContent.length} ${missingContent.length === 1 ? 'revision references' : 'revisions reference'} a content file that is not on disk.`,
+  );
+  console.log('     Documents holding one of these as their current version will fail to open.');
+  for (const { revisionId, documentId } of missingContent.slice(0, 20)) {
+    console.log(`       revision ${revisionId}  (document ${documentId})`);
+  }
+  if (missingContent.length > 20) {
+    console.log(`       … and ${missingContent.length - 20} more`);
+  }
+  console.log('     This script never deletes rows. Restore these files from a backup.\n');
+}
+
 if (orphans.length === 0) {
   console.log(`No orphans found under ${STORAGE_DIR}.`);
-  process.exit(0);
+  process.exit(missingContent.length > 0 ? 2 : 0);
 }
 
 const sizes = await Promise.all(orphans.map(sizeOf));
