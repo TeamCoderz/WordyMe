@@ -10,7 +10,15 @@ export const storageFilenameSchema = z
   .string()
   .min(1)
   .max(255)
-  .regex(/^[A-Za-z0-9_-][A-Za-z0-9._-]*$/, 'Invalid filename.');
+  .refine(
+    (value) =>
+      !/[/\\\0]/.test(value) &&
+      value !== '.' &&
+      value !== '..' &&
+      !value.startsWith('.') &&
+      value.trim().length > 0,
+    'Invalid filename.',
+  );
 
 export const storageUserIdSchema = z
   .string()
