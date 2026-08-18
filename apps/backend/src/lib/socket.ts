@@ -7,7 +7,7 @@ import { Server } from 'socket.io';
 import { type Server as HttpServer } from 'node:http';
 import { ioRequireAuth } from '../middlewares/auth.js';
 import { userHasDocument } from '../services/access.js';
-import { SocketEventKey, SocketEventsMap } from '../schemas/realtime.js';
+import { SocketEventKey, SocketEventsMap, spaceIdSchema } from '../schemas/realtime.js';
 import { env } from '../env.js';
 
 let io: Server | null = null;
@@ -25,16 +25,27 @@ export const initializeSocket = (server: HttpServer) => {
       console.log(`Socket disconnected: ${socket.id} - ${socket.user.id}`);
     });
 
-    socket.on('subscribeToSpace', async (spaceId: string) => {
-      const hasAccess = await userHasDocument(socket.user.id, spaceId);
-      if (!hasAccess) {
+    socket.on('subscribeToSpace', async (spaceId: unknown) => {
+      const parsed = spaceIdSchema.safeParse(spaceId);
+      if (!parsed.success) {
         return;
       }
-      socket.join(`space:${spaceId}`);
+      try {
+        const hasAccess = await userHasDocument(socket.user.id, parsed.data);
+        if (hasAccess) {
+          socket.join(`space:${parsed.data}`);
+        }
+      } catch (error) {
+        console.error(`subscribeToSpace failed for ${socket.user.id}:`, error);
+      }
     });
 
-    socket.on('unsubscribeFromSpace', (spaceId: string) => {
-      socket.leave(`space:${spaceId}`);
+    socket.on('unsubscribeFromSpace', (spaceId: unknown) => {
+      const parsed = spaceIdSchema.safeParse(spaceId);
+      if (!parsed.success) {
+        return;
+      }
+      socket.leave(`space:${parsed.data}`);
     });
   });
 

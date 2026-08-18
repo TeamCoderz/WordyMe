@@ -3,8 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import z from 'zod';
 import { DocumentDetails, PlainDocument } from './documents.js';
 import { Favorite } from './favorites.js';
+
+export const spaceIdSchema = z.uuid();
 
 export type FavoriteRealtimeResponse = Favorite & { spaceId: string | null };
 

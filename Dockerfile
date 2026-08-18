@@ -109,6 +109,7 @@ COPY --from=builder /app/pruned-backend .
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/drizzle ./drizzle
 COPY --from=builder /app/apps/backend/src/scripts/run-migrations.mjs ./run-migrations.mjs
+COPY --from=builder /app/apps/backend/src/scripts/prune-orphans.mjs ./prune-orphans.mjs
 
 # Served by Express from the same origin as the API. Resolved relative to
 # ./dist, not the working directory — see apps/backend/src/lib/web.ts.
@@ -119,7 +120,7 @@ COPY --from=builder /app/apps/web/dist ./web
 # 0744 produces an image where the non-root user cannot traverse it, and
 # migrations fail with a confusing "Can't find meta/_journal.json". Normalise
 # to read-for-all, execute only where it already applies.
-RUN chmod -R a+rX ./dist ./drizzle ./web ./run-migrations.mjs
+RUN chmod -R a+rX ./dist ./drizzle ./web ./run-migrations.mjs ./prune-orphans.mjs
 
 RUN mkdir -p storage && chown -R nodejs:nodejs storage
 
@@ -138,7 +139,7 @@ EXPOSE 8080
 # Hits the liveness probe, which does no database work — a container part-way
 # through its startup migrations must not be reported as broken.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||8080)+'/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+    CMD node -e "require('http').get('http://127.0.0.1:'+(process.env.PORT||8080)+'/api/health/ready',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
 
 ENTRYPOINT ["/sbin/tini", "--"]
 

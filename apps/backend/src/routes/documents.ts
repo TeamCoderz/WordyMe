@@ -29,11 +29,24 @@ import {
 } from '../services/documents.js';
 import { searchDocuments } from '../services/search.js';
 import { userHasDocument } from '../services/access.js';
-import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import {
+  HttpException,
+  HttpInternalServerError,
+  HttpNotFound,
+  HttpUnprocessableEntity,
+} from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
-import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
+import {
+  MAX_EXPORT_BYTES,
+  copyDocument,
+  estimateExportBytes,
+  importDocumentTree,
+  streamDocumentTree,
+} from '../services/operations.js';
+import { dbWritesQueue, enqueueDbWrite } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
 const router: Router = Router();
@@ -85,6 +98,19 @@ router.post(
   '/with-revision',
   validate({ body: createDocumentWithRevisionSchema }),
   async (req, res) => {
+    const { parentId, spaceId } = req.body;
+
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+
     const document = await createDocumentWithRevision(req.body, req.user!.id);
     res.status(201).json(document);
   },
@@ -99,7 +125,7 @@ router.get(
       throw new HttpNotFound('Document with the specified handle not found or not accessible.');
     }
     if (req.query.updateLastViewed === true) {
-      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+      enqueueDbWrite(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },
@@ -114,7 +140,7 @@ router.get(
       throw new HttpNotFound('Document not found or the user does not have access to it.');
     }
     if (req.query.updateLastViewed === true) {
-      dbWritesQueue.add(() => viewDocument(document.id, req.user!.id));
+      enqueueDbWrite(() => viewDocument(document.id, req.user!.id));
     }
     res.status(200).json(document);
   },
@@ -212,6 +238,20 @@ router.post(
         'The document does not exist or is not accessible by the authenticated user.',
       );
     }
+
+    const { parentId, spaceId } = req.body;
+
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
     );
@@ -233,13 +273,35 @@ router.post(
         'The document does not exist or is not accessible by the authenticated user.',
       );
     }
-    const exportedDocument = await exportDocumentTree(req.params.documentId);
-    if (!exportedDocument) {
-      throw new HttpInternalServerError(
-        'Internal server error. The export operation failed unexpectedly.',
+    const estimatedBytes = await estimateExportBytes(req.params.documentId);
+
+    if (estimatedBytes > MAX_EXPORT_BYTES) {
+      throw new HttpException(
+        413,
+        `This document tree is about ${Math.ceil(estimatedBytes / (1024 * 1024))}MB once exported, above the ${MAX_EXPORT_BYTES / (1024 * 1024)}MB limit. Export a smaller part of the tree, or back up the storage volume instead.`,
       );
     }
-    res.status(200).json(exportedDocument);
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+    const cappedExport = async function* () {
+      let written = 0;
+      for await (const chunk of streamDocumentTree(req.params.documentId)) {
+        written += Buffer.byteLength(chunk);
+        if (written > MAX_EXPORT_BYTES) {
+          throw new Error(`Export exceeded ${MAX_EXPORT_BYTES} bytes mid-stream.`);
+        }
+        yield chunk;
+      }
+    };
+
+    try {
+      await pipeline(Readable.from(cappedExport()), res);
+    } catch (error) {
+      console.error(`Export of ${req.params.documentId} failed mid-stream:`, error);
+      if (!res.destroyed) res.destroy();
+    }
   },
 );
 

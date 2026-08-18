@@ -94,6 +94,7 @@ export function PDFViewer({ url }: PDFViewerProps) {
   const { engine, isLoading, error } = usePdfiumEngine({
     wasmUrl: pdfiumWasmUrl,
     fontFallback: pdfFontFallback,
+    worker: !import.meta.env.DEV,
   });
 
   // Memoize UIProvider props to prevent unnecessary remounts

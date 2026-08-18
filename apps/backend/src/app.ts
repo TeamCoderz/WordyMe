@@ -31,6 +31,9 @@ import { healthRouter } from './routes/health.js';
 import { authStateRouter } from './routes/auth-state.js';
 import { updatesRouter } from './routes/updates.js';
 
+const API_BODY_LIMIT = '5mb';
+const IMPORT_BODY_LIMIT = '50mb';
+
 const app: Express = express();
 const server = createServer(app);
 
@@ -61,7 +64,9 @@ app.use('/api/auth', express.text({ type: '*/*', limit: '100kb' }));
 
 app.all('/api/auth/{*any}', toNodeHandler(auth));
 
-app.use(express.json({ limit: '5mb' }));
+app.use('/api/documents/import', express.json({ limit: IMPORT_BODY_LIMIT }));
+
+app.use('/api', express.json({ limit: API_BODY_LIMIT }));
 
 app.use('/api/documents', documentsRouter);
 app.use('/api/revisions', revisionsRouter);

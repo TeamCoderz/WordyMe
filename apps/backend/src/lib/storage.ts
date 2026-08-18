@@ -8,13 +8,11 @@ import path from 'path';
 export const STORAGE_DIR = path.join(process.cwd(), 'storage');
 
 export const resolvePhysicalPath = (relativePath: string) => {
-  if (relativePath.startsWith('/storage') || relativePath.startsWith('storage')) {
-    relativePath = relativePath.replace(/^\/?storage\/?/, '');
-  }
+  const root = path.resolve(STORAGE_DIR);
+  const resolvedPath = path.resolve(root, relativePath.replace(/^\/?storage(?:\/|$)/, ''));
+  const relativeToRoot = path.relative(root, resolvedPath);
 
-  const resolvedPath = path.resolve(STORAGE_DIR, relativePath);
-
-  if (!resolvedPath.startsWith(path.resolve(STORAGE_DIR))) {
+  if (relativeToRoot === '' || relativeToRoot.startsWith('..') || path.isAbsolute(relativeToRoot)) {
     throw new Error(`Path traversal detected: ${relativePath}`);
   }
 

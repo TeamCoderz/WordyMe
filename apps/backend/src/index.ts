@@ -5,6 +5,7 @@
 
 import server from './app.js';
 import { env } from './env.js';
+import { checkpointDatabase, configureDatabase } from './lib/db.js';
 import { originConfig } from './lib/auth.js';
 import { clientUrlWarning } from './lib/client-url.js';
 import { getSocket } from './lib/socket.js';
@@ -18,6 +19,8 @@ import { startUpdateChecks, stopUpdateChecks } from './services/updates.js';
  * the process anyway and the graceful path achieved nothing.
  */
 const SHUTDOWN_TIMEOUT_MS = 8_000;
+
+await configureDatabase();
 
 server.listen(env.PORT, () => {
   console.log(`Server is running on http://localhost:${env.PORT}`);
@@ -76,6 +79,7 @@ const shutdown = async (signal: string) => {
     });
 
     await dbWritesQueue.onIdle();
+    await checkpointDatabase();
 
     console.log('Shutdown complete.');
     process.exit(0);
@@ -87,3 +91,12 @@ const shutdown = async (signal: string) => {
 
 process.on('SIGTERM', () => void shutdown('SIGTERM'));
 process.on('SIGINT', () => void shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception, exiting:', error);
+  process.exit(1);
+});

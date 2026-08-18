@@ -13,7 +13,7 @@ import { env } from '../env.js';
 import { users } from '../models/auth.js';
 import { getEditorSettings, setEditorSettings } from '../services/editor-settings.js';
 import { createDocument } from '../services/documents.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
+import { enqueueDbWrite } from '../queues/db-writes.js';
 
 export const adapter = drizzleAdapter(db, {
   provider: 'sqlite',
@@ -84,7 +84,7 @@ export const options = {
           }
         },
         after: async (user) => {
-          dbWritesQueue.add(() =>
+          enqueueDbWrite(() =>
             createDocument(
               {
                 name: 'My Workspace',
@@ -96,7 +96,7 @@ export const options = {
               user.id,
             ),
           );
-          dbWritesQueue.add(() => setEditorSettings(user.id, {}));
+          enqueueDbWrite(() => setEditorSettings(user.id, {}));
         },
       },
     },

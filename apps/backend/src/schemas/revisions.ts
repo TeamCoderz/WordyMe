@@ -40,7 +40,22 @@ export const updateRevisionContentSchema = createUpdateSchema(revisionsTable)
     content: z.string().min(1, 'Revision Content is required'),
   });
 
-export const updateRevisionSchema = updateRevisionNameSchema.or(updateRevisionContentSchema);
+export const updateRevisionSchema = createUpdateSchema(revisionsTable)
+  .pick({
+    revisionName: true,
+    text: true,
+    checksum: true,
+  })
+  .extend({
+    content: z.string().min(1, 'Revision Content is required').optional(),
+  })
+  .refine((value) => Object.values(value).some((field) => field !== undefined), {
+    message: 'Provide at least one field to update.',
+  })
+  .refine((value) => (value.text === undefined) === (value.content === undefined), {
+    message:
+      'Send text and content together; updating one without the other leaves search results disagreeing with the stored document.',
+  });
 
 export const plainRevisionSchema = createSelectSchema(revisionsTable)
   .omit({ createdAt: true, updatedAt: true })

@@ -237,7 +237,7 @@ export const openApiDocument = createDocument({
         requestBody: {
           required: true,
           content: {
-            'application/json': { schema: importDocumentSchema },
+            'application/json': { schema: importDocumentSchema.out },
           },
         },
         responses: {

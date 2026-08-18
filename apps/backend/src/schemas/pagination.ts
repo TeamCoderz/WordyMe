@@ -5,9 +5,11 @@
 
 import z from 'zod';
 
+export const MAX_PAGE_SIZE = 100;
+
 export const paginationQuerySchema = z.object({
-  page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).default(10),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(10),
 });
 
 export const paginatedResultSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>

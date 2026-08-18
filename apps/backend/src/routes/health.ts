@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { db } from '../lib/db.js';
+import { db, withWriteRetry } from '../lib/db.js';
 
 export const healthRouter = Router();
 
@@ -16,6 +16,35 @@ export const healthRouter = Router();
 healthRouter.get('/', (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({ status: 'ok' });
+});
+
+healthRouter.get('/ready', async (_req, res) => {
+  const start = Date.now();
+  res.setHeader('Cache-Control', 'no-store');
+
+  try {
+    await withWriteRetry(async () => {
+      const version = await db.$client.execute('PRAGMA user_version');
+      await db.$client.execute(
+        `PRAGMA user_version = ${Number(version.rows[0]?.user_version ?? 0)}`,
+      );
+    });
+
+    return res.status(200).json({
+      status: 'ready',
+      db: 'writable',
+      latencyMs: Date.now() - start,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: 'unready',
+      db: 'not-writable',
+      detail: error instanceof Error ? error.message : 'unknown error',
+      latencyMs: Date.now() - start,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 healthRouter.get('/db', async (_req, res) => {

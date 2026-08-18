@@ -13,8 +13,8 @@ import { HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../lib/storage.js';
 import { getRevisionContentUrl } from '../services/revision-contents.js';
 import { documentIdParamSchema } from '../schemas/documents.js';
+import { attachmentFileParamSchema, userFileParamSchema } from '../schemas/storage.js';
 import { mkdir } from 'node:fs/promises';
-import z from 'zod';
 import { getAttachmentUrl } from '../services/attachments.js';
 import { safeFilename } from '../utils/strings.js';
 import { imageMetaSchema } from '../schemas/images.js';
@@ -28,6 +28,12 @@ import {
 const router: Router = Router();
 
 router.use(requireAuth);
+
+router.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  next();
+});
 
 router.get(
   '/revisions/:revisionId',
@@ -68,15 +74,7 @@ router.post(
       maxFileSize: 10 * 1024 * 1024, // 10MB
       keepExtensions: true,
       filename: safeFilename,
-    });
-
-    form.on('fileBegin', (name) => {
-      if (name !== 'attachments') {
-        throw new HttpUnprocessableEntity({
-          message:
-            'Invalid upload. Either no file was provided, the field name was incorrect (expected "attachments"), or the file exceeds the 10MB size limit.',
-        });
-      }
+      filter: (part) => part.name === 'attachments',
     });
 
     const [, files] = await form.parse(req);
@@ -98,7 +96,7 @@ router.post(
 
 router.get(
   '/attachments/:documentId/:filename',
-  validate({ params: documentIdParamSchema.extend({ filename: z.string() }) }),
+  validate({ params: attachmentFileParamSchema }),
   async (req, res, next) => {
     const { documentId, filename } = req.params;
 
@@ -129,17 +127,8 @@ router.put('/images', async (req, res) => {
       return `image${ext}`;
     },
     filter(part) {
-      return part.mimetype?.startsWith('image/') || false;
+      return part.name === 'image' && (part.mimetype?.startsWith('image/') || false);
     },
-  });
-
-  form.on('fileBegin', (name) => {
-    if (name !== 'image') {
-      throw new HttpUnprocessableEntity({
-        message:
-          'Invalid upload. Either no file was provided, the field name was incorrect (expected "image").',
-      });
-    }
   });
 
   const [fields, files] = await form.parse(req);
@@ -161,12 +150,21 @@ router.delete('/images', async (req, res) => {
   res.status(204).send();
 });
 
-router.get('/images/:userId/:filename', async (req, res, next) => {
-  const { userId, filename } = req.params;
-  res.sendFile(resolvePhysicalPath(`images/${userId}/${filename}`), (err) => {
-    if (err) next(new HttpNotFound('Profile image not found'));
-  });
-});
+router.get(
+  '/images/:userId/:filename',
+  validate({ params: userFileParamSchema }),
+  async (req, res, next) => {
+    const { userId, filename } = req.params;
+
+    if (userId !== req.user!.id) {
+      throw new HttpNotFound('Profile image not found');
+    }
+
+    res.sendFile(resolvePhysicalPath(`images/${userId}/${filename}`), (err) => {
+      if (err) next(new HttpNotFound('Profile image not found'));
+    });
+  },
+);
 
 router.put('/covers', async (req, res) => {
   const uploadDir = resolvePhysicalPath(`covers/${req.user!.id}`);
@@ -183,17 +181,8 @@ router.put('/covers', async (req, res) => {
       return `cover${ext}`;
     },
     filter(part) {
-      return part.mimetype?.startsWith('image/') || false;
+      return part.name === 'cover' && (part.mimetype?.startsWith('image/') || false);
     },
-  });
-
-  form.on('fileBegin', (name) => {
-    if (name !== 'cover') {
-      throw new HttpUnprocessableEntity({
-        message:
-          'Invalid upload. Either no file was provided, the field name was incorrect (expected "cover").',
-      });
-    }
   });
 
   const [fields, files] = await form.parse(req);
@@ -215,11 +204,20 @@ router.delete('/covers', async (req, res) => {
   res.status(204).send();
 });
 
-router.get('/covers/:userId/:filename', async (req, res, next) => {
-  const { userId, filename } = req.params;
-  res.sendFile(resolvePhysicalPath(`covers/${userId}/${filename}`), (err) => {
-    if (err) next(new HttpNotFound('Cover image not found'));
-  });
-});
+router.get(
+  '/covers/:userId/:filename',
+  validate({ params: userFileParamSchema }),
+  async (req, res, next) => {
+    const { userId, filename } = req.params;
+
+    if (userId !== req.user!.id) {
+      throw new HttpNotFound('Cover image not found');
+    }
+
+    res.sendFile(resolvePhysicalPath(`covers/${userId}/${filename}`), (err) => {
+      if (err) next(new HttpNotFound('Cover image not found'));
+    });
+  },
+);
 
 export { router as storageRouter };

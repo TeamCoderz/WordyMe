@@ -15,3 +15,7 @@ declare module '*.wasm?url' {
   const src: string;
   export default src;
 }
+
+interface ImportMeta {
+  readonly env: { readonly DEV: boolean };
+}

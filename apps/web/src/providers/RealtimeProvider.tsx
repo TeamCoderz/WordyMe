@@ -10,7 +10,11 @@ import {
 } from '@/queries/caches/documents';
 import { addSpaceToCache, isSpaceCached, removeSpaceFromCache } from '@/queries/caches/spaces';
 import { getAllDocumentsQueryOptions, ListDocumentResult } from '@/queries/documents';
-import { DOCUMENTS_QUERY_KEYS, SPACES_QUERY_KEYS } from '@/queries/query-keys';
+import {
+  DOCUMENTS_QUERY_KEYS,
+  REVISIONS_QUERY_KEYS,
+  SPACES_QUERY_KEYS,
+} from '@/queries/query-keys';
 import { getAllSpacesQueryOptions, ListSpaceResult } from '@/queries/spaces';
 import { useAllQueriesInvalidate } from '@/queries/utils';
 import { useSelector } from '@/store';
@@ -229,6 +233,17 @@ export const RealtimeProvider = ({ children }: { children: React.ReactNode }) =>
           );
         }
       }
+      const cached = queryClient.getQueryData(
+        DOCUMENTS_QUERY_KEYS.DETAIL_BY_HANDLE(data.handle),
+      ) as { currentRevisionId?: string | null } | undefined;
+
+      if (cached && cached.currentRevisionId !== data.currentRevisionId) {
+        invalidate([
+          DOCUMENTS_QUERY_KEYS.DETAIL_BY_HANDLE(data.handle),
+          REVISIONS_QUERY_KEYS.BY_DOCUMENT_ID(data.id),
+        ]);
+      }
+
       invalidate([
         DOCUMENTS_QUERY_KEYS.HOME.BASE,
         DOCUMENTS_QUERY_KEYS.FAVORITES,

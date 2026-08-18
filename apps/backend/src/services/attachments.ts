@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { access, cp, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
+import { nanoid } from 'nanoid';
+import { sanitizeStoredFilename } from '../utils/strings.js';
 
 export const getAttachmentUrl = (documentId: string, filename: string) => {
   return `/storage/attachments/${documentId}/${filename}`;
@@ -17,7 +19,7 @@ export type Attachment = {
   url: string;
 };
 
-const bufferToDataURL = (buffer: Buffer): string => {
+export const bufferToDataURL = (buffer: Buffer): string => {
   const base64 = buffer.toString('base64');
   return `data:${'application/octet-stream'};base64,${base64}`;
 };
@@ -48,7 +50,7 @@ export const copyDocumentAttachments = async (
   });
 };
 
-export const exportDocumentAttachments = async (documentId: string): Promise<Attachment[]> => {
+export const listDocumentAttachmentFiles = async (documentId: string) => {
   const directory = resolvePhysicalPath(`attachments/${documentId}`);
 
   const entries = await readdir(directory, { withFileTypes: true }).catch((error) => {
@@ -56,20 +58,18 @@ export const exportDocumentAttachments = async (documentId: string): Promise<Att
     throw error;
   });
 
-  const filenames = entries
+  return entries
     .filter((entry) => entry.isFile())
     .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b));
+    .sort((a, b) => a.localeCompare(b))
+    .map((filename) => ({ filename, path: join(directory, filename) }));
+};
 
-  if (filenames.length === 0) return [];
-
-  const filePromises = filenames.map(async (filename) => {
-    const buffer = await readFile(join(directory, filename));
-    return { filename, url: bufferToDataURL(buffer) };
-  });
-
-  const attachments = await Promise.all(filePromises);
-  return attachments;
+export const deleteDocumentAttachments = async (documentId: string) => {
+  await rm(resolvePhysicalPath(`attachments/${documentId}`), {
+    recursive: true,
+    force: true,
+  }).catch((error) => console.error(`Failed to remove attachments for ${documentId}:`, error));
 };
 
 export const importDocumentAttachment = async (
@@ -80,6 +80,20 @@ export const importDocumentAttachment = async (
   await mkdir(directory, { recursive: true });
 
   const buffer = dataURLToBuffer(attachment.url);
-  const filePath = join(directory, attachment.filename);
-  await writeFile(filePath, buffer);
+  const stored = sanitizeStoredFilename(attachment.filename);
+  const dot = stored.lastIndexOf('.');
+  const stem = dot > 0 ? stored.slice(0, dot) : stored;
+  const extension = dot > 0 ? stored.slice(dot) : '';
+
+  let candidate = stored;
+
+  for (;;) {
+    try {
+      await writeFile(join(directory, candidate), buffer, { flag: 'wx' });
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      candidate = `${stem}_${nanoid(6)}${extension}`;
+    }
+  }
 };

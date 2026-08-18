@@ -206,9 +206,12 @@ export function useSaveDocumentMutation({
       }
       const { error: updateError } = await updateDocument(document.id, {
         currentRevisionId: newRevision.id,
+        expectedCurrentRevisionId: document.currentRevisionId,
       });
       if (updateError) {
-        throw new Error(updateError.message || 'Failed to update document head');
+        throw Object.assign(new Error(updateError.message || 'Failed to update document head'), {
+          conflict: updateError.response?.status === 409,
+        });
       }
       if (!keepPreviousRevision) {
         const { error: deleteError } = await deleteRevision(document.currentRevisionId!);
@@ -235,7 +238,8 @@ export function useSaveDocumentMutation({
       ]);
     },
     onError: (error, __, toastId) => {
-      if (toastId) {
+      const conflict = 'conflict' in error && error.conflict === true;
+      if (toastId || conflict) {
         toast.error(error.message || 'Failed to save document', {
           id: toastId,
         });

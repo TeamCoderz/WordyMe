@@ -3,9 +3,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { and, count, countDistinct, eq, getTableColumns, gt, max } from 'drizzle-orm';
+import crypto from 'node:crypto';
+import {
+  and,
+  count,
+  countDistinct,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  max,
+  ne,
+  sql,
+} from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
-import { db } from '../lib/db.js';
+import { HttpConflict, HttpUnprocessableEntity } from '@httpx/exception';
+import { db, withWriteRetry } from '../lib/db.js';
 import { documentsTable } from '../models/documents.js';
 import {
   CreateDocumentInput,
@@ -20,10 +33,10 @@ import { favoritesTable } from '../models/favorites.js';
 import { PaginatedResult, PaginationQuery } from '../schemas/pagination.js';
 import { CollectionQuery } from '../utils/collections.js';
 import { DocumentListItem } from '../schemas/documents.js';
-import { dbWritesQueue } from '../queues/db-writes.js';
 import { emitToSpace, emitToUser } from '../lib/socket.js';
 import { revisionsTable } from '../models/revisions.js';
-import { saveRevisionContent } from './revision-contents.js';
+import { deleteRevisionContent, saveRevisionContent } from './revision-contents.js';
+import { deleteDocumentAttachments } from './attachments.js';
 
 export const orderByColumns = {
   name: documentsTable.name,
@@ -31,8 +44,20 @@ export const orderByColumns = {
   lastViewedAt: documentViewsTable.lastViewedAt,
 } satisfies Record<string, SQLiteColumn>;
 
-export const checkExistingDocumentHandle = async (handle: string) => {
-  const result = await db.select().from(documentsTable).where(eq(documentsTable.handle, handle));
+export const checkExistingDocumentHandle = async (
+  handle: string,
+  executor: Pick<typeof db, 'select'> = db,
+  excludeDocumentId?: string,
+) => {
+  const result = await executor
+    .select({ id: documentsTable.id })
+    .from(documentsTable)
+    .where(
+      excludeDocumentId
+        ? and(eq(documentsTable.handle, handle), ne(documentsTable.id, excludeDocumentId))
+        : eq(documentsTable.handle, handle),
+    )
+    .limit(1);
   return result.length > 0;
 };
 
@@ -174,48 +199,59 @@ export const createDocumentWithRevision = async (
   payload: CreateDocumentWithRevisionInput,
   userId: string,
 ) => {
-  const result = await db.transaction(async (tx) => {
-    let handle = slugify(payload.name);
-    if (await checkExistingDocumentHandle(handle)) {
-      handle = appendUniqueSuffix(handle);
-    }
-    const [document] = await tx
-      .insert(documentsTable)
-      .values({
-        ...payload,
-        handle,
-        userId,
-      })
-      .returning();
+  const revisionId = crypto.randomUUID();
+  await saveRevisionContent(payload.revision.content, revisionId);
 
-    const [revision] = await tx
-      .insert(revisionsTable)
-      .values({
-        documentId: document.id,
-        text: payload.revision.text,
-        checksum: payload.revision.checksum,
-        revisionName: payload.revision.revisionName,
-        userId,
-      })
-      .returning();
+  let result;
 
-    await saveRevisionContent(payload.revision.content, revision.id);
+  try {
+    result = await withWriteRetry(() =>
+      db.transaction(async (tx) => {
+        let handle = slugify(payload.name);
+        if (await checkExistingDocumentHandle(handle, tx)) {
+          handle = appendUniqueSuffix(handle);
+        }
+        const [document] = await tx
+          .insert(documentsTable)
+          .values({
+            ...payload,
+            handle,
+            userId,
+          })
+          .returning();
 
-    await tx
-      .update(documentsTable)
-      .set({
-        currentRevisionId: revision.id,
-      })
-      .where(eq(documentsTable.id, document.id));
+        const [revision] = await tx
+          .insert(revisionsTable)
+          .values({
+            id: revisionId,
+            documentId: document.id,
+            text: payload.revision.text,
+            checksum: payload.revision.checksum,
+            revisionName: payload.revision.revisionName,
+            userId,
+          })
+          .returning();
 
-    return {
-      ...document,
-      currentRevisionId: revision.id,
-      currentRevision: revision,
-      isFavorite: false,
-      lastViewedAt: null,
-    };
-  });
+        await tx
+          .update(documentsTable)
+          .set({
+            currentRevisionId: revision.id,
+          })
+          .where(eq(documentsTable.id, document.id));
+
+        return {
+          ...document,
+          currentRevisionId: revision.id,
+          currentRevision: revision,
+          isFavorite: false,
+          lastViewedAt: null,
+        };
+      }),
+    );
+  } catch (error) {
+    await deleteRevisionContent(revisionId);
+    throw error;
+  }
 
   if (payload.documentType === 'space') {
     emitToUser(userId, 'space:created', result);
@@ -236,39 +272,136 @@ export const viewDocument = async (documentId: string, userId: string) => {
     });
 };
 
-export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
-  let handle;
-
-  if (payload.name) {
-    handle = slugify(payload.name);
-    if (await checkExistingDocumentHandle(handle)) {
-      handle = appendUniqueSuffix(handle);
-    }
-  }
-
-  if (payload.spaceId) {
-    const spaceId = payload.spaceId;
-
-    const children = await db.query.documentsTable.findMany({
-      where: eq(documentsTable.parentId, documentId),
-    });
-
-    for (const child of children) {
-      dbWritesQueue.add(() => updateDocument(child.id, { spaceId }));
-    }
-  }
-
-  const [document] = await db
-    .update(documentsTable)
-    .set({ ...payload, handle })
-    .where(eq(documentsTable.id, documentId))
-    .returning();
-
+const emitDocumentUpdate = (document: typeof documentsTable.$inferSelect) => {
   if (document.documentType === 'space') {
     emitToUser(document.userId, 'space:updated', document);
   } else if (document.spaceId) {
     emitToSpace(document.spaceId, 'document:updated', document);
+  } else {
+    emitToUser(document.userId, 'document:updated', document);
   }
+};
+
+type SqlExecutor = Pick<typeof db, 'all'>;
+
+const descendantIds = async (documentId: string, executor: SqlExecutor = db): Promise<string[]> => {
+  const rows = await executor.all<{ id: string }>(sql`
+    with recursive subtree(id) as (
+      select id from documents where parent_id = ${documentId}
+      union
+      select d.id from documents d join subtree s on d.parent_id = s.id
+    )
+    select id from subtree where id <> ${documentId}
+  `);
+
+  return rows.map((row) => row.id);
+};
+
+const subtreeIds = async (documentId: string, executor: SqlExecutor = db): Promise<string[]> => {
+  const rows = await executor.all<{ id: string }>(sql`
+    with recursive subtree(id) as (
+      select id from documents where parent_id = ${documentId} or space_id = ${documentId}
+      union
+      select d.id from documents d
+        join subtree s on d.parent_id = s.id or d.space_id = s.id
+    )
+    select id from subtree where id <> ${documentId}
+  `);
+
+  return rows.map((row) => row.id);
+};
+
+export const assertNoTreeCycle = async (
+  documentId: string,
+  targetId: string,
+  relation: 'parent' | 'space',
+  executor: SqlExecutor = db,
+) => {
+  if (targetId === documentId) {
+    throw new HttpUnprocessableEntity({
+      message:
+        relation === 'parent'
+          ? 'A document cannot be its own parent.'
+          : 'A document cannot be its own space.',
+    });
+  }
+
+  const descendants = await subtreeIds(documentId, executor);
+
+  if (descendants.includes(targetId)) {
+    throw new HttpUnprocessableEntity({
+      message:
+        relation === 'parent'
+          ? 'A document cannot be moved inside one of its own descendants.'
+          : 'A document cannot be placed inside a space it contains.',
+    });
+  }
+};
+
+export const updateDocument = async (documentId: string, payload: UpdateDocumentInput) => {
+  let handle: string | undefined;
+
+  if (payload.name) {
+    const candidate = slugify(payload.name);
+    handle = (await checkExistingDocumentHandle(candidate, db, documentId))
+      ? appendUniqueSuffix(candidate)
+      : candidate;
+  }
+
+  const { expectedCurrentRevisionId, ...updates } = payload;
+
+  const { document, moved } = await withWriteRetry(() =>
+    db.transaction(async (tx) => {
+      if (payload.parentId) {
+        await assertNoTreeCycle(documentId, payload.parentId, 'parent', tx);
+      }
+
+      if (payload.spaceId) {
+        await assertNoTreeCycle(documentId, payload.spaceId, 'space', tx);
+      }
+
+      if (expectedCurrentRevisionId !== undefined) {
+        const [current] = await tx
+          .select({ currentRevisionId: documentsTable.currentRevisionId })
+          .from(documentsTable)
+          .where(eq(documentsTable.id, documentId))
+          .limit(1);
+
+        if (current && current.currentRevisionId !== expectedCurrentRevisionId) {
+          throw new HttpConflict(
+            'This document was changed somewhere else since you opened it. Reload to get the latest version; your work was kept as a separate revision.',
+          );
+        }
+      }
+
+      const [document] = await tx
+        .update(documentsTable)
+        .set({ ...updates, handle })
+        .where(eq(documentsTable.id, documentId))
+        .returning();
+
+      if (!payload.spaceId) {
+        return { document, moved: [] as (typeof documentsTable.$inferSelect)[] };
+      }
+
+      const ids = await descendantIds(documentId, tx);
+
+      if (ids.length === 0) {
+        return { document, moved: [] as (typeof documentsTable.$inferSelect)[] };
+      }
+
+      const moved = await tx
+        .update(documentsTable)
+        .set({ spaceId: payload.spaceId })
+        .where(inArray(documentsTable.id, ids))
+        .returning();
+
+      return { document, moved };
+    }),
+  );
+
+  emitDocumentUpdate(document);
+  moved.forEach(emitDocumentUpdate);
 
   return document;
 };
@@ -284,12 +417,44 @@ export const getUserDocumentCount = async (userId: string): Promise<number> => {
 };
 
 export const deleteDocument = async (documentId: string) => {
-  const [document] = await db
-    .delete(documentsTable)
-    .where(eq(documentsTable.id, documentId))
-    .returning();
+  const { document, documentIds, revisionIds } = await withWriteRetry(() =>
+    db.transaction(async (tx) => {
+      const subtree = await tx.all<{ id: string }>(sql`
+        with recursive subtree(id) as (
+          select id from documents where id = ${documentId}
+          union
+          select d.id from documents d
+            join subtree s on d.parent_id = s.id or d.space_id = s.id
+        )
+        select id from subtree
+      `);
+      const documentIds = subtree.map((row) => row.id);
+
+      const revisionIds =
+        documentIds.length > 0
+          ? (
+              await tx
+                .select({ id: revisionsTable.id })
+                .from(revisionsTable)
+                .where(inArray(revisionsTable.documentId, documentIds))
+            ).map((row) => row.id)
+          : [];
+
+      const [document] = await tx
+        .delete(documentsTable)
+        .where(eq(documentsTable.id, documentId))
+        .returning();
+
+      return { document, documentIds, revisionIds };
+    }),
+  );
 
   if (!document) return;
+
+  await Promise.all([
+    ...revisionIds.map(deleteRevisionContent),
+    ...documentIds.map(deleteDocumentAttachments),
+  ]);
 
   if (document.documentType === 'space') {
     emitToUser(document.userId, 'space:deleted', document);
