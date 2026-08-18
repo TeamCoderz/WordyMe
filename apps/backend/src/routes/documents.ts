@@ -85,6 +85,19 @@ router.post(
   '/with-revision',
   validate({ body: createDocumentWithRevisionSchema }),
   async (req, res) => {
+    const { parentId, spaceId } = req.body;
+
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+
     const document = await createDocumentWithRevision(req.body, req.user!.id);
     res.status(201).json(document);
   },
