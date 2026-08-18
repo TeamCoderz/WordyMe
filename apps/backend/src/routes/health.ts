@@ -4,7 +4,7 @@
  */
 
 import { Router } from 'express';
-import { db } from '../lib/db.js';
+import { db, withWriteRetry } from '../lib/db.js';
 
 export const healthRouter = Router();
 
@@ -23,21 +23,12 @@ healthRouter.get('/ready', async (_req, res) => {
   res.setHeader('Cache-Control', 'no-store');
 
   try {
-    const integrity = await db.$client.execute('PRAGMA quick_check(1)');
-    const verdict = String(integrity.rows[0]?.quick_check ?? '').toLowerCase();
-
-    if (verdict !== 'ok') {
-      return res.status(503).json({
-        status: 'unready',
-        db: 'corrupt',
-        detail: verdict || 'quick_check returned no result',
-        latencyMs: Date.now() - start,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    const version = await db.$client.execute('PRAGMA user_version');
-    await db.$client.execute(`PRAGMA user_version = ${Number(version.rows[0]?.user_version ?? 0)}`);
+    await withWriteRetry(async () => {
+      const version = await db.$client.execute('PRAGMA user_version');
+      await db.$client.execute(
+        `PRAGMA user_version = ${Number(version.rows[0]?.user_version ?? 0)}`,
+      );
+    });
 
     return res.status(200).json({
       status: 'ready',
