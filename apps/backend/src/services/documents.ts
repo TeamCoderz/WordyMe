@@ -281,22 +281,43 @@ const descendantIds = async (documentId: string, executor: SqlExecutor = db): Pr
   return rows.map((row) => row.id);
 };
 
-export const assertNoParentCycle = async (
+const subtreeIds = async (documentId: string, executor: SqlExecutor = db): Promise<string[]> => {
+  const rows = await executor.all<{ id: string }>(sql`
+    with recursive subtree(id) as (
+      select id from documents where parent_id = ${documentId} or space_id = ${documentId}
+      union
+      select d.id from documents d
+        join subtree s on d.parent_id = s.id or d.space_id = s.id
+    )
+    select id from subtree where id <> ${documentId}
+  `);
+
+  return rows.map((row) => row.id);
+};
+
+export const assertNoTreeCycle = async (
   documentId: string,
-  parentId: string,
+  targetId: string,
+  relation: 'parent' | 'space',
   executor: SqlExecutor = db,
 ) => {
-  if (parentId === documentId) {
+  if (targetId === documentId) {
     throw new HttpUnprocessableEntity({
-      message: 'A document cannot be its own parent.',
+      message:
+        relation === 'parent'
+          ? 'A document cannot be its own parent.'
+          : 'A document cannot be its own space.',
     });
   }
 
-  const descendants = await descendantIds(documentId, executor);
+  const descendants = await subtreeIds(documentId, executor);
 
-  if (descendants.includes(parentId)) {
+  if (descendants.includes(targetId)) {
     throw new HttpUnprocessableEntity({
-      message: 'A document cannot be moved inside one of its own descendants.',
+      message:
+        relation === 'parent'
+          ? 'A document cannot be moved inside one of its own descendants.'
+          : 'A document cannot be placed inside a space it contains.',
     });
   }
 };
@@ -316,7 +337,11 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
   const { document, moved } = await withWriteRetry(() =>
     db.transaction(async (tx) => {
       if (payload.parentId) {
-        await assertNoParentCycle(documentId, payload.parentId, tx);
+        await assertNoTreeCycle(documentId, payload.parentId, 'parent', tx);
+      }
+
+      if (payload.spaceId) {
+        await assertNoTreeCycle(documentId, payload.spaceId, 'space', tx);
       }
 
       if (expectedCurrentRevisionId !== undefined) {
