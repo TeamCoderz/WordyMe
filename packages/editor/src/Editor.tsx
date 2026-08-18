@@ -47,6 +47,7 @@ import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext
 import ShortcutsPlugin from '@repo/editor/plugins/ShortcutsPlugin';
 import FloatingToolbarPlugin from '@repo/editor/plugins/FloatingToolbar';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
+import { HISTORIC_TAG } from 'lexical';
 import { useActions, useSelector } from '@repo/editor/store';
 import { useCallback, useEffect } from 'react';
 import { computeChecksum } from '@repo/editor/utils/computeChecksum';
@@ -90,9 +91,12 @@ export const Editor: React.FC<{
       }
       const serializedEditorState = serializeEditorState(editorState);
       updateChecksum(serializedEditorState);
+      if (documentId && !tags.has(HISTORIC_TAG)) {
+        window.dispatchEvent(new CustomEvent('document-edited', { detail: { documentId, tabId } }));
+      }
       onChange?.(editorState, editor, tags);
     },
-    [onChange, updateChecksum],
+    [onChange, updateChecksum, documentId, tabId],
   );
 
   return (
