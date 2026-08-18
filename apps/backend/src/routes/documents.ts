@@ -29,10 +29,22 @@ import {
 } from '../services/documents.js';
 import { searchDocuments } from '../services/search.js';
 import { userHasDocument } from '../services/access.js';
-import { HttpInternalServerError, HttpNotFound, HttpUnprocessableEntity } from '@httpx/exception';
+import {
+  HttpException,
+  HttpInternalServerError,
+  HttpNotFound,
+  HttpUnprocessableEntity,
+} from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
+import { once } from 'node:events';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
-import { copyDocument, exportDocumentTree, importDocumentTree } from '../services/operations.js';
+import {
+  MAX_EXPORT_BYTES,
+  copyDocument,
+  estimateExportBytes,
+  importDocumentTree,
+  streamDocumentTree,
+} from '../services/operations.js';
 import { dbWritesQueue, enqueueDbWrite } from '../queues/db-writes.js';
 import { paginationQuerySchema } from '../schemas/pagination.js';
 
@@ -246,13 +258,25 @@ router.post(
         'The document does not exist or is not accessible by the authenticated user.',
       );
     }
-    const exportedDocument = await exportDocumentTree(req.params.documentId);
-    if (!exportedDocument) {
-      throw new HttpInternalServerError(
-        'Internal server error. The export operation failed unexpectedly.',
+    const estimatedBytes = await estimateExportBytes(req.params.documentId);
+
+    if (estimatedBytes > MAX_EXPORT_BYTES) {
+      throw new HttpException(
+        413,
+        `This document tree is about ${Math.ceil(estimatedBytes / (1024 * 1024))}MB once exported, above the ${MAX_EXPORT_BYTES / (1024 * 1024)}MB limit. Export a smaller part of the tree, or back up the storage volume instead.`,
       );
     }
-    res.status(200).json(exportedDocument);
+
+    res.status(200);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+
+    for await (const chunk of streamDocumentTree(req.params.documentId)) {
+      if (!res.write(chunk)) {
+        await once(res, 'drain');
+      }
+    }
+
+    res.end();
   },
 );
 

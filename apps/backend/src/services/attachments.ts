@@ -18,7 +18,7 @@ export type Attachment = {
   url: string;
 };
 
-const bufferToDataURL = (buffer: Buffer): string => {
+export const bufferToDataURL = (buffer: Buffer): string => {
   const base64 = buffer.toString('base64');
   return `data:${'application/octet-stream'};base64,${base64}`;
 };
@@ -71,6 +71,21 @@ export const exportDocumentAttachments = async (documentId: string): Promise<Att
 
   const attachments = await Promise.all(filePromises);
   return attachments;
+};
+
+export const listDocumentAttachmentFiles = async (documentId: string) => {
+  const directory = resolvePhysicalPath(`attachments/${documentId}`);
+
+  const entries = await readdir(directory, { withFileTypes: true }).catch((error) => {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
+  });
+
+  return entries
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b))
+    .map((filename) => ({ filename, path: join(directory, filename) }));
 };
 
 export const deleteDocumentAttachments = async (documentId: string) => {

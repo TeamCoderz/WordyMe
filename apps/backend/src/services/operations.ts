@@ -14,12 +14,15 @@ import {
 import { documentsTable } from '../models/documents.js';
 import { createDocument, createDocumentWithRevision } from './documents.js';
 import { getRevisionById } from './revisions.js';
+import { readFile, stat } from 'node:fs/promises';
 import {
+  bufferToDataURL,
   copyDocumentAttachments,
   exportDocumentAttachments,
   importDocumentAttachment,
+  listDocumentAttachmentFiles,
 } from './attachments.js';
-import { readRevisionContent } from './revision-contents.js';
+import { getRevisionContentPhysicalPath, readRevisionContent } from './revision-contents.js';
 
 export const copyDocument = async (
   documentId: string,
@@ -152,6 +155,122 @@ export const exportDocumentTree = async (
   }
 
   return exportedDocument;
+};
+
+export const MAX_EXPORT_BYTES = 50 * 1024 * 1024;
+
+const BASE64_OVERHEAD = 4 / 3;
+
+const childDocumentsOf = async (documentId: string) =>
+  db.query.documentsTable.findMany({
+    where: or(
+      eq(documentsTable.parentId, documentId),
+      and(eq(documentsTable.spaceId, documentId), isNull(documentsTable.parentId)),
+    ),
+  });
+
+export const estimateExportBytes = async (
+  documentId: string,
+  visitedDocuments: Set<string> = new Set(),
+): Promise<number> => {
+  if (visitedDocuments.has(documentId)) return 0;
+  visitedDocuments.add(documentId);
+
+  const document = await db.query.documentsTable.findFirst({
+    where: eq(documentsTable.id, documentId),
+    with: { currentRevision: true },
+  });
+
+  if (!document) return 0;
+
+  let total = 512;
+
+  if (document.currentRevision) {
+    const revisionPath = getRevisionContentPhysicalPath(document.currentRevision.id);
+    total += await stat(revisionPath).then(
+      (info) => info.size,
+      () => 0,
+    );
+    total += document.currentRevision.text?.length ?? 0;
+  }
+
+  for (const file of await listDocumentAttachmentFiles(documentId)) {
+    const size = await stat(file.path).then(
+      (info) => info.size,
+      () => 0,
+    );
+    total += Math.ceil(size * BASE64_OVERHEAD) + file.filename.length + 64;
+  }
+
+  for (const child of await childDocumentsOf(documentId)) {
+    total += await estimateExportBytes(child.id, visitedDocuments);
+  }
+
+  return total;
+};
+
+export const streamDocumentTree = async function* (
+  documentId: string,
+  visitedDocuments: Set<string> = new Set(),
+  currentDepth: number = 0,
+): AsyncGenerator<string> {
+  if (visitedDocuments.has(documentId)) {
+    throw new Error(`Circular reference detected: document ${documentId} was already processed`);
+  }
+
+  if (currentDepth >= MAX_IMPORT_DEPTH) {
+    throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
+  }
+
+  visitedDocuments.add(documentId);
+
+  const document = await db.query.documentsTable.findFirst({
+    where: eq(documentsTable.id, documentId),
+    with: { currentRevision: true },
+  });
+
+  if (!document) {
+    throw new Error(`Document ${documentId} not found`);
+  }
+
+  yield `{"name":${JSON.stringify(document.name)},"handle":${JSON.stringify(document.handle)},"icon":${JSON.stringify(document.icon)},"type":${JSON.stringify(document.documentType)},"position":${JSON.stringify(document.position)},"is_container":${JSON.stringify(document.isContainer)},"revision":`;
+
+  if (document.currentRevision) {
+    const content = await readRevisionContent(document.currentRevision.id);
+    yield `{"text":${JSON.stringify(document.currentRevision.text)},"checksum":${JSON.stringify(document.currentRevision.checksum)},"content":${JSON.stringify(content)}}`;
+  } else {
+    yield 'null';
+  }
+
+  yield ',"attachments":[';
+
+  const attachmentFiles = await listDocumentAttachmentFiles(documentId);
+
+  for (const [index, file] of attachmentFiles.entries()) {
+    if (index > 0) yield ',';
+    const buffer = await readFile(file.path);
+    yield `{"filename":${JSON.stringify(file.filename)},"url":${JSON.stringify(bufferToDataURL(buffer))}}`;
+  }
+
+  yield '],"children":[';
+
+  const children = await childDocumentsOf(documentId);
+  const nested = children.filter((child) => child.parentId === documentId);
+  const spaceRoot = children.filter((child) => child.parentId !== documentId);
+
+  for (const [index, child] of nested.entries()) {
+    if (index > 0) yield ',';
+    yield* streamDocumentTree(child.id, visitedDocuments, currentDepth + 1);
+  }
+
+  yield '],"spaceRootChildren":[';
+
+  for (const [index, child] of spaceRoot.entries()) {
+    if (index > 0) yield ',';
+    yield* streamDocumentTree(child.id, visitedDocuments, currentDepth + 1);
+  }
+
+  yield ']}';
 };
 
 export const importDocumentTree = async (
