@@ -29,6 +29,12 @@ const router: Router = Router();
 
 router.use(requireAuth);
 
+router.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+  next();
+});
+
 router.get(
   '/revisions/:revisionId',
   validate({ params: revisionIdParamSchema }),
