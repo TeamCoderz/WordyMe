@@ -4,7 +4,18 @@
  */
 
 import crypto from 'node:crypto';
-import { and, count, countDistinct, eq, getTableColumns, gt, inArray, max, sql } from 'drizzle-orm';
+import {
+  and,
+  count,
+  countDistinct,
+  eq,
+  getTableColumns,
+  gt,
+  inArray,
+  max,
+  ne,
+  sql,
+} from 'drizzle-orm';
 import { SQLiteColumn } from 'drizzle-orm/sqlite-core';
 import { HttpConflict, HttpUnprocessableEntity } from '@httpx/exception';
 import { db, withWriteRetry } from '../lib/db.js';
@@ -36,11 +47,16 @@ export const orderByColumns = {
 export const checkExistingDocumentHandle = async (
   handle: string,
   executor: Pick<typeof db, 'select'> = db,
+  excludeDocumentId?: string,
 ) => {
   const result = await executor
     .select({ id: documentsTable.id })
     .from(documentsTable)
-    .where(eq(documentsTable.handle, handle))
+    .where(
+      excludeDocumentId
+        ? and(eq(documentsTable.handle, handle), ne(documentsTable.id, excludeDocumentId))
+        : eq(documentsTable.handle, handle),
+    )
     .limit(1);
   return result.length > 0;
 };
@@ -326,10 +342,10 @@ export const updateDocument = async (documentId: string, payload: UpdateDocument
   let handle: string | undefined;
 
   if (payload.name) {
-    handle = slugify(payload.name);
-    if (await checkExistingDocumentHandle(handle)) {
-      handle = appendUniqueSuffix(handle);
-    }
+    const candidate = slugify(payload.name);
+    handle = (await checkExistingDocumentHandle(candidate, db, documentId))
+      ? appendUniqueSuffix(candidate)
+      : candidate;
   }
 
   const { expectedCurrentRevisionId, ...updates } = payload;
