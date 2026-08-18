@@ -342,7 +342,12 @@ docker compose exec wordyme sh -c 'rm -f /app/storage/backup.db && node -e "cons
 Then collect `backup.db` **and** the `revisions/`, `attachments/`, `images/` and
 `covers/` directories — the database alone restores a document list where
 nothing opens. Delete `backup.db` from the volume afterwards so it is not swept
-into later backups. If you take live backups, verify one by restoring it.
+into later backups.
+
+Before restoring a live backup, rename `backup.db` to `local.db` inside your
+backup directory. The service only ever opens `local.db` — restore the file
+under its backup name and the app silently keeps running on the old database
+beside it. If you take live backups, verify one by restoring it.
 
 ### Restore Database
 
@@ -355,6 +360,9 @@ are hard to spot:
   revision and every upload lives beside `local.db` in the same volume. A
   database restored on its own gives you a workspace where every document is
   listed and none will open.
+- **The database must be named `local.db`.** A live backup produced
+  `backup.db`; rename it to `local.db` in your backup directory before
+  restoring, or the app keeps running on the old database beside it.
 - **Clear any leftover journal.** If the process was killed mid-write, a
   `local.db-journal`, `local.db-wal` or `local.db-shm` can survive. On the next
   open SQLite treats them as belonging to the file you just restored and replays
@@ -423,8 +431,11 @@ docker compose exec wordyme node prune-orphans.mjs --delete
 
 It refuses to run unless `DB_FILE_NAME` points at a database with the expected
 tables and at least one account, and it ignores anything modified in the last
-hour so an upload in flight is never swept. Even so, run the report first and
-read it: pointed at the wrong database, every live file looks unreferenced.
+hour, which keeps an upload in flight out of the sweep. The check is a
+snapshot, not a lock — for certainty, run `--delete` with the service stopped
+(`docker compose stop wordyme`, then `docker compose run --rm wordyme node
+prune-orphans.mjs --delete`). Always run the report first and read it: pointed
+at the wrong database, every live file looks unreferenced.
 
 ## Environment Variables
 
