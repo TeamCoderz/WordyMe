@@ -298,6 +298,13 @@ verifiable with `PRAGMA journal_mode`). Recent commits live in a companion
 is missing your most recent edits, and on a young instance it can be missing
 everything.
 
+Writes also run with `synchronous=NORMAL`, which lets SQLite return from a
+commit before the operating system has flushed it to disk. That is a deliberate
+trade for speed on the small machines this image targets, and it is safe against
+the app or the container dying — WAL still recovers a consistent database. The
+window it opens is narrow and specific: a **host** power cut or kernel panic can
+cost the last few commits. On a server without a UPS, take backups accordingly.
+
 Two consequences worth knowing before you rely on a backup:
 
 - **Back up the whole `/app/storage` volume, not just `local.db`.** The database
