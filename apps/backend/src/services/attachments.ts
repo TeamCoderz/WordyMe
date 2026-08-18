@@ -7,6 +7,7 @@ import { access, cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
+import { nanoid } from 'nanoid';
 import { sanitizeStoredFilename } from '../utils/strings.js';
 
 export const getAttachmentUrl = (documentId: string, filename: string) => {
@@ -79,8 +80,20 @@ export const importDocumentAttachment = async (
   await mkdir(directory, { recursive: true });
 
   const buffer = dataURLToBuffer(attachment.url);
-  const filePath = resolvePhysicalPath(
-    `attachments/${documentId}/${sanitizeStoredFilename(attachment.filename)}`,
-  );
-  await writeFile(filePath, buffer);
+  const stored = sanitizeStoredFilename(attachment.filename);
+  const dot = stored.lastIndexOf('.');
+  const stem = dot > 0 ? stored.slice(0, dot) : stored;
+  const extension = dot > 0 ? stored.slice(dot) : '';
+
+  let candidate = stored;
+
+  for (;;) {
+    try {
+      await writeFile(join(directory, candidate), buffer, { flag: 'wx' });
+      return;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      candidate = `${stem}_${nanoid(6)}${extension}`;
+    }
+  }
 };
