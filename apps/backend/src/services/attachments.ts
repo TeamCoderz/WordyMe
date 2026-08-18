@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { access, cp, mkdir, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { join } from 'node:path';
 import { resolvePhysicalPath } from '../lib/storage.js';
@@ -47,30 +47,6 @@ export const copyDocumentAttachments = async (
     recursive: true,
     errorOnExist: false,
   });
-};
-
-export const exportDocumentAttachments = async (documentId: string): Promise<Attachment[]> => {
-  const directory = resolvePhysicalPath(`attachments/${documentId}`);
-
-  const entries = await readdir(directory, { withFileTypes: true }).catch((error) => {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-    throw error;
-  });
-
-  const filenames = entries
-    .filter((entry) => entry.isFile())
-    .map((entry) => entry.name)
-    .sort((a, b) => a.localeCompare(b));
-
-  if (filenames.length === 0) return [];
-
-  const filePromises = filenames.map(async (filename) => {
-    const buffer = await readFile(join(directory, filename));
-    return { filename, url: bufferToDataURL(buffer) };
-  });
-
-  const attachments = await Promise.all(filePromises);
-  return attachments;
 };
 
 export const listDocumentAttachmentFiles = async (documentId: string) => {

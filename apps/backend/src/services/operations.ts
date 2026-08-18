@@ -5,12 +5,7 @@
 
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
-import {
-  CopyDocumentInput,
-  ExportedDocument,
-  ImportDocumentInput,
-  MAX_IMPORT_DEPTH,
-} from '../schemas/operations.js';
+import { CopyDocumentInput, ImportDocumentInput, MAX_IMPORT_DEPTH } from '../schemas/operations.js';
 import { documentsTable } from '../models/documents.js';
 import { createDocument, createDocumentWithRevision } from './documents.js';
 import { getRevisionById } from './revisions.js';
@@ -18,7 +13,6 @@ import { readFile, stat } from 'node:fs/promises';
 import {
   bufferToDataURL,
   copyDocumentAttachments,
-  exportDocumentAttachments,
   importDocumentAttachment,
   listDocumentAttachmentFiles,
 } from './attachments.js';
@@ -89,72 +83,6 @@ export const copyDocument = async (
   }
 
   return newDocument;
-};
-
-export const exportDocumentTree = async (
-  documentId: string,
-  visitedDocuments: Set<string> = new Set(),
-  currentDepth: number = 0,
-): Promise<ExportedDocument> => {
-  if (visitedDocuments.has(documentId)) {
-    throw new Error(`Circular reference detected: document ${documentId} was already processed`);
-  }
-
-  if (currentDepth >= MAX_IMPORT_DEPTH) {
-    throw new Error(`Maximum depth reached: ${currentDepth} levels of nested documents`);
-  }
-
-  visitedDocuments.add(documentId);
-
-  const document = await db.query.documentsTable.findFirst({
-    where: eq(documentsTable.id, documentId),
-    with: {
-      currentRevision: true,
-    },
-  });
-
-  if (!document) {
-    throw new Error(`Document ${documentId} not found`);
-  }
-
-  const currentRevision = document.currentRevision;
-
-  const exportedDocument: ExportedDocument = {
-    name: document.name,
-    handle: document.handle,
-    icon: document.icon,
-    type: document.documentType,
-    position: document.position,
-    is_container: document.isContainer,
-    revision: currentRevision
-      ? {
-          text: currentRevision.text,
-          checksum: currentRevision.checksum,
-          content: await readRevisionContent(currentRevision.id),
-        }
-      : null,
-    attachments: await exportDocumentAttachments(documentId),
-    children: [],
-    spaceRootChildren: [],
-  };
-
-  const children = await db.query.documentsTable.findMany({
-    where: or(
-      eq(documentsTable.parentId, documentId),
-      and(eq(documentsTable.spaceId, documentId), isNull(documentsTable.parentId)),
-    ),
-  });
-
-  for (const child of children) {
-    const childResult = await exportDocumentTree(child.id, visitedDocuments, currentDepth + 1);
-    if (child.parentId === documentId) {
-      exportedDocument.children.push(childResult);
-    } else {
-      exportedDocument.spaceRootChildren.push(childResult);
-    }
-  }
-
-  return exportedDocument;
 };
 
 export const MAX_EXPORT_BYTES = 50 * 1024 * 1024;
