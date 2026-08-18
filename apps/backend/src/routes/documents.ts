@@ -36,7 +36,8 @@ import {
   HttpUnprocessableEntity,
 } from '@httpx/exception';
 import { getCurrentRevisionByDocumentId, getRevisionsByDocumentId } from '../services/revisions.js';
-import { once } from 'node:events';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { copyDocumentSchema, importDocumentSchema } from '../schemas/operations.js';
 import {
   MAX_EXPORT_BYTES,
@@ -284,25 +285,23 @@ router.post(
     res.status(200);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
-    let written = 0;
-
-    for await (const chunk of streamDocumentTree(req.params.documentId)) {
-      written += Buffer.byteLength(chunk);
-
-      if (written > MAX_EXPORT_BYTES) {
-        console.error(
-          `Export of ${req.params.documentId} exceeded ${MAX_EXPORT_BYTES} bytes mid-stream; aborting the response.`,
-        );
-        res.destroy();
-        return;
+    const cappedExport = async function* () {
+      let written = 0;
+      for await (const chunk of streamDocumentTree(req.params.documentId)) {
+        written += Buffer.byteLength(chunk);
+        if (written > MAX_EXPORT_BYTES) {
+          throw new Error(`Export exceeded ${MAX_EXPORT_BYTES} bytes mid-stream.`);
+        }
+        yield chunk;
       }
+    };
 
-      if (!res.write(chunk)) {
-        await once(res, 'drain');
-      }
+    try {
+      await pipeline(Readable.from(cappedExport()), res);
+    } catch (error) {
+      console.error(`Export of ${req.params.documentId} failed mid-stream:`, error);
+      if (!res.destroyed) res.destroy();
     }
-
-    res.end();
   },
 );
 
