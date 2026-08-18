@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { HttpInternalServerError } from '@httpx/exception';
 import { and, eq, isNull, or } from 'drizzle-orm';
 import { db } from '../lib/db.js';
 import { CopyDocumentInput, ImportDocumentInput, MAX_IMPORT_DEPTH } from '../schemas/operations.js';
@@ -115,10 +116,15 @@ export const estimateExportBytes = async (
 
   if (document.currentRevision) {
     const revisionPath = getRevisionContentPhysicalPath(document.currentRevision.id);
-    total += await stat(revisionPath).then(
-      (info) => info.size,
-      () => 0,
-    );
+    const info = await stat(revisionPath).catch(() => null);
+
+    if (!info) {
+      throw new HttpInternalServerError(
+        `The stored content for revision ${document.currentRevision.id} is missing from the storage volume, so this tree cannot be exported. Restore that file from a backup, or export a part of the tree that does not include this document.`,
+      );
+    }
+
+    total += info.size;
     total += document.currentRevision.text?.length ?? 0;
   }
 

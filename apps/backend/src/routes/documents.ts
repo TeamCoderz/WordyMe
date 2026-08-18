@@ -237,6 +237,20 @@ router.post(
         'The document does not exist or is not accessible by the authenticated user.',
       );
     }
+
+    const { parentId, spaceId } = req.body;
+
+    if (parentId && !(await userHasDocument(req.user!.id, parentId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+    if (spaceId && !(await userHasDocument(req.user!.id, spaceId))) {
+      throw new HttpNotFound(
+        'The specified parentId or spaceId does not exist or is not accessible by the authenticated user.',
+      );
+    }
+
     const copiedDocument = await dbWritesQueue.add(() =>
       copyDocument(req.params.documentId, req.body, req.user!.id),
     );
@@ -270,7 +284,19 @@ router.post(
     res.status(200);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
+    let written = 0;
+
     for await (const chunk of streamDocumentTree(req.params.documentId)) {
+      written += Buffer.byteLength(chunk);
+
+      if (written > MAX_EXPORT_BYTES) {
+        console.error(
+          `Export of ${req.params.documentId} exceeded ${MAX_EXPORT_BYTES} bytes mid-stream; aborting the response.`,
+        );
+        res.destroy();
+        return;
+      }
+
       if (!res.write(chunk)) {
         await once(res, 'drain');
       }
