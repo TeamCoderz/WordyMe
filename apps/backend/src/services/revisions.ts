@@ -112,14 +112,21 @@ export const getCurrentRevisionByDocumentId = async (documentId: string) => {
 };
 
 export const updateRevisionName = async (revisionId: string, payload: UpdateRevisionInput) => {
-  const [updatedRevision] = await db
-    .update(revisionsTable)
-    .set(payload)
-    .where(eq(revisionsTable.id, revisionId))
-    .returning();
-  if (payload.content) {
-    await saveRevisionContent(payload.content, revisionId);
+  const { content, ...columns } = payload;
+  const hasColumnUpdates = Object.values(columns).some((field) => field !== undefined);
+
+  const [updatedRevision] = hasColumnUpdates
+    ? await db
+        .update(revisionsTable)
+        .set(columns)
+        .where(eq(revisionsTable.id, revisionId))
+        .returning()
+    : await db.select().from(revisionsTable).where(eq(revisionsTable.id, revisionId)).limit(1);
+
+  if (content) {
+    await saveRevisionContent(content, revisionId);
   }
+
   return updatedRevision
     ? { ...updatedRevision, url: getRevisionContentUrl(updatedRevision.id) }
     : null;
