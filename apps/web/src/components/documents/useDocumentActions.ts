@@ -45,17 +45,34 @@ export function useDocumentActions(
     enabled: !!docId,
   });
 
+  const tab = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId));
+  const isViewTab = tab && tab.pathname.startsWith('/view/');
+  const isEditTab = tab && tab.pathname.startsWith('/edit/');
+  const isDocumentTab = isEditTab || isViewTab;
+
   const [checksum, setChecksum] = useState<string | null>(null);
+  const [loadedChecksum, setLoadedChecksum] = useState<string | null>(null);
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
+
+  const loadedKey = docId ? `${docId}:${isEditTab ? 'edit' : 'view'}` : null;
+
+  if (loadedKey && checksum && loadedFor !== loadedKey) {
+    setLoadedFor(loadedKey);
+    setLoadedChecksum(checksum);
+  }
+
   const cloudRevision = useMemo(
     () => revisions?.find((r) => r.checksum === checksum),
     [revisions, checksum],
   );
 
   const isPreviouslySaved = !!cloudRevision;
+  const isUnchangedSinceLoad = !!loadedChecksum && loadedChecksum === checksum;
   const isUpToDate =
-    isPreviouslySaved &&
-    document?.currentRevisionId === cloudRevision.id &&
-    cloudRevision.checksum === checksum;
+    isUnchangedSinceLoad ||
+    (isPreviouslySaved &&
+      document?.currentRevisionId === cloudRevision.id &&
+      cloudRevision.checksum === checksum);
 
   const isLoading =
     !document ||
@@ -63,10 +80,6 @@ export function useDocumentActions(
     !revisions?.length ||
     (isPreviouslySaved && cloudRevision.documentId !== document.id);
 
-  const tab = useSelector((state) => state.tabs.tabList.find((tab) => tab.id === tabId));
-  const isViewTab = tab && tab.pathname.startsWith('/view/');
-  const isEditTab = tab && tab.pathname.startsWith('/edit/');
-  const isDocumentTab = isEditTab || isViewTab;
   const { setTabDirty, setTabSaving, setTabJustSaved } = useActions();
 
   const isSaving = !!tab?.isSaving;
@@ -119,6 +132,8 @@ export function useDocumentActions(
           head: cloudRevision.id,
         });
         setChecksum(cloudRevision.checksum);
+        setLoadedChecksum(cloudRevision.checksum);
+        setLoadedFor(loadedKey);
         if (isViewTab) {
           const revision = await queryClient.ensureQueryData(
             getRevisionByIdQueryOptions(cloudRevision.id, true),
@@ -146,6 +161,8 @@ export function useDocumentActions(
           isAutosave,
         });
         setChecksum(newChecksum);
+        setLoadedChecksum(newChecksum);
+        setLoadedFor(loadedKey);
       }
       handleSaveSuccess();
     } catch {
@@ -172,6 +189,8 @@ export function useDocumentActions(
         keepPreviousRevision: true,
       });
       setChecksum(newChecksum);
+      setLoadedChecksum(newChecksum);
+      setLoadedFor(loadedKey);
       handleSaveSuccess();
     } catch {
       setIsSaving(false);
@@ -197,6 +216,8 @@ export function useDocumentActions(
         keepPreviousRevision: false,
       });
       setChecksum(newChecksum);
+      setLoadedChecksum(newChecksum);
+      setLoadedFor(loadedKey);
       handleSaveSuccess();
     } catch {
       setIsSaving(false);
