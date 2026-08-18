@@ -8,8 +8,13 @@ import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { documentsTable } from '../models/documents.js';
 import { revisionsTable } from '../models/revisions.js';
 import { Attachment } from '../services/attachments.js';
-import { documentTreeDepth, normalizeDocumentTreeContent } from '../utils/operations.js';
+import {
+  documentTreeDepth,
+  documentTreeNodeCount,
+  normalizeDocumentTreeContent,
+} from '../utils/operations.js';
 export const MAX_IMPORT_DEPTH = 100;
+export const MAX_IMPORT_NODES = 5000;
 
 export const attachmentSchema = z.object({
   filename: z
@@ -53,11 +58,23 @@ export const exportedDocumentSchema: z.ZodType<ExportedDocument> = z.lazy(() =>
 );
 
 const importDepthGuard = z.unknown().superRefine((value, ctx) => {
-  const depth = documentTreeDepth((value as { document?: unknown } | null)?.document);
+  const root = (value as { document?: unknown } | null)?.document;
+  const depth = documentTreeDepth(root);
+
   if (depth > MAX_IMPORT_DEPTH) {
     ctx.addIssue({
       code: 'custom',
       message: `Document tree is nested ${depth} levels deep; the maximum is ${MAX_IMPORT_DEPTH}.`,
+      path: ['document'],
+    });
+  }
+
+  const nodes = documentTreeNodeCount(root);
+
+  if (nodes > MAX_IMPORT_NODES) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `Document tree holds ${nodes} documents; the maximum is ${MAX_IMPORT_NODES}.`,
       path: ['document'],
     });
   }

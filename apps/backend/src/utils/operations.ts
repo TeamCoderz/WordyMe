@@ -36,6 +36,16 @@ export const documentTreeDepth = (root: unknown): number => {
   return maxDepth;
 };
 
+export const documentTreeNodeCount = (root: unknown): number => {
+  let nodes = 0;
+
+  walkDocumentTree(root, () => {
+    nodes += 1;
+  });
+
+  return nodes;
+};
+
 export const normalizeDocumentTreeContent = (root: unknown) => {
   walkDocumentTree(root, (node) => {
     const revision = node.revision;
