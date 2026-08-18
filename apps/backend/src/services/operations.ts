@@ -19,7 +19,6 @@ import {
   exportDocumentAttachments,
   importDocumentAttachment,
 } from './attachments.js';
-import { enqueueDbWrite } from '../queues/db-writes.js';
 import { readRevisionContent } from './revision-contents.js';
 
 export const copyDocument = async (
@@ -71,22 +70,20 @@ export const copyDocument = async (
     ),
   });
 
-  children.map((child) =>
-    enqueueDbWrite(() =>
-      copyDocument(
-        child.id,
-        {
-          name: child.name,
-          position: child.position,
-          parentId: child.parentId === documentId ? newDocument.id : null,
-          spaceId: child.spaceId === documentId ? newDocument.id : newDocument.spaceId,
-        },
-        userId,
-        visitedDocuments,
-        currentDepth + 1,
-      ),
-    ),
-  );
+  for (const child of children) {
+    await copyDocument(
+      child.id,
+      {
+        name: child.name,
+        position: child.position,
+        parentId: child.parentId === documentId ? newDocument.id : null,
+        spaceId: child.spaceId === documentId ? newDocument.id : newDocument.spaceId,
+      },
+      userId,
+      visitedDocuments,
+      currentDepth + 1,
+    );
+  }
 
   return newDocument;
 };
@@ -194,34 +191,30 @@ export const importDocumentTree = async (
   );
 
   for (const child of payload.document.children) {
-    enqueueDbWrite(() =>
-      importDocumentTree(
-        {
-          document: child,
-          type: child.type,
-          spaceId: payload.spaceId,
-          parentId: newDocument.id,
-          position: child.position,
-        },
-        userId,
-        currentDepth + 1,
-      ),
+    await importDocumentTree(
+      {
+        document: child,
+        type: child.type,
+        spaceId: payload.spaceId,
+        parentId: newDocument.id,
+        position: child.position,
+      },
+      userId,
+      currentDepth + 1,
     );
   }
 
   for (const spaceChild of payload.document.spaceRootChildren) {
-    enqueueDbWrite(() =>
-      importDocumentTree(
-        {
-          document: spaceChild,
-          type: spaceChild.type,
-          spaceId: newDocument.id,
-          parentId: null,
-          position: spaceChild.position,
-        },
-        userId,
-        currentDepth + 1,
-      ),
+    await importDocumentTree(
+      {
+        document: spaceChild,
+        type: spaceChild.type,
+        spaceId: newDocument.id,
+        parentId: null,
+        position: spaceChild.position,
+      },
+      userId,
+      currentDepth + 1,
     );
   }
 
