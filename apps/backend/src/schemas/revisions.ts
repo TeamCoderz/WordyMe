@@ -51,6 +51,10 @@ export const updateRevisionSchema = createUpdateSchema(revisionsTable)
   })
   .refine((value) => Object.values(value).some((field) => field !== undefined), {
     message: 'Provide at least one field to update.',
+  })
+  .refine((value) => (value.text === undefined) === (value.content === undefined), {
+    message:
+      'Send text and content together; updating one without the other leaves search results disagreeing with the stored document.',
   });
 
 export const plainRevisionSchema = createSelectSchema(revisionsTable)
