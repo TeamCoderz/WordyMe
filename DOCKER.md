@@ -430,11 +430,15 @@ Set a new password, generated for you and printed once:
 docker compose exec wordyme node reset-password.mjs
 ```
 
-Or choose it yourself:
+Or choose it yourself, piping it in so it never becomes a command argument:
 
 ```bash
-docker compose exec wordyme node reset-password.mjs --password 'a long passphrase'
+printf '%s' 'a long passphrase' | docker compose exec -T wordyme node reset-password.mjs --password-stdin
 ```
+
+Passing a password as an argument is refused. Arguments are visible to `ps` for
+every user on the host and are written to shell history, which is the same
+reason `docker login` takes `--password-stdin`.
 
 Sign-up closes after the first account, so there is only ever one to reset and
 the email can be left out. Pass it explicitly if you prefer, and use `--list` if

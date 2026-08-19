@@ -28,12 +28,14 @@ const usage = () => {
 Set a new password for an account.
 
   node reset-password.mjs
-  node reset-password.mjs --password '<new password>'
   node reset-password.mjs <email>
   node reset-password.mjs --list
+  printf '%s' 'a long passphrase' | node reset-password.mjs --password-stdin
 
 This instance holds a single account, so the email may be omitted. Without
---password a strong one is generated and printed once.
+--password-stdin a strong password is generated and printed once. Passwords are
+never taken as an argument, because arguments are visible to ps and land in
+shell history.
 `);
 };
 
@@ -81,20 +83,50 @@ if (args.includes('--list')) {
   process.exit(0);
 }
 
-const passwordIndex = args.indexOf('--password');
-const provided = passwordIndex === -1 ? null : args[passwordIndex + 1];
+const KNOWN_FLAGS = new Set(['--help', '-h', '--list', '--password-stdin']);
 
-if (passwordIndex !== -1 && !provided) {
-  console.error('\n  --password needs a value.\n');
+const unknown = args.filter((value) => value.startsWith('-') && !KNOWN_FLAGS.has(value));
+
+if (unknown.length > 0 && !unknown.includes('--password')) {
+  console.error(`\n  Unrecognised option: ${unknown.join(', ')}\n`);
+  usage();
   process.exit(1);
 }
 
-if (provided && provided.length < MIN_PASSWORD_LENGTH) {
+if (args.includes('--password')) {
+  console.error(
+    "\n  --password is not accepted: an argument is visible to ps and stored in shell history.\n  Pipe it instead:  printf '%s' 'your passphrase' | node reset-password.mjs --password-stdin\n",
+  );
+  process.exit(1);
+}
+
+const readStdin = async () => {
+  if (process.stdin.isTTY) {
+    console.error(
+      "\n  --password-stdin expects the password on stdin, but nothing is piped in.\n  Try:  printf '%s' 'your passphrase' | node reset-password.mjs --password-stdin\n",
+    );
+    process.exit(1);
+  }
+
+  let value = '';
+  process.stdin.setEncoding('utf8');
+  for await (const chunk of process.stdin) value += chunk;
+  return value.replace(/\r?\n$/, '');
+};
+
+const provided = args.includes('--password-stdin') ? await readStdin() : null;
+
+if (provided !== null && provided.length === 0) {
+  console.error('\n  Nothing arrived on stdin, so no password was set.\n');
+  process.exit(1);
+}
+
+if (provided !== null && provided.length < MIN_PASSWORD_LENGTH) {
   console.error(`\n  That password is shorter than ${MIN_PASSWORD_LENGTH} characters.\n`);
   process.exit(1);
 }
 
-const email = args.find((value, index) => !value.startsWith('--') && index !== passwordIndex + 1);
+const email = args.find((value) => !value.startsWith('--'));
 
 const users = email
   ? await client.execute({
@@ -121,11 +153,6 @@ if (!email && users.rows.length > 1) {
 
 const user = users.rows[0];
 
-const accounts = await client.execute({
-  sql: 'select id from accounts where user_id = ? and provider_id = ?',
-  args: [user.id, 'credential'],
-});
-
 const password = provided ?? randomBytes(GENERATED_PASSWORD_BYTES).toString('base64url');
 
 const auth = betterAuth({
@@ -136,25 +163,50 @@ const context = await auth.$context;
 const hash = await context.password.hash(password);
 const now = Date.now();
 
-if (accounts.rows.length === 0) {
-  await client.execute({
-    sql: 'insert into accounts (id, account_id, provider_id, user_id, password, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)',
-    args: [crypto.randomUUID(), user.id, 'credential', user.id, hash, now, now],
+const transaction = await client.transaction('write');
+let added = false;
+let signedOut = 0;
+
+try {
+  const accounts = await transaction.execute({
+    sql: 'select id from accounts where user_id = ? and provider_id = ?',
+    args: [user.id, 'credential'],
   });
-  console.log('\n  That account had no password sign-in; one has been added.');
-} else {
-  await client.execute({
-    sql: 'update accounts set password = ?, updated_at = ? where id = ?',
-    args: [hash, now, accounts.rows[0].id],
+
+  if (accounts.rows.length > 1) {
+    throw new Error(
+      `That account has ${accounts.rows.length} password sign-ins, so there is no single one to change. Remove the duplicates before resetting.`,
+    );
+  }
+
+  if (accounts.rows.length === 0) {
+    await transaction.execute({
+      sql: 'insert into accounts (id, account_id, provider_id, user_id, password, created_at, updated_at) values (?, ?, ?, ?, ?, ?, ?)',
+      args: [crypto.randomUUID(), user.id, 'credential', user.id, hash, now, now],
+    });
+    added = true;
+  } else {
+    await transaction.execute({
+      sql: 'update accounts set password = ?, updated_at = ? where id = ?',
+      args: [hash, now, accounts.rows[0].id],
+    });
+  }
+
+  const sessions = await transaction.execute({
+    sql: 'delete from sessions where user_id = ?',
+    args: [user.id],
   });
+  signedOut = sessions.rowsAffected;
+
+  await transaction.commit();
+} catch (error) {
+  await transaction.rollback();
+  console.error(`\n  Nothing was changed. ${error instanceof Error ? error.message : error}\n`);
+  process.exit(1);
 }
 
-const sessions = await client.execute({
-  sql: 'delete from sessions where user_id = ?',
-  args: [user.id],
-});
-
+if (added) console.log('\n  That account had no password sign-in; one has been added.');
 console.log(`\n  Password updated for ${user.email}.`);
-if (!provided) console.log(`\n    New password:  ${password}\n`);
-console.log(`  ${sessions.rowsAffected} existing session(s) signed out.\n`);
+if (provided === null) console.log(`\n    New password:  ${password}\n`);
+console.log(`  ${signedOut} existing session(s) signed out.\n`);
 process.exit(0);
