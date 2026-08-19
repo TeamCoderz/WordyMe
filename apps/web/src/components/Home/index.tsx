@@ -12,6 +12,7 @@ import { useSelector, useActions } from '@/store';
 import { useQuery } from '@tanstack/react-query';
 import { getHomeAllDocumentsQueryOptions } from '@/queries/documents';
 import { useEffect } from 'react';
+import { WelcomeScreen } from './WelcomeScreen';
 
 export const HomePage = () => {
   const homeSorts = useSelector((state) => state.ui.homeSorts);
@@ -31,18 +32,7 @@ export const HomePage = () => {
   }
 
   if (allDocsQuery.data.length === 0) {
-    return (
-      <main className="py-10 max-w-5xl w-full px-6 mx-auto space-y-6 h-full flex items-center justify-center">
-        <div className="max-w-2xl w-full mx-auto flex flex-col items-center gap-4 mb-14">
-          <h1 className="text-xl @md:text-2xl font-semibold text-center">
-            Let's get started, {user.name}!🌥️
-          </h1>
-          <p className="text-muted-foreground text-center">
-            We'll guide you step by step — let's set up your first notes.
-          </p>
-        </div>
-      </main>
-    );
+    return <WelcomeScreen userName={user.name} />;
   }
 
   return (

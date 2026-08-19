@@ -11,6 +11,19 @@ export const spaceIdSchema = z.uuid();
 
 export type FavoriteRealtimeResponse = Favorite & { spaceId: string | null };
 
+export type BackupProgress = {
+  jobId: string;
+  phase: 'unpacking' | 'verifying' | 'writing' | 'publishing';
+  staged: number;
+  total: number;
+};
+
+export type BackupRestored = {
+  jobId: string;
+  documents: number;
+  revisions: number;
+};
+
 export type SocketEventsMap = {
   'document:created': DocumentDetails;
   'document:updated': PlainDocument;
@@ -22,6 +35,8 @@ export type SocketEventsMap = {
   'space:deleted': PlainDocument;
   'space:favorited': FavoriteRealtimeResponse;
   'space:unfavorited': FavoriteRealtimeResponse;
+  'backup:progress': BackupProgress;
+  'backup:restored': BackupRestored;
   connect: void;
   disconnect: void;
 };

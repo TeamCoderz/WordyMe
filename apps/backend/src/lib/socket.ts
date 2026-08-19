@@ -52,6 +52,8 @@ export const initializeSocket = (server: HttpServer) => {
   return io;
 };
 
+export const isSocketReady = () => Boolean(io);
+
 export const getSocket = () => {
   if (!io) {
     throw new Error('Socket.io not initialized');
