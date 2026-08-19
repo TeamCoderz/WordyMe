@@ -1,5 +1,5 @@
 <h1 align="center">
-  <a href="https://wordy.me"><img src="apps/web/public/logo512.png" alt="" height="70"></a><br>
+  <a href="https://wordy.me"><img src="apps/web/public/logo512.png" alt="WordyMe home" height="70"></a><br>
   WordyMe™
 </h1>
 
