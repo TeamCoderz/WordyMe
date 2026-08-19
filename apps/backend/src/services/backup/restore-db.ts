@@ -110,6 +110,7 @@ export const restoreDatabase = async (
   stagingDir: string,
   userId: string,
   manifest: BackupManifest,
+  jobId: string,
 ) => {
   const tables = {} as Record<BackupTable, Row[]>;
 
@@ -205,6 +206,10 @@ export const restoreDatabase = async (
         columns.editor_settings,
       );
     }
+
+    await executor.run(
+      sql`insert into backup_restores (id, created_at) values (${jobId}, ${Date.now()})`,
+    );
 
     const violations = await executor.all<Record<string, unknown>>(sql`pragma foreign_key_check`);
     if (violations.length > 0) {

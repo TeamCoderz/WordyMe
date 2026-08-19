@@ -76,10 +76,10 @@ export const runRestore = async (
       .filter((name) => !name.startsWith('db/'))
       .map((entry) => ({ entry, destination: destinationFor(entry, userId) }));
 
-    await writeCommitMarker(staged.stagingDir, payloadFiles);
+    await writeCommitMarker(staged.stagingDir, jobId, payloadFiles);
 
     report('writing');
-    const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest);
+    const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest, jobId);
     committed = true;
 
     report('publishing');

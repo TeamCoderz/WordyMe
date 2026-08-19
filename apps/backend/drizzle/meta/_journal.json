@@ -36,6 +36,13 @@
       "when": 1786906559166,
       "tag": "0004_document_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786906560166,
+      "tag": "0005_backup_restore_journal",
+      "breakpoints": true
     }
   ]
 }

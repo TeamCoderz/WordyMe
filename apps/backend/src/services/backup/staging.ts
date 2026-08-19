@@ -10,6 +10,8 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import yauzl from 'yauzl';
 import { HttpInsufficientStorage, HttpUnprocessableEntity } from '@httpx/exception';
+import { sql } from 'drizzle-orm';
+import { db } from '../../lib/db.js';
 import { resolvePhysicalPath } from '../../lib/storage.js';
 import {
   BACKUP_TABLES,
@@ -251,8 +253,22 @@ export type PublishEntry = { entry: string; destination: string };
 const asPublishEntry = (value: string | PublishEntry): PublishEntry =>
   typeof value === 'string' ? { entry: value, destination: value } : value;
 
-export const writeCommitMarker = async (stagingDir: string, files: PublishEntry[]) => {
-  await writeFile(path.join(stagingDir, COMMIT_MARKER), JSON.stringify({ files }), 'utf8');
+export const writeCommitMarker = async (
+  stagingDir: string,
+  jobId: string,
+  files: PublishEntry[],
+) => {
+  await writeFile(path.join(stagingDir, COMMIT_MARKER), JSON.stringify({ jobId, files }), 'utf8');
+};
+
+const databaseCommitted = async (jobId: string | undefined) => {
+  if (!jobId) return false;
+
+  const rows = await db.all<{ id: string }>(
+    sql`select id from backup_restores where id = ${jobId}`,
+  );
+
+  return rows.length > 0;
 };
 
 const moveFile = async (source: string, destination: string) => {
@@ -296,12 +312,21 @@ export const recoverStagingOnBoot = async () => {
     const stagingDir = path.join(STAGING_ROOT, name);
     const markerPath = path.join(stagingDir, COMMIT_MARKER);
 
-    let marker: { files?: (string | PublishEntry)[] };
+    let marker: { jobId?: string; files?: (string | PublishEntry)[] };
     try {
       marker = JSON.parse(await readFile(markerPath, 'utf8')) as {
+        jobId?: string;
         files?: (string | PublishEntry)[];
       };
     } catch {
+      await discardStaging(stagingDir);
+      continue;
+    }
+
+    if (!(await databaseCommitted(marker.jobId))) {
+      console.warn(
+        `Discarding restore ${name}: its database transaction never committed, so its files must not be published.`,
+      );
       await discardStaging(stagingDir);
       continue;
     }

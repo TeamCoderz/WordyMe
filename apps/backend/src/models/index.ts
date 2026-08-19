@@ -4,6 +4,7 @@
  */
 
 export * from './auth.js';
+export * from './backup-restores.js';
 export * from './documents.js';
 export * from './document-views.js';
 export * from './editor-settings.js';
