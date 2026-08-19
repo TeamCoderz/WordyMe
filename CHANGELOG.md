@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.3.0](https://github.com/TeamCoderz/WordyMe/compare/v1.2.6...v1.3.0) (2026-08-19)
+
+### Features
+
+- **auth:** add a CLI password reset for self-hosters ([#117](https://github.com/TeamCoderz/WordyMe/issues/117)) ([71ccee9](https://github.com/TeamCoderz/WordyMe/commit/71ccee9d60f1cfd95fd835b8ad5c1412fff721b2))
+- **backup:** back up and restore a whole workspace from one file ([#116](https://github.com/TeamCoderz/WordyMe/issues/116)) ([b06855a](https://github.com/TeamCoderz/WordyMe/commit/b06855ab282a330374d8ce381d061b56d2d9c2d4))
+
+### Bug Fixes
+
+- **backend:** resolve critical data-loss, availability and security defects ([#115](https://github.com/TeamCoderz/WordyMe/issues/115)) ([4e0b9e6](https://github.com/TeamCoderz/WordyMe/commit/4e0b9e69e786606aa7cba3ce6923d026dbf1b3d1))
+- **deps:** refresh the lockfile to clear transitive advisories ([#108](https://github.com/TeamCoderz/WordyMe/issues/108)) ([0042c64](https://github.com/TeamCoderz/WordyMe/commit/0042c64a24b9a55d3ec5afd42506333dc18782e4))
+
 ## [1.2.6](https://github.com/TeamCoderz/WordyMe/compare/v1.2.5...v1.2.6) (2026-08-10)
 
 ### Features
