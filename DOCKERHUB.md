@@ -1,5 +1,11 @@
 # WordyMe
 
+[![Made by TeamCoderz Ltd](https://img.shields.io/badge/Made%20by-TeamCoderz%20Ltd-orange)](https://teamcoderz.org)
+[![Docker pulls](https://img.shields.io/docker/pulls/teamcoderz/wordyme?color=2496ED&label=Docker%20pulls)](https://hub.docker.com/r/teamcoderz/wordyme/tags)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen)](https://github.com/TeamCoderz/WordyMe?tab=contributing-ov-file)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](https://github.com/TeamCoderz/WordyMe?tab=AGPL-3.0-1-ov-file)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Try%20it-brightgreen)](https://wordy.me/try-demo)
+
 **A lightweight personal wiki you can self-host anywhere. Even on your Raspberry Pi.**
 
 WordyMe is a self-hosted personal wiki and note-taking app: rich documents with diagram (Mermaid), math (KaTeX) and music-notation support, organized into spaces, with revision history, favorites and real-time updates.
