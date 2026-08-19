@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import { rm } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { emitToUser, isSocketReady } from '../../lib/socket.js';
-import { resolvePhysicalPath } from '../../lib/storage.js';
 import { collectInventory } from './inventory.js';
 import { readSchemaVersion } from './export.js';
 import { restoreDatabase } from './restore-db.js';
 import {
   discardStaging,
   publishStagedFiles,
+  removeObsoleteFiles,
   stageArchive,
   verifyStagedCompleteness,
   writeCommitMarker,
@@ -76,7 +75,10 @@ export const runRestore = async (
       .filter((name) => !name.startsWith('db/'))
       .map((entry) => ({ entry, destination: destinationFor(entry, userId) }));
 
-    await writeCommitMarker(staged.stagingDir, jobId, payloadFiles);
+    const restored = new Set(payloadFiles.map((file) => file.destination));
+    const obsolete = [...previousFiles].filter((name) => !restored.has(name));
+
+    await writeCommitMarker(staged.stagingDir, jobId, payloadFiles, obsolete);
 
     report('writing');
     const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest, jobId);
@@ -85,12 +87,7 @@ export const runRestore = async (
     report('publishing');
     await publishStagedFiles(staged.stagingDir, payloadFiles);
 
-    const restored = new Set(payloadFiles.map((file) => file.destination));
-    for (const name of previousFiles) {
-      if (restored.has(name)) continue;
-      await rm(resolvePhysicalPath(name), { force: true });
-    }
-
+    await removeObsoleteFiles(obsolete);
     await discardStaging(staged.stagingDir);
 
     if (isSocketReady()) emitToUser(userId, 'backup:restored', { jobId, ...counts });

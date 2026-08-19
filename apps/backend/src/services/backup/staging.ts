@@ -257,8 +257,19 @@ export const writeCommitMarker = async (
   stagingDir: string,
   jobId: string,
   files: PublishEntry[],
+  obsolete: string[],
 ) => {
-  await writeFile(path.join(stagingDir, COMMIT_MARKER), JSON.stringify({ jobId, files }), 'utf8');
+  await writeFile(
+    path.join(stagingDir, COMMIT_MARKER),
+    JSON.stringify({ jobId, files, obsolete }),
+    'utf8',
+  );
+};
+
+export const removeObsoleteFiles = async (obsolete: string[]) => {
+  for (const name of obsolete) {
+    await rm(resolvePhysicalPath(name), { force: true });
+  }
 };
 
 const databaseCommitted = async (jobId: string | undefined) => {
@@ -312,11 +323,12 @@ export const recoverStagingOnBoot = async () => {
     const stagingDir = path.join(STAGING_ROOT, name);
     const markerPath = path.join(stagingDir, COMMIT_MARKER);
 
-    let marker: { jobId?: string; files?: (string | PublishEntry)[] };
+    let marker: { jobId?: string; files?: (string | PublishEntry)[]; obsolete?: string[] };
     try {
       marker = JSON.parse(await readFile(markerPath, 'utf8')) as {
         jobId?: string;
         files?: (string | PublishEntry)[];
+        obsolete?: string[];
       };
     } catch {
       await discardStaging(stagingDir);
@@ -334,6 +346,7 @@ export const recoverStagingOnBoot = async () => {
     try {
       console.warn(`Resuming an interrupted backup restore in ${name}.`);
       await publishStagedFiles(stagingDir, marker.files ?? []);
+      await removeObsoleteFiles(marker.obsolete ?? []);
       await discardStaging(stagingDir);
       console.warn('Interrupted restore published successfully.');
     } catch (error) {
