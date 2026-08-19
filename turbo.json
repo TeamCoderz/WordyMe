@@ -1,6 +1,20 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalEnv": ["VITE_BACKEND_URL", "DEV", "DB_FILE_NAME", "WEB_DIR", "TRUST_PROXY", "TRUST_HOST"],
+  "globalEnv": [
+    "VITE_BACKEND_URL",
+    "DEV",
+    "DB_FILE_NAME",
+    "WEB_DIR",
+    "TRUST_PROXY",
+    "TRUST_HOST",
+    "APP_VERSION",
+    "BACKUP_MAX_RESTORE_BYTES",
+    "BACKUP_MAX_BACKUP_BYTES",
+    "BACKUP_MAX_ENTRY_BYTES",
+    "BACKUP_MAX_ENTRIES",
+    "BACKUP_MAX_MANIFEST_BYTES",
+    "BACKUP_CHUNK_BYTES"
+  ],
   "ui": "tui",
   "tasks": {
     "build": {

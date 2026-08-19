@@ -22,6 +22,7 @@ import { Route as AuthedDocsManageRouteImport } from './routes/_authed/docs/mana
 import { Route as AuthedDocsRecentViewedRouteImport } from './routes/_authed/docs/recent-viewed'
 import { Route as AuthedEditHandleRouteImport } from './routes/_authed/edit/$handle'
 import { Route as AuthedSettingsIndexRouteImport } from './routes/_authed/settings/index'
+import { Route as AuthedSettingsBackupRouteImport } from './routes/_authed/settings/backup'
 import { Route as AuthedSettingsPreferencesRouteImport } from './routes/_authed/settings/preferences'
 import { Route as AuthedSettingsProfileRouteImport } from './routes/_authed/settings/profile'
 import { Route as AuthedSpacesIndexRouteImport } from './routes/_authed/spaces/index'
@@ -92,6 +93,11 @@ const AuthedSettingsIndexRoute = AuthedSettingsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthedSettingsRouteRoute,
 } as any)
+const AuthedSettingsBackupRoute = AuthedSettingsBackupRouteImport.update({
+  id: '/backup',
+  path: '/backup',
+  getParentRoute: () => AuthedSettingsRouteRoute,
+} as any)
 const AuthedSettingsPreferencesRoute =
   AuthedSettingsPreferencesRouteImport.update({
     id: '/preferences',
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/docs/manage': typeof AuthedDocsManageRoute
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
   '/edit/$handle': typeof AuthedEditHandleRoute
+  '/settings/backup': typeof AuthedSettingsBackupRoute
   '/settings/preferences': typeof AuthedSettingsPreferencesRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
   '/spaces/favorites': typeof AuthedSpacesFavoritesRoute
@@ -152,6 +159,7 @@ export interface FileRoutesByTo {
   '/docs/manage': typeof AuthedDocsManageRoute
   '/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
   '/edit/$handle': typeof AuthedEditHandleRoute
+  '/settings/backup': typeof AuthedSettingsBackupRoute
   '/settings/preferences': typeof AuthedSettingsPreferencesRoute
   '/settings/profile': typeof AuthedSettingsProfileRoute
   '/spaces/favorites': typeof AuthedSpacesFavoritesRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/_authed/docs/manage': typeof AuthedDocsManageRoute
   '/_authed/docs/recent-viewed': typeof AuthedDocsRecentViewedRoute
   '/_authed/edit/$handle': typeof AuthedEditHandleRoute
+  '/_authed/settings/backup': typeof AuthedSettingsBackupRoute
   '/_authed/settings/preferences': typeof AuthedSettingsPreferencesRoute
   '/_authed/settings/profile': typeof AuthedSettingsProfileRoute
   '/_authed/spaces/favorites': typeof AuthedSpacesFavoritesRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/docs/manage'
     | '/docs/recent-viewed'
     | '/edit/$handle'
+    | '/settings/backup'
     | '/settings/preferences'
     | '/settings/profile'
     | '/spaces/favorites'
@@ -213,6 +223,7 @@ export interface FileRouteTypes {
     | '/docs/manage'
     | '/docs/recent-viewed'
     | '/edit/$handle'
+    | '/settings/backup'
     | '/settings/preferences'
     | '/settings/profile'
     | '/spaces/favorites'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/_authed/docs/manage'
     | '/_authed/docs/recent-viewed'
     | '/_authed/edit/$handle'
+    | '/_authed/settings/backup'
     | '/_authed/settings/preferences'
     | '/_authed/settings/profile'
     | '/_authed/spaces/favorites'
@@ -342,6 +354,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedSettingsIndexRouteImport
       parentRoute: typeof AuthedSettingsRouteRoute
     }
+    '/_authed/settings/backup': {
+      id: '/_authed/settings/backup'
+      path: '/backup'
+      fullPath: '/settings/backup'
+      preLoaderRoute: typeof AuthedSettingsBackupRouteImport
+      parentRoute: typeof AuthedSettingsRouteRoute
+    }
     '/_authed/settings/preferences': {
       id: '/_authed/settings/preferences'
       path: '/preferences'
@@ -388,12 +407,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedSettingsRouteRouteChildren {
+  AuthedSettingsBackupRoute: typeof AuthedSettingsBackupRoute
   AuthedSettingsPreferencesRoute: typeof AuthedSettingsPreferencesRoute
   AuthedSettingsProfileRoute: typeof AuthedSettingsProfileRoute
   AuthedSettingsIndexRoute: typeof AuthedSettingsIndexRoute
 }
 
 const AuthedSettingsRouteRouteChildren: AuthedSettingsRouteRouteChildren = {
+  AuthedSettingsBackupRoute: AuthedSettingsBackupRoute,
   AuthedSettingsPreferencesRoute: AuthedSettingsPreferencesRoute,
   AuthedSettingsProfileRoute: AuthedSettingsProfileRoute,
   AuthedSettingsIndexRoute: AuthedSettingsIndexRoute,

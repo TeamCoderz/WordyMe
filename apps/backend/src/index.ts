@@ -12,6 +12,8 @@ import { getSocket } from './lib/socket.js';
 import { hasWebBundle } from './lib/web.js';
 import { dbWritesQueue } from './queues/db-writes.js';
 import { startUpdateChecks, stopUpdateChecks } from './services/updates.js';
+import { recoverStagingOnBoot } from './services/backup/staging.js';
+import { sweepUploads } from './services/backup/uploads.js';
 
 /**
  * How long to wait for in-flight work before giving up. Docker's default grace
@@ -21,6 +23,8 @@ import { startUpdateChecks, stopUpdateChecks } from './services/updates.js';
 const SHUTDOWN_TIMEOUT_MS = 8_000;
 
 await configureDatabase();
+await sweepUploads();
+await recoverStagingOnBoot();
 
 server.listen(env.PORT, () => {
   console.log(`Server is running on http://localhost:${env.PORT}`);

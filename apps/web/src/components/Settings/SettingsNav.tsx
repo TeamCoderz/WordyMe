@@ -4,7 +4,7 @@
  */
 
 import { Link, useLocation } from '@tanstack/react-router';
-import { Palette, UserRound } from '@repo/ui/components/icons';
+import { DatabaseBackup, Palette, UserRound } from '@repo/ui/components/icons';
 import { cn } from '@repo/ui/lib/utils';
 
 export default function SettingsNav() {
@@ -12,6 +12,7 @@ export default function SettingsNav() {
   const currentSection = location.search?.section || 'all';
   const isPreferencesPage = location.pathname.includes('/preferences');
   const isProfilePage = location.pathname.includes('/profile');
+  const isBackupPage = location.pathname.includes('/backup');
 
   const headingBase =
     'flex items-center gap-2 w-full rounded-md px-3 text-muted-foreground py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground data-[status=active]:bg-accent data-[status=active]:text-accent-foreground';
@@ -104,6 +105,40 @@ export default function SettingsNav() {
             )}
           >
             Editor preferences
+          </Link>
+        </div>
+      </div>
+
+      <div>
+        <Link
+          to="/settings/backup"
+          search={{ section: 'all' }}
+          activeOptions={{ exact: false }}
+          className={headingBase}
+        >
+          <DatabaseBackup className="h-4 w-4" />
+          Backup
+        </Link>
+        <div className="mt-2 ml-5 border-l pl-3 space-y-1">
+          <Link
+            to="/settings/backup"
+            search={{ section: 'export' }}
+            className={cn(
+              sublink,
+              isBackupPage && currentSection === 'export' && activeSublinkClass,
+            )}
+          >
+            Create backup
+          </Link>
+          <Link
+            to="/settings/backup"
+            search={{ section: 'restore' }}
+            className={cn(
+              sublink,
+              isBackupPage && currentSection === 'restore' && activeSublinkClass,
+            )}
+          >
+            Restore from backup
           </Link>
         </div>
       </div>

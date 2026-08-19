@@ -20,6 +20,8 @@ import { errorHandler, notFoundHandler } from './middlewares/errors.js';
 import { clientIp } from './middlewares/client-ip.js';
 import { originHint } from './middlewares/origin-hint.js';
 import { proxyHint } from './middlewares/proxy-hint.js';
+import { restoreGate } from './middlewares/restore-gate.js';
+import { CHUNK_BYTES } from './services/backup/constants.js';
 
 // REST Routers
 import { documentsRouter } from './routes/documents.js';
@@ -30,6 +32,7 @@ import { storageRouter } from './routes/storage.js';
 import { healthRouter } from './routes/health.js';
 import { authStateRouter } from './routes/auth-state.js';
 import { updatesRouter } from './routes/updates.js';
+import { backupRouter } from './routes/backup.js';
 
 const API_BODY_LIMIT = '5mb';
 const IMPORT_BODY_LIMIT = '50mb';
@@ -66,7 +69,14 @@ app.all('/api/auth/{*any}', toNodeHandler(auth));
 
 app.use('/api/documents/import', express.json({ limit: IMPORT_BODY_LIMIT }));
 
+app.use(
+  '/api/backup/restore/chunk',
+  express.raw({ type: '*/*', limit: CHUNK_BYTES + 1024 * 1024 }),
+);
+
 app.use('/api', express.json({ limit: API_BODY_LIMIT }));
+
+app.use('/api', restoreGate);
 
 app.use('/api/documents', documentsRouter);
 app.use('/api/revisions', revisionsRouter);
@@ -75,8 +85,9 @@ app.use('/api/favorites', favoritesRouter);
 app.use('/api/health', healthRouter);
 app.use('/api/auth-state', authStateRouter);
 app.use('/api/updates', updatesRouter);
+app.use('/api/backup', backupRouter);
 
-app.use('/storage', storageRouter);
+app.use('/storage', restoreGate, storageRouter);
 
 app.get('/api/docs/openapi.json', (req, res) => {
   res.json(openApiDocument);
