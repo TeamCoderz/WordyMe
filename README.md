@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="apps/web/public/logo512.png" alt="" height="70"><br>
+  <a href="https://wordy.me"><img src="apps/web/public/logo512.png" alt="" height="70"></a><br>
   WordyMe™
 </h1>
 
@@ -8,6 +8,7 @@
 <img src="https://img.shields.io/docker/pulls/teamcoderz/wordyme?color=2496ED&label=Docker%20pulls" alt="Docker pulls">
 <img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome">
 <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
+<a href="https://wordy.me/try-demo"><img src="https://img.shields.io/badge/Live%20Demo-Try%20it-brightgreen" alt="Live Demo"></a>
 </p>
 
 WordyMe™ is a lightweight self-hosted personal wiki and note-taking app. Rich editor, one Docker container, runs anywhere — even a Raspberry Pi. Documents are organized into spaces, with diagram and math support, revision history and real-time updates.
