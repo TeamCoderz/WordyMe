@@ -194,9 +194,10 @@ export const restoreDatabase = async (
       }
     }
 
+    await executor.run(sql`delete from editor_settings where user_id = ${userId}`);
+
     const [settings] = tables.editor_settings;
     if (settings) {
-      await executor.run(sql`delete from editor_settings where user_id = ${userId}`);
       await insertRow(
         executor,
         'editor_settings',

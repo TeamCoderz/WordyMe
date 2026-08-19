@@ -444,6 +444,20 @@ snapshot, not a lock — for certainty, run `--delete` with the service stopped
 prune-orphans.mjs --delete`). Always run the report first and read it: pointed
 at the wrong database, every live file looks unreferenced.
 
+The exit code distinguishes two different conditions, which matters if you run
+this from cron or CI:
+
+| Code | Meaning                                                                       |
+| ---- | ----------------------------------------------------------------------------- |
+| `0`  | Nothing orphaned, and every revision has its content file.                    |
+| `2`  | It ran fine, but some revisions reference a content file that is not on disk. |
+
+Exit `2` is the opposite problem from an orphan: rows pointing at files that are
+gone, which this script never fixes because it never deletes rows. Documents
+holding one of those as their current version fail to open, and the fix is to
+restore the missing files from a backup. Treating any non-zero exit as a failed
+prune would page you for a condition that needs a restore instead.
+
 ## Environment Variables
 
 You can customize the application behavior by setting environment variables. There are two ways to do this:

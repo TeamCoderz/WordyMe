@@ -72,16 +72,17 @@ export const runRestore = async (
     report('verifying');
     await verifyStagedCompleteness(staged);
 
-    report('writing');
-    const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest);
-
-    report('publishing');
     const payloadFiles = staged.stagedFiles
       .filter((name) => !name.startsWith('db/'))
       .map((entry) => ({ entry, destination: destinationFor(entry, userId) }));
 
     await writeCommitMarker(staged.stagingDir, payloadFiles);
+
+    report('writing');
+    const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest);
     committed = true;
+
+    report('publishing');
     await publishStagedFiles(staged.stagingDir, payloadFiles);
 
     const restored = new Set(payloadFiles.map((file) => file.destination));

@@ -37,6 +37,7 @@ export const beginUpload = async (userId: string) => {
     if (upload.userId === userId && !upload.claimed) {
       await rm(path.dirname(upload.archivePath), { recursive: true, force: true });
       uploads.delete(id);
+      chains.delete(id);
     }
   }
 
