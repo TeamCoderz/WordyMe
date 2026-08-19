@@ -4,6 +4,7 @@
  */
 
 import path from 'node:path';
+import { STORAGE_DIR } from '../../lib/storage.js';
 
 const megabytes = (value: number) => value * 1024 * 1024;
 
@@ -27,6 +28,7 @@ export const MAX_RESTORE_BYTES = readByteLimit('BACKUP_MAX_RESTORE_BYTES', megab
 export const MAX_BACKUP_BYTES = readByteLimit('BACKUP_MAX_BACKUP_BYTES', MAX_RESTORE_BYTES);
 export const MAX_ENTRY_BYTES = readByteLimit('BACKUP_MAX_ENTRY_BYTES', megabytes(100));
 export const MAX_ENTRIES = readByteLimit('BACKUP_MAX_ENTRIES', 50_000);
+export const MAX_TABLE_BYTES = readByteLimit('BACKUP_MAX_TABLE_BYTES', megabytes(64));
 export const MAX_MANIFEST_BYTES = readByteLimit('BACKUP_MAX_MANIFEST_BYTES', 64 * 1024);
 export const CHUNK_BYTES = readByteLimit('BACKUP_CHUNK_BYTES', megabytes(8));
 
@@ -37,7 +39,7 @@ export const FREE_SPACE_FACTOR = 1.2;
 export const FREE_SPACE_FLOOR_BYTES = megabytes(256);
 export const FREE_SPACE_CHECK_INTERVAL_BYTES = megabytes(32);
 
-export const STAGING_ROOT = path.join(process.cwd(), 'restore-staging');
+export const STAGING_ROOT = path.join(STORAGE_DIR, '.restore-staging');
 export const UPLOAD_ROOT = path.join(STAGING_ROOT, 'uploads');
 
 export const MANIFEST_ENTRY = 'manifest.json';

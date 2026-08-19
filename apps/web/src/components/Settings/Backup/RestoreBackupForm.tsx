@@ -67,7 +67,7 @@ export const RestoreBackupForm = ({ inDialog = false }: { inDialog?: boolean }) 
   const types = preview.data?.documentTypes ?? { space: 0, folder: 0, note: 0 };
   const currentDocuments = types.note + types.folder;
   const currentSpaces = types.space;
-  const isEmptyWorkspace = preview.data ? currentDocuments === 0 : false;
+  const isEmptyWorkspace = preview.data ? currentDocuments === 0 && currentSpaces <= 1 : false;
   const confirmWord = isEmptyWorkspace ? 'restore' : 'replace';
   const canRestore = Boolean(file) && confirmation.trim().toLowerCase() === confirmWord && !busy;
 
@@ -77,8 +77,8 @@ export const RestoreBackupForm = ({ inDialog = false }: { inDialog?: boolean }) 
         <div className="flex gap-3 rounded-md bg-muted/60 p-3 text-sm">
           <Info className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
           <p className="text-muted-foreground">
-            This workspace is empty, so nothing will be lost. The app reloads once your spaces and
-            documents are back.
+            This workspace has no documents yet. Its current space and editor settings are replaced
+            by the backup, and the app reloads once your documents are back.
           </p>
         </div>
       ) : (
@@ -168,7 +168,7 @@ export const RestoreBackupForm = ({ inDialog = false }: { inDialog?: boolean }) 
           <p className="text-sm text-muted-foreground">
             {progress.phase === 'reading' && 'Reading the backup…'}
             {progress.phase === 'uploading' && `Uploading… ${Math.round(progress.ratio * 100)}%`}
-            {progress.phase === 'restoring' && 'Restoring your workspace…'}
+            {progress.phase === 'restoring' && `${progress.detail ?? 'Restoring your workspace'}…`}
           </p>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
             <div

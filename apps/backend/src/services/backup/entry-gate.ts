@@ -13,6 +13,7 @@ import {
   MAX_ENTRY_BYTES,
   MAX_RATIO,
   MAX_RESTORE_BYTES,
+  MAX_TABLE_BYTES,
   RATIO_EXEMPT_BELOW_BYTES,
 } from './constants.js';
 
@@ -98,6 +99,7 @@ export const resolveStagedPath = (stagingRoot: string, entryName: string) => {
 export class ExtractionGuard {
   #entryCount = 0;
   #totalBytes = 0;
+  #tableBytes = 0;
   readonly #seen = new Set<string>();
 
   admit(entryName: string, externalFileAttributes: number) {
@@ -121,6 +123,16 @@ export class ExtractionGuard {
 
   countBytes(entryName: string, byteLength: number) {
     this.#totalBytes += byteLength;
+
+    if (entryName.startsWith('db/')) {
+      this.#tableBytes += byteLength;
+      if (this.#tableBytes > MAX_TABLE_BYTES) {
+        throw new EntryRejected(
+          entryName,
+          `table data exceeds ${MAX_TABLE_BYTES} bytes; this workspace is too large to restore in one pass`,
+        );
+      }
+    }
 
     if (this.#totalBytes > MAX_RESTORE_BYTES) {
       throw new EntryRejected(entryName, `archive exceeds ${MAX_RESTORE_BYTES} uncompressed bytes`);

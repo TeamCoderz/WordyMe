@@ -119,6 +119,11 @@ export const restoreDatabase = async (
 
   for (const table of BACKUP_TABLES) {
     const declared = manifest.counts[table];
+    if (declared === undefined && tables[table].length > 0) {
+      throw new HttpUnprocessableEntity(
+        `This backup carries ${table} rows that its manifest does not declare. Nothing was changed.`,
+      );
+    }
     if (declared !== undefined && tables[table].length !== declared) {
       throw new HttpUnprocessableEntity(
         `This backup is incomplete: ${table} declares ${declared} rows but carries ${tables[table].length}. Nothing was changed.`,
@@ -191,8 +196,12 @@ export const restoreDatabase = async (
 
     const [settings] = tables.editor_settings;
     if (settings) {
-      await executor.run(
-        sql`update editor_settings set keep_previous_revision = ${settings.keep_previous_revision ?? 0}, autosave = ${settings.autosave ?? 0} where user_id = ${userId}`,
+      await executor.run(sql`delete from editor_settings where user_id = ${userId}`);
+      await insertRow(
+        executor,
+        'editor_settings',
+        { ...settings, user_id: userId },
+        columns.editor_settings,
       );
     }
 

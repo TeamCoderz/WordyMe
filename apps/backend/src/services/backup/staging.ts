@@ -4,6 +4,7 @@
  */
 
 import { createWriteStream } from 'node:fs';
+import { copyFile, unlink } from 'node:fs/promises';
 import { mkdir, readFile, readdir, rename, rm, stat, statfs, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
@@ -11,6 +12,7 @@ import yauzl from 'yauzl';
 import { HttpInsufficientStorage, HttpUnprocessableEntity } from '@httpx/exception';
 import { resolvePhysicalPath } from '../../lib/storage.js';
 import {
+  BACKUP_TABLES,
   COMMIT_MARKER,
   FREE_SPACE_CHECK_INTERVAL_BYTES,
   FREE_SPACE_FACTOR,
@@ -79,6 +81,7 @@ export const stageArchive = async (
   let manifest: BackupManifest | null = null;
   let bytesSinceSpaceCheck = 0;
   let entriesSeen = 0;
+  let expectedEntries = 0;
 
   try {
     await new Promise<void>((resolve, reject) => {
@@ -123,6 +126,13 @@ export const stageArchive = async (
                 );
               }
 
+              expectedEntries =
+                manifest.inventory.revisions.length +
+                Object.values(manifest.inventory.attachments).reduce((n, f) => n + f.length, 0) +
+                manifest.inventory.images.length +
+                manifest.inventory.covers.length +
+                BACKUP_TABLES.length;
+
               zipFile.readEntry();
               return;
             }
@@ -166,7 +176,7 @@ export const stageArchive = async (
 
             await pipeline(counter(), createWriteStream(destination));
             stagedFiles.push(entry.fileName);
-            onProgress?.(stagedFiles.length, guard.entryCount);
+            onProgress?.(stagedFiles.length, expectedEntries);
 
             zipFile.readEntry();
           } catch (error) {
@@ -216,13 +226,16 @@ export const verifyStagedCompleteness = async (staged: StagedArchive) => {
     if (!expectedSet.has(entryName)) problems.push(`unlisted ${entryName}`);
   }
 
-  for (const table of Object.keys(manifest.counts)) {
-    const staticPath = path.join(stagingDir, 'db', `${table}.ndjson`);
-    try {
-      await stat(staticPath);
-    } catch {
-      problems.push(`missing db/${table}.ndjson`);
-    }
+  for (const table of BACKUP_TABLES) {
+    const declared = manifest.counts[table] !== undefined;
+    const stagedPath = path.join(stagingDir, 'db', `${table}.ndjson`);
+    const isStaged = await stat(stagedPath).then(
+      () => true,
+      () => false,
+    );
+
+    if (declared && !isStaged) problems.push(`missing db/${table}.ndjson`);
+    if (!declared && isStaged) problems.push(`db/${table}.ndjson is not declared in the manifest`);
   }
 
   if (problems.length > 0) {
@@ -233,21 +246,37 @@ export const verifyStagedCompleteness = async (staged: StagedArchive) => {
   }
 };
 
-export const writeCommitMarker = async (stagingDir: string, files: string[]) => {
+export type PublishEntry = { entry: string; destination: string };
+
+const asPublishEntry = (value: string | PublishEntry): PublishEntry =>
+  typeof value === 'string' ? { entry: value, destination: value } : value;
+
+export const writeCommitMarker = async (stagingDir: string, files: PublishEntry[]) => {
   await writeFile(path.join(stagingDir, COMMIT_MARKER), JSON.stringify({ files }), 'utf8');
 };
 
-export const publishStagedFiles = async (stagingDir: string, files: string[]) => {
-  for (const entryName of files) {
-    const source = path.join(stagingDir, entryName);
-    const destination = resolvePhysicalPath(entryName);
+const moveFile = async (source: string, destination: string) => {
+  try {
+    await rename(source, destination);
+    return;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return;
+    if (code !== 'EXDEV') throw error;
+  }
 
-    await mkdir(path.dirname(destination), { recursive: true });
-    try {
-      await rename(source, destination);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
-    }
+  await copyFile(source, destination);
+  await unlink(source).catch(() => undefined);
+};
+
+export const publishStagedFiles = async (stagingDir: string, files: (string | PublishEntry)[]) => {
+  for (const value of files) {
+    const { entry, destination } = asPublishEntry(value);
+    const source = path.join(stagingDir, entry);
+    const target = resolvePhysicalPath(destination);
+
+    await mkdir(path.dirname(target), { recursive: true });
+    await moveFile(source, target);
   }
 };
 
@@ -267,14 +296,26 @@ export const recoverStagingOnBoot = async () => {
     const stagingDir = path.join(STAGING_ROOT, name);
     const markerPath = path.join(stagingDir, COMMIT_MARKER);
 
+    let marker: { files?: (string | PublishEntry)[] };
     try {
-      const marker = JSON.parse(await readFile(markerPath, 'utf8')) as { files?: string[] };
+      marker = JSON.parse(await readFile(markerPath, 'utf8')) as {
+        files?: (string | PublishEntry)[];
+      };
+    } catch {
+      await discardStaging(stagingDir);
+      continue;
+    }
+
+    try {
       console.warn(`Resuming an interrupted backup restore in ${name}.`);
       await publishStagedFiles(stagingDir, marker.files ?? []);
       await discardStaging(stagingDir);
       console.warn('Interrupted restore published successfully.');
-    } catch {
-      await discardStaging(stagingDir);
+    } catch (error) {
+      console.error(
+        `Could not finish publishing restore ${name}; keeping its staged files for the next start.`,
+        error,
+      );
     }
   }
 };

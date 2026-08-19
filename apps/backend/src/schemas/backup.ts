@@ -70,9 +70,14 @@ export type BackupUploadProgress = {
   bytes: number;
 };
 
+export type BackupRestorePhase = 'unpacking' | 'verifying' | 'writing' | 'publishing';
+
 export type BackupRestoreJob = {
   jobId: string;
   state: 'running' | 'done' | 'failed';
+  phase: BackupRestorePhase;
+  staged: number;
+  total: number;
   documents: number;
   revisions: number;
   error: string | null;

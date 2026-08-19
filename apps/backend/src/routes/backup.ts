@@ -18,7 +18,7 @@ import {
   uploadStatus,
 } from '../services/backup/uploads.js';
 import { runRestore } from '../services/backup/restore.js';
-import { startRestoreJob, getRestoreJob } from '../services/backup/jobs.js';
+import { startRestoreJob, getRestoreJob, updateRestoreProgress } from '../services/backup/jobs.js';
 
 const router: Router = Router();
 
@@ -92,7 +92,10 @@ router.post('/restore/commit', async (req, res) => {
 
   const jobId = startRestoreJob(userId, async (id) => {
     try {
-      return await runRestore(archivePath, userId, id, () => job.touch());
+      return await runRestore(archivePath, userId, id, (phase, staged, total) => {
+        job.touch();
+        updateRestoreProgress(id, phase, staged, total);
+      });
     } finally {
       job.release();
       await discardUpload(uploadId);

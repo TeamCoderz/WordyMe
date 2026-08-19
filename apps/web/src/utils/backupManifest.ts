@@ -3,7 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
-import type { BackupManifest } from '@repo/backend/backup.js';
+import {
+  BACKUP_CONTENT_FORMAT,
+  BACKUP_FORMAT_VERSION,
+  manifestSchema,
+  type BackupManifest,
+} from '@repo/backend/backup.js';
 
 const LOCAL_HEADER_SIGNATURE = 0x04034b50;
 const HEADER_BYTES = 30;
@@ -51,11 +56,31 @@ export const readBackupManifest = async (file: File): Promise<BackupManifestPrev
     throw new Error('This backup has an unreadable manifest.');
   }
 
+  let parsedJson: unknown;
   try {
-    return JSON.parse(new TextDecoder().decode(decoded)) as BackupManifestPreview;
+    parsedJson = JSON.parse(new TextDecoder().decode(decoded));
   } catch {
     throw new Error('This backup has a corrupt manifest.');
   }
+
+  const parsed = manifestSchema.safeParse(parsedJson);
+  if (!parsed.success) {
+    throw new Error('This file is not a WordyMe backup, or its manifest is damaged.');
+  }
+
+  if (parsed.data.formatVersion > BACKUP_FORMAT_VERSION) {
+    throw new Error(
+      `This backup was made by a newer WordyMe (format ${parsed.data.formatVersion}); this version supports up to ${BACKUP_FORMAT_VERSION}.`,
+    );
+  }
+
+  if (parsed.data.contentFormat.lexical > BACKUP_CONTENT_FORMAT.lexical) {
+    throw new Error(
+      'This backup stores documents in a newer format than this version can open. Update WordyMe first.',
+    );
+  }
+
+  return parsed.data;
 };
 
 export const formatBytes = (bytes: number) => {

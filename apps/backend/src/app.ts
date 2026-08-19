@@ -87,7 +87,7 @@ app.use('/api/auth-state', authStateRouter);
 app.use('/api/updates', updatesRouter);
 app.use('/api/backup', backupRouter);
 
-app.use('/storage', storageRouter);
+app.use('/storage', restoreGate, storageRouter);
 
 app.get('/api/docs/openapi.json', (req, res) => {
   res.json(openApiDocument);

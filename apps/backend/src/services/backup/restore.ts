@@ -18,15 +18,25 @@ import {
   writeCommitMarker,
 } from './staging.js';
 
-const liveFilesFor = (inventory: Awaited<ReturnType<typeof collectInventory>>['inventory']) => {
+const liveFilesFor = (
+  inventory: Awaited<ReturnType<typeof collectInventory>>['inventory'],
+  userId: string,
+) => {
   const names = new Set<string>();
 
   for (const revisionId of inventory.revisions) names.add(`revisions/${revisionId}.json`);
   for (const [documentId, filenames] of Object.entries(inventory.attachments)) {
     for (const filename of filenames) names.add(`attachments/${documentId}/${filename}`);
   }
+  for (const filename of inventory.images) names.add(`images/${userId}/${filename}`);
+  for (const filename of inventory.covers) names.add(`covers/${userId}/${filename}`);
 
   return names;
+};
+
+const destinationFor = (entry: string, userId: string) => {
+  const match = /^(images|covers)\/(.+)$/.exec(entry);
+  return match ? `${match[1]}/${userId}/${match[2]}` : entry;
 };
 
 export const runRestore = async (
@@ -40,7 +50,7 @@ export const runRestore = async (
   ) => void,
 ) => {
   const before = await collectInventory(userId);
-  const previousFiles = liveFilesFor(before.inventory);
+  const previousFiles = liveFilesFor(before.inventory, userId);
 
   const report = (
     phase: 'unpacking' | 'verifying' | 'writing' | 'publishing',
@@ -50,6 +60,8 @@ export const runRestore = async (
     onPhase?.(phase, staged, total);
     if (isSocketReady()) emitToUser(userId, 'backup:progress', { jobId, phase, staged, total });
   };
+
+  let committed = false;
 
   report('unpacking');
   const staged = await stageArchive(archivePath, jobId, await readSchemaVersion(), (done, total) =>
@@ -64,11 +76,15 @@ export const runRestore = async (
     const counts = await restoreDatabase(staged.stagingDir, userId, staged.manifest);
 
     report('publishing');
-    const payloadFiles = staged.stagedFiles.filter((name) => !name.startsWith('db/'));
+    const payloadFiles = staged.stagedFiles
+      .filter((name) => !name.startsWith('db/'))
+      .map((entry) => ({ entry, destination: destinationFor(entry, userId) }));
+
     await writeCommitMarker(staged.stagingDir, payloadFiles);
+    committed = true;
     await publishStagedFiles(staged.stagingDir, payloadFiles);
 
-    const restored = new Set(payloadFiles);
+    const restored = new Set(payloadFiles.map((file) => file.destination));
     for (const name of previousFiles) {
       if (restored.has(name)) continue;
       await rm(resolvePhysicalPath(name), { force: true });
@@ -79,7 +95,14 @@ export const runRestore = async (
     if (isSocketReady()) emitToUser(userId, 'backup:restored', { jobId, ...counts });
     return { jobId, ...counts };
   } catch (error) {
-    await discardStaging(staged.stagingDir);
+    if (committed) {
+      console.error(
+        'Restore failed after the database was updated; keeping staged files so the next start can finish publishing them.',
+        error,
+      );
+    } else {
+      await discardStaging(staged.stagingDir);
+    }
     throw error;
   }
 };

@@ -18,7 +18,8 @@ type ActiveJob = {
 
 let active: ActiveJob | null = null;
 
-const isStalled = (job: ActiveJob) => Date.now() - job.touchedAt > STALL_TIMEOUT_MS;
+const isStalled = (job: ActiveJob) =>
+  job.kind !== 'restore' && Date.now() - job.touchedAt > STALL_TIMEOUT_MS;
 
 export const acquireBackupJob = (kind: BackupJobKind, userId: string) => {
   if (active && !isStalled(active)) {

@@ -61,19 +61,23 @@ const countDocumentTypes = async (userId: string) => {
 };
 
 const pageRows = async function* (table: BackupTable, userId: string) {
-  let offset = 0;
+  let cursor: string | null = null;
 
   for (;;) {
-    const rows = await db.all<Record<string, unknown>>(
-      sql`select * from ${sql.identifier(table)} where user_id = ${userId} order by id limit ${PAGE_SIZE} offset ${offset}`,
-    );
+    const rows: Record<string, unknown>[] = cursor
+      ? await db.all<Record<string, unknown>>(
+          sql`select * from ${sql.identifier(table)} where user_id = ${userId} and id > ${cursor} order by id limit ${PAGE_SIZE}`,
+        )
+      : await db.all<Record<string, unknown>>(
+          sql`select * from ${sql.identifier(table)} where user_id = ${userId} order by id limit ${PAGE_SIZE}`,
+        );
 
     if (rows.length === 0) return;
 
     for (const row of rows) yield row;
 
     if (rows.length < PAGE_SIZE) return;
-    offset += PAGE_SIZE;
+    cursor = String(rows[rows.length - 1].id);
   }
 };
 

@@ -42,8 +42,9 @@ const listDirectory = async (physicalPath: string) => {
       .map((entry) => entry.name)
       .filter((name) => storageFilenameSchema.safeParse(name).success)
       .sort((a, b) => a.localeCompare(b));
-  } catch {
-    return [];
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+    throw error;
   }
 };
 
@@ -85,7 +86,10 @@ export const collectInventory = async (userId: string): Promise<InventoryResult>
     const kept: string[] = [];
     for (const filename of filenames) {
       const size = await sizeOf(path.join(directory, filename));
-      if (size === null) continue;
+      if (size === null) {
+        missing.push(`attachments/${document.id}/${filename}`);
+        continue;
+      }
       kept.push(filename);
       fileBytes += size;
     }

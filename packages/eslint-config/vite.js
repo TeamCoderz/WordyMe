@@ -39,6 +39,12 @@ export default defineConfig(
     },
   },
   {
+    files: ['**/src/routes/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
+  {
     files: ['**/*.config.{js,mjs,cjs,ts,mts,cts}', '**/vite.config.{js,mjs,cjs,ts,mts,cts}'],
     languageOptions: {
       globals: {

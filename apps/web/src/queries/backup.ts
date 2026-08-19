@@ -60,6 +60,14 @@ const purgeLocalWorkspace = async () => {
 export type RestoreProgress = {
   phase: 'reading' | 'uploading' | 'restoring';
   ratio: number;
+  detail?: string;
+};
+
+const PHASE_LABELS: Record<string, string> = {
+  unpacking: 'Unpacking the backup',
+  verifying: 'Checking the backup is complete',
+  writing: 'Writing your documents',
+  publishing: 'Putting files into place',
 };
 
 export const useRestoreBackup = () => {
@@ -117,6 +125,13 @@ export const useRestoreBackup = () => {
 
         if (!job) continue;
         if (job.state === 'failed') throw new Error(job.error ?? 'The restore failed.');
+
+        onProgress?.({
+          phase: 'restoring',
+          ratio: job.total > 0 ? job.staged / job.total : 1,
+          detail: PHASE_LABELS[job.phase] ?? undefined,
+        });
+
         if (job.state === 'done') return { job, manifest };
       }
     },

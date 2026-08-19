@@ -23,16 +23,18 @@ type Upload = {
   nextIndex: number;
   bytes: number;
   touchedAt: number;
+  claimed: boolean;
 };
 
 const uploads = new Map<string, Upload>();
+const chains = new Map<string, Promise<unknown>>();
 
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 export const beginUpload = async (userId: string) => {
   for (const [id, upload] of uploads) {
-    if (upload.userId === userId) {
+    if (upload.userId === userId && !upload.claimed) {
       await rm(path.dirname(upload.archivePath), { recursive: true, force: true });
       uploads.delete(id);
     }
@@ -49,6 +51,7 @@ export const beginUpload = async (userId: string) => {
     nextIndex: 0,
     bytes: 0,
     touchedAt: Date.now(),
+    claimed: false,
   });
 
   return { uploadId: id, chunkBytes: CHUNK_BYTES };
@@ -64,7 +67,7 @@ const requireUpload = (uploadId: string, userId: string) => {
   return upload;
 };
 
-export const appendChunk = async (
+const appendChunkLocked = async (
   uploadId: string,
   userId: string,
   index: number,
@@ -102,6 +105,18 @@ export const appendChunk = async (
   return { nextIndex: upload.nextIndex, bytes: upload.bytes };
 };
 
+export const appendChunk = (uploadId: string, userId: string, index: number, chunk: Buffer) => {
+  const previous = chains.get(uploadId) ?? Promise.resolve();
+  const next = previous.then(() => appendChunkLocked(uploadId, userId, index, chunk));
+
+  chains.set(
+    uploadId,
+    next.catch(() => undefined),
+  );
+
+  return next;
+};
+
 export const uploadStatus = (uploadId: string, userId: string) => {
   const upload = requireUpload(uploadId, userId);
   return { nextIndex: upload.nextIndex, bytes: upload.bytes };
@@ -115,6 +130,7 @@ export const takeUpload = async (uploadId: string, userId: string) => {
     throw new HttpUnprocessableEntity('No backup data was uploaded.');
   }
 
+  upload.claimed = true;
   return upload.archivePath;
 };
 
@@ -123,6 +139,7 @@ export const discardUpload = async (uploadId: string) => {
   if (!upload) return;
 
   uploads.delete(uploadId);
+  chains.delete(uploadId);
   await rm(path.dirname(upload.archivePath), { recursive: true, force: true });
 };
 

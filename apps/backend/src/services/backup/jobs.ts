@@ -5,7 +5,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { HttpForbidden, HttpNotFound } from '@httpx/exception';
-import type { BackupRestoreJob } from '../../schemas/backup.js';
+import type { BackupRestoreJob, BackupRestorePhase } from '../../schemas/backup.js';
 
 type RestoreJob = BackupRestoreJob & { userId: string };
 
@@ -21,6 +21,9 @@ export const startRestoreJob = (
     jobId,
     userId,
     state: 'running',
+    phase: 'unpacking',
+    staged: 0,
+    total: 0,
     documents: 0,
     revisions: 0,
     error: null,
@@ -45,6 +48,20 @@ export const startRestoreJob = (
   return jobId;
 };
 
+export const updateRestoreProgress = (
+  jobId: string,
+  phase: BackupRestorePhase,
+  staged: number,
+  total: number,
+) => {
+  const job = jobs.get(jobId);
+  if (!job) return;
+
+  job.phase = phase;
+  job.staged = staged;
+  job.total = total;
+};
+
 export const getRestoreJob = (jobId: string, userId: string): BackupRestoreJob => {
   const job = jobs.get(jobId);
   if (!job) throw new HttpNotFound('That restore job is no longer available.');
@@ -54,6 +71,9 @@ export const getRestoreJob = (jobId: string, userId: string): BackupRestoreJob =
   return {
     jobId: job.jobId,
     state: job.state,
+    phase: job.phase,
+    staged: job.staged,
+    total: job.total,
     documents: job.documents,
     revisions: job.revisions,
     error: job.error,
