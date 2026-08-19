@@ -110,6 +110,7 @@ COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/drizzle ./drizzle
 COPY --from=builder /app/apps/backend/src/scripts/run-migrations.mjs ./run-migrations.mjs
 COPY --from=builder /app/apps/backend/src/scripts/prune-orphans.mjs ./prune-orphans.mjs
+COPY --from=builder /app/apps/backend/src/scripts/reset-password.mjs ./reset-password.mjs
 
 # Served by Express from the same origin as the API. Resolved relative to
 # ./dist, not the working directory — see apps/backend/src/lib/web.ts.
@@ -120,7 +121,7 @@ COPY --from=builder /app/apps/web/dist ./web
 # 0744 produces an image where the non-root user cannot traverse it, and
 # migrations fail with a confusing "Can't find meta/_journal.json". Normalise
 # to read-for-all, execute only where it already applies.
-RUN chmod -R a+rX ./dist ./drizzle ./web ./run-migrations.mjs ./prune-orphans.mjs
+RUN chmod -R a+rX ./dist ./drizzle ./web ./run-migrations.mjs ./prune-orphans.mjs ./reset-password.mjs
 
 RUN mkdir -p storage && chown -R nodejs:nodejs storage
 

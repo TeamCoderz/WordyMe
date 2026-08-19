@@ -418,6 +418,39 @@ the damage only shows when a document fails to open.
 > `chown` inside the container is not an option here: `cap_drop: ALL` removes
 > `CAP_CHOWN` and `CAP_DAC_OVERRIDE`, so not even root can do it.
 
+### Resetting a Forgotten Password
+
+This app has no mail transport, so there is no "forgot password" email, and
+sign-up is closed once the first account exists. If you lock yourself out, reset
+the password from the host instead.
+
+Set a new password, generated for you and printed once:
+
+```bash
+docker compose exec wordyme node reset-password.mjs
+```
+
+Or choose it yourself:
+
+```bash
+docker compose exec wordyme node reset-password.mjs --password 'a long passphrase'
+```
+
+Sign-up closes after the first account, so there is only ever one to reset and
+the email can be left out. Pass it explicitly if you prefer, and use `--list` if
+you have forgotten which address you signed up with:
+
+```bash
+docker compose exec wordyme node reset-password.mjs --list
+```
+
+The hash is produced by Better Auth itself, so the new password works exactly
+like one set through the UI. Every existing session is signed out, on the view
+that a reset which leaves old sessions alive is not a reset. Anyone who can run
+`docker compose exec` already has the database, so this grants no access they
+did not have — but it does mean the command belongs to the host operator, not to
+end users.
+
 ### Reclaiming Orphaned Files
 
 Deleting a document removes its rows and its files together. Deletions made by
