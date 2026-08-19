@@ -6,7 +6,6 @@
 import { Button } from '@repo/ui/components/button';
 import Cropper from 'react-easy-crop';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import CoverPlacholder from '@/assets/cover-placeholder.png';
 import { useSelector } from '@/store';
 import { useChangeCoverMutation, useUpdateCoverMetadataMutation } from '@/queries/profile';
 import { PencilLine } from '@repo/ui/components/icons';
@@ -39,8 +38,8 @@ export default function CoverImage() {
   const [isNewUpload, setIsNewUpload] = useState(false);
 
   const coverSrc = useMemo(() => {
-    return croppedUrl ?? CoverPlacholder;
-  }, [croppedUrl]);
+    return user?.cover_image?.calculatedImage ?? croppedUrl;
+  }, [user?.cover_image?.calculatedImage, croppedUrl]);
 
   const onSelectFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -233,11 +232,11 @@ export default function CoverImage() {
   return (
     <div className="relative w-full aspect-[16/2] @container min-h-28">
       <div className="group w-full h-full">
-        <img
-          src={user?.cover_image?.calculatedImage ?? coverSrc}
-          alt="Cover"
-          className="w-full min-h-28 aspect-[16/2] object-cover"
-        />
+        {coverSrc ? (
+          <img src={coverSrc} alt="Cover" className="w-full min-h-28 aspect-[16/2] object-cover" />
+        ) : (
+          <div className="w-full min-h-28 aspect-[16/2] bg-linear-to-br from-accent via-muted to-card" />
+        )}
         {!isEditing && Boolean(user?.cover_image?.calculatedImage) && (
           <button
             type="button"
