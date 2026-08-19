@@ -4,10 +4,10 @@
 </h1>
 
 <p align="center">
-<img src="https://img.shields.io/badge/Made%20by-TeamCoderz%20Ltd-orange" alt="Made by TeamCoderz Ltd">
-<img src="https://img.shields.io/docker/pulls/teamcoderz/wordyme?color=2496ED&label=Docker%20pulls" alt="Docker pulls">
-<img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome">
-<img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0">
+<a href="https://teamcoderz.org"><img src="https://img.shields.io/badge/Made%20by-TeamCoderz%20Ltd-orange" alt="Made by TeamCoderz Ltd"></a>
+<a href="https://hub.docker.com/r/teamcoderz/wordyme"><img src="https://img.shields.io/docker/pulls/teamcoderz/wordyme?color=2496ED&label=Docker%20pulls" alt="Docker pulls"></a>
+<a href="https://github.com/TeamCoderz/WordyMe?tab=contributing-ov-file"><img src="https://img.shields.io/badge/PRs-Welcome-brightgreen" alt="PRs Welcome"></a>
+<a href="https://github.com/TeamCoderz/WordyMe?tab=AGPL-3.0-1-ov-file"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
 <a href="https://wordy.me/try-demo"><img src="https://img.shields.io/badge/Live%20Demo-Try%20it-brightgreen" alt="Live Demo"></a>
 </p>
 
