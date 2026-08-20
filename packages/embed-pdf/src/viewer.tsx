@@ -90,9 +90,12 @@ export interface PDFViewerProps {
   url: string;
 }
 
+const absoluteAssetUrl = (assetUrl: string) =>
+  typeof window === 'undefined' ? assetUrl : new URL(assetUrl, window.location.origin).href;
+
 export function PDFViewer({ url }: PDFViewerProps) {
   const { engine, isLoading, error } = usePdfiumEngine({
-    wasmUrl: pdfiumWasmUrl,
+    wasmUrl: absoluteAssetUrl(pdfiumWasmUrl),
     fontFallback: pdfFontFallback,
     worker: !import.meta.env.DEV,
   });
