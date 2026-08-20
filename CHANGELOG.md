@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/TeamCoderz/WordyMe/compare/v1.3.0...v1.3.1) (2026-08-20)
+
+### Bug Fixes
+
+- **pdf:** give the PDFium worker an absolute wasm URL ([#122](https://github.com/TeamCoderz/WordyMe/issues/122)) ([86cc72f](https://github.com/TeamCoderz/WordyMe/commit/86cc72fa6b2a174e5ea89c3ba0fb37c43e11b062))
+- update README badge links to be clickable ([#120](https://github.com/TeamCoderz/WordyMe/issues/120)) ([3a83f02](https://github.com/TeamCoderz/WordyMe/commit/3a83f020841b9b964413020e2b2808cfdb8b9768))
+
 ## [1.3.0](https://github.com/TeamCoderz/WordyMe/compare/v1.2.6...v1.3.0) (2026-08-19)
 
 ### Features
