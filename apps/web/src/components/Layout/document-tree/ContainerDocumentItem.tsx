@@ -124,7 +124,7 @@ export function ContainerDocumentItem({
     iconClass: folderIconClass,
   } = useFolderIconColor(document);
   const { theme } = useTheme();
-  const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
+  const colorVariants = THEME_BY_VALUE[theme]?.['color-variants'] ?? [];
 
   // Use the delete document mutation
   const deleteDocumentMutation = useDeleteDocumentMutation({
@@ -507,6 +507,8 @@ export function ContainerDocumentItem({
                   <Button
                     variant={'default'}
                     title="Default"
+                    aria-label="Default"
+                    aria-pressed={!document.color}
                     onClick={() => handleColorChange(null)}
                     className="flex h-full w-full items-center justify-center p-0"
                   >
@@ -522,6 +524,8 @@ export function ContainerDocumentItem({
                     <Button
                       variant={'default'}
                       title={variant.name}
+                      aria-label={variant.name}
+                      aria-pressed={document.color === variant.value}
                       onClick={() => handleColorChange(variant.value)}
                       className="flex h-full w-full items-center justify-center p-0"
                     >

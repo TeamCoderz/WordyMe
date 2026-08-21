@@ -41,7 +41,7 @@ function InterfacePreferencesSettings() {
     setFolderColorSolid,
   } = useActions();
   const { animations, setAnimations, theme } = useTheme();
-  const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
+  const colorVariants = THEME_BY_VALUE[theme]?.['color-variants'] ?? [];
   return (
     <Card id="interface-preferences" className="bg-transparent p-0 overflow-hidden gap-0">
       <CardHeader className="bg-card border-b p-5 block !pb-5">
@@ -169,6 +169,8 @@ function InterfacePreferencesSettings() {
                 <Button
                   variant={'default'}
                   title="Theme"
+                  aria-label="Theme"
+                  aria-pressed={folderDefaultColor === 'theme'}
                   onClick={() => setFolderDefaultColor('theme')}
                   className={cn('flex flex-col items-center gap-1 h-full py-3 w-full relative')}
                 >
@@ -180,6 +182,8 @@ function InterfacePreferencesSettings() {
                   <Button
                     variant={'default'}
                     title={variant.name}
+                    aria-label={variant.name}
+                    aria-pressed={folderDefaultColor === variant.value}
                     onClick={() => setFolderDefaultColor(variant.value)}
                     className={cn('flex flex-col items-center gap-1 h-full py-3 w-full relative')}
                   >

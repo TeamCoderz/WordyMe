@@ -343,24 +343,28 @@ export const useUpdateDocumentColorMutation = ({
         });
       },
     );
-    mutation.mutateAsync(
-      { documentId, color },
-      {
-        onError: () => {
-          queryClient.setQueryData(
-            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
-              return old?.map((document) => {
-                if (document.id === documentId) {
-                  return { ...document, color: oldColor };
-                }
-                return document;
-              });
-            },
-          );
+    return mutation
+      .mutateAsync(
+        { documentId, color },
+        {
+          onError: () => {
+            queryClient.setQueryData(
+              getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+              (old: ListDocumentResult) => {
+                return old?.map((document) => {
+                  if (document.id === documentId) {
+                    return { ...document, color: oldColor };
+                  }
+                  return document;
+                });
+              },
+            );
+          },
         },
-      },
-    );
+      )
+      .catch(() => {
+        // Error handling is done in the mutation
+      });
   };
   return { updateDocumentColor, ...mutation };
 };

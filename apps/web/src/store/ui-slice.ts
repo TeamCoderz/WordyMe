@@ -5,9 +5,12 @@
 
 import { StateCreator } from 'zustand';
 import type { SortOptions } from '@/types/sort';
+import type { Theme } from '@repo/ui/theme/themes';
 import type { Store } from './store';
 
 export type AppSidebarState = 'expanded' | 'collapsed' | 'remember';
+
+export type FolderColor = 'theme' | Theme['color-variants'][number]['value'];
 
 export type HomeSortState = {
   favoriteSpaces: SortOptions;
@@ -25,7 +28,7 @@ type UiState = {
   feedbackCardHidden: boolean;
   homeSorts: HomeSortState;
   folderColorsEnabled: boolean;
-  folderDefaultColor: string;
+  folderDefaultColor: FolderColor;
   folderColorSolid: boolean;
 };
 
@@ -39,7 +42,7 @@ type UiActions = {
   setFeedbackCardHidden: (hidden: boolean) => void;
   setHomeSorts: (sorts: HomeSortState | ((prev: HomeSortState) => HomeSortState)) => void;
   setFolderColorsEnabled: (enabled: boolean) => void;
-  setFolderDefaultColor: (color: string) => void;
+  setFolderDefaultColor: (color: FolderColor) => void;
   setFolderColorSolid: (solid: boolean) => void;
 };
 
