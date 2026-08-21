@@ -77,10 +77,16 @@ export const Editor: React.FC<{
     [documentId, tabId, updateEditorStoreState],
   );
 
+  // Deferred: listeners for this event mount in the same commit as the editor
+  // but their effects run later, so a synchronous dispatch is lost and the
+  // first keystroke would be mistaken for the loaded baseline.
   useEffect(() => {
-    const editorState = editor.getEditorState();
-    const serializedEditorState = serializeEditorState(editorState);
-    updateChecksum(serializedEditorState);
+    const timeout = setTimeout(() => {
+      const editorState = editor.getEditorState();
+      const serializedEditorState = serializeEditorState(editorState);
+      updateChecksum(serializedEditorState);
+    }, 0);
+    return () => clearTimeout(timeout);
   }, [editor, updateChecksum]);
 
   const onChangeHandler = useCallback(
