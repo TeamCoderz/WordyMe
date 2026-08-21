@@ -1,0 +1,33 @@
+{
+  "name": "@repo/mcp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/index.js --loader:.css=empty --loader:.svg=empty --loader:.png=empty --loader:.jpg=empty --loader:.woff=empty --loader:.woff2=empty --log-level=warning",
+    "start": "pnpm build && node --env-file-if-exists=.env dist/index.js",
+    "smoke": "esbuild scripts/smoke-markdown.ts --bundle --platform=node --target=node20 --format=esm --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/smoke.js --loader:.css=empty --loader:.svg=empty --loader:.png=empty --loader:.jpg=empty --loader:.woff=empty --loader:.woff2=empty --log-level=warning && node dist/smoke.js",
+    "lint": "eslint .",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@happy-dom/global-registrator": "^20.11.2",
+    "@lexical/markdown": "^0.41.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@repo/backend": "workspace:*",
+    "@repo/editor": "workspace:*",
+    "@repo/lib": "workspace:*",
+    "@repo/sdk": "workspace:*",
+    "axios": "^1.19.0",
+    "lexical": "^0.41.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "@repo/typescript-config": "workspace:*",
+    "@types/node": "^26.2.0",
+    "esbuild": "^0.25.12",
+    "eslint": "^10.8.0",
+    "typescript": "^6.0.3"
+  }
+}

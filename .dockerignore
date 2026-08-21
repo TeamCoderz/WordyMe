@@ -52,3 +52,8 @@ apps/backend/storage/
 Dockerfile*
 docker-compose*.yml
 .dockerignore
+
+# ---------- Non-runtime workspaces ----------
+# The MCP server is a local development companion; nothing in the image depends
+# on it, and excluding it keeps its edits out of the build context cache key.
+apps/mcp

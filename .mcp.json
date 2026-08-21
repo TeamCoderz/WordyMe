@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "wordyme": {
+      "command": "pnpm",
+      "args": ["--filter", "@repo/mcp", "--silent", "start"]
+    }
+  }
+}
