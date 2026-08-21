@@ -282,19 +282,22 @@ export function useDocumentActions(
     };
   }, [options?.listenForSaveRequests, tabId]);
 
+  // Dirty means the user edited AND the content still differs from a saved
+  // state — the same condition that enables saving, so the indicator and the
+  // save button cannot disagree (e.g. after undoing back to the original).
   useEffect(() => {
     if (isLoading) return;
     if (isDocumentTab) {
-      setTabDirty(tab.id, hasUserEdit);
+      setTabDirty(tab.id, hasUserEdit && !isUpToDate);
     }
-  }, [isDocumentTab, isLoading, hasUserEdit, setTabDirty, tab?.id]);
+  }, [isDocumentTab, isLoading, hasUserEdit, isUpToDate, setTabDirty, tab?.id]);
 
   const backgroundClassName = (() => {
     if (!handle) return undefined;
     if (isJustSaved) {
       return 'bg-green-100/80 dark:bg-green-900/40';
     }
-    if (!isLoading && hasUserEdit) {
+    if (!isLoading && hasUserEdit && !isUpToDate) {
       // Document has unsaved changes
       return 'bg-yellow-100/70 dark:bg-yellow-900/30';
     }
