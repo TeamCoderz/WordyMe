@@ -4,6 +4,7 @@
  */
 
 import { useActions, useSelector } from '@/store';
+import { Button } from '@repo/ui/components/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/components/card';
 import { Label } from '@repo/ui/components/label';
 import {
@@ -18,7 +19,13 @@ import { Switch } from '@repo/ui/components/switch';
 import { useTheme } from '@repo/ui/theme/theme-provider';
 import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
 import { cn } from '@repo/ui/lib/utils';
-import { FoldHorizontal, Palette, RefreshCcw, UnfoldHorizontal } from '@repo/ui/components/icons';
+import {
+  CircleOff,
+  FoldHorizontal,
+  Palette,
+  RefreshCcw,
+  UnfoldHorizontal,
+} from '@repo/ui/components/icons';
 
 function InterfacePreferencesSettings() {
   const appSidebar = useSelector((state) => state.ui.appSidebar);
@@ -158,30 +165,26 @@ function InterfacePreferencesSettings() {
               </p>
             </div>
             <div className="flex gap-2 overflow-auto">
-              <button
-                type="button"
-                title="Theme"
-                onClick={() => setFolderDefaultColor('theme')}
-                className={cn(
-                  'flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-primary',
-                  folderDefaultColor === 'theme' &&
-                    'ring-2 ring-ring ring-offset-2 ring-offset-background',
-                )}
-              >
-                <Palette className="size-4 text-primary-foreground" />
-              </button>
+              <div className="w-8 h-8">
+                <Button
+                  variant={'default'}
+                  title="Theme"
+                  onClick={() => setFolderDefaultColor('theme')}
+                  className={cn('flex flex-col items-center gap-1 h-full py-3 w-full relative')}
+                >
+                  {folderDefaultColor === 'theme' ? <CircleOff /> : <Palette />}
+                </Button>
+              </div>
               {colorVariants.map((variant) => (
-                <div key={variant.value} className={`color-${variant.value}`}>
-                  <button
-                    type="button"
+                <div key={variant.value} className={`color-${variant.value} w-8 h-8`}>
+                  <Button
+                    variant={'default'}
                     title={variant.name}
                     onClick={() => setFolderDefaultColor(variant.value)}
-                    className={cn(
-                      'size-8 shrink-0 rounded-md border border-border bg-primary',
-                      folderDefaultColor === variant.value &&
-                        'ring-2 ring-ring ring-offset-2 ring-offset-background',
-                    )}
-                  />
+                    className={cn('flex flex-col items-center gap-1 h-full py-3 w-full relative')}
+                  >
+                    {folderDefaultColor === variant.value && <CircleOff />}
+                  </Button>
                 </div>
               ))}
             </div>

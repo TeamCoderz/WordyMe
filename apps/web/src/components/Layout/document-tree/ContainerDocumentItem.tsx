@@ -22,6 +22,7 @@ import {
   CopyPlus,
   FolderOutput,
 } from '@repo/ui/components/icons';
+import { Button } from '@repo/ui/components/button';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { cn } from '@repo/ui/lib/utils';
 import { DocumentData } from './types';
@@ -502,29 +503,30 @@ export function ContainerDocumentItem({
               />
             ) : isColorPickerOpen ? (
               <div className="flex items-center gap-1.5 p-1">
-                <button
-                  type="button"
-                  title="Default"
-                  onClick={() => handleColorChange(null)}
-                  className={cn(
-                    'flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground',
-                    !document.color && 'ring-2 ring-ring ring-offset-1 ring-offset-background',
-                  )}
-                >
-                  <CircleOff className="size-3.5" />
-                </button>
+                <div className="size-6 shrink-0">
+                  <Button
+                    variant={'default'}
+                    title="Default"
+                    onClick={() => handleColorChange(null)}
+                    className="flex h-full w-full items-center justify-center p-0"
+                  >
+                    {!document.color ? (
+                      <CircleOff className="size-3.5" />
+                    ) : (
+                      <Palette className="size-3.5" />
+                    )}
+                  </Button>
+                </div>
                 {colorVariants.map((variant) => (
-                  <div key={variant.value} className={`color-${variant.value}`}>
-                    <button
-                      type="button"
+                  <div key={variant.value} className={`color-${variant.value} size-6 shrink-0`}>
+                    <Button
+                      variant={'default'}
                       title={variant.name}
                       onClick={() => handleColorChange(variant.value)}
-                      className={cn(
-                        'size-6 shrink-0 rounded-full border border-border bg-primary',
-                        document.color === variant.value &&
-                          'ring-2 ring-ring ring-offset-1 ring-offset-background',
-                      )}
-                    />
+                      className="flex h-full w-full items-center justify-center p-0"
+                    >
+                      {document.color === variant.value && <CircleOff className="size-3.5" />}
+                    </Button>
                   </div>
                 ))}
               </div>
