@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.4.0](https://github.com/TeamCoderz/WordyMe/compare/v1.3.1...v1.4.0) (2026-08-21)
+
+### Features
+
+- **sidebar:** colored folder icons, opt-in via preferences ([#124](https://github.com/TeamCoderz/WordyMe/issues/124)) ([c62e83a](https://github.com/TeamCoderz/WordyMe/commit/c62e83a412ce500040fb71e275a3c7c2c3d5c064))
+
+### Bug Fixes
+
+- **editor:** reliable unsaved-changes tracking and save feedback ([#125](https://github.com/TeamCoderz/WordyMe/issues/125)) ([7ba186e](https://github.com/TeamCoderz/WordyMe/commit/7ba186e505e05672ff0d2cad3640ee4c597df38c))
+
 ## [1.3.1](https://github.com/TeamCoderz/WordyMe/compare/v1.3.0...v1.3.1) (2026-08-20)
 
 ### Bug Fixes
