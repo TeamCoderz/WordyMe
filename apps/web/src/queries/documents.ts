@@ -306,6 +306,14 @@ export const useUpdateDocumentIconMutation = ({
               getDocumentByHandleQueryOptions(document.handle).queryKey,
               (old: any) => (old ? { ...old, icon: oldIcon } : old),
             );
+            // The rollback snapshot may itself be unconfirmed after queued
+            // failures, so re-sync with the server's actual state.
+            queryClient.invalidateQueries({
+              queryKey: getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+            });
+            queryClient.invalidateQueries({
+              queryKey: getDocumentByHandleQueryOptions(document.handle).queryKey,
+            });
           },
         },
       ),
@@ -393,6 +401,11 @@ export const useUpdateDocumentColorMutation = ({
                 });
               },
             );
+            // The rollback snapshot may itself be unconfirmed after queued
+            // failures, so re-sync with the server's actual state.
+            queryClient.invalidateQueries({
+              queryKey: getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+            });
           },
         },
       ),
