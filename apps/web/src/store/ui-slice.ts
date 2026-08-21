@@ -5,9 +5,12 @@
 
 import { StateCreator } from 'zustand';
 import type { SortOptions } from '@/types/sort';
+import type { Theme } from '@repo/ui/theme/themes';
 import type { Store } from './store';
 
 export type AppSidebarState = 'expanded' | 'collapsed' | 'remember';
+
+export type FolderColor = 'theme' | Theme['color-variants'][number]['value'];
 
 export type HomeSortState = {
   favoriteSpaces: SortOptions;
@@ -24,6 +27,9 @@ type UiState = {
   createDocumentSectionHidden: boolean;
   feedbackCardHidden: boolean;
   homeSorts: HomeSortState;
+  folderColorsEnabled: boolean;
+  folderDefaultColor: FolderColor;
+  folderColorSolid: boolean;
 };
 
 type UiActions = {
@@ -35,6 +41,9 @@ type UiActions = {
   setCreateDocumentSectionHidden: (hidden: boolean) => void;
   setFeedbackCardHidden: (hidden: boolean) => void;
   setHomeSorts: (sorts: HomeSortState | ((prev: HomeSortState) => HomeSortState)) => void;
+  setFolderColorsEnabled: (enabled: boolean) => void;
+  setFolderDefaultColor: (color: FolderColor) => void;
+  setFolderColorSolid: (solid: boolean) => void;
 };
 
 export type UiSlice = { ui: UiState; uiActions: UiActions };
@@ -52,6 +61,9 @@ const initialState: UiState = {
     favoriteDocuments: 'a-z',
     allDocs: 'a-z',
   },
+  folderColorsEnabled: false,
+  folderDefaultColor: 'theme',
+  folderColorSolid: false,
 };
 
 export const createUiSlice: StateCreator<
@@ -83,6 +95,12 @@ export const createUiSlice: StateCreator<
             homeSorts: typeof sorts === 'function' ? sorts(state.ui.homeSorts) : sorts,
           },
         })),
+      setFolderColorsEnabled: (folderColorsEnabled) =>
+        set((state) => ({ ui: { ...state.ui, folderColorsEnabled } })),
+      setFolderDefaultColor: (folderDefaultColor) =>
+        set((state) => ({ ui: { ...state.ui, folderDefaultColor } })),
+      setFolderColorSolid: (folderColorSolid) =>
+        set((state) => ({ ui: { ...state.ui, folderColorSolid } })),
     },
   };
 };

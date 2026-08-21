@@ -75,6 +75,7 @@ function ManageDocumentsPage() {
         parentId: resolvedParentId,
         spaceId: spaceID,
         createdAt: new Date(),
+        color: null,
         isFavorite: false,
         isContainer: params.type === 'folder',
         updatedAt: new Date(),

@@ -8,8 +8,10 @@
 import * as React from 'react';
 import {
   ChevronRight,
+  CircleOff,
   FilePlus,
   FolderPlus,
+  Palette,
   PencilLine,
   Repeat2,
   Settings2,
@@ -20,6 +22,7 @@ import {
   CopyPlus,
   FolderOutput,
 } from '@repo/ui/components/icons';
+import { Button } from '@repo/ui/components/button';
 import { DynamicIcon } from '@repo/ui/components/dynamic-icon';
 import { cn } from '@repo/ui/lib/utils';
 import { DocumentData } from './types';
@@ -40,12 +43,16 @@ import {
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import {
   useUpdateDocumentIconMutation,
+  useUpdateDocumentColorMutation,
   useDeleteDocumentMutation,
   useDuplicateDocumentMutation,
   useCopyDocumentMutation,
   useMoveDocumentMutation,
   useExportDocumentMutation,
 } from '@/queries/documents';
+import { useTheme } from '@repo/ui/theme/theme-provider';
+import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
+import { useFolderIconColor } from '@/hooks/use-folder-icon-color';
 import { alert } from '../alert';
 import { cachedDocuments } from '@/queries/caches/documents';
 import {
@@ -90,6 +97,7 @@ export function ContainerDocumentItem({
   // Export document mutation
   const exportDocumentMutation = useExportDocumentMutation(document.id, document.name);
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = React.useState(false);
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = React.useState(false);
   // Note: container items are not links; click toggles expand/collapse
@@ -105,6 +113,18 @@ export function ContainerDocumentItem({
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({
     document: document as any, // Cast to match ListDocumentResult type
   });
+
+  const { updateDocumentColor } = useUpdateDocumentColorMutation({
+    document: document as any,
+  });
+
+  const {
+    enabled: folderColorsEnabled,
+    wrapperClass: folderColorClass,
+    iconClass: folderIconClass,
+  } = useFolderIconColor(document);
+  const { theme } = useTheme();
+  const colorVariants = THEME_BY_VALUE[theme]?.['color-variants'] ?? [];
 
   // Use the delete document mutation
   const deleteDocumentMutation = useDeleteDocumentMutation({
@@ -227,6 +247,24 @@ export function ContainerDocumentItem({
   const handleIconChange = (newIcon: string) => {
     try {
       updateDocumentIcon(document.id, newIcon);
+    } catch {
+      // Error handling is done in the mutation
+    } finally {
+      contextMenuContentRef.current?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          code: 'Escape',
+          keyCode: 27,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }
+  };
+
+  const handleColorChange = (newColor: string | null) => {
+    try {
+      updateDocumentColor(document.id, newColor);
     } catch {
       // Error handling is done in the mutation
     } finally {
@@ -368,6 +406,7 @@ export function ContainerDocumentItem({
           onOpenChange={(open) => {
             if (open) {
               setIsIconPickerOpen(false);
+              setIsColorPickerOpen(false);
             }
           }}
         >
@@ -393,8 +432,16 @@ export function ContainerDocumentItem({
               >
                 <ChevronRight className="transition-transform" />
 
-                <div className="flex items-center justify-center p-0.5 rounded-sm">
-                  <DynamicIcon name={document.icon || 'file'} className="size-4" />
+                <div
+                  className={cn(
+                    'flex items-center justify-center p-0.5 rounded-sm',
+                    folderColorClass,
+                  )}
+                >
+                  <DynamicIcon
+                    name={document.icon || 'file'}
+                    className={cn('size-4', folderIconClass)}
+                  />
                 </div>
                 <span title={document.name} className="truncate text-sm flex-1 min-w-0">
                   {document.name}
@@ -454,6 +501,39 @@ export function ContainerDocumentItem({
                 inPlace
                 searchable
               />
+            ) : isColorPickerOpen ? (
+              <div className="flex items-center gap-1.5 p-1">
+                <div className="size-6 shrink-0">
+                  <Button
+                    variant={'default'}
+                    title="Default"
+                    aria-label="Default"
+                    aria-pressed={!document.color}
+                    onClick={() => handleColorChange(null)}
+                    className="flex h-full w-full items-center justify-center p-0"
+                  >
+                    {!document.color ? (
+                      <CircleOff className="size-3.5" />
+                    ) : (
+                      <Palette className="size-3.5" />
+                    )}
+                  </Button>
+                </div>
+                {colorVariants.map((variant) => (
+                  <div key={variant.value} className={`color-${variant.value} size-6 shrink-0`}>
+                    <Button
+                      variant={'default'}
+                      title={variant.name}
+                      aria-label={variant.name}
+                      aria-pressed={document.color === variant.value}
+                      onClick={() => handleColorChange(variant.value)}
+                      className="flex h-full w-full items-center justify-center p-0"
+                    >
+                      {document.color === variant.value && <CircleOff className="size-3.5" />}
+                    </Button>
+                  </div>
+                ))}
+              </div>
             ) : (
               <>
                 <ContextMenuItem
@@ -504,6 +584,19 @@ export function ContainerDocumentItem({
                   <Repeat2 className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Change Icon
                 </ContextMenuItem>
+                {folderColorsEnabled && (
+                  <ContextMenuItem
+                    className="group"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsColorPickerOpen(true);
+                    }}
+                  >
+                    <Palette className="mr-2 h-4 w-4 group-hover:text-foreground" />
+                    Change Color
+                  </ContextMenuItem>
+                )}
                 <ContextMenuItem
                   className="group"
                   onSelect={() => {

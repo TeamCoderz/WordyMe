@@ -16,6 +16,7 @@ export interface Space {
   name: string;
   handle: string;
   icon: string | null;
+  color: string | null;
   position: string | null;
   currentRevisionId: string | null;
   userId: string;

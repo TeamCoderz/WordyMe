@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useRef } from 'react';
 import {
   keepPreviousData,
   useMutation,
@@ -228,6 +229,8 @@ export const useUpdateDocumentIconMutation = ({
 }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
+  const latestIconRequestRef = useRef(0);
+  const iconRequestChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const mutation = useMutation({
     mutationKey: ['updateDocumentIcon'],
     mutationFn: async ({ documentId, icon }: { documentId: string; icon: string }) => {
@@ -255,7 +258,14 @@ export const useUpdateDocumentIconMutation = ({
     },
   });
   const updateDocumentIcon = async (documentId: string, icon: string) => {
-    const oldIcon = document.icon;
+    const requestId = ++latestIconRequestRef.current;
+    // Snapshot from the cache, not the render-time prop: cache writes are
+    // synchronous, so this stays correct during rapid successive updates.
+    const cachedDocument = (
+      queryClient.getQueryData(getAllDocumentsQueryOptions(document.spaceId!).queryKey) as
+        ListDocumentResult | undefined
+    )?.find((cached) => cached.id === documentId);
+    const oldIcon = cachedDocument ? cachedDocument.icon : document.icon;
 
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
@@ -273,27 +283,139 @@ export const useUpdateDocumentIconMutation = ({
       getDocumentByHandleQueryOptions(document.handle).queryKey,
       (old: any) => (old ? { ...old, icon } : old),
     );
-    mutation.mutateAsync(
-      { documentId, icon },
-      {
-        onError: () => {
-          queryClient.setQueryData(
-            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
-              return old?.map((document) => {
-                return { ...document, icon: oldIcon };
-              });
-            },
-          );
-          queryClient.setQueryData(
-            getDocumentByHandleQueryOptions(document.handle).queryKey,
-            (old: any) => (old ? { ...old, icon: oldIcon } : old),
-          );
+    // Serialize requests per document and skip rollbacks from superseded
+    // requests, so a slow or failing older write cannot clobber a newer pick.
+    const request = iconRequestChainRef.current.then(() =>
+      mutation.mutateAsync(
+        { documentId, icon },
+        {
+          onError: () => {
+            if (requestId !== latestIconRequestRef.current) return;
+            queryClient.setQueryData(
+              getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+              (old: ListDocumentResult) => {
+                return old?.map((document) => {
+                  if (document.id === documentId) {
+                    return { ...document, icon: oldIcon };
+                  }
+                  return document;
+                });
+              },
+            );
+            queryClient.setQueryData(
+              getDocumentByHandleQueryOptions(document.handle).queryKey,
+              (old: any) => (old ? { ...old, icon: oldIcon } : old),
+            );
+            // The rollback snapshot may itself be unconfirmed after queued
+            // failures, so re-sync with the server's actual state.
+            queryClient.invalidateQueries({
+              queryKey: getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+            });
+            queryClient.invalidateQueries({
+              queryKey: getDocumentByHandleQueryOptions(document.handle).queryKey,
+            });
+          },
         },
-      },
+      ),
     );
+    iconRequestChainRef.current = request.catch(() => undefined);
+    return request.catch(() => {
+      // Error handling is done in the mutation
+    });
   };
   return { updateDocumentIcon, ...mutation };
+};
+
+export const useUpdateDocumentColorMutation = ({
+  document,
+}: {
+  document: ListDocumentResult[number];
+}) => {
+  const queryClient = useQueryClient();
+  const invalidate = useAllQueriesInvalidate();
+  const latestColorRequestRef = useRef(0);
+  const colorRequestChainRef = useRef<Promise<unknown>>(Promise.resolve());
+  const mutation = useMutation({
+    mutationKey: ['updateDocumentColor'],
+    mutationFn: async ({ documentId, color }: { documentId: string; color: string | null }) => {
+      const { data, error } = await updateDocument(documentId, { color });
+      if (error) throw error;
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+      ]);
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Updating folder color...');
+    },
+    onSuccess: (_, __, toastId) => {
+      toast.success('Folder color updated successfully', {
+        id: toastId,
+      });
+    },
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update folder color', {
+        id: toastId,
+      });
+    },
+  });
+  const updateDocumentColor = async (documentId: string, color: string | null) => {
+    const requestId = ++latestColorRequestRef.current;
+    // Snapshot from the cache, not the render-time prop: cache writes are
+    // synchronous, so this stays correct during rapid successive updates.
+    const cachedDocument = (
+      queryClient.getQueryData(getAllDocumentsQueryOptions(document.spaceId!).queryKey) as
+        ListDocumentResult | undefined
+    )?.find((cached) => cached.id === documentId);
+    const oldColor = cachedDocument ? cachedDocument.color : document.color;
+
+    queryClient.setQueryData(
+      getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+      (old: ListDocumentResult) => {
+        return old?.map((document) => {
+          if (document.id === documentId) {
+            return { ...document, color };
+          }
+          return document;
+        });
+      },
+    );
+    // Serialize requests per document and skip rollbacks from superseded
+    // requests, so a slow or failing older write cannot clobber a newer pick.
+    const request = colorRequestChainRef.current.then(() =>
+      mutation.mutateAsync(
+        { documentId, color },
+        {
+          onError: () => {
+            if (requestId !== latestColorRequestRef.current) return;
+            queryClient.setQueryData(
+              getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+              (old: ListDocumentResult) => {
+                return old?.map((document) => {
+                  if (document.id === documentId) {
+                    return { ...document, color: oldColor };
+                  }
+                  return document;
+                });
+              },
+            );
+            // The rollback snapshot may itself be unconfirmed after queued
+            // failures, so re-sync with the server's actual state.
+            queryClient.invalidateQueries({
+              queryKey: getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+            });
+          },
+        },
+      ),
+    );
+    colorRequestChainRef.current = request.catch(() => undefined);
+    return request.catch(() => {
+      // Error handling is done in the mutation
+    });
+  };
+  return { updateDocumentColor, ...mutation };
 };
 
 const listFavoriteDocuments = async (
