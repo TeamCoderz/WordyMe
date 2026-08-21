@@ -19,6 +19,7 @@ import {
   useSaveLocalRevisionMutation,
 } from '@/queries/revisions';
 import { useActions, useSelector } from '@/store';
+import { toast } from 'sonner';
 
 interface UseDocumentActionsOptions {
   listenForSaveRequests?: boolean;
@@ -71,11 +72,20 @@ export function useDocumentActions(
 
   const isPreviouslySaved = !!cloudRevision;
   const isUnchangedSinceLoad = !!loadedChecksum && loadedChecksum === checksum;
-  const isUpToDate =
-    isUnchangedSinceLoad ||
-    (isPreviouslySaved &&
-      document?.currentRevisionId === cloudRevision.id &&
-      cloudRevision.checksum === checksum);
+  const isCurrentHeadContent =
+    isPreviouslySaved &&
+    document?.currentRevisionId === cloudRevision.id &&
+    cloudRevision.checksum === checksum;
+  const isUpToDate = isUnchangedSinceLoad || isCurrentHeadContent;
+
+  // Saves can be performed by any of this hook's instances (tab button,
+  // Cmd+S, tab context menu), and each instance keeps its own baseline.
+  // When the current content is confirmed as the saved head, re-baseline so
+  // an instance that did not perform the save cannot keep a stale view.
+  if (checksum && isCurrentHeadContent && (loadedChecksum !== checksum || hasUserEdit)) {
+    setLoadedChecksum(checksum);
+    setHasUserEdit(false);
+  }
 
   const isLoading =
     !document ||
@@ -146,6 +156,11 @@ export function useDocumentActions(
             content: revision.content,
           });
           await saveLocalRevision({ serializedEditorState: JSON.parse(revision.content) });
+        }
+        // This path reuses an existing revision, so the save mutation's own
+        // toast never fires; confirm explicit saves here.
+        if (!isAutosave) {
+          toast.success('Document saved');
         }
       } else {
         const serializedEditorState = await queryClient
