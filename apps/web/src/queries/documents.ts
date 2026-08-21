@@ -229,6 +229,8 @@ export const useUpdateDocumentIconMutation = ({
 }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
+  const latestIconRequestRef = useRef(0);
+  const iconRequestChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const mutation = useMutation({
     mutationKey: ['updateDocumentIcon'],
     mutationFn: async ({ documentId, icon }: { documentId: string; icon: string }) => {
@@ -256,6 +258,7 @@ export const useUpdateDocumentIconMutation = ({
     },
   });
   const updateDocumentIcon = async (documentId: string, icon: string) => {
+    const requestId = ++latestIconRequestRef.current;
     const oldIcon = document.icon;
 
     queryClient.setQueryData(
@@ -274,25 +277,37 @@ export const useUpdateDocumentIconMutation = ({
       getDocumentByHandleQueryOptions(document.handle).queryKey,
       (old: any) => (old ? { ...old, icon } : old),
     );
-    mutation.mutateAsync(
-      { documentId, icon },
-      {
-        onError: () => {
-          queryClient.setQueryData(
-            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
-            (old: ListDocumentResult) => {
-              return old?.map((document) => {
-                return { ...document, icon: oldIcon };
-              });
-            },
-          );
-          queryClient.setQueryData(
-            getDocumentByHandleQueryOptions(document.handle).queryKey,
-            (old: any) => (old ? { ...old, icon: oldIcon } : old),
-          );
+    // Serialize requests per document and skip rollbacks from superseded
+    // requests, so a slow or failing older write cannot clobber a newer pick.
+    const request = iconRequestChainRef.current.then(() =>
+      mutation.mutateAsync(
+        { documentId, icon },
+        {
+          onError: () => {
+            if (requestId !== latestIconRequestRef.current) return;
+            queryClient.setQueryData(
+              getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+              (old: ListDocumentResult) => {
+                return old?.map((document) => {
+                  if (document.id === documentId) {
+                    return { ...document, icon: oldIcon };
+                  }
+                  return document;
+                });
+              },
+            );
+            queryClient.setQueryData(
+              getDocumentByHandleQueryOptions(document.handle).queryKey,
+              (old: any) => (old ? { ...old, icon: oldIcon } : old),
+            );
+          },
         },
-      },
+      ),
     );
+    iconRequestChainRef.current = request.catch(() => undefined);
+    return request.catch(() => {
+      // Error handling is done in the mutation
+    });
   };
   return { updateDocumentIcon, ...mutation };
 };
