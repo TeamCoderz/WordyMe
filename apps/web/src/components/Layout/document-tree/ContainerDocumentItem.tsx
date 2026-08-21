@@ -51,6 +51,7 @@ import {
 } from '@/queries/documents';
 import { useTheme } from '@repo/ui/theme/theme-provider';
 import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
+import { useFolderIconColor } from '@/hooks/use-folder-icon-color';
 import { alert } from '../alert';
 import { cachedDocuments } from '@/queries/caches/documents';
 import {
@@ -116,12 +117,11 @@ export function ContainerDocumentItem({
     document: document as any,
   });
 
-  const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
-  const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
-  const folderColorSolid = useSelector((state) => state.ui.folderColorSolid);
-  const folderColor = folderColorsEnabled
-    ? (document.color ?? (folderDefaultColor === 'theme' ? null : folderDefaultColor))
-    : null;
+  const {
+    enabled: folderColorsEnabled,
+    wrapperClass: folderColorClass,
+    iconClass: folderIconClass,
+  } = useFolderIconColor(document);
   const { theme } = useTheme();
   const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
 
@@ -434,16 +434,12 @@ export function ContainerDocumentItem({
                 <div
                   className={cn(
                     'flex items-center justify-center p-0.5 rounded-sm',
-                    folderColor && `color-${folderColor}`,
+                    folderColorClass,
                   )}
                 >
                   <DynamicIcon
                     name={document.icon || 'file'}
-                    className={cn(
-                      'size-4',
-                      folderColorsEnabled && 'text-primary',
-                      folderColorsEnabled && folderColorSolid && 'fill-current',
-                    )}
+                    className={cn('size-4', folderIconClass)}
                   />
                 </div>
                 <span title={document.name} className="truncate text-sm flex-1 min-w-0">

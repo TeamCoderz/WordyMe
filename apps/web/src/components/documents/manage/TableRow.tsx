@@ -65,6 +65,7 @@ import {
   ContextMenuSubTrigger,
 } from '@repo/ui/components/context-menu';
 import { useSelector, useActions } from '@/store';
+import { useFolderIconColor } from '@/hooks/use-folder-icon-color';
 import { useQueryClient } from '@tanstack/react-query';
 import { isDocumentCached } from '@/queries/caches/documents';
 import { ItemInstance } from '@headless-tree/core';
@@ -103,6 +104,9 @@ export function ManageDocumentsTableRow({
   const doc = item.getItemData()?.data as ListDocumentResult[number] & {
     clientId: string | null;
   };
+  const { wrapperClass: folderColorClass, iconClass: folderIconClass } = useFolderIconColor(
+    doc ?? {},
+  );
   const isCreating = doc?.id === doc?.clientId || doc?.id === 'new-doc';
   const isPlaceholder = doc?.id === 'new-doc';
   const [placeholderName, setPlaceholderName] = React.useState<string>(doc?.name ?? '');
@@ -634,7 +638,10 @@ export function ManageDocumentsTableRow({
                   <button
                     type="button"
                     data-icon-trigger="true"
-                    className="flex items-center justify-center p-0.5 hover:bg-accent/50 rounded-sm"
+                    className={cn(
+                      'flex items-center justify-center p-0.5 hover:bg-accent/50 rounded-sm',
+                      folderColorClass,
+                    )}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -642,7 +649,7 @@ export function ManageDocumentsTableRow({
                     disabled={isCreating}
                   >
                     <DynamicIcon
-                      className="size-4"
+                      className={cn('size-4', folderIconClass)}
                       name={item.getItemData()?.data.icon || 'file'}
                     />
                   </button>
