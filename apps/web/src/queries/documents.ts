@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
 
+import { useRef } from 'react';
 import {
   keepPreviousData,
   useMutation,
@@ -303,6 +304,8 @@ export const useUpdateDocumentColorMutation = ({
 }) => {
   const queryClient = useQueryClient();
   const invalidate = useAllQueriesInvalidate();
+  const latestColorRequestRef = useRef(0);
+  const colorRequestChainRef = useRef<Promise<unknown>>(Promise.resolve());
   const mutation = useMutation({
     mutationKey: ['updateDocumentColor'],
     mutationFn: async ({ documentId, color }: { documentId: string; color: string | null }) => {
@@ -330,6 +333,7 @@ export const useUpdateDocumentColorMutation = ({
     },
   });
   const updateDocumentColor = async (documentId: string, color: string | null) => {
+    const requestId = ++latestColorRequestRef.current;
     const oldColor = document.color;
 
     queryClient.setQueryData(
@@ -343,11 +347,14 @@ export const useUpdateDocumentColorMutation = ({
         });
       },
     );
-    return mutation
-      .mutateAsync(
+    // Serialize requests per document and skip rollbacks from superseded
+    // requests, so a slow or failing older write cannot clobber a newer pick.
+    const request = colorRequestChainRef.current.then(() =>
+      mutation.mutateAsync(
         { documentId, color },
         {
           onError: () => {
+            if (requestId !== latestColorRequestRef.current) return;
             queryClient.setQueryData(
               getAllDocumentsQueryOptions(document.spaceId!).queryKey,
               (old: ListDocumentResult) => {
@@ -361,10 +368,12 @@ export const useUpdateDocumentColorMutation = ({
             );
           },
         },
-      )
-      .catch(() => {
-        // Error handling is done in the mutation
-      });
+      ),
+    );
+    colorRequestChainRef.current = request.catch(() => undefined);
+    return request.catch(() => {
+      // Error handling is done in the mutation
+    });
   };
   return { updateDocumentColor, ...mutation };
 };
