@@ -73,6 +73,7 @@ function ManageSpacesPage() {
         parentId: resolvedParentId,
         spaceId: null,
         createdAt: new Date(),
+        color: null,
         isFavorite: false,
         isContainer: params.type === 'folder',
         updatedAt: new Date(),

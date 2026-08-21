@@ -69,6 +69,7 @@ export function DocumentTree() {
         parentId: resolvedParentId,
         spaceId,
         createdAt: new Date(),
+        color: null,
         isFavorite: false,
         isContainer: params.type === 'folder',
         updatedAt: new Date(),

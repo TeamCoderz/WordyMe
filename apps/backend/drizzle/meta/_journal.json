@@ -43,6 +43,13 @@
       "when": 1786906560166,
       "tag": "0005_backup_restore_journal",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787337687801,
+      "tag": "0006_folder_color",
+      "breakpoints": true
     }
   ]
 }

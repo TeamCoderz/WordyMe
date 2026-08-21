@@ -24,6 +24,8 @@ type UiState = {
   createDocumentSectionHidden: boolean;
   feedbackCardHidden: boolean;
   homeSorts: HomeSortState;
+  folderColorsEnabled: boolean;
+  folderDefaultColor: string;
 };
 
 type UiActions = {
@@ -35,6 +37,8 @@ type UiActions = {
   setCreateDocumentSectionHidden: (hidden: boolean) => void;
   setFeedbackCardHidden: (hidden: boolean) => void;
   setHomeSorts: (sorts: HomeSortState | ((prev: HomeSortState) => HomeSortState)) => void;
+  setFolderColorsEnabled: (enabled: boolean) => void;
+  setFolderDefaultColor: (color: string) => void;
 };
 
 export type UiSlice = { ui: UiState; uiActions: UiActions };
@@ -52,6 +56,8 @@ const initialState: UiState = {
     favoriteDocuments: 'a-z',
     allDocs: 'a-z',
   },
+  folderColorsEnabled: false,
+  folderDefaultColor: 'theme',
 };
 
 export const createUiSlice: StateCreator<
@@ -83,6 +89,10 @@ export const createUiSlice: StateCreator<
             homeSorts: typeof sorts === 'function' ? sorts(state.ui.homeSorts) : sorts,
           },
         })),
+      setFolderColorsEnabled: (folderColorsEnabled) =>
+        set((state) => ({ ui: { ...state.ui, folderColorsEnabled } })),
+      setFolderDefaultColor: (folderDefaultColor) =>
+        set((state) => ({ ui: { ...state.ui, folderDefaultColor } })),
     },
   };
 };

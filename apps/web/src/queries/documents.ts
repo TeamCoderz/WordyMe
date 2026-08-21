@@ -296,6 +296,75 @@ export const useUpdateDocumentIconMutation = ({
   return { updateDocumentIcon, ...mutation };
 };
 
+export const useUpdateDocumentColorMutation = ({
+  document,
+}: {
+  document: ListDocumentResult[number];
+}) => {
+  const queryClient = useQueryClient();
+  const invalidate = useAllQueriesInvalidate();
+  const mutation = useMutation({
+    mutationKey: ['updateDocumentColor'],
+    mutationFn: async ({ documentId, color }: { documentId: string; color: string | null }) => {
+      const { data, error } = await updateDocument(documentId, { color });
+      if (error) throw error;
+      invalidate([
+        DOCUMENTS_QUERY_KEYS.RECENT_VIEWS,
+        DOCUMENTS_QUERY_KEYS.FAVORITES,
+        DOCUMENTS_QUERY_KEYS.HOME.BASE,
+      ]);
+      return data;
+    },
+    onMutate() {
+      return toast.loading('Updating folder color...');
+    },
+    onSuccess: (_, __, toastId) => {
+      toast.success('Folder color updated successfully', {
+        id: toastId,
+      });
+    },
+    onError: (error, __, toastId) => {
+      toast.error(error.message || 'Failed to update folder color', {
+        id: toastId,
+      });
+    },
+  });
+  const updateDocumentColor = async (documentId: string, color: string | null) => {
+    const oldColor = document.color;
+
+    queryClient.setQueryData(
+      getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+      (old: ListDocumentResult) => {
+        return old?.map((document) => {
+          if (document.id === documentId) {
+            return { ...document, color };
+          }
+          return document;
+        });
+      },
+    );
+    mutation.mutateAsync(
+      { documentId, color },
+      {
+        onError: () => {
+          queryClient.setQueryData(
+            getAllDocumentsQueryOptions(document.spaceId!).queryKey,
+            (old: ListDocumentResult) => {
+              return old?.map((document) => {
+                if (document.id === documentId) {
+                  return { ...document, color: oldColor };
+                }
+                return document;
+              });
+            },
+          );
+        },
+      },
+    );
+  };
+  return { updateDocumentColor, ...mutation };
+};
+
 const listFavoriteDocuments = async (
   filters: Omit<Parameters<typeof getFavorites>[0], 'documentType'>,
 ) => {

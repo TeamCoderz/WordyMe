@@ -28,6 +28,7 @@ export const documentsTable = sqliteTable(
     name: text('name').notNull(),
     handle: text('handle').notNull(),
     icon: text('icon'),
+    color: text('color'),
     position: text('position'),
     currentRevisionId: text('current_revision_id').references(
       (): SQLiteColumn => revisionsTable.id,

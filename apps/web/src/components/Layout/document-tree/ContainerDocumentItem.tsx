@@ -8,8 +8,10 @@
 import * as React from 'react';
 import {
   ChevronRight,
+  CircleOff,
   FilePlus,
   FolderPlus,
+  Palette,
   PencilLine,
   Repeat2,
   Settings2,
@@ -40,12 +42,15 @@ import {
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import {
   useUpdateDocumentIconMutation,
+  useUpdateDocumentColorMutation,
   useDeleteDocumentMutation,
   useDuplicateDocumentMutation,
   useCopyDocumentMutation,
   useMoveDocumentMutation,
   useExportDocumentMutation,
 } from '@/queries/documents';
+import { useTheme } from '@repo/ui/theme/theme-provider';
+import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
 import { alert } from '../alert';
 import { cachedDocuments } from '@/queries/caches/documents';
 import {
@@ -90,6 +95,7 @@ export function ContainerDocumentItem({
   // Export document mutation
   const exportDocumentMutation = useExportDocumentMutation(document.id, document.name);
   const [isIconPickerOpen, setIsIconPickerOpen] = React.useState(false);
+  const [isColorPickerOpen, setIsColorPickerOpen] = React.useState(false);
   const navigate = useNavigate();
   const [isRenaming, setIsRenaming] = React.useState(false);
   // Note: container items are not links; click toggles expand/collapse
@@ -105,6 +111,18 @@ export function ContainerDocumentItem({
   const { updateDocumentIcon } = useUpdateDocumentIconMutation({
     document: document as any, // Cast to match ListDocumentResult type
   });
+
+  const { updateDocumentColor } = useUpdateDocumentColorMutation({
+    document: document as any,
+  });
+
+  const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
+  const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
+  const folderColor = folderColorsEnabled
+    ? (document.color ?? (folderDefaultColor === 'theme' ? null : folderDefaultColor))
+    : null;
+  const { theme } = useTheme();
+  const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
 
   // Use the delete document mutation
   const deleteDocumentMutation = useDeleteDocumentMutation({
@@ -227,6 +245,24 @@ export function ContainerDocumentItem({
   const handleIconChange = (newIcon: string) => {
     try {
       updateDocumentIcon(document.id, newIcon);
+    } catch {
+      // Error handling is done in the mutation
+    } finally {
+      contextMenuContentRef.current?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'Escape',
+          code: 'Escape',
+          keyCode: 27,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    }
+  };
+
+  const handleColorChange = (newColor: string | null) => {
+    try {
+      updateDocumentColor(document.id, newColor);
     } catch {
       // Error handling is done in the mutation
     } finally {
@@ -368,6 +404,7 @@ export function ContainerDocumentItem({
           onOpenChange={(open) => {
             if (open) {
               setIsIconPickerOpen(false);
+              setIsColorPickerOpen(false);
             }
           }}
         >
@@ -393,8 +430,16 @@ export function ContainerDocumentItem({
               >
                 <ChevronRight className="transition-transform" />
 
-                <div className="flex items-center justify-center p-0.5 rounded-sm">
-                  <DynamicIcon name={document.icon || 'file'} className="size-4" />
+                <div
+                  className={cn(
+                    'flex items-center justify-center p-0.5 rounded-sm',
+                    folderColor && `color-${folderColor}`,
+                  )}
+                >
+                  <DynamicIcon
+                    name={document.icon || 'file'}
+                    className={cn('size-4', folderColorsEnabled && 'text-primary')}
+                  />
                 </div>
                 <span title={document.name} className="truncate text-sm flex-1 min-w-0">
                   {document.name}
@@ -454,6 +499,34 @@ export function ContainerDocumentItem({
                 inPlace
                 searchable
               />
+            ) : isColorPickerOpen ? (
+              <div className="flex items-center gap-1.5 p-1">
+                <button
+                  type="button"
+                  title="Default"
+                  onClick={() => handleColorChange(null)}
+                  className={cn(
+                    'flex size-6 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground',
+                    !document.color && 'ring-2 ring-ring ring-offset-1 ring-offset-background',
+                  )}
+                >
+                  <CircleOff className="size-3.5" />
+                </button>
+                {colorVariants.map((variant) => (
+                  <div key={variant.value} className={`color-${variant.value}`}>
+                    <button
+                      type="button"
+                      title={variant.name}
+                      onClick={() => handleColorChange(variant.value)}
+                      className={cn(
+                        'size-6 shrink-0 rounded-full border border-border bg-primary',
+                        document.color === variant.value &&
+                          'ring-2 ring-ring ring-offset-1 ring-offset-background',
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
             ) : (
               <>
                 <ContextMenuItem
@@ -504,6 +577,19 @@ export function ContainerDocumentItem({
                   <Repeat2 className="mr-2 h-4 w-4 group-hover:text-foreground" />
                   Change Icon
                 </ContextMenuItem>
+                {folderColorsEnabled && (
+                  <ContextMenuItem
+                    className="group"
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsColorPickerOpen(true);
+                    }}
+                  >
+                    <Palette className="mr-2 h-4 w-4 group-hover:text-foreground" />
+                    Change Color
+                  </ContextMenuItem>
+                )}
                 <ContextMenuItem
                   className="group"
                   onSelect={() => {

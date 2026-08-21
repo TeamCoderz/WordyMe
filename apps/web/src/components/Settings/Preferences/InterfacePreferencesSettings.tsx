@@ -16,13 +16,19 @@ import {
 import { Separator } from '@repo/ui/components/separator';
 import { Switch } from '@repo/ui/components/switch';
 import { useTheme } from '@repo/ui/theme/theme-provider';
-import { FoldHorizontal, RefreshCcw, UnfoldHorizontal } from '@repo/ui/components/icons';
+import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
+import { cn } from '@repo/ui/lib/utils';
+import { FoldHorizontal, Palette, RefreshCcw, UnfoldHorizontal } from '@repo/ui/components/icons';
 
 function InterfacePreferencesSettings() {
   const appSidebar = useSelector((state) => state.ui.appSidebar);
   const documentSidebar = useSelector((state) => state.ui.documentSidebar);
-  const { setAppSidebar, setDocumentSidebar } = useActions();
-  const { animations, setAnimations } = useTheme();
+  const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
+  const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
+  const { setAppSidebar, setDocumentSidebar, setFolderColorsEnabled, setFolderDefaultColor } =
+    useActions();
+  const { animations, setAnimations, theme } = useTheme();
+  const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
   return (
     <Card id="interface-preferences" className="bg-transparent p-0 overflow-hidden gap-0">
       <CardHeader className="bg-card border-b p-5 block !pb-5">
@@ -104,6 +110,61 @@ function InterfacePreferencesSettings() {
             onCheckedChange={(checked) => setAnimations(checked ? 'on' : 'off')}
           />
         </div>
+
+        <Separator className="bg-transparent border-t border-dashed h-0" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="folderColors">Colored Folders</Label>
+            <p className="text-sm text-muted-foreground">
+              Folder icons in the sidebar take a color
+            </p>
+          </div>
+          <Switch
+            id="folderColors"
+            checked={folderColorsEnabled}
+            onCheckedChange={setFolderColorsEnabled}
+          />
+        </div>
+
+        {folderColorsEnabled && (
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <Label>Default Folder Color</Label>
+              <p className="text-sm text-muted-foreground">
+                Folders without their own color use this one
+              </p>
+            </div>
+            <div className="flex gap-2 overflow-auto">
+              <button
+                type="button"
+                title="Theme"
+                onClick={() => setFolderDefaultColor('theme')}
+                className={cn(
+                  'flex size-8 shrink-0 items-center justify-center rounded-md border border-border bg-primary',
+                  folderDefaultColor === 'theme' &&
+                    'ring-2 ring-ring ring-offset-2 ring-offset-background',
+                )}
+              >
+                <Palette className="size-4 text-primary-foreground" />
+              </button>
+              {colorVariants.map((variant) => (
+                <div key={variant.value} className={`color-${variant.value}`}>
+                  <button
+                    type="button"
+                    title={variant.name}
+                    onClick={() => setFolderDefaultColor(variant.value)}
+                    className={cn(
+                      'size-8 shrink-0 rounded-md border border-border bg-primary',
+                      folderDefaultColor === variant.value &&
+                        'ring-2 ring-ring ring-offset-2 ring-offset-background',
+                    )}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
