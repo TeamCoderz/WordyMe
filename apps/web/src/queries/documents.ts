@@ -259,7 +259,13 @@ export const useUpdateDocumentIconMutation = ({
   });
   const updateDocumentIcon = async (documentId: string, icon: string) => {
     const requestId = ++latestIconRequestRef.current;
-    const oldIcon = document.icon;
+    // Snapshot from the cache, not the render-time prop: cache writes are
+    // synchronous, so this stays correct during rapid successive updates.
+    const cachedDocument = (
+      queryClient.getQueryData(getAllDocumentsQueryOptions(document.spaceId!).queryKey) as
+        ListDocumentResult | undefined
+    )?.find((cached) => cached.id === documentId);
+    const oldIcon = cachedDocument ? cachedDocument.icon : document.icon;
 
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
@@ -349,7 +355,13 @@ export const useUpdateDocumentColorMutation = ({
   });
   const updateDocumentColor = async (documentId: string, color: string | null) => {
     const requestId = ++latestColorRequestRef.current;
-    const oldColor = document.color;
+    // Snapshot from the cache, not the render-time prop: cache writes are
+    // synchronous, so this stays correct during rapid successive updates.
+    const cachedDocument = (
+      queryClient.getQueryData(getAllDocumentsQueryOptions(document.spaceId!).queryKey) as
+        ListDocumentResult | undefined
+    )?.find((cached) => cached.id === documentId);
+    const oldColor = cachedDocument ? cachedDocument.color : document.color;
 
     queryClient.setQueryData(
       getAllDocumentsQueryOptions(document.spaceId!).queryKey,
