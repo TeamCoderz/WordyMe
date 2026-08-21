@@ -138,7 +138,7 @@ function InterfacePreferencesSettings() {
             <div>
               <Label htmlFor="folderColorSolid">Solid Folder Color</Label>
               <p className="text-sm text-muted-foreground">
-                Fill folder icons instead of coloring only the outline
+                Fill folder icons instead of coloring only the outline - some icons may look chunky
               </p>
             </div>
             <Switch
