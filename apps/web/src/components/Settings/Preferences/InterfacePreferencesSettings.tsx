@@ -25,8 +25,14 @@ function InterfacePreferencesSettings() {
   const documentSidebar = useSelector((state) => state.ui.documentSidebar);
   const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
   const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
-  const { setAppSidebar, setDocumentSidebar, setFolderColorsEnabled, setFolderDefaultColor } =
-    useActions();
+  const folderColorSolid = useSelector((state) => state.ui.folderColorSolid);
+  const {
+    setAppSidebar,
+    setDocumentSidebar,
+    setFolderColorsEnabled,
+    setFolderDefaultColor,
+    setFolderColorSolid,
+  } = useActions();
   const { animations, setAnimations, theme } = useTheme();
   const colorVariants = THEME_BY_VALUE[theme]['color-variants'];
   return (
@@ -126,6 +132,22 @@ function InterfacePreferencesSettings() {
             onCheckedChange={setFolderColorsEnabled}
           />
         </div>
+
+        {folderColorsEnabled && (
+          <div className="flex items-center justify-between">
+            <div>
+              <Label htmlFor="folderColorSolid">Solid Folder Color</Label>
+              <p className="text-sm text-muted-foreground">
+                Fill folder icons instead of coloring only the outline
+              </p>
+            </div>
+            <Switch
+              id="folderColorSolid"
+              checked={folderColorSolid}
+              onCheckedChange={setFolderColorSolid}
+            />
+          </div>
+        )}
 
         {folderColorsEnabled && (
           <div className="flex items-center justify-between flex-wrap gap-3">

@@ -26,6 +26,7 @@ type UiState = {
   homeSorts: HomeSortState;
   folderColorsEnabled: boolean;
   folderDefaultColor: string;
+  folderColorSolid: boolean;
 };
 
 type UiActions = {
@@ -39,6 +40,7 @@ type UiActions = {
   setHomeSorts: (sorts: HomeSortState | ((prev: HomeSortState) => HomeSortState)) => void;
   setFolderColorsEnabled: (enabled: boolean) => void;
   setFolderDefaultColor: (color: string) => void;
+  setFolderColorSolid: (solid: boolean) => void;
 };
 
 export type UiSlice = { ui: UiState; uiActions: UiActions };
@@ -58,6 +60,7 @@ const initialState: UiState = {
   },
   folderColorsEnabled: false,
   folderDefaultColor: 'theme',
+  folderColorSolid: false,
 };
 
 export const createUiSlice: StateCreator<
@@ -93,6 +96,8 @@ export const createUiSlice: StateCreator<
         set((state) => ({ ui: { ...state.ui, folderColorsEnabled } })),
       setFolderDefaultColor: (folderDefaultColor) =>
         set((state) => ({ ui: { ...state.ui, folderDefaultColor } })),
+      setFolderColorSolid: (folderColorSolid) =>
+        set((state) => ({ ui: { ...state.ui, folderColorSolid } })),
     },
   };
 };

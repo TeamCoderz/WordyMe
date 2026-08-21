@@ -118,6 +118,7 @@ export function ContainerDocumentItem({
 
   const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
   const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
+  const folderColorSolid = useSelector((state) => state.ui.folderColorSolid);
   const folderColor = folderColorsEnabled
     ? (document.color ?? (folderDefaultColor === 'theme' ? null : folderDefaultColor))
     : null;
@@ -438,7 +439,11 @@ export function ContainerDocumentItem({
                 >
                   <DynamicIcon
                     name={document.icon || 'file'}
-                    className={cn('size-4', folderColorsEnabled && 'text-primary')}
+                    className={cn(
+                      'size-4',
+                      folderColorsEnabled && 'text-primary',
+                      folderColorsEnabled && folderColorSolid && 'fill-current',
+                    )}
                   />
                 </div>
                 <span title={document.name} className="truncate text-sm flex-1 min-w-0">
