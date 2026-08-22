@@ -117,6 +117,7 @@ This project uses [Turborepo](https://turborepo.com) for managing a monorepo wit
 - User profiles with avatar and cover images
 - Editor settings and preferences
 - Real-time updates via WebSocket
+- MCP server for Claude Code and Claude Desktop — see [MCP.md](MCP.md)
 
 ### Performance
 
@@ -184,6 +185,13 @@ frontend URL. The API reference is at <http://localhost:8080/api/docs>.
 
 Already running an older version? Ports and origins changed; see
 [Upgrading](DOCKER.md#upgrading-from-a-version-before-the-all-in-one-image).
+
+## Connect Claude (MCP)
+
+WordyMe™ ships an MCP server, so Claude Code and Claude Desktop can search your wiki, read
+any page and write notes — in Markdown, as your own account, with every content change
+saved as a restorable revision. See [MCP.md](MCP.md) for the three-step setup and what it
+can do.
 
 ## Development Workflow
 

@@ -8,7 +8,9 @@ import axios, { AxiosError } from 'axios';
 import { applyBackendMessageToAxiosError } from './axios-backend-message.js';
 
 export const client = axios.create({
-  baseURL: import.meta.env.VITE_BACKEND_URL + '/api',
+  // Optional chaining: import.meta.env only exists under Vite; Node consumers
+  // (the MCP server) override baseURL at startup.
+  baseURL: (import.meta.env?.VITE_BACKEND_URL ?? '') + '/api',
   withCredentials: true,
 });
 
