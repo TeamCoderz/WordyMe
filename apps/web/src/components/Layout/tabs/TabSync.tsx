@@ -200,6 +200,20 @@ export function TabSync() {
     if (pathname.startsWith('/login') || pathname.startsWith('/signup')) return;
     const locationMatches = activeTab && matchTabLocation(activeTab, pathname, search, hash);
     if (locationMatches) return;
+    // A tab opened from an in-document link holds `/view/<id>?id=true`; the route
+    // redirects it to the handle. That redirect belongs to the active tab, so it
+    // is updated in place (keeping its preview state) — checked before any other
+    // tab with the same location, which would otherwise steal the navigation.
+    const isIdRedirect =
+      !!activeTab?.search?.id &&
+      isDocumentTab &&
+      queryClient.getQueryData<{ handle?: string }>(
+        getDocumentByIdQueryOptions(documentHandle ?? '').queryKey,
+      )?.handle === pathname.split('/').pop();
+    if (isIdRedirect) {
+      updateTab(activeTab.id, { pathname, search, hash });
+      return;
+    }
     const existingTab = tabList.find((t) => matchTabLocation(t, pathname, search, hash));
     if (existingTab) return setActiveTab(existingTab.id);
     const existingGroupTab = findGroupTab(tabList, pathname);
@@ -210,16 +224,7 @@ export function TabSync() {
     }
     const isSameDocument = isDocumentTab && pathname.split('/').pop() === documentHandle;
     const isSamePath = activeTab && activeTab.pathname === pathname;
-    // A tab opened from an in-document link holds `/view/<id>?id=true`; the route
-    // redirects it to the handle. That is the same document, so update the tab
-    // (keeping its preview state) rather than opening a second one.
-    const isIdRedirect =
-      !!activeTab?.search?.id &&
-      isDocumentTab &&
-      queryClient.getQueryData<{ handle?: string }>(
-        getDocumentByIdQueryOptions(documentHandle ?? '').queryKey,
-      )?.handle === pathname.split('/').pop();
-    if (isSameDocument || isSamePath || isIdRedirect) {
+    if (isSameDocument || isSamePath) {
       updateTab(activeTab.id, {
         pathname,
         search,

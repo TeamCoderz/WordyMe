@@ -70,7 +70,7 @@ const initialState: UiState = {
   folderColorsEnabled: false,
   folderDefaultColor: 'theme',
   folderColorSolid: false,
-  documentLinkTarget: 'current-pane',
+  documentLinkTarget: 'split-view',
   splitTabsArePreview: true,
 };
 

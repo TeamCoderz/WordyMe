@@ -233,10 +233,10 @@ function InterfacePreferencesSettings() {
 
         <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="splitTabsArePreview">Split-View Tabs Are Temporary</Label>
+            <Label htmlFor="splitTabsArePreview">Split-View Tabs Are Preview Tabs</Label>
             <p className="text-sm text-muted-foreground">
-              Temporary tabs show in italics and are replaced by the next one — double-click a tab
-              to keep it
+              Preview tabs show in italics and are replaced by the next one — double-click a tab to
+              keep it
             </p>
           </div>
           <Switch

@@ -25,7 +25,16 @@ export const store = createStore<Store>()(
       }),
       {
         name: 'Wordy',
-        version: 4,
+        version: 5,
+        migrate: (persistedState, version) => {
+          const state = (persistedState ?? {}) as Pick<Store, 'app' | 'tabs' | 'ui' | 'wordy'>;
+          // v5: the split-view default changed before the feature shipped, so
+          // the only persisted 'current-pane' values come from pre-release builds.
+          if (version < 5 && state.ui) {
+            return { ...state, ui: { ...state.ui, documentLinkTarget: 'split-view' as const } };
+          }
+          return state;
+        },
         partialize: (state) => ({
           app: state.app,
           tabs: {
