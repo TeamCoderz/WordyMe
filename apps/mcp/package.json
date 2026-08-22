@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.9.0"
+  },
   "scripts": {
     "build": "esbuild src/index.ts --bundle --platform=node --target=node20 --format=esm --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/index.js --loader:.css=empty --loader:.svg=empty --loader:.png=empty --loader:.jpg=empty --loader:.woff=empty --loader:.woff2=empty --log-level=warning",
     "start": "pnpm build && node --env-file-if-exists=.env dist/index.js",

@@ -26,9 +26,10 @@ with your credentials and acts on your behalf — the same delegation model ever
 connected app uses — so there is no "AI account" to manage and no sharing model to bolt
 on.
 
-**Nothing is ever lost.** Every write is a new revision named **"via Claude"**. Earlier
-revisions stay in Revisions History and can be restored with one click. The server never
-deletes anything.
+**Nothing is ever lost.** Every content write — creating a page or revising one — is saved
+as a new revision named **"via Claude"**. Earlier revisions stay in Revisions History and
+can be restored with one click. Moving a page only changes where it sits in the tree. The
+server never deletes anything.
 
 **Local by design.** It runs on your machine, next to your clone of the repository.
 Credentials live in a git-ignored file you control. Nothing about the WordyMe app or its

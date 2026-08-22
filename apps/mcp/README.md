@@ -5,9 +5,9 @@ clients such as Claude Code and Claude Desktop. Markdown in, Markdown out — co
 converted with the editor's own transformers, so what the AI writes is exactly what the
 editor would produce if you typed the same Markdown yourself.
 
-The server acts **as your account** (delegation — WordyMe stays single-user). Every
+The server acts **as your account** (delegation — WordyMe stays single-user). Every content
 change it makes is saved as a new revision named **"via Claude"**, restorable from
-Revisions History.
+Revisions History; moving a document only changes its place in the tree.
 
 ## Tools
 

@@ -189,8 +189,9 @@ Already running an older version? Ports and origins changed; see
 ## Connect Claude (MCP)
 
 WordyMe™ ships an MCP server, so Claude Code and Claude Desktop can search your wiki, read
-any page and write notes — in Markdown, as your own account, with every change saved as a
-restorable revision. See [MCP.md](MCP.md) for the three-step setup and what it can do.
+any page and write notes — in Markdown, as your own account, with every content change
+saved as a restorable revision. See [MCP.md](MCP.md) for the three-step setup and what it
+can do.
 
 ## Development Workflow
 
