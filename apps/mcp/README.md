@@ -11,14 +11,15 @@ Revisions History.
 
 ## Tools
 
-| Tool               | What it does                                             |
-| ------------------ | -------------------------------------------------------- |
-| `list_spaces`      | List the Spaces in the wiki                              |
-| `list_documents`   | List one Space's documents and folders                   |
-| `search_documents` | Full-text search with snippets                           |
-| `read_document`    | Return a document as Markdown                            |
-| `create_note`      | Create a note from Markdown                              |
-| `update_document`  | Replace a document body with new Markdown (new revision) |
+| Tool               | What it does                                                  |
+| ------------------ | ------------------------------------------------------------- |
+| `list_spaces`      | List the Spaces in the wiki                                   |
+| `list_documents`   | List one Space's documents and folders                        |
+| `search_documents` | Full-text search with snippets                                |
+| `read_document`    | Return a document as Markdown                                 |
+| `create_note`      | Create a note from Markdown                                   |
+| `update_document`  | Replace a document body with new Markdown (new revision)      |
+| `move_document`    | Move a document or folder into a folder, or to the Space root |
 
 ## Setup
 

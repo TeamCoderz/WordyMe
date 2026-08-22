@@ -44,6 +44,7 @@ Docker image changes.
 | `read_document`    | Return a page as Markdown                                      |
 | `create_note`      | Create a note from Markdown, optionally inside a folder        |
 | `update_document`  | Replace a page body with new Markdown, saved as a new revision |
+| `move_document`    | Move a page or folder into a folder, or back to the Space root |
 
 Things people ask once it is connected:
 
