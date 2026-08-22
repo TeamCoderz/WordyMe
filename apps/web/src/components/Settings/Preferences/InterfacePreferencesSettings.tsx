@@ -64,7 +64,7 @@ function InterfacePreferencesSettings() {
             defaultValue={appSidebar}
             onValueChange={(value) => setAppSidebar(value as 'expanded' | 'collapsed' | 'remember')}
           >
-            <SelectTrigger className="">
+            <SelectTrigger id="appSidebar">
               <SelectValue placeholder="Select option" />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +97,7 @@ function InterfacePreferencesSettings() {
               setDocumentSidebar(value as 'expanded' | 'collapsed' | 'remember')
             }
           >
-            <SelectTrigger>
+            <SelectTrigger id="documentSidebar">
               <SelectValue placeholder="Select option" />
             </SelectTrigger>
             <SelectContent>
@@ -215,7 +215,7 @@ function InterfacePreferencesSettings() {
             value={documentLinkTarget}
             onValueChange={(value) => setDocumentLinkTarget(value as DocumentLinkTarget)}
           >
-            <SelectTrigger>
+            <SelectTrigger id="documentLinkTarget">
               <SelectValue placeholder="Select option" />
             </SelectTrigger>
             <SelectContent>
