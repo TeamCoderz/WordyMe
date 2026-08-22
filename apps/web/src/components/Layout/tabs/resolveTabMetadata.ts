@@ -4,7 +4,7 @@
  */
 
 import type { TabMetadata } from '@repo/types';
-import { getDocumentByHandleQueryOptions } from '@/queries/documents';
+import { getDocumentByHandleQueryOptions, getDocumentByIdQueryOptions } from '@/queries/documents';
 import type { UseQueryOptions } from '@tanstack/react-query';
 
 export type TabMetadataQueryOption = UseQueryOptions<any, any, TabMetadata>;
@@ -74,7 +74,12 @@ export function resolveTabMetadata(
   // 3. Document routes (dynamic — title & icon come from a query)
   const handle = getDocumentHandle(pathname);
   if (handle) {
-    const docQueryOpts = getDocumentByHandleQueryOptions(handle);
+    // In-document links carry the document id (`?id=true`) and are redirected
+    // to the handle by the route; looking the id up as a handle 404s, and a
+    // failed lookup auto-closes the tab.
+    const docQueryOpts = search?.id
+      ? getDocumentByIdQueryOptions(handle)
+      : getDocumentByHandleQueryOptions(handle);
     return {
       metadata: { title: '', icon: null }, // fallback while loading
       queryOption: {

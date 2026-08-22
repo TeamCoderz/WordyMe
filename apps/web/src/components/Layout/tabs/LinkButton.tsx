@@ -78,6 +78,8 @@ function LinkButtonFn<
     state.tabs.tabList.find((t) => t.id === state.tabs.activeTabId[state.tabs.activePane]),
   );
   const activePane = useSelector((state) => state.tabs.activePane);
+  const documentLinkTarget = useSelector((state) => state.ui.documentLinkTarget);
+  const splitTabsArePreview = useSelector((state) => state.ui.splitTabsArePreview);
   const primaryTabList = useSelector((state) =>
     state.tabs.tabList.filter((t) => state.tabs.paneTabIds.primary.includes(t.id)),
   );
@@ -113,6 +115,10 @@ function LinkButtonFn<
       isShiftHeld: event.shiftKey,
       newTab,
       newSplitTab,
+      // LinkButton renders UI chrome (the space switcher), never document content.
+      isInDocument: false,
+      documentLinkTarget,
+      splitTabsArePreview,
     });
 
     switch (action.type) {

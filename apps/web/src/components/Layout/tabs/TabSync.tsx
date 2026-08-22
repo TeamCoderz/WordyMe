@@ -7,6 +7,8 @@ import { useSelector, useActions } from '@/store';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { resolveModifier, useKeyHold } from '@tanstack/react-hotkeys';
+import { useQueryClient } from '@tanstack/react-query';
+import { getDocumentByIdQueryOptions } from '@/queries/documents';
 import { matchTabLocation, findGroupTab, resolveTabAction } from './utils';
 
 /**
@@ -18,6 +20,7 @@ import { matchTabLocation, findGroupTab, resolveTabAction } from './utils';
  */
 export function TabSync() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { openTab, updateTab, setActiveTab } = useActions();
 
   const tabList = useSelector((state) => state.tabs.tabList);
@@ -32,6 +35,8 @@ export function TabSync() {
     state.tabs.tabList.filter((t) => state.tabs.paneTabIds.secondary.includes(t.id)),
   );
   const activePane = useSelector((state) => state.tabs.activePane);
+  const documentLinkTarget = useSelector((state) => state.ui.documentLinkTarget);
+  const splitTabsArePreview = useSelector((state) => state.ui.splitTabsArePreview);
   const isDocumentTab =
     activeTab &&
     (activeTab.pathname.startsWith('/edit/') || activeTab.pathname.startsWith('/view/'));
@@ -50,6 +55,8 @@ export function TabSync() {
   const activeTabRef = useRef(activeTab);
   const isModifierHeldRef = useRef(isModifierHeld);
   const isShiftHeldRef = useRef(isShiftHeld);
+  const documentLinkTargetRef = useRef(documentLinkTarget);
+  const splitTabsArePreviewRef = useRef(splitTabsArePreview);
   useEffect(() => {
     primaryTabListRef.current = primaryTabList;
     secondaryTabListRef.current = secondaryTabList;
@@ -57,17 +64,59 @@ export function TabSync() {
     activeTabRef.current = activeTab;
     isModifierHeldRef.current = isModifierHeld;
     isShiftHeldRef.current = isShiftHeld;
-  }, [primaryTabList, secondaryTabList, activePane, activeTab, isModifierHeld, isShiftHeld]);
+    documentLinkTargetRef.current = documentLinkTarget;
+    splitTabsArePreviewRef.current = splitTabsArePreview;
+  }, [
+    primaryTabList,
+    secondaryTabList,
+    activePane,
+    activeTab,
+    isModifierHeld,
+    isShiftHeld,
+    documentLinkTarget,
+    splitTabsArePreview,
+  ]);
 
   useEffect(() => {
+    // In-document links address documents by id (`/view/<id>?id=true`) so they
+    // survive renames. Resolve that to the handle before routing, so the tab is
+    // created with its canonical location: tab matching works against open
+    // tabs, and nothing ever looks the id up as a handle.
+    const resolveDocumentLocation = async (
+      pathname: string,
+      search: Record<string, string>,
+    ): Promise<{ pathname: string; search: Record<string, string> }> => {
+      const isDocumentPath = pathname.startsWith('/view/') || pathname.startsWith('/edit/');
+      const id = pathname.split('/').pop();
+      if (!search.id || !isDocumentPath || !id) return { pathname, search };
+      try {
+        const document = await queryClient.ensureQueryData(
+          getDocumentByIdQueryOptions(id, queryClient),
+        );
+        const { id: _id, ...rest } = search;
+        return { pathname: pathname.replace(id, document.handle), search: rest };
+      } catch {
+        return { pathname, search };
+      }
+    };
+
     const handleLinkClick = (event: MouseEvent) => {
       const link = event.currentTarget as HTMLAnchorElement;
-      const { origin, pathname, searchParams, hash } = new URL(link.href);
+      const { origin, pathname: rawPathname, searchParams, hash } = new URL(link.href);
       if (origin !== location.origin) return;
       if (link.download) return;
-      const search = Object.fromEntries(searchParams.entries());
-      const normalizedHash = hash.slice(1);
+      event.preventDefault();
+      void resolveDocumentLocation(rawPathname, Object.fromEntries(searchParams.entries())).then(
+        ({ pathname, search }) => routeLink(link, pathname, search, hash.slice(1)),
+      );
+    };
 
+    const routeLink = (
+      link: HTMLAnchorElement,
+      pathname: string,
+      search: Record<string, string>,
+      normalizedHash: string,
+    ) => {
       const action = resolveTabAction({
         pathname,
         search,
@@ -80,9 +129,10 @@ export function TabSync() {
         isShiftHeld: isShiftHeldRef.current,
         newTab: link.dataset.newTab === 'true',
         newSplitTab: link.dataset.newSplitTab === 'true',
+        isInDocument: !!link.closest('.editor-input'),
+        documentLinkTarget: documentLinkTargetRef.current,
+        splitTabsArePreview: splitTabsArePreviewRef.current,
       });
-
-      event.preventDefault();
 
       switch (action.type) {
         case 'activate':
@@ -179,6 +229,20 @@ export function TabSync() {
     if (pathname.startsWith('/login') || pathname.startsWith('/signup')) return;
     const locationMatches = activeTab && matchTabLocation(activeTab, pathname, search, hash);
     if (locationMatches) return;
+    // A tab opened from an in-document link holds `/view/<id>?id=true`; the route
+    // redirects it to the handle. That redirect belongs to the active tab, so it
+    // is updated in place (keeping its preview state) — checked before any other
+    // tab with the same location, which would otherwise steal the navigation.
+    const isIdRedirect =
+      !!activeTab?.search?.id &&
+      isDocumentTab &&
+      queryClient.getQueryData<{ handle?: string }>(
+        getDocumentByIdQueryOptions(documentHandle ?? '').queryKey,
+      )?.handle === pathname.split('/').pop();
+    if (isIdRedirect) {
+      updateTab(activeTab.id, { pathname, search, hash });
+      return;
+    }
     const existingTab = tabList.find((t) => matchTabLocation(t, pathname, search, hash));
     if (existingTab) return setActiveTab(existingTab.id);
     const existingGroupTab = findGroupTab(tabList, pathname);

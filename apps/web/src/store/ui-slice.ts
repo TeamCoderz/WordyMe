@@ -10,6 +10,8 @@ import type { Store } from './store';
 
 export type AppSidebarState = 'expanded' | 'collapsed' | 'remember';
 
+export type DocumentLinkTarget = 'current-pane' | 'split-view';
+
 export type FolderColor = 'theme' | Theme['color-variants'][number]['value'];
 
 export type HomeSortState = {
@@ -30,6 +32,8 @@ type UiState = {
   folderColorsEnabled: boolean;
   folderDefaultColor: FolderColor;
   folderColorSolid: boolean;
+  documentLinkTarget: DocumentLinkTarget;
+  splitTabsArePreview: boolean;
 };
 
 type UiActions = {
@@ -44,6 +48,8 @@ type UiActions = {
   setFolderColorsEnabled: (enabled: boolean) => void;
   setFolderDefaultColor: (color: FolderColor) => void;
   setFolderColorSolid: (solid: boolean) => void;
+  setDocumentLinkTarget: (target: DocumentLinkTarget) => void;
+  setSplitTabsArePreview: (preview: boolean) => void;
 };
 
 export type UiSlice = { ui: UiState; uiActions: UiActions };
@@ -64,6 +70,8 @@ const initialState: UiState = {
   folderColorsEnabled: false,
   folderDefaultColor: 'theme',
   folderColorSolid: false,
+  documentLinkTarget: 'split-view',
+  splitTabsArePreview: true,
 };
 
 export const createUiSlice: StateCreator<
@@ -101,6 +109,10 @@ export const createUiSlice: StateCreator<
         set((state) => ({ ui: { ...state.ui, folderDefaultColor } })),
       setFolderColorSolid: (folderColorSolid) =>
         set((state) => ({ ui: { ...state.ui, folderColorSolid } })),
+      setDocumentLinkTarget: (documentLinkTarget) =>
+        set((state) => ({ ui: { ...state.ui, documentLinkTarget } })),
+      setSplitTabsArePreview: (splitTabsArePreview) =>
+        set((state) => ({ ui: { ...state.ui, splitTabsArePreview } })),
     },
   };
 };

@@ -4,6 +4,7 @@
  */
 
 import type { Tab } from '@repo/types';
+import type { DocumentLinkTarget } from '@/store/ui-slice';
 
 export const matchTabLocation = (
   tab: Tab,
@@ -113,6 +114,10 @@ export interface ResolveTabActionInput {
   isShiftHeld: boolean;
   newTab: boolean;
   newSplitTab: boolean;
+  /** True when the clicked link lives inside document content (`.editor-input`). */
+  isInDocument: boolean;
+  documentLinkTarget: DocumentLinkTarget;
+  splitTabsArePreview: boolean;
 }
 
 export type TabAction =
@@ -126,7 +131,7 @@ export type TabAction =
     }
   | {
       type: 'preview';
-      pane: 'primary' | 'secondary';
+      pane: 'primary' | 'secondary' | 'opposite';
       pathname: string;
       search: Record<string, unknown>;
       hash: string;
@@ -162,6 +167,11 @@ export type TabAction =
  * - The exact-match (`existingTab`) branch is only gated on `!shouldOpenNewTab`,
  *   allowing split navigation to activate an existing tab in the target pane
  *   rather than creating a duplicate.
+ * - When `documentLinkTarget` is 'split-view', Shift inverts for links inside
+ *   document content: a plain click splits and Shift+Click stays in the current
+ *   pane. An explicit `data-new-split-tab` still forces a split either way.
+ * - Split opens are preview-eligible when `splitTabsArePreview` is set; the
+ *   store scopes preview replacement per pane, so each pane keeps its own.
  */
 export const resolveTabAction = ({
   pathname,
@@ -175,9 +185,17 @@ export const resolveTabAction = ({
   isShiftHeld,
   newTab,
   newSplitTab,
+  isInDocument,
+  documentLinkTarget,
+  splitTabsArePreview,
 }: ResolveTabActionInput): TabAction => {
+  // Two different intents: `newTab` (the editor marks every in-document link
+  // with data-new-tab) only means "never replace the document being read";
+  // Ctrl/Cmd means "a permanent new tab". Both block in-place navigation, only
+  // the modifier blocks preview and split-by-default.
   const shouldOpenNewTab = isModifierHeld || newTab;
-  const shouldSplitTab = isShiftHeld || newSplitTab;
+  const splitByDefault = documentLinkTarget === 'split-view' && isInDocument && !isModifierHeld;
+  const shouldSplitTab = (splitByDefault ? !isShiftHeld : isShiftHeld) || newSplitTab;
 
   const activePaneTabList = activePane === 'secondary' ? secondaryTabList : primaryTabList;
   const oppositePaneTabList = activePane === 'secondary' ? primaryTabList : secondaryTabList;
@@ -185,7 +203,10 @@ export const resolveTabAction = ({
   const targetTabList = shouldSplitTab ? oppositePaneTabList : activePaneTabList;
 
   const isViewLink = pathname.startsWith('/view/');
-  const isPreviewEligible = isViewLink && !shouldOpenNewTab && !shouldSplitTab;
+  // A same-pane open of a data-new-tab link stays a permanent tab, as before;
+  // a split open is preview when the preference says so.
+  const isPreviewEligible =
+    isViewLink && !isModifierHeld && (shouldSplitTab ? splitTabsArePreview : !newTab);
 
   const existingTab =
     targetTabList.find((t) => matchTabLocation(t, pathname, search, hash)) ?? null;
@@ -198,16 +219,23 @@ export const resolveTabAction = ({
       : null;
 
   // Honor new-tab/new-split-tab requests across group and same-path reuse branches.
-  // Exact-match tabs may still be activated when splitting — only forced new-tab (Ctrl/newTab)
-  // blocks that, because the existing tab is already in the target pane.
+  // An exact-match tab in the target pane is activated unless Ctrl/Cmd forces a
+  // new tab: a data-new-tab link only forbids replacing the reader's tab, and
+  // activating the target's own tab does not — opening another would duplicate it.
   if (existingGroupTab && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingGroupTab.id, pathname, search, hash };
   } else if (existingTabSamePath && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingTabSamePath.id, pathname, search, hash };
-  } else if (existingTab && !shouldOpenNewTab) {
+  } else if (existingTab && !isModifierHeld) {
     return { type: 'activate', tabId: existingTab.id };
   } else if (isPreviewEligible) {
-    return { type: 'preview', pane: activePane, pathname, search, hash };
+    return {
+      type: 'preview',
+      pane: shouldSplitTab ? 'opposite' : activePane,
+      pathname,
+      search,
+      hash,
+    };
   } else if (!(shouldOpenNewTab || shouldSplitTab) && activeTab) {
     const isDocumentLink = pathname.startsWith('/edit/') || pathname.startsWith('/view/');
     const requiresAutosave =
