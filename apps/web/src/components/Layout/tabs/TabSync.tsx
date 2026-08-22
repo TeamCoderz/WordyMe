@@ -78,14 +78,45 @@ export function TabSync() {
   ]);
 
   useEffect(() => {
+    // In-document links address documents by id (`/view/<id>?id=true`) so they
+    // survive renames. Resolve that to the handle before routing, so the tab is
+    // created with its canonical location: tab matching works against open
+    // tabs, and nothing ever looks the id up as a handle.
+    const resolveDocumentLocation = async (
+      pathname: string,
+      search: Record<string, string>,
+    ): Promise<{ pathname: string; search: Record<string, string> }> => {
+      const isDocumentPath = pathname.startsWith('/view/') || pathname.startsWith('/edit/');
+      const id = pathname.split('/').pop();
+      if (!search.id || !isDocumentPath || !id) return { pathname, search };
+      try {
+        const document = await queryClient.ensureQueryData(
+          getDocumentByIdQueryOptions(id, queryClient),
+        );
+        const { id: _id, ...rest } = search;
+        return { pathname: pathname.replace(id, document.handle), search: rest };
+      } catch {
+        return { pathname, search };
+      }
+    };
+
     const handleLinkClick = (event: MouseEvent) => {
       const link = event.currentTarget as HTMLAnchorElement;
-      const { origin, pathname, searchParams, hash } = new URL(link.href);
+      const { origin, pathname: rawPathname, searchParams, hash } = new URL(link.href);
       if (origin !== location.origin) return;
       if (link.download) return;
-      const search = Object.fromEntries(searchParams.entries());
-      const normalizedHash = hash.slice(1);
+      event.preventDefault();
+      void resolveDocumentLocation(rawPathname, Object.fromEntries(searchParams.entries())).then(
+        ({ pathname, search }) => routeLink(link, pathname, search, hash.slice(1)),
+      );
+    };
 
+    const routeLink = (
+      link: HTMLAnchorElement,
+      pathname: string,
+      search: Record<string, string>,
+      normalizedHash: string,
+    ) => {
       const action = resolveTabAction({
         pathname,
         search,
@@ -102,8 +133,6 @@ export function TabSync() {
         documentLinkTarget: documentLinkTargetRef.current,
         splitTabsArePreview: splitTabsArePreviewRef.current,
       });
-
-      event.preventDefault();
 
       switch (action.type) {
         case 'activate':
