@@ -219,13 +219,14 @@ export const resolveTabAction = ({
       : null;
 
   // Honor new-tab/new-split-tab requests across group and same-path reuse branches.
-  // Exact-match tabs may still be activated when splitting — only forced new-tab (Ctrl/newTab)
-  // blocks that, because the existing tab is already in the target pane.
+  // An exact-match tab in the target pane is activated unless Ctrl/Cmd forces a
+  // new tab: a data-new-tab link only forbids replacing the reader's tab, and
+  // activating the target's own tab does not — opening another would duplicate it.
   if (existingGroupTab && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingGroupTab.id, pathname, search, hash };
   } else if (existingTabSamePath && !shouldOpenNewTab && !shouldSplitTab) {
     return { type: 'activate-and-update', tabId: existingTabSamePath.id, pathname, search, hash };
-  } else if (existingTab && !shouldOpenNewTab) {
+  } else if (existingTab && !isModifierHeld) {
     return { type: 'activate', tabId: existingTab.id };
   } else if (isPreviewEligible) {
     return {
