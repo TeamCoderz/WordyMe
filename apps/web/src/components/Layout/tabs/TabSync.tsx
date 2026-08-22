@@ -7,6 +7,8 @@ import { useSelector, useActions } from '@/store';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useEffect, useRef } from 'react';
 import { resolveModifier, useKeyHold } from '@tanstack/react-hotkeys';
+import { useQueryClient } from '@tanstack/react-query';
+import { getDocumentByIdQueryOptions } from '@/queries/documents';
 import { matchTabLocation, findGroupTab, resolveTabAction } from './utils';
 
 /**
@@ -18,6 +20,7 @@ import { matchTabLocation, findGroupTab, resolveTabAction } from './utils';
  */
 export function TabSync() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { openTab, updateTab, setActiveTab } = useActions();
 
   const tabList = useSelector((state) => state.tabs.tabList);
@@ -207,7 +210,16 @@ export function TabSync() {
     }
     const isSameDocument = isDocumentTab && pathname.split('/').pop() === documentHandle;
     const isSamePath = activeTab && activeTab.pathname === pathname;
-    if (isSameDocument || isSamePath) {
+    // A tab opened from an in-document link holds `/view/<id>?id=true`; the route
+    // redirects it to the handle. That is the same document, so update the tab
+    // (keeping its preview state) rather than opening a second one.
+    const isIdRedirect =
+      !!activeTab?.search?.id &&
+      isDocumentTab &&
+      queryClient.getQueryData<{ handle?: string }>(
+        getDocumentByIdQueryOptions(documentHandle ?? '').queryKey,
+      )?.handle === pathname.split('/').pop();
+    if (isSameDocument || isSamePath || isIdRedirect) {
       updateTab(activeTab.id, {
         pathname,
         search,
