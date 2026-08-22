@@ -189,10 +189,12 @@ export const resolveTabAction = ({
   documentLinkTarget,
   splitTabsArePreview,
 }: ResolveTabActionInput): TabAction => {
+  // Two different intents: `newTab` (the editor marks every in-document link
+  // with data-new-tab) only means "never replace the document being read";
+  // Ctrl/Cmd means "a permanent new tab". Both block in-place navigation, only
+  // the modifier blocks preview and split-by-default.
   const shouldOpenNewTab = isModifierHeld || newTab;
-  // Not applied when forcing a new tab: Ctrl/Cmd means "new tab in this pane"
-  // and Ctrl+Shift "new tab beside it", identically in both modes.
-  const splitByDefault = documentLinkTarget === 'split-view' && isInDocument && !shouldOpenNewTab;
+  const splitByDefault = documentLinkTarget === 'split-view' && isInDocument && !isModifierHeld;
   const shouldSplitTab = (splitByDefault ? !isShiftHeld : isShiftHeld) || newSplitTab;
 
   const activePaneTabList = activePane === 'secondary' ? secondaryTabList : primaryTabList;
@@ -201,8 +203,10 @@ export const resolveTabAction = ({
   const targetTabList = shouldSplitTab ? oppositePaneTabList : activePaneTabList;
 
   const isViewLink = pathname.startsWith('/view/');
+  // A same-pane open of a data-new-tab link stays a permanent tab, as before;
+  // a split open is preview when the preference says so.
   const isPreviewEligible =
-    isViewLink && !shouldOpenNewTab && (!shouldSplitTab || splitTabsArePreview);
+    isViewLink && !isModifierHeld && (shouldSplitTab ? splitTabsArePreview : !newTab);
 
   const existingTab =
     targetTabList.find((t) => matchTabLocation(t, pathname, search, hash)) ?? null;
