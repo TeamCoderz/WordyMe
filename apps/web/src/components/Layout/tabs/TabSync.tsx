@@ -32,6 +32,8 @@ export function TabSync() {
     state.tabs.tabList.filter((t) => state.tabs.paneTabIds.secondary.includes(t.id)),
   );
   const activePane = useSelector((state) => state.tabs.activePane);
+  const documentLinkTarget = useSelector((state) => state.ui.documentLinkTarget);
+  const splitTabsArePreview = useSelector((state) => state.ui.splitTabsArePreview);
   const isDocumentTab =
     activeTab &&
     (activeTab.pathname.startsWith('/edit/') || activeTab.pathname.startsWith('/view/'));
@@ -50,6 +52,8 @@ export function TabSync() {
   const activeTabRef = useRef(activeTab);
   const isModifierHeldRef = useRef(isModifierHeld);
   const isShiftHeldRef = useRef(isShiftHeld);
+  const documentLinkTargetRef = useRef(documentLinkTarget);
+  const splitTabsArePreviewRef = useRef(splitTabsArePreview);
   useEffect(() => {
     primaryTabListRef.current = primaryTabList;
     secondaryTabListRef.current = secondaryTabList;
@@ -57,7 +61,18 @@ export function TabSync() {
     activeTabRef.current = activeTab;
     isModifierHeldRef.current = isModifierHeld;
     isShiftHeldRef.current = isShiftHeld;
-  }, [primaryTabList, secondaryTabList, activePane, activeTab, isModifierHeld, isShiftHeld]);
+    documentLinkTargetRef.current = documentLinkTarget;
+    splitTabsArePreviewRef.current = splitTabsArePreview;
+  }, [
+    primaryTabList,
+    secondaryTabList,
+    activePane,
+    activeTab,
+    isModifierHeld,
+    isShiftHeld,
+    documentLinkTarget,
+    splitTabsArePreview,
+  ]);
 
   useEffect(() => {
     const handleLinkClick = (event: MouseEvent) => {
@@ -80,6 +95,9 @@ export function TabSync() {
         isShiftHeld: isShiftHeldRef.current,
         newTab: link.dataset.newTab === 'true',
         newSplitTab: link.dataset.newSplitTab === 'true',
+        isInDocument: !!link.closest('.editor-input'),
+        documentLinkTarget: documentLinkTargetRef.current,
+        splitTabsArePreview: splitTabsArePreviewRef.current,
       });
 
       event.preventDefault();

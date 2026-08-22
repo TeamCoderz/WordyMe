@@ -21,11 +21,14 @@ import { THEME_BY_VALUE } from '@repo/ui/theme/themes';
 import { cn } from '@repo/ui/lib/utils';
 import {
   CircleOff,
+  Columns2,
   FoldHorizontal,
   Palette,
   RefreshCcw,
+  Square,
   UnfoldHorizontal,
 } from '@repo/ui/components/icons';
+import type { DocumentLinkTarget } from '@/store/ui-slice';
 
 function InterfacePreferencesSettings() {
   const appSidebar = useSelector((state) => state.ui.appSidebar);
@@ -33,9 +36,13 @@ function InterfacePreferencesSettings() {
   const folderColorsEnabled = useSelector((state) => state.ui.folderColorsEnabled);
   const folderDefaultColor = useSelector((state) => state.ui.folderDefaultColor);
   const folderColorSolid = useSelector((state) => state.ui.folderColorSolid);
+  const documentLinkTarget = useSelector((state) => state.ui.documentLinkTarget);
+  const splitTabsArePreview = useSelector((state) => state.ui.splitTabsArePreview);
   const {
     setAppSidebar,
     setDocumentSidebar,
+    setDocumentLinkTarget,
+    setSplitTabsArePreview,
     setFolderColorsEnabled,
     setFolderDefaultColor,
     setFolderColorSolid,
@@ -194,6 +201,50 @@ function InterfacePreferencesSettings() {
             </div>
           </div>
         )}
+
+        <Separator className="bg-transparent border-t border-dashed h-0" />
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="documentLinkTarget">Open Links Inside Documents</Label>
+            <p className="text-sm text-muted-foreground">
+              Where a link in a document opens; Shift+Click does the opposite
+            </p>
+          </div>
+          <Select
+            value={documentLinkTarget}
+            onValueChange={(value) => setDocumentLinkTarget(value as DocumentLinkTarget)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select option" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="current-pane" className="flex items-center gap-2">
+                <Square className="text-foreground" />
+                Current Pane
+              </SelectItem>
+              <SelectItem value="split-view" className="flex items-center gap-2">
+                <Columns2 className="text-foreground" />
+                Split View
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex items-center justify-between">
+          <div>
+            <Label htmlFor="splitTabsArePreview">Split-View Tabs Are Temporary</Label>
+            <p className="text-sm text-muted-foreground">
+              Temporary tabs show in italics and are replaced by the next one — double-click a tab
+              to keep it
+            </p>
+          </div>
+          <Switch
+            id="splitTabsArePreview"
+            checked={splitTabsArePreview}
+            onCheckedChange={setSplitTabsArePreview}
+          />
+        </div>
       </CardContent>
     </Card>
   );
