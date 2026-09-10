@@ -32,7 +32,7 @@
     "drizzle-zod": "^0.8.3",
     "express": "^5.2.1",
     "formidable": "^3.5.4",
-    "morgan": "^1.11.0",
+    "morgan": "^1.12.0",
     "nanoid": "^5.1.16",
     "p-queue": "^9.1.0",
     "socket.io": "^4.8.3",
