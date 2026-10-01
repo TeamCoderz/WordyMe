@@ -101,8 +101,8 @@ importers:
         specifier: ^3.5.4
         version: 3.5.4
       morgan:
-        specifier: ^1.11.0
-        version: 1.11.0
+        specifier: ^1.12.1
+        version: 1.12.1
       nanoid:
         specifier: ^5.1.16
         version: 5.1.16
@@ -716,7 +716,7 @@ importers:
         version: 0.5.3(eslint@10.8.0(jiti@2.7.0))
       eslint-plugin-turbo:
         specifier: ^2.8.16
-        version: 2.10.8(eslint@10.8.0(jiti@2.7.0))(turbo@2.10.8)
+        version: 2.10.8(eslint@10.8.0(jiti@2.7.0))(turbo@2.11.6)
       globals:
         specifier: ^17.4.0
         version: 17.9.0
@@ -4528,8 +4528,18 @@ packages:
     cpu: [x64]
     os: [darwin]
 
+  '@turbo/darwin-64@2.11.6':
+    resolution: {integrity: sha512-nAvJwDBgz/cKoSPhB7YOGPFmDEwCRavFjy0jUsrGqR97cLyJqXU2rZC/zTnw+9J3DkB2gfjpolX7mKsBatMcCQ==}
+    cpu: [x64]
+    os: [darwin]
+
   '@turbo/darwin-arm64@2.10.8':
     resolution: {integrity: sha512-+zB2btDJ00lnPRuqOvpVvgl4x34k/djZQGZTTCfjn7JgNCl8QFY5Njo5+dqkY1g/+9gbbsnAvWm9CmJg9ebcXA==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@turbo/darwin-arm64@2.11.6':
+    resolution: {integrity: sha512-odk6UHW9hympllPlezz7oJhPmO40+oU8BUh4zvNuSIqQ1QQll4zo1DN4IrD/3jUzkLefvMJ8UHEHlGq9WdR7tw==}
     cpu: [arm64]
     os: [darwin]
 
@@ -4542,8 +4552,18 @@ packages:
     cpu: [x64]
     os: [android, linux]
 
+  '@turbo/linux-64@2.11.6':
+    resolution: {integrity: sha512-PvXbwMqZPEWdWnJSIJ5D/tugnSOrRvLYKkH7iC8TLGVI+4J5znSLn3Tx1YkH5OUzFEFhxJQyHjtiRqBPbCoVlg==}
+    cpu: [x64]
+    os: [android, linux]
+
   '@turbo/linux-arm64@2.10.8':
     resolution: {integrity: sha512-Gi77ibVnrE1fEmvr+/wBD/yvRqhwp/RQuCp2+//lv1U1wNFFyVg0V7Wj8FG9FXPFAw5QHReo8rxc9+wBSDZjzA==}
+    cpu: [arm64]
+    os: [android, linux]
+
+  '@turbo/linux-arm64@2.11.6':
+    resolution: {integrity: sha512-8FKA3SqJk6fTv7Hqrmv2JnJfqiXslTRJYBwiI6eU3QXokVMYFLh1wUywF+w3MPtDfx1O/1otbps5AnijbzY1Kg==}
     cpu: [arm64]
     os: [android, linux]
 
@@ -4552,8 +4572,18 @@ packages:
     cpu: [x64]
     os: [win32]
 
+  '@turbo/windows-64@2.11.6':
+    resolution: {integrity: sha512-XPSgTg494cV31u0Uch8zRq/Jnpe8h4muwNpg9IRPrJqADrjjzxzFMtJCtBZTKVaSEDUU/ol8Gr4SYxtiHt2Tzg==}
+    cpu: [x64]
+    os: [win32]
+
   '@turbo/windows-arm64@2.10.8':
     resolution: {integrity: sha512-VN30vh3b3Czh2WzYHNTfF1FE0YMZ5aHsLO8dBMGHJewA6792wX6iJR8ZxlzFW6WdOu0gEAKIvlYhfyT81Wkm4Q==}
+    cpu: [arm64]
+    os: [win32]
+
+  '@turbo/windows-arm64@2.11.6':
+    resolution: {integrity: sha512-dZ0/ZFH2AU/l1KdqISVkWUSnm0ufWZyiYRLDYCL+rJAhkUDMFhTZkSnYEL2O/m0tOu/Jy/EKAnZfocuyMX3LMQ==}
     cpu: [arm64]
     os: [win32]
 
@@ -7538,8 +7568,8 @@ packages:
   mobile-drag-drop@3.0.0-rc.0:
     resolution: {integrity: sha512-f8wIDTbBYLBW/+5sei1cqUE+StyDpf/LP+FRZELlVX6tmOOmELk84r3wh1z3woxCB9G5octhF06K5COvFjGgqg==}
 
-  morgan@1.11.0:
-    resolution: {integrity: sha512-zSkVu3t18r39pw4ixfBKvfZi3y2UOqr7d4WYwcj3m8nXpEQK4rPO6GLzs/CExoRgmX3y9EjmmcXqv6jq0SK46g==}
+  morgan@1.12.1:
+    resolution: {integrity: sha512-tljKC0ex20AjO58Ob/eZ53JloycbVswbVNCHx6V6VLGzqt/w8dIynVGL0G8qVjNKwiA7sYSogCrN6QtJ82IV+g==}
     engines: {node: '>= 0.8.0'}
 
   mri@1.2.0:
@@ -8646,6 +8676,10 @@ packages:
 
   turbo@2.10.8:
     resolution: {integrity: sha512-9+8YX5QOkGXzZxcIykTHgaooRHGMWO+jfdyRK0o+rN0U7hBIig2MrJ8r/aNzIPDPhdA73SGb0O+tIztaModTMg==}
+    hasBin: true
+
+  turbo@2.11.6:
+    resolution: {integrity: sha512-UppAr5XEHLfVdVp75nd+tzPp/wVEwS7Ken9aYjMlBnHqXynKn9IcQHd6GDOXBxDViSjpS+SzJcOF86v9Hf8GfQ==}
     hasBin: true
 
   tw-animate-css@1.4.0:
@@ -12890,7 +12924,13 @@ snapshots:
   '@turbo/darwin-64@2.10.8':
     optional: true
 
+  '@turbo/darwin-64@2.11.6':
+    optional: true
+
   '@turbo/darwin-arm64@2.10.8':
+    optional: true
+
+  '@turbo/darwin-arm64@2.11.6':
     optional: true
 
   '@turbo/gen@2.10.8(@types/node@25.9.5)':
@@ -12903,13 +12943,25 @@ snapshots:
   '@turbo/linux-64@2.10.8':
     optional: true
 
+  '@turbo/linux-64@2.11.6':
+    optional: true
+
   '@turbo/linux-arm64@2.10.8':
+    optional: true
+
+  '@turbo/linux-arm64@2.11.6':
     optional: true
 
   '@turbo/windows-64@2.10.8':
     optional: true
 
+  '@turbo/windows-64@2.11.6':
+    optional: true
+
   '@turbo/windows-arm64@2.10.8':
+    optional: true
+
+  '@turbo/windows-arm64@2.11.6':
     optional: true
 
   '@types/aria-query@5.0.4': {}
@@ -14613,11 +14665,11 @@ snapshots:
       string.prototype.matchall: 4.0.12
       string.prototype.repeat: 1.0.0
 
-  eslint-plugin-turbo@2.10.8(eslint@10.8.0(jiti@2.7.0))(turbo@2.10.8):
+  eslint-plugin-turbo@2.10.8(eslint@10.8.0(jiti@2.7.0))(turbo@2.11.6):
     dependencies:
       dotenv: 16.0.3
       eslint: 10.8.0(jiti@2.7.0)
-      turbo: 2.10.8
+      turbo: 2.11.6
 
   eslint-scope@9.1.2:
     dependencies:
@@ -16292,7 +16344,7 @@ snapshots:
 
   mobile-drag-drop@3.0.0-rc.0: {}
 
-  morgan@1.11.0:
+  morgan@1.12.1:
     dependencies:
       basic-auth: 2.0.1
       debug: 2.6.9
@@ -17655,6 +17707,15 @@ snapshots:
       '@turbo/linux-arm64': 2.10.8
       '@turbo/windows-64': 2.10.8
       '@turbo/windows-arm64': 2.10.8
+
+  turbo@2.11.6:
+    optionalDependencies:
+      '@turbo/darwin-64': 2.11.6
+      '@turbo/darwin-arm64': 2.11.6
+      '@turbo/linux-64': 2.11.6
+      '@turbo/linux-arm64': 2.11.6
+      '@turbo/windows-64': 2.11.6
+      '@turbo/windows-arm64': 2.11.6
 
   tw-animate-css@1.4.0: {}
 
