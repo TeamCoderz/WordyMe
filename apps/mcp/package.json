@@ -21,7 +21,7 @@
     "@repo/editor": "workspace:*",
     "@repo/lib": "workspace:*",
     "@repo/sdk": "workspace:*",
-    "axios": "^1.19.0",
+    "axios": "^1.20.0",
     "lexical": "^0.41.0",
     "zod": "^3.25.76"
   },
