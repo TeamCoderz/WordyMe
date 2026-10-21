@@ -16,7 +16,7 @@
   "dependencies": {
     "@happy-dom/global-registrator": "^20.11.2",
     "@lexical/markdown": "^0.41.0",
-    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
     "@repo/backend": "workspace:*",
     "@repo/editor": "workspace:*",
     "@repo/lib": "workspace:*",
